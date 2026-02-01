@@ -1,0 +1,66 @@
+{
+  "appTitle": "FireTower Racing",
+  "@appTitle": {
+    "description": "The title of the application"
+  },
+  "jobMarketTitle": "Open Contracts",
+  "signContract": "Sign Contract",
+  "budgetLabel": "Budget",
+  "availableLabel": "Available",
+  "takenLabel": "Taken",
+  "driversLabel": "Drivers",
+  "initializeWorld": "Initialize Universe",
+  "currencySymbol": "$",
+  "millionsSuffix": "M",
+  "signContractError": "Error signing contract",
+  "teamDetails": "Team Details",
+  "hqTitle": "Headquarters",
+  "activeDrivers": "Active Drivers",
+  "driverStats": "Stats",
+  "speed": "Speed",
+  "cornering": "Cornering",
+  "nextRace": "Next Race",
+  "gpPlaceholder": "GP Sao Paulo (Coming Soon)",
+  "ageLabel": "{age} yo",
+  "@ageLabel": {
+    "placeholders": {
+      "age": {
+        "type": "int"
+      }
+    }
+  },
+  "potentialLabel": "Pot: {value}",
+  "@potentialLabel": {
+    "placeholders": {
+      "value": {
+        "type": "int"
+      }
+    }
+  },
+  "starMaterial": "Star Material",
+  "veteran": "Veteran",
+  "rookie": "Rookie",
+  "engineeringTitle": "R&D Lab",
+  "aero": "Aerodynamics",
+  "engine": "Powertrain",
+  "reliability": "Reliability",
+  "upgradeBtn": "Develop (+1)",
+  "costLabel": "Cost: {symbol}{cost}",
+  "@costLabel": {
+    "placeholders": {
+      "symbol": {
+        "type": "String"
+      },
+      "cost": {
+        "type": "String"
+      }
+    }
+  },
+  "insufficientFunds": "Insufficient Funds",
+  "simulateBtn": "Simulate Race",
+  "raceResults": "Race Results",
+  "winner": "Winner",
+  "podium": "Podium",
+  "financialReport": "Financial Report",
+  "earnings": "Earnings"
+}
