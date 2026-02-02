@@ -1,38 +1,31 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_core/firebase_core.dart';
-import 'package:flutter_localizations/flutter_localizations.dart';
-import 'l10n/app_localizations.dart';
-import 'firebase_options.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
-import 'screens/main_scaffold.dart';
-import 'screens/onboarding/landing_screen.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:flutter_localizations/flutter_localizations.dart';
+import 'firebase_options.dart';
+import 'l10n/app_localizations.dart';
+import 'theme/app_theme.dart';
+import 'screens/auth/login_screen.dart';
 import 'screens/onboarding/create_manager_screen.dart';
 import 'screens/onboarding/team_selection_screen.dart';
-import 'services/auth_service.dart';
+import 'screens/main_layout.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
-  runApp(const FireTowerApp());
+  runApp(const FTGRacingApp());
 }
 
-class FireTowerApp extends StatelessWidget {
-  const FireTowerApp({super.key});
+class FTGRacingApp extends StatelessWidget {
+  const FTGRacingApp({super.key});
 
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      onGenerateTitle: (context) => AppLocalizations.of(context).appTitle,
+      title: 'FTG Racing Manager',
       debugShowCheckedModeBanner: false,
-      theme: ThemeData.dark().copyWith(
-        scaffoldBackgroundColor: const Color(0xFF121212),
-        colorScheme: const ColorScheme.dark(
-          primary: Colors.tealAccent,
-          secondary: Colors.teal,
-        ),
-        useMaterial3: true,
-      ),
+      theme: AppTheme.lightTheme,
       localizationsDelegates: const [
         AppLocalizations.delegate,
         GlobalMaterialLocalizations.delegate,
@@ -40,84 +33,116 @@ class FireTowerApp extends StatelessWidget {
         GlobalCupertinoLocalizations.delegate,
       ],
       supportedLocales: AppLocalizations.supportedLocales,
-      home: const RootHandler(),
+      home: const AuthWrapper(),
     );
   }
 }
 
-class RootHandler extends StatelessWidget {
-  const RootHandler({super.key});
+class AuthWrapper extends StatelessWidget {
+  const AuthWrapper({super.key});
 
   @override
   Widget build(BuildContext context) {
-    // 1. Check Authentication
+    // LEVEL 1: Listen to Auth State
     return StreamBuilder<User?>(
-      stream: AuthService().user,
+      stream: FirebaseAuth.instance.authStateChanges(),
       builder: (context, authSnapshot) {
         if (authSnapshot.connectionState == ConnectionState.waiting) {
-          return const Scaffold(
+          return Scaffold(
+            backgroundColor: Theme.of(context).scaffoldBackgroundColor,
             body: Center(
-              child: CircularProgressIndicator(color: Colors.tealAccent),
+              child: CircularProgressIndicator(
+                color: Theme.of(context).primaryColor,
+              ),
             ),
           );
         }
 
-        final user = authSnapshot.data;
-        if (user == null) {
-          // No user -> Landing Page
-          return const LandingScreen();
+        if (!authSnapshot.hasData || authSnapshot.data == null) {
+          debugPrint("AuthWrapper: User is null, showing LoginScreen");
+          return const LoginScreen();
         }
 
-        // 2. Check Manager Profile
-        return FutureBuilder<bool>(
-          future: AuthService().hasManagerProfile(user.uid),
-          builder: (context, profileSnapshot) {
-            if (profileSnapshot.connectionState == ConnectionState.waiting) {
-              return const Scaffold(
-                body: Center(
-                  child: CircularProgressIndicator(color: Colors.tealAccent),
-                ),
-              );
-            }
+        final User user = authSnapshot.data!;
+        debugPrint("AuthWrapper: User logged in: ${user.uid}");
+        return ManagerProfileCheck(uid: user.uid);
+      },
+    );
+  }
+}
 
-            final hasProfile = profileSnapshot.data ?? false;
+class ManagerProfileCheck extends StatelessWidget {
+  final String uid;
+  const ManagerProfileCheck({super.key, required this.uid});
 
-            if (!hasProfile) {
-              // No profile -> Create Manager Form
-              return const CreateManagerScreen();
-            }
+  @override
+  Widget build(BuildContext context) {
+    // LEVEL 2: Listen to Manager Document REALTIME
+    return StreamBuilder<DocumentSnapshot>(
+      stream: FirebaseFirestore.instance
+          .collection('managers')
+          .doc(uid)
+          .snapshots(),
+      builder: (context, managerSnapshot) {
+        if (managerSnapshot.connectionState == ConnectionState.waiting) {
+          return Scaffold(
+            backgroundColor: Theme.of(context).scaffoldBackgroundColor,
+            body: Center(
+              child: CircularProgressIndicator(
+                color: Theme.of(context).primaryColor,
+              ),
+            ),
+          );
+        }
 
-            // 3. Check Team Assignment
-            return StreamBuilder<QuerySnapshot>(
-              stream: FirebaseFirestore.instance
-                  .collection('teams')
-                  .where('managerId', isEqualTo: user.uid)
-                  .limit(1)
-                  .snapshots(),
-              builder: (context, teamSnapshot) {
-                if (teamSnapshot.connectionState == ConnectionState.waiting) {
-                  return const Scaffold(
-                    body: Center(
-                      child: CircularProgressIndicator(
-                        color: Colors.tealAccent,
-                      ),
-                    ),
-                  );
-                }
+        bool profileExists =
+            managerSnapshot.hasData && managerSnapshot.data!.exists;
 
-                if (teamSnapshot.hasData &&
-                    teamSnapshot.data!.docs.isNotEmpty) {
-                  // Has Team -> Go to Dashboard
-                  final teamId = teamSnapshot.data!.docs.first.id;
-                  return MainScaffold(teamId: teamId);
-                }
+        if (profileExists) {
+          // Profile exists, now check for Team
+          return TeamCheck(uid: uid);
+        } else {
+          // No profile -> Create Manager
+          return const CreateManagerScreen();
+        }
+      },
+    );
+  }
+}
 
-                // Has Profile but No Team -> Team Selection
-                return const TeamSelectionScreen();
-              },
-            );
-          },
-        );
+class TeamCheck extends StatelessWidget {
+  final String uid;
+  const TeamCheck({super.key, required this.uid});
+
+  @override
+  Widget build(BuildContext context) {
+    // LEVEL 3: Listen to Team Assignment REALTIME
+    return StreamBuilder<QuerySnapshot>(
+      stream: FirebaseFirestore.instance
+          .collection('teams')
+          .where('managerId', isEqualTo: uid)
+          .limit(1)
+          .snapshots(),
+      builder: (context, teamSnapshot) {
+        if (teamSnapshot.connectionState == ConnectionState.waiting) {
+          return Scaffold(
+            backgroundColor: Theme.of(context).scaffoldBackgroundColor,
+            body: Center(
+              child: CircularProgressIndicator(
+                color: Theme.of(context).primaryColor,
+              ),
+            ),
+          );
+        }
+
+        if (teamSnapshot.hasData && teamSnapshot.data!.docs.isNotEmpty) {
+          // Team exists -> Main Layout
+          final teamId = teamSnapshot.data!.docs.first.id;
+          return MainLayout(teamId: teamId);
+        }
+
+        // No Team -> Team Selection
+        return const TeamSelectionScreen();
       },
     );
   }

@@ -4,7 +4,7 @@ import '../../l10n/app_localizations.dart';
 import '../../models/core_models.dart';
 import '../../services/auth_service.dart';
 import '../../services/team_service.dart';
-import '../main_scaffold.dart';
+import '../main_layout.dart';
 
 class TeamSelectionScreen extends StatelessWidget {
   const TeamSelectionScreen({super.key});
@@ -18,8 +18,10 @@ class TeamSelectionScreen extends StatelessWidget {
       showDialog(
         context: context,
         barrierDismissible: false,
-        builder: (context) => const Center(
-          child: CircularProgressIndicator(color: Colors.tealAccent),
+        builder: (context) => Center(
+          child: CircularProgressIndicator(
+            color: Theme.of(context).primaryColor,
+          ),
         ),
       );
 
@@ -33,9 +35,7 @@ class TeamSelectionScreen extends StatelessWidget {
         Navigator.pop(context); // Close loading
         Navigator.pushReplacement(
           context,
-          MaterialPageRoute(
-            builder: (context) => MainScaffold(teamId: team.id),
-          ),
+          MaterialPageRoute(builder: (context) => MainLayout(teamId: team.id)),
         );
       }
     } catch (e) {
@@ -56,7 +56,7 @@ class TeamSelectionScreen extends StatelessWidget {
     final l10n = AppLocalizations.of(context);
 
     return Scaffold(
-      backgroundColor: const Color(0xFF121212),
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       appBar: AppBar(
         title: const Text("SELECT YOUR TEAM"),
         centerTitle: true,
@@ -65,12 +65,15 @@ class TeamSelectionScreen extends StatelessWidget {
       ),
       body: Column(
         children: [
-          const Padding(
-            padding: EdgeInsets.all(24.0),
+          Padding(
+            padding: const EdgeInsets.all(24.0),
             child: Text(
               "Your career profile is ready. Now, apply for a management position in one of the available teams.",
               textAlign: TextAlign.center,
-              style: TextStyle(color: Colors.white70, fontSize: 16),
+              style: TextStyle(
+                color: Theme.of(context).colorScheme.onSurface.withOpacity(0.7),
+                fontSize: 16,
+              ),
             ),
           ),
           Expanded(
@@ -85,8 +88,10 @@ class TeamSelectionScreen extends StatelessWidget {
                 }
 
                 if (snapshot.connectionState == ConnectionState.waiting) {
-                  return const Center(
-                    child: CircularProgressIndicator(color: Colors.tealAccent),
+                  return Center(
+                    child: CircularProgressIndicator(
+                      color: Theme.of(context).primaryColor,
+                    ),
                   );
                 }
 
@@ -149,13 +154,15 @@ class _TeamSelectionCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Card(
-      color: const Color(0xFF1E1E1E),
+      color: Theme.of(context).cardTheme.color,
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
       elevation: 4,
       child: Container(
         decoration: BoxDecoration(
           borderRadius: BorderRadius.circular(12),
-          border: Border.all(color: Colors.tealAccent.withOpacity(0.1)),
+          border: Border.all(
+            color: Theme.of(context).primaryColor.withOpacity(0.1),
+          ),
         ),
         padding: const EdgeInsets.all(20),
         child: Column(
@@ -163,10 +170,10 @@ class _TeamSelectionCard extends StatelessWidget {
           children: [
             Text(
               team.name,
-              style: const TextStyle(
+              style: TextStyle(
                 fontSize: 22,
                 fontWeight: FontWeight.bold,
-                color: Colors.white,
+                color: Theme.of(context).colorScheme.onSurface,
               ),
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
@@ -174,7 +181,9 @@ class _TeamSelectionCard extends StatelessWidget {
             const SizedBox(height: 8),
             Text(
               "Initial Budget: $budgetFormatted",
-              style: const TextStyle(color: Colors.white70),
+              style: TextStyle(
+                color: Theme.of(context).colorScheme.onSurface.withOpacity(0.7),
+              ),
             ),
             const Spacer(),
             SizedBox(
@@ -182,7 +191,7 @@ class _TeamSelectionCard extends StatelessWidget {
               child: ElevatedButton(
                 onPressed: onApply,
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: Colors.tealAccent,
+                  backgroundColor: Theme.of(context).primaryColor,
                   foregroundColor: Colors.black,
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(8),

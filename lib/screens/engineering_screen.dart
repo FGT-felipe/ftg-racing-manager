@@ -24,9 +24,11 @@ class EngineeringScreen extends StatelessWidget {
             body: Center(child: Text("Error: ${snapshot.error}")),
           );
         if (snapshot.connectionState == ConnectionState.waiting) {
-          return const Scaffold(
+          return Scaffold(
             body: Center(
-              child: CircularProgressIndicator(color: Colors.tealAccent),
+              child: CircularProgressIndicator(
+                color: Theme.of(context).primaryColor,
+              ),
             ),
           );
         }
@@ -36,54 +38,60 @@ class EngineeringScreen extends StatelessWidget {
         final budgetM = (team.budget / 1000000).toStringAsFixed(1);
 
         return Scaffold(
-          backgroundColor: const Color(0xFF121212),
-          appBar: AppBar(
-            title: Text(l10n.engineeringTitle),
-            centerTitle: true,
-            backgroundColor: Colors.transparent,
-            elevation: 0,
-          ),
+          backgroundColor: Theme.of(context).scaffoldBackgroundColor,
+          appBar: AppBar(title: Text(l10n.engineeringTitle)),
           body: SingleChildScrollView(
             padding: const EdgeInsets.all(20.0),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 // Budget Header
-                Container(
-                  width: double.infinity,
-                  padding: const EdgeInsets.all(24),
-                  decoration: BoxDecoration(
-                    gradient: LinearGradient(
-                      colors: [
-                        Colors.tealAccent.withOpacity(0.1),
-                        Colors.transparent,
+                Card(
+                  color: Theme.of(context).cardTheme.color,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  elevation: 2,
+                  child: Container(
+                    width: double.infinity,
+                    padding: const EdgeInsets.all(24),
+                    decoration: BoxDecoration(
+                      gradient: LinearGradient(
+                        colors: [
+                          Theme.of(
+                            context,
+                          ).colorScheme.primary.withOpacity(0.1),
+                          Colors.transparent,
+                        ],
+                      ),
+                      borderRadius: BorderRadius.circular(16),
+                      border: Border.all(
+                        color: Theme.of(
+                          context,
+                        ).colorScheme.primary.withOpacity(0.2),
+                      ),
+                    ),
+                    child: Column(
+                      children: [
+                        Text(
+                          l10n.budgetLabel.toUpperCase(),
+                          style: TextStyle(
+                            color: Theme.of(context).primaryColor,
+                            fontSize: 13,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                        const SizedBox(height: 8),
+                        Text(
+                          "${l10n.currencySymbol}$budgetM${l10n.millionsSuffix}",
+                          style: TextStyle(
+                            color: Theme.of(context).colorScheme.onSurface,
+                            fontSize: 36,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
                       ],
                     ),
-                    borderRadius: BorderRadius.circular(16),
-                    border: Border.all(
-                      color: Colors.tealAccent.withOpacity(0.2),
-                    ),
-                  ),
-                  child: Column(
-                    children: [
-                      Text(
-                        l10n.budgetLabel.toUpperCase(),
-                        style: const TextStyle(
-                          color: Colors.tealAccent,
-                          fontSize: 13,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                      const SizedBox(height: 8),
-                      Text(
-                        "${l10n.currencySymbol}$budgetM${l10n.millionsSuffix}",
-                        style: const TextStyle(
-                          color: Colors.white,
-                          fontSize: 36,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                    ],
                   ),
                 ),
                 const SizedBox(height: 32),
@@ -152,8 +160,11 @@ class _UpgradeTileState extends State<_UpgradeTile> {
     return Container(
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
-        color: const Color(0xFF1E1E1E),
+        color: Theme.of(context).cardTheme.color,
         borderRadius: BorderRadius.circular(12),
+        border: Border.all(
+          color: Theme.of(context).dividerColor.withOpacity(0.05),
+        ),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -163,16 +174,16 @@ class _UpgradeTileState extends State<_UpgradeTile> {
             children: [
               Text(
                 widget.title,
-                style: const TextStyle(
-                  color: Colors.white,
+                style: TextStyle(
+                  color: Theme.of(context).colorScheme.onSurface,
                   fontSize: 18,
                   fontWeight: FontWeight.bold,
                 ),
               ),
               Text(
                 "LVL ${widget.level}",
-                style: const TextStyle(
-                  color: Colors.tealAccent,
+                style: TextStyle(
+                  color: Theme.of(context).primaryColor,
                   fontWeight: FontWeight.bold,
                 ),
               ),
@@ -181,8 +192,10 @@ class _UpgradeTileState extends State<_UpgradeTile> {
           const SizedBox(height: 12),
           LinearProgressIndicator(
             value: widget.level / 100,
-            backgroundColor: Colors.white10,
-            color: Colors.tealAccent,
+            backgroundColor: Theme.of(
+              context,
+            ).colorScheme.onSurface.withOpacity(0.05),
+            color: Theme.of(context).primaryColor,
             minHeight: 8,
             borderRadius: BorderRadius.circular(4),
           ),
@@ -199,7 +212,9 @@ class _UpgradeTileState extends State<_UpgradeTile> {
                       "${costFormatted}${l10n.millionsSuffix}",
                     ),
                     style: TextStyle(
-                      color: canAfford ? Colors.white70 : Colors.redAccent,
+                      color: canAfford
+                          ? Theme.of(context).colorScheme.onSurfaceVariant
+                          : Colors.redAccent,
                       fontSize: 14,
                       fontWeight: FontWeight.w500,
                     ),

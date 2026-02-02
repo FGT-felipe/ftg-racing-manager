@@ -115,15 +115,12 @@ class JobMarketScreen extends StatelessWidget {
     final l10n = AppLocalizations.of(context);
 
     return Scaffold(
-      backgroundColor: const Color(0xFF121212),
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       appBar: AppBar(
         title: GestureDetector(
           onDoubleTap: () => _showResetDialog(context),
           child: Text(l10n.jobMarketTitle),
         ),
-        centerTitle: true,
-        backgroundColor: Colors.transparent,
-        elevation: 0,
       ),
       body: StreamBuilder<QuerySnapshot>(
         stream: FirebaseFirestore.instance
@@ -136,8 +133,10 @@ class JobMarketScreen extends StatelessWidget {
           }
 
           if (snapshot.connectionState == ConnectionState.waiting) {
-            return const Center(
-              child: CircularProgressIndicator(color: Colors.tealAccent),
+            return Center(
+              child: CircularProgressIndicator(
+                color: Theme.of(context).primaryColor,
+              ),
             );
           }
 
@@ -207,9 +206,9 @@ class _TeamCard extends StatelessWidget {
     final l10n = AppLocalizations.of(context);
 
     return Card(
-      color: const Color(0xFF1E1E1E),
+      color: Theme.of(context).cardTheme.color,
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-      elevation: 4,
+      elevation: 2,
       child: Container(
         decoration: BoxDecoration(
           borderRadius: BorderRadius.circular(12),
@@ -226,10 +225,10 @@ class _TeamCard extends StatelessWidget {
           children: [
             Text(
               team.name,
-              style: const TextStyle(
+              style: TextStyle(
                 fontSize: 22,
                 fontWeight: FontWeight.bold,
-                color: Colors.white,
+                color: Theme.of(context).colorScheme.onSurface,
               ),
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
@@ -237,15 +236,19 @@ class _TeamCard extends StatelessWidget {
             const SizedBox(height: 8),
             Row(
               children: [
-                const Icon(
+                Icon(
                   Icons.account_balance_wallet,
                   size: 16,
-                  color: Colors.tealAccent,
+                  color: Theme.of(context).primaryColor,
                 ),
                 const SizedBox(width: 8),
                 Text(
                   "${l10n.budgetLabel}: $budgetFormatted",
-                  style: const TextStyle(color: Colors.white70),
+                  style: TextStyle(
+                    color: Theme.of(
+                      context,
+                    ).colorScheme.onSurface.withOpacity(0.7),
+                  ),
                 ),
               ],
             ),
@@ -255,8 +258,6 @@ class _TeamCard extends StatelessWidget {
               child: ElevatedButton(
                 onPressed: onSign,
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: Colors.tealAccent,
-                  foregroundColor: Colors.black,
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(8),
                   ),

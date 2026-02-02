@@ -22,16 +22,13 @@ class DashboardScreen extends StatelessWidget {
       timeService.getTimeUntilRace(),
     );
 
-    return Scaffold(
-      backgroundColor: const Color(0xFF121212),
-      body: SafeArea(
+    return SingleChildScrollView(
+      child: SafeArea(
         child: StreamBuilder<User?>(
           stream: AuthService().user,
           builder: (context, authSnapshot) {
             if (!authSnapshot.hasData) {
-              return const Center(
-                child: CircularProgressIndicator(color: Colors.tealAccent),
-              );
+              return const Center(child: CircularProgressIndicator());
             }
             final uid = authSnapshot.data!.uid;
 
@@ -42,20 +39,13 @@ class DashboardScreen extends StatelessWidget {
                   .snapshots(),
               builder: (context, managerSnapshot) {
                 if (!managerSnapshot.hasData) {
-                  return const Center(
-                    child: CircularProgressIndicator(color: Colors.tealAccent),
-                  );
+                  return const Center(child: CircularProgressIndicator());
                 }
 
                 final managerData =
                     managerSnapshot.data!.data() as Map<String, dynamic>?;
                 if (managerData == null) {
-                  return const Center(
-                    child: Text(
-                      "Manager profile not found",
-                      style: TextStyle(color: Colors.white),
-                    ),
-                  );
+                  return const Center(child: Text("Manager profile not found"));
                 }
                 final manager = ManagerProfile.fromMap(managerData);
 
@@ -66,11 +56,7 @@ class DashboardScreen extends StatelessWidget {
                       .snapshots(),
                   builder: (context, teamSnapshot) {
                     if (!teamSnapshot.hasData) {
-                      return const Center(
-                        child: CircularProgressIndicator(
-                          color: Colors.tealAccent,
-                        ),
-                      );
+                      return const Center(child: CircularProgressIndicator());
                     }
 
                     final teamData =
@@ -80,71 +66,82 @@ class DashboardScreen extends StatelessWidget {
                     }
                     final team = Team.fromMap(teamData);
 
-                    return ListView(
+                    return Padding(
                       padding: const EdgeInsets.symmetric(
                         horizontal: 20,
-                        vertical: 10,
+                        vertical: 20,
                       ),
-                      children: [
-                        TeamHeader(
-                          managerName: "${manager.name} ${manager.surname}",
-                          teamName: team.name,
-                        ),
-                        const SizedBox(height: 10),
-
-                        StatusCard(
-                          status: isRaceWeekend ? "Parc Fermé" : "Factory Open",
-                          timeUntilRace: countdown,
-                          isRaceWeekend: isRaceWeekend,
-                        ),
-                        const SizedBox(height: 24),
-
-                        FinanceCard(
-                          budget: team.budget,
-                          onTap: () {
-                            Navigator.push(
-                              context,
-                              MaterialPageRoute(
-                                builder: (context) =>
-                                    OfficeScreen(teamId: team.id),
-                              ),
-                            );
-                          },
-                        ),
-                        const SizedBox(height: 32),
-
-                        const Text(
-                          "PADDOCK RUMORS",
-                          style: TextStyle(
-                            color: Colors.white70,
-                            fontSize: 14,
-                            fontWeight: FontWeight.bold,
-                            letterSpacing: 1.5,
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          TeamHeader(
+                            managerName: "${manager.name} ${manager.surname}",
+                            teamName: team.name,
                           ),
-                        ),
-                        const SizedBox(height: 16),
-                        SizedBox(
-                          height: 100,
-                          child: ListView(
-                            scrollDirection: Axis.horizontal,
-                            children: const [
-                              NewsItemCard(
-                                headline:
-                                    "New technical regulations might favor engine power in 2027.",
-                                source: "Racing Daily",
-                              ),
-                              NewsItemCard(
-                                headline:
-                                    "Rumors of a new street circuit in Buenos Aires growing stronger.",
-                                source: "Paddock Pass",
-                              ),
-                            ],
-                          ),
-                        ),
-                        const SizedBox(height: 32),
+                          const SizedBox(height: 20),
 
-                        _buildManagementTasks(team),
-                      ],
+                          StatusCard(
+                            status: isRaceWeekend
+                                ? "Parc Fermé"
+                                : "Factory Open",
+                            timeUntilRace: countdown,
+                            isRaceWeekend: isRaceWeekend,
+                          ),
+                          const SizedBox(height: 24),
+
+                          FinanceCard(
+                            budget: team.budget,
+                            onTap: () {
+                              if (team.id.isEmpty) {
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  const SnackBar(
+                                    content: Text("Error: Team ID is invalid"),
+                                    backgroundColor: Colors.red,
+                                  ),
+                                );
+                                return;
+                              }
+                              Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                  builder: (context) =>
+                                      OfficeScreen(teamId: team.id),
+                                ),
+                              );
+                            },
+                          ),
+                          const SizedBox(height: 32),
+
+                          Text(
+                            "PADDOCK RUMORS",
+                            style: Theme.of(context).textTheme.labelLarge
+                                ?.copyWith(letterSpacing: 1.5),
+                          ),
+                          const SizedBox(height: 16),
+                          SizedBox(
+                            height:
+                                120, // Increased height for Card usage inside NewsItem
+                            child: ListView(
+                              scrollDirection: Axis.horizontal,
+                              children: const [
+                                NewsItemCard(
+                                  headline:
+                                      "New technical regulations might favor engine power in 2027.",
+                                  source: "Racing Daily",
+                                ),
+                                NewsItemCard(
+                                  headline:
+                                      "Rumors of a new street circuit in Buenos Aires growing stronger.",
+                                  source: "Paddock Pass",
+                                ),
+                              ],
+                            ),
+                          ),
+                          const SizedBox(height: 32),
+
+                          _buildManagementTasks(context, team),
+                        ],
+                      ),
                     );
                   },
                 );
@@ -163,7 +160,10 @@ class DashboardScreen extends StatelessWidget {
         children: [
           const Icon(Icons.error_outline, color: Colors.redAccent, size: 64),
           const SizedBox(height: 16),
-          Text(message, style: const TextStyle(color: Colors.white70)),
+          Text(
+            message,
+            style: TextStyle(color: Theme.of(context).colorScheme.onSurface),
+          ),
           const SizedBox(height: 24),
           ElevatedButton(
             onPressed: () {
@@ -177,37 +177,53 @@ class DashboardScreen extends StatelessWidget {
     );
   }
 
-  Widget _buildManagementTasks(Team team) {
+  Widget _buildManagementTasks(BuildContext context, Team team) {
     final practiceDone = team.weekStatus['practiceCompleted'] ?? false;
     final strategyDone = team.weekStatus['strategySet'] ?? false;
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const Text(
+        Text(
           "MANAGEMENT TASKS",
-          style: TextStyle(
-            color: Colors.white70,
-            fontSize: 14,
-            fontWeight: FontWeight.bold,
+          style: Theme.of(context).textTheme.labelLarge?.copyWith(
+            color: Theme.of(context).colorScheme.secondary,
             letterSpacing: 1.5,
           ),
         ),
         const SizedBox(height: 12),
-        _buildTaskItem(Icons.psychology, "Practice Session", practiceDone),
-        _buildTaskItem(Icons.settings_suggest, "Strategy Setup", strategyDone),
-        _buildTaskItem(Icons.handshake, "Sponsor Review", false),
+        _buildTaskItem(
+          context,
+          Icons.psychology,
+          "Practice Session",
+          practiceDone,
+        ),
+        _buildTaskItem(
+          context,
+          Icons.settings_suggest,
+          "Strategy Setup",
+          strategyDone,
+        ),
+        _buildTaskItem(context, Icons.handshake, "Sponsor Review", false),
       ],
     );
   }
 
-  Widget _buildTaskItem(IconData icon, String title, bool completed) {
+  Widget _buildTaskItem(
+    BuildContext context,
+    IconData icon,
+    String title,
+    bool completed,
+  ) {
     return Container(
       margin: const EdgeInsets.only(bottom: 12),
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: const Color(0xFF1E1E1E),
+        color: Theme.of(context).cardTheme.color,
         borderRadius: BorderRadius.circular(12),
+        border: Border.all(
+          color: Theme.of(context).dividerColor.withOpacity(0.05),
+        ),
       ),
       child: Row(
         children: [
@@ -216,7 +232,9 @@ class DashboardScreen extends StatelessWidget {
           Text(
             title,
             style: TextStyle(
-              color: completed ? Colors.white60 : Colors.white,
+              color: completed
+                  ? Theme.of(context).colorScheme.secondary.withOpacity(0.5)
+                  : Theme.of(context).colorScheme.onSurface,
               decoration: completed ? TextDecoration.lineThrough : null,
               fontWeight: FontWeight.bold,
             ),

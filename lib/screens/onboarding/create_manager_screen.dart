@@ -124,7 +124,7 @@ class _CreateManagerScreenState extends State<CreateManagerScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFF121212),
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       appBar: AppBar(
         title: const Text("CREATE MANAGER PROFILE"),
         centerTitle: true,
@@ -132,8 +132,10 @@ class _CreateManagerScreenState extends State<CreateManagerScreen> {
         elevation: 0,
       ),
       body: _isLoading
-          ? const Center(
-              child: CircularProgressIndicator(color: Colors.tealAccent),
+          ? Center(
+              child: CircularProgressIndicator(
+                color: Theme.of(context).primaryColor,
+              ),
             )
           : Form(
               key: _formKey,
@@ -142,25 +144,27 @@ class _CreateManagerScreenState extends State<CreateManagerScreen> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
-                    const Text(
+                    Text(
                       "PERSONAL INFO",
-                      style: TextStyle(
-                        color: Colors.tealAccent,
-                        fontWeight: FontWeight.bold,
-                        letterSpacing: 1.2,
-                      ),
+                      style: Theme.of(
+                        context,
+                      ).textTheme.labelLarge?.copyWith(letterSpacing: 1.2),
                     ),
                     const SizedBox(height: 20),
                     TextFormField(
                       controller: _nameController,
-                      style: const TextStyle(color: Colors.white),
+                      style: TextStyle(
+                        color: Theme.of(context).colorScheme.onSurface,
+                      ),
                       decoration: _inputDecoration("First Name"),
                       validator: (v) => v!.isEmpty ? "Required" : null,
                     ),
                     const SizedBox(height: 16),
                     TextFormField(
                       controller: _surnameController,
-                      style: const TextStyle(color: Colors.white),
+                      style: TextStyle(
+                        color: Theme.of(context).colorScheme.onSurface,
+                      ),
                       decoration: _inputDecoration("Last Name"),
                       validator: (v) => v!.isEmpty ? "Required" : null,
                     ),
@@ -169,8 +173,12 @@ class _CreateManagerScreenState extends State<CreateManagerScreen> {
                       children: [
                         Expanded(
                           child: DropdownButtonFormField<String>(
-                            dropdownColor: const Color(0xFF1E1E1E),
-                            style: const TextStyle(color: Colors.white),
+                            dropdownColor: Theme.of(
+                              context,
+                            ).colorScheme.surface,
+                            style: TextStyle(
+                              color: Theme.of(context).colorScheme.onSurface,
+                            ),
                             decoration: _inputDecoration("Country"),
                             value: _selectedCountry,
                             items: _countries
@@ -191,7 +199,9 @@ class _CreateManagerScreenState extends State<CreateManagerScreen> {
                             controller: _dateController,
                             readOnly: true,
                             onTap: _selectDate,
-                            style: const TextStyle(color: Colors.white),
+                            style: TextStyle(
+                              color: Theme.of(context).colorScheme.onSurface,
+                            ),
                             decoration: _inputDecoration("Birth Date"),
                             validator: (v) => v!.isEmpty ? "Required" : null,
                           ),
@@ -199,13 +209,11 @@ class _CreateManagerScreenState extends State<CreateManagerScreen> {
                       ],
                     ),
                     const SizedBox(height: 32),
-                    const Text(
+                    Text(
                       "SELECT BACKGROUND",
-                      style: TextStyle(
-                        color: Colors.tealAccent,
-                        fontWeight: FontWeight.bold,
-                        letterSpacing: 1.2,
-                      ),
+                      style: Theme.of(
+                        context,
+                      ).textTheme.labelLarge?.copyWith(letterSpacing: 1.2),
                     ),
                     const SizedBox(height: 20),
                     SizedBox(
@@ -226,12 +234,14 @@ class _CreateManagerScreenState extends State<CreateManagerScreen> {
                               padding: const EdgeInsets.all(16),
                               decoration: BoxDecoration(
                                 color: isSelected
-                                    ? Colors.tealAccent.withOpacity(0.1)
-                                    : const Color(0xFF1E1E1E),
+                                    ? Theme.of(
+                                        context,
+                                      ).primaryColor.withOpacity(0.1)
+                                    : Theme.of(context).cardTheme.color,
                                 borderRadius: BorderRadius.circular(16),
                                 border: Border.all(
                                   color: isSelected
-                                      ? Colors.tealAccent
+                                      ? Theme.of(context).primaryColor
                                       : Colors.white10,
                                   width: isSelected ? 2 : 1,
                                 ),
@@ -244,7 +254,7 @@ class _CreateManagerScreenState extends State<CreateManagerScreen> {
                                       Icon(
                                         Icons.person_outline,
                                         color: isSelected
-                                            ? Colors.tealAccent
+                                            ? Theme.of(context).primaryColor
                                             : Colors.grey,
                                       ),
                                       const SizedBox(width: 8),
@@ -253,22 +263,28 @@ class _CreateManagerScreenState extends State<CreateManagerScreen> {
                                           role.title,
                                           style: TextStyle(
                                             color: isSelected
-                                                ? Colors.white
-                                                : Colors.white70,
+                                                ? Theme.of(context).primaryColor
+                                                : Theme.of(
+                                                    context,
+                                                  ).colorScheme.onSurface,
                                             fontWeight: FontWeight.bold,
                                           ),
                                         ),
                                       ),
                                     ],
                                   ),
-                                  const Divider(
-                                    color: Colors.white10,
+                                  Divider(
+                                    color: Theme.of(
+                                      context,
+                                    ).dividerColor.withOpacity(0.05),
                                     height: 24,
                                   ),
                                   Text(
                                     role.description,
-                                    style: const TextStyle(
-                                      color: Colors.white60,
+                                    style: TextStyle(
+                                      color: Theme.of(
+                                        context,
+                                      ).colorScheme.onSurface.withOpacity(0.6),
                                       fontSize: 12,
                                       fontStyle: FontStyle.italic,
                                     ),
@@ -277,17 +293,19 @@ class _CreateManagerScreenState extends State<CreateManagerScreen> {
                                   Text(
                                     "PROS:",
                                     style: TextStyle(
-                                      color: Colors.greenAccent.withOpacity(
-                                        0.8,
-                                      ),
+                                      color: Theme.of(
+                                        context,
+                                      ).colorScheme.secondary.withOpacity(0.8),
                                       fontSize: 10,
                                       fontWeight: FontWeight.bold,
                                     ),
                                   ),
                                   Text(
                                     role.buffText,
-                                    style: const TextStyle(
-                                      color: Colors.white70,
+                                    style: TextStyle(
+                                      color: Theme.of(
+                                        context,
+                                      ).colorScheme.onSurface.withOpacity(0.7),
                                       fontSize: 11,
                                     ),
                                   ),
@@ -302,8 +320,10 @@ class _CreateManagerScreenState extends State<CreateManagerScreen> {
                                   ),
                                   Text(
                                     role.debuffText,
-                                    style: const TextStyle(
-                                      color: Colors.white70,
+                                    style: TextStyle(
+                                      color: Theme.of(
+                                        context,
+                                      ).colorScheme.error.withOpacity(0.7),
                                       fontSize: 11,
                                     ),
                                   ),
@@ -320,7 +340,7 @@ class _CreateManagerScreenState extends State<CreateManagerScreen> {
                       child: ElevatedButton(
                         onPressed: _createProfile,
                         style: ElevatedButton.styleFrom(
-                          backgroundColor: Colors.tealAccent,
+                          backgroundColor: Theme.of(context).primaryColor,
                           foregroundColor: Colors.black,
                           shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(12),
@@ -345,16 +365,18 @@ class _CreateManagerScreenState extends State<CreateManagerScreen> {
   InputDecoration _inputDecoration(String label) {
     return InputDecoration(
       labelText: label,
-      labelStyle: const TextStyle(color: Colors.grey),
+      labelStyle: TextStyle(
+        color: Theme.of(context).colorScheme.onSurface.withOpacity(0.5),
+      ),
       filled: true,
-      fillColor: const Color(0xFF1E1E1E),
+      fillColor: Theme.of(context).cardTheme.color,
       border: OutlineInputBorder(
         borderRadius: BorderRadius.circular(12),
         borderSide: BorderSide.none,
       ),
       focusedBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(12),
-        borderSide: const BorderSide(color: Colors.tealAccent),
+        borderSide: BorderSide(color: Theme.of(context).primaryColor),
       ),
     );
   }

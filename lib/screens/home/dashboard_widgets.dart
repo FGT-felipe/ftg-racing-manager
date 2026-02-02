@@ -35,13 +35,11 @@ class TeamHeader extends StatelessWidget {
               children: [
                 Text(
                   "Welcome back, $managerName",
-                  style: const TextStyle(color: Colors.white70, fontSize: 14),
+                  style: Theme.of(context).textTheme.bodyMedium,
                 ),
                 Text(
                   teamName.toUpperCase(),
-                  style: const TextStyle(
-                    color: Colors.white,
-                    fontSize: 24,
+                  style: Theme.of(context).textTheme.headlineMedium?.copyWith(
                     fontWeight: FontWeight.w900,
                     letterSpacing: 1.0,
                   ),
@@ -49,9 +47,12 @@ class TeamHeader extends StatelessWidget {
               ],
             ),
           ),
-          const CircleAvatar(
-            backgroundColor: Color(0xFF1E1E1E),
-            child: Icon(Icons.notifications_outlined, color: Colors.white70),
+          CircleAvatar(
+            backgroundColor: Theme.of(context).colorScheme.surface,
+            child: Icon(
+              Icons.notifications_outlined,
+              color: Theme.of(context).colorScheme.onSurface,
+            ),
           ),
         ],
       ),
@@ -73,13 +74,15 @@ class StatusCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final mainColor = isRaceWeekend ? Colors.redAccent : Colors.tealAccent;
+    final mainColor = isRaceWeekend
+        ? Theme.of(context).colorScheme.error
+        : Theme.of(context).primaryColor;
 
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.all(24),
       decoration: BoxDecoration(
-        color: const Color(0xFF1E1E1E),
+        color: Theme.of(context).cardTheme.color,
         borderRadius: BorderRadius.circular(20),
         border: Border.all(color: mainColor.withOpacity(0.3), width: 1),
         gradient: LinearGradient(
@@ -113,10 +116,9 @@ class StatusCard extends StatelessWidget {
           const SizedBox(height: 12),
           Text(
             isRaceWeekend ? "RACE IN PROGRESS" : "TIME UNTIL NEXT RACE",
-            style: const TextStyle(
-              color: Colors.white,
-              fontSize: 18,
+            style: Theme.of(context).textTheme.bodyLarge?.copyWith(
               fontWeight: FontWeight.bold,
+              fontSize: 18,
             ),
           ),
           const SizedBox(height: 4),
@@ -144,7 +146,9 @@ class FinanceCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final isNegative = budget < 0;
     final budgetMillions = (budget / 1000000).toStringAsFixed(1);
-    final color = isNegative ? Colors.redAccent : Colors.greenAccent;
+    final color = isNegative
+        ? Theme.of(context).colorScheme.error
+        : Theme.of(context).colorScheme.primary;
 
     return InkWell(
       onTap: onTap,
@@ -152,8 +156,18 @@ class FinanceCard extends StatelessWidget {
       child: Container(
         padding: const EdgeInsets.all(20),
         decoration: BoxDecoration(
-          color: const Color(0xFF1E1E1E),
+          color: Theme.of(context).cardTheme.color,
           borderRadius: BorderRadius.circular(16),
+          border: Border.all(
+            color: Theme.of(context).dividerColor.withOpacity(0.05),
+          ),
+          boxShadow: [
+            BoxShadow(
+              color: Theme.of(context).colorScheme.onSurface.withOpacity(0.05),
+              blurRadius: 10,
+              offset: const Offset(0, 4),
+            ),
+          ],
         ),
         child: Row(
           children: [
@@ -169,19 +183,15 @@ class FinanceCard extends StatelessWidget {
             Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const Text(
+                Text(
                   "TEAM BUDGET",
-                  style: TextStyle(
-                    color: Colors.grey,
-                    fontSize: 12,
-                    fontWeight: FontWeight.bold,
-                  ),
+                  style: Theme.of(
+                    context,
+                  ).textTheme.bodySmall?.copyWith(fontWeight: FontWeight.bold),
                 ),
                 Text(
                   "\$$budgetMillions M",
-                  style: TextStyle(
-                    color: Colors.white,
-                    fontSize: 24,
+                  style: Theme.of(context).textTheme.headlineSmall?.copyWith(
                     fontWeight: FontWeight.bold,
                   ),
                 ),
@@ -199,9 +209,9 @@ class FinanceCard extends StatelessWidget {
                     fontWeight: FontWeight.bold,
                   ),
                 ),
-                const Text(
+                Text(
                   "Estimated +\$1.2M",
-                  style: TextStyle(color: Colors.grey, fontSize: 10),
+                  style: Theme.of(context).textTheme.bodySmall,
                 ),
               ],
             ),
@@ -225,17 +235,19 @@ class NewsItemCard extends StatelessWidget {
       margin: const EdgeInsets.only(right: 16),
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: const Color(0xFF1E1E1E),
+        color: Theme.of(context).cardTheme.color,
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: Colors.white.withOpacity(0.05)),
+        border: Border.all(
+          color: Theme.of(context).colorScheme.onSurface.withOpacity(0.05),
+        ),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
             source.toUpperCase(),
-            style: const TextStyle(
-              color: Colors.tealAccent,
+            style: TextStyle(
+              color: Theme.of(context).primaryColor,
               fontSize: 10,
               fontWeight: FontWeight.bold,
             ),
@@ -245,10 +257,11 @@ class NewsItemCard extends StatelessWidget {
             headline,
             maxLines: 2,
             overflow: TextOverflow.ellipsis,
-            style: const TextStyle(
-              color: Colors.white,
-              fontSize: 14,
+            style: Theme.of(context).textTheme.bodyMedium?.copyWith(
               fontWeight: FontWeight.w600,
+              color: Theme.of(
+                context,
+              ).textTheme.bodyLarge?.color, // Ensure readable
             ),
           ),
         ],
