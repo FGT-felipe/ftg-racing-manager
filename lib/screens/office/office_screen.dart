@@ -15,13 +15,8 @@ class OfficeScreen extends StatelessWidget {
     final financeService = FinanceService();
 
     return Scaffold(
-      backgroundColor: const Color(0xFF121212),
-      appBar: AppBar(
-        title: const Text("FINANCE & OFFICE"),
-        centerTitle: true,
-        backgroundColor: Colors.transparent,
-        elevation: 0,
-      ),
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
+      appBar: AppBar(title: const Text("OFFICE & FINANCE")),
       body: StreamBuilder<DocumentSnapshot>(
         stream: FirebaseFirestore.instance
             .collection('teams')
@@ -29,8 +24,10 @@ class OfficeScreen extends StatelessWidget {
             .snapshots(),
         builder: (context, teamSnapshot) {
           if (!teamSnapshot.hasData) {
-            return const Center(
-              child: CircularProgressIndicator(color: Colors.tealAccent),
+            return Center(
+              child: CircularProgressIndicator(
+                color: Theme.of(context).primaryColor,
+              ),
             );
           }
 
@@ -46,12 +43,24 @@ class OfficeScreen extends StatelessWidget {
                 padding: const EdgeInsets.all(32),
                 width: double.infinity,
                 decoration: BoxDecoration(
-                  color: const Color(0xFF1E1E1E),
+                  color: Theme.of(context).cardTheme.color,
                   borderRadius: BorderRadius.circular(24),
                   border: Border.all(
-                    color: (isNegative ? Colors.redAccent : Colors.greenAccent)
-                        .withOpacity(0.2),
+                    color:
+                        (isNegative
+                                ? Colors.redAccent
+                                : Theme.of(context).primaryColor)
+                            .withOpacity(0.1),
                   ),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Theme.of(
+                        context,
+                      ).colorScheme.onSurface.withOpacity(0.05),
+                      blurRadius: 20,
+                      offset: const Offset(0, 10),
+                    ),
+                  ],
                 ),
                 child: Column(
                   children: [
@@ -68,7 +77,9 @@ class OfficeScreen extends StatelessWidget {
                     Text(
                       financeService.formatCurrency(budget),
                       style: TextStyle(
-                        color: isNegative ? Colors.redAccent : Colors.white,
+                        color: isNegative
+                            ? Colors.redAccent
+                            : Theme.of(context).colorScheme.onSurface,
                         fontSize: 42,
                         fontWeight: FontWeight.w900,
                       ),
@@ -92,33 +103,35 @@ class OfficeScreen extends StatelessWidget {
                   icon: const Icon(Icons.handshake_outlined),
                   label: const Text("MANAGE SPONSORSHIPS"),
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.tealAccent,
-                    foregroundColor: Colors.black,
                     minimumSize: const Size(double.infinity, 56),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(16),
-                    ),
                   ),
                 ),
               ),
               const SizedBox(height: 24),
 
               // Transaction List Title
-              const Padding(
-                padding: EdgeInsets.symmetric(horizontal: 24, vertical: 8),
+              Padding(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 24,
+                  vertical: 8,
+                ),
                 child: Row(
                   children: [
                     Text(
                       "RECENT MOVEMENTS",
                       style: TextStyle(
-                        color: Colors.tealAccent,
+                        color: Theme.of(context).colorScheme.secondary,
                         fontSize: 14,
                         fontWeight: FontWeight.bold,
                         letterSpacing: 1.2,
                       ),
                     ),
                     Spacer(),
-                    Icon(Icons.history, color: Colors.tealAccent, size: 16),
+                    Icon(
+                      Icons.history,
+                      color: Theme.of(context).colorScheme.secondary,
+                      size: 16,
+                    ),
                   ],
                 ),
               ),
@@ -130,9 +143,9 @@ class OfficeScreen extends StatelessWidget {
                   builder: (context, transSnapshot) {
                     if (transSnapshot.connectionState ==
                         ConnectionState.waiting) {
-                      return const Center(
+                      return Center(
                         child: CircularProgressIndicator(
-                          color: Colors.tealAccent,
+                          color: Theme.of(context).primaryColor,
                         ),
                       );
                     }
@@ -147,7 +160,9 @@ class OfficeScreen extends StatelessWidget {
                             Icon(
                               Icons.auto_stories_outlined,
                               size: 64,
-                              color: Colors.white.withOpacity(0.1),
+                              color: Theme.of(
+                                context,
+                              ).colorScheme.onSurface.withOpacity(0.1),
                             ),
                             const SizedBox(height: 16),
                             const Text(
@@ -195,23 +210,23 @@ class OfficeScreen extends StatelessWidget {
     switch (tx.type) {
       case 'SPONSOR':
         icon = Icons.handshake_outlined;
-        iconColor = Colors.tealAccent;
+        iconColor = Theme.of(context).primaryColor;
         break;
       case 'SALARY':
         icon = Icons.person_outline;
-        iconColor = Colors.orangeAccent;
+        iconColor = Colors.orange;
         break;
       case 'UPGRADE':
         icon = Icons.build_circle_outlined;
-        iconColor = Colors.blueAccent;
+        iconColor = Colors.blue;
         break;
       case 'REWARD':
         icon = Icons.emoji_events_outlined;
-        iconColor = Colors.amberAccent;
+        iconColor = Colors.amber;
         break;
       default:
         icon = Icons.monetization_on_outlined;
-        iconColor = Colors.grey;
+        iconColor = Theme.of(context).colorScheme.secondary;
     }
 
     final isPositive = tx.amount >= 0;
@@ -220,8 +235,11 @@ class OfficeScreen extends StatelessWidget {
     return Container(
       margin: const EdgeInsets.only(bottom: 12),
       decoration: BoxDecoration(
-        color: const Color(0xFF1E1E1E).withOpacity(0.5),
+        color: Theme.of(context).cardTheme.color,
         borderRadius: BorderRadius.circular(16),
+        border: Border.all(
+          color: Theme.of(context).dividerColor.withOpacity(0.05),
+        ),
       ),
       child: ListTile(
         contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
@@ -235,8 +253,8 @@ class OfficeScreen extends StatelessWidget {
         ),
         title: Text(
           tx.description,
-          style: const TextStyle(
-            color: Colors.white,
+          style: TextStyle(
+            color: Theme.of(context).colorScheme.onSurface,
             fontWeight: FontWeight.bold,
           ),
         ),
@@ -247,7 +265,7 @@ class OfficeScreen extends StatelessWidget {
         trailing: Text(
           "${isPositive ? '+' : ''}${service.formatCurrency(tx.amount)}",
           style: TextStyle(
-            color: isPositive ? Colors.greenAccent : Colors.redAccent,
+            color: isPositive ? Colors.green : Colors.red,
             fontWeight: FontWeight.bold,
             fontSize: 16,
           ),

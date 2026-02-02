@@ -1,7 +1,10 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import '../../services/auth_service.dart';
 import '../../services/database_seeder.dart';
+import '../auth/login_screen.dart';
 
 class LandingScreen extends StatefulWidget {
   const LandingScreen({super.key});
@@ -151,107 +154,140 @@ class _LandingScreenState extends State<LandingScreen>
     );
   }
 
-  Future<void> _handleLogin() async {
-    setState(() => _isLoading = true);
-    // Simulate/Use Anon Login for now as requested
-    await AuthService().signInAnonymously();
-    if (mounted) setState(() => _isLoading = false);
+  void _handleLogin() {
+    Navigator.of(
+      context,
+    ).push(MaterialPageRoute(builder: (context) => const LoginScreen()));
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFF121212),
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       body: Stack(
         children: [
           // Background Effect (Subtle Gradient)
           Container(
-            decoration: const BoxDecoration(
+            decoration: BoxDecoration(
               gradient: LinearGradient(
                 begin: Alignment.topCenter,
                 end: Alignment.bottomCenter,
-                colors: [Color(0xFF121212), Color(0xFF1E1E1E)],
+                colors: [
+                  Theme.of(context).scaffoldBackgroundColor,
+                  const Color(0xFF0F1115), // Slightly darker shade
+                ],
               ),
             ),
           ),
 
           Center(
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                // Animated Logo
-                GestureDetector(
-                  onTap: _handleLogoTap,
-                  child: ScaleTransition(
-                    scale: _scaleAnimation,
-                    child: Container(
-                      padding: const EdgeInsets.all(20),
-                      decoration: BoxDecoration(
-                        shape: BoxShape.circle,
-                        boxShadow: [
-                          BoxShadow(
-                            color: Colors.tealAccent.withOpacity(0.2),
-                            blurRadius: 30,
-                            spreadRadius: 10,
-                          ),
-                        ],
-                      ),
-                      child: const Icon(
-                        Icons.sports_motorsports,
-                        size: 100,
-                        color: Colors.tealAccent,
-                      ),
-                    ),
-                  ),
-                ),
-                const SizedBox(height: 32),
-
-                // Title
-                const Text(
-                  "FTG RACING",
-                  style: TextStyle(
-                    color: Colors.white,
-                    fontSize: 32,
-                    fontWeight: FontWeight.bold,
-                    letterSpacing: 2.0,
-                  ),
-                ),
-                const Text(
-                  "MANAGER 2026",
-                  style: TextStyle(
-                    color: Colors.tealAccent,
-                    fontSize: 16,
-                    fontWeight: FontWeight.bold,
-                    letterSpacing: 6.0,
-                  ),
-                ),
-
-                const SizedBox(height: 64),
-
-                // Auth Buttons
-                if (_isLoading)
-                  const CircularProgressIndicator(color: Colors.tealAccent)
-                else
-                  Column(
+            child: SingleChildScrollView(
+              // Added scroll for smaller screens
+              child: ConstrainedBox(
+                constraints: const BoxConstraints(
+                  maxWidth: 500,
+                ), // Max width for content
+                child: Padding(
+                  padding: const EdgeInsets.all(24.0),
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      _buildAuthButton(
-                        "SIGN IN WITH GOOGLE",
-                        Icons.g_mobiledata,
-                        Colors.white,
-                        Colors.black,
-                        _handleLogin, // Placeholder
+                      // Animated Logo
+                      GestureDetector(
+                        onTap: _handleLogoTap,
+                        child: ScaleTransition(
+                          scale: _scaleAnimation,
+                          child: Container(
+                            padding: const EdgeInsets.all(20),
+                            decoration: BoxDecoration(
+                              shape: BoxShape.circle,
+                              boxShadow: [
+                                BoxShadow(
+                                  color: Theme.of(
+                                    context,
+                                  ).primaryColor.withOpacity(0.2),
+                                  blurRadius: 40,
+                                  spreadRadius: 10,
+                                ),
+                              ],
+                            ),
+                            child: Icon(
+                              Icons.sports_motorsports,
+                              size: 100,
+                              color: Theme.of(context).primaryColor,
+                            ),
+                          ),
+                        ),
                       ),
-                      const SizedBox(height: 16),
-                      _buildAuthButton(
-                        "SIGN IN WITH EMAIL",
-                        Icons.email,
-                        const Color(0xFF1E1E1E),
-                        Colors.white,
-                        _handleLogin, // Placeholder
+                      const SizedBox(height: 40),
+
+                      // Title
+                      Text(
+                        "FTG RACING",
+                        style: Theme.of(context).textTheme.headlineMedium
+                            ?.copyWith(fontSize: 32, letterSpacing: 2.0),
                       ),
+                      Text(
+                        "MANAGER 2026",
+                        style: TextStyle(
+                          color: Theme.of(context).primaryColor,
+                          fontSize: 16,
+                          fontWeight: FontWeight.bold,
+                          letterSpacing: 6.0,
+                        ),
+                      ),
+
+                      const SizedBox(height: 64),
+
+                      // Auth Buttons
+                      if (_isLoading)
+                        CircularProgressIndicator(
+                          color: Theme.of(context).primaryColor,
+                        )
+                      else
+                        Column(
+                          crossAxisAlignment: CrossAxisAlignment.stretch,
+                          children: [
+                            _buildAuthButton(
+                              context,
+                              "SIGN IN WITH GOOGLE",
+                              Icons.g_mobiledata,
+                              Colors.white, // Google is always white bg
+                              Colors.black,
+                              _handleLogin,
+                            ),
+                            const SizedBox(height: 16),
+                            _buildAuthButton(
+                              context,
+                              "SIGN IN WITH EMAIL",
+                              Icons.email,
+                              Theme.of(context).cardColor,
+                              Colors.white,
+                              _handleLogin,
+                            ),
+                            const SizedBox(height: 32),
+
+                            // DEV SHORTCUT
+                            TextButton.icon(
+                              onPressed: _handleDevLogin,
+                              icon: const Icon(
+                                Icons.developer_mode,
+                                color: Colors.orangeAccent,
+                              ),
+                              label: const Text(
+                                "DEV: QUICK START",
+                                style: TextStyle(
+                                  color: Colors.orangeAccent,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
                     ],
                   ),
-              ],
+                ),
+              ),
             ),
           ),
         ],
@@ -259,7 +295,60 @@ class _LandingScreenState extends State<LandingScreen>
     );
   }
 
+  Future<void> _handleDevLogin() async {
+    setState(() => _isLoading = true);
+
+    try {
+      // 1. Anon Auth
+      final userCred = await FirebaseAuth.instance.signInAnonymously();
+      final user = userCred.user;
+
+      if (user != null) {
+        // 2. Check if profile exists, if not create basic dev profile
+        final doc = await FirebaseFirestore.instance
+            .collection('managers')
+            .doc(user.uid)
+            .get();
+        if (!doc.exists) {
+          // Create Manager
+          await FirebaseFirestore.instance
+              .collection('managers')
+              .doc(user.uid)
+              .set({
+                'name': 'Dev',
+                'surname': 'User',
+                'nationality': 'USA',
+                'role': 'engineerDetails',
+                'experience': 1,
+                'reputation': 50,
+              });
+
+          // Create Team
+          await FirebaseFirestore.instance.collection('teams').add({
+            'managerId': user.uid,
+            'name': 'Dev Racing',
+            'budget': 50000000,
+            'chassisLevel': 50,
+            'engineLevel': 50,
+            'aeroLevel': 50,
+            // Add other necessary defaults as needed by your models
+            'drivers': {},
+            'engineers': {},
+            'sponsors': {},
+            'weekStatus': {},
+            'history': [],
+          });
+        }
+      }
+    } catch (e) {
+      debugPrint("Dev Login Error: $e");
+    } finally {
+      if (mounted) setState(() => _isLoading = false);
+    }
+  }
+
   Widget _buildAuthButton(
+    BuildContext context,
     String text,
     IconData icon,
     Color bg,
@@ -267,19 +356,26 @@ class _LandingScreenState extends State<LandingScreen>
     VoidCallback onPressed,
   ) {
     return SizedBox(
-      width: 280,
-      height: 50,
+      height: 56,
       child: ElevatedButton.icon(
         onPressed: onPressed,
         icon: Icon(icon, color: fg),
         label: Text(
           text,
-          style: TextStyle(color: fg, fontWeight: FontWeight.bold),
+          style: TextStyle(
+            color: fg,
+            fontWeight: FontWeight.bold,
+            fontSize: 16,
+          ),
         ),
         style: ElevatedButton.styleFrom(
           backgroundColor: bg,
+          elevation: 0,
           shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(30),
+            borderRadius: BorderRadius.circular(16),
+            side: bg == Theme.of(context).cardColor
+                ? BorderSide(color: Colors.white10)
+                : BorderSide.none,
           ),
         ),
       ),

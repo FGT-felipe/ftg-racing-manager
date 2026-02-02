@@ -37,7 +37,7 @@ class _SponsorshipScreenState extends State<SponsorshipScreen> {
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
-      backgroundColor: const Color(0xFF161616),
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
       ),
@@ -65,13 +65,8 @@ class _SponsorshipScreenState extends State<SponsorshipScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFF121212),
-      appBar: AppBar(
-        title: const Text("SPONSORSHIP DEALS"),
-        centerTitle: true,
-        backgroundColor: Colors.transparent,
-        elevation: 0,
-      ),
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
+      appBar: AppBar(title: const Text("SPONSORSHIP DEALS")),
       body: FutureBuilder<DocumentSnapshot>(
         future: FirebaseFirestore.instance
             .collection('managers')
@@ -79,8 +74,10 @@ class _SponsorshipScreenState extends State<SponsorshipScreen> {
             .get(),
         builder: (context, managerSnapshot) {
           if (!managerSnapshot.hasData)
-            return const Center(
-              child: CircularProgressIndicator(color: Colors.tealAccent),
+            return Center(
+              child: CircularProgressIndicator(
+                color: Theme.of(context).primaryColor,
+              ),
             );
 
           final managerData =
@@ -98,8 +95,10 @@ class _SponsorshipScreenState extends State<SponsorshipScreen> {
                 .snapshots(),
             builder: (context, teamSnapshot) {
               if (!teamSnapshot.hasData)
-                return const Center(
-                  child: CircularProgressIndicator(color: Colors.tealAccent),
+                return Center(
+                  child: CircularProgressIndicator(
+                    color: Theme.of(context).primaryColor,
+                  ),
                 );
 
               final teamData =
@@ -155,11 +154,22 @@ class _SponsorshipScreenState extends State<SponsorshipScreen> {
           flex: 6,
           child: Container(
             margin: const EdgeInsets.all(20),
-            padding: const EdgeInsets.all(24),
+            padding: const EdgeInsets.all(32),
             decoration: BoxDecoration(
-              color: const Color(0xFF1E1E1E),
-              borderRadius: BorderRadius.circular(24),
-              border: Border.all(color: Colors.white10),
+              color: Theme.of(context).colorScheme.surface,
+              borderRadius: BorderRadius.circular(32),
+              border: Border.all(
+                color: Theme.of(context).dividerColor.withOpacity(0.08),
+              ),
+              boxShadow: [
+                BoxShadow(
+                  color: Theme.of(
+                    context,
+                  ).colorScheme.onSurface.withOpacity(0.03),
+                  blurRadius: 30,
+                  offset: const Offset(0, 10),
+                ),
+              ],
             ),
             child: _buildDesktopRightPanel(team),
           ),
@@ -170,10 +180,12 @@ class _SponsorshipScreenState extends State<SponsorshipScreen> {
 
   Widget _buildDesktopRightPanel(Team team) {
     if (_selectedSlotDesktop == null) {
-      return const Center(
+      return Center(
         child: Text(
           "Select a car part to manage sponsorships",
-          style: TextStyle(color: Colors.white38),
+          style: TextStyle(
+            color: Theme.of(context).colorScheme.onSurface.withOpacity(0.38),
+          ),
         ),
       );
     }
@@ -188,24 +200,33 @@ class _SponsorshipScreenState extends State<SponsorshipScreen> {
         children: [
           Text(
             "ACTIVE CONTRACT: ${_selectedSlotDesktop!.name.toUpperCase()}",
-            style: const TextStyle(color: Colors.grey, letterSpacing: 1.5),
+            style: TextStyle(
+              color: Theme.of(context).colorScheme.primary,
+              letterSpacing: 1.5,
+              fontWeight: FontWeight.bold,
+              fontSize: 12,
+            ),
           ),
           const SizedBox(height: 20),
           Container(
             padding: const EdgeInsets.all(32),
             decoration: BoxDecoration(
-              color: Colors.tealAccent.withOpacity(0.1),
+              color: Theme.of(context).primaryColor.withOpacity(0.05),
               borderRadius: BorderRadius.circular(20),
-              border: Border.all(color: Colors.tealAccent),
+              border: Border.all(color: Theme.of(context).primaryColor),
             ),
             child: Column(
               children: [
-                Icon(Icons.verified, size: 64, color: Colors.tealAccent),
+                Icon(
+                  Icons.verified,
+                  size: 64,
+                  color: Theme.of(context).primaryColor,
+                ),
                 const SizedBox(height: 16),
                 Text(
                   activeContract.sponsorName,
-                  style: const TextStyle(
-                    color: Colors.white,
+                  style: TextStyle(
+                    color: Theme.of(context).colorScheme.onSurface,
                     fontSize: 32,
                     fontWeight: FontWeight.bold,
                   ),
@@ -238,13 +259,18 @@ class _SponsorshipScreenState extends State<SponsorshipScreen> {
         children: [
           Text(
             "AVAILABLE OFFERS: ${_selectedSlotDesktop!.name.toUpperCase()}",
-            style: const TextStyle(color: Colors.grey, letterSpacing: 1.5),
+            style: TextStyle(
+              color: Theme.of(context).colorScheme.primary,
+              letterSpacing: 1.5,
+              fontWeight: FontWeight.bold,
+              fontSize: 12,
+            ),
           ),
           const SizedBox(height: 20),
           Expanded(
             child: GridView.builder(
-              gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                crossAxisCount: 2,
+              gridDelegate: const SliverGridDelegateWithMaxCrossAxisExtent(
+                maxCrossAxisExtent: 400,
                 childAspectRatio: 0.8,
                 crossAxisSpacing: 16,
                 mainAxisSpacing: 16,
@@ -327,7 +353,7 @@ class _SponsorshipScreenState extends State<SponsorshipScreen> {
           SponsorSlot.frontWing,
           team.sponsors[SponsorSlot.frontWing.name],
           role,
-          Colors.tealAccent,
+          Theme.of(context).primaryColor,
           isDesktop,
         ),
         const SizedBox(height: 12),
@@ -336,7 +362,7 @@ class _SponsorshipScreenState extends State<SponsorshipScreen> {
           SponsorSlot.nose,
           team.sponsors[SponsorSlot.nose.name],
           role,
-          Colors.tealAccent,
+          Theme.of(context).primaryColor,
           isDesktop,
         ),
       ],
@@ -366,13 +392,15 @@ class _SponsorshipScreenState extends State<SponsorshipScreen> {
         height: 70,
         decoration: BoxDecoration(
           color: (hasContract || isSelected)
-              ? color.withOpacity(0.15)
-              : const Color(0xFF1E1E1E),
+              ? color.withOpacity(0.05)
+              : Theme.of(context).cardTheme.color,
           borderRadius: BorderRadius.circular(16),
           border: Border.all(
             color: isSelected
-                ? Colors.white
-                : (hasContract ? color : Colors.white10),
+                ? Theme.of(context).primaryColor
+                : (hasContract
+                      ? color
+                      : Theme.of(context).dividerColor.withOpacity(0.05)),
             width: isSelected ? 2 : 1,
           ),
           boxShadow: hasContract
@@ -386,7 +414,11 @@ class _SponsorshipScreenState extends State<SponsorshipScreen> {
               Text(
                 label.toUpperCase(),
                 style: TextStyle(
-                  color: hasContract ? color : Colors.white38,
+                  color: hasContract
+                      ? color
+                      : Theme.of(
+                          context,
+                        ).colorScheme.onSurface.withOpacity(0.38),
                   fontSize: 10,
                   fontWeight: FontWeight.bold,
                 ),
@@ -397,7 +429,9 @@ class _SponsorshipScreenState extends State<SponsorshipScreen> {
                     ? contract.sponsorName
                     : (isDesktop ? "MANAGE" : "+ SELECT SPONSOR"),
                 style: TextStyle(
-                  color: hasContract ? Colors.white : Colors.tealAccent,
+                  color: hasContract
+                      ? Theme.of(context).colorScheme.onSurface
+                      : Theme.of(context).primaryColor,
                   fontWeight: FontWeight.bold,
                   fontSize: 16,
                 ),
@@ -413,27 +447,36 @@ class _SponsorshipScreenState extends State<SponsorshipScreen> {
     return Container(
       padding: const EdgeInsets.all(24),
       decoration: BoxDecoration(
-        color: const Color(0xFF1E1E1E),
+        color: Theme.of(context).cardTheme.color,
         borderRadius: BorderRadius.circular(20),
+        border: Border.all(
+          color: Theme.of(context).dividerColor.withOpacity(0.05),
+        ),
       ),
-      child: const Column(
+      child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
             "NEGOTIATION RULES",
             style: TextStyle(
-              color: Colors.tealAccent,
+              color: Theme.of(context).primaryColor,
               fontWeight: FontWeight.bold,
             ),
           ),
-          SizedBox(height: 12),
+          const SizedBox(height: 12),
           Text(
             "• Choose a strategy that matches the sponsor's personality.",
-            style: TextStyle(color: Colors.white70, fontSize: 13),
+            style: TextStyle(
+              color: Theme.of(context).colorScheme.onSurface.withOpacity(0.7),
+              fontSize: 13,
+            ),
           ),
           Text(
             "• You have 3 attempts total. Fail and they leave for 7 days.",
-            style: TextStyle(color: Colors.white70, fontSize: 13),
+            style: TextStyle(
+              color: Theme.of(context).colorScheme.onSurface.withOpacity(0.7),
+              fontSize: 13,
+            ),
           ),
         ],
       ),
@@ -510,14 +553,16 @@ class _SponsorOfferCardState extends State<_SponsorOfferCard> {
       ), // Adjusted for general use
       padding: const EdgeInsets.all(24),
       decoration: BoxDecoration(
-        color: const Color(0xFF222222),
+        color: Theme.of(context).cardTheme.color,
         borderRadius: BorderRadius.circular(24),
-        border: Border.all(color: Colors.white.withOpacity(0.05)),
-        boxShadow: const [
+        border: Border.all(
+          color: Theme.of(context).dividerColor.withOpacity(0.05),
+        ),
+        boxShadow: [
           BoxShadow(
-            color: Colors.black26,
+            color: Theme.of(context).colorScheme.onSurface.withOpacity(0.05),
             blurRadius: 10,
-            offset: Offset(0, 5),
+            offset: const Offset(0, 5),
           ),
         ],
       ),
@@ -530,8 +575,8 @@ class _SponsorOfferCardState extends State<_SponsorOfferCard> {
               Expanded(
                 child: Text(
                   widget.offer.name,
-                  style: const TextStyle(
-                    color: Colors.white,
+                  style: TextStyle(
+                    color: Theme.of(context).colorScheme.onSurface,
                     fontSize: 20,
                     fontWeight: FontWeight.bold,
                   ),
@@ -551,7 +596,7 @@ class _SponsorOfferCardState extends State<_SponsorOfferCard> {
                   child: const Text(
                     "+15%",
                     style: TextStyle(
-                      color: Colors.greenAccent,
+                      color: Colors.green,
                       fontSize: 10,
                       fontWeight: FontWeight.bold,
                     ),
@@ -564,7 +609,7 @@ class _SponsorOfferCardState extends State<_SponsorOfferCard> {
             Icons.monetization_on_outlined,
             "Signing Bonus",
             widget.financeService.formatCurrency(widget.offer.signingBonus),
-            Colors.greenAccent,
+            Colors.green,
           ),
           _infoRow(
             Icons.calendar_today_outlined,
@@ -572,13 +617,13 @@ class _SponsorOfferCardState extends State<_SponsorOfferCard> {
             widget.financeService.formatCurrency(
               widget.offer.weeklyBasePayment,
             ),
-            Colors.white70,
+            Theme.of(context).colorScheme.onSurface.withOpacity(0.7),
           ),
           _infoRow(
             Icons.timer_outlined,
             "Duration",
             "${widget.offer.contractDuration} Races",
-            Colors.blueAccent,
+            Colors.blue,
           ),
           _infoRow(
             Icons.emoji_events_outlined,
@@ -598,15 +643,19 @@ class _SponsorOfferCardState extends State<_SponsorOfferCard> {
               ),
             )
           else if (_isNegotiating)
-            const Center(
-              child: CircularProgressIndicator(color: Colors.tealAccent),
+            Center(
+              child: CircularProgressIndicator(
+                color: Theme.of(context).primaryColor,
+              ),
             )
           else ...[
             Center(
               child: Text(
                 "CHOOSE TACTIC (${3 - widget.offer.attemptsMade} left)",
-                style: const TextStyle(
-                  color: Colors.white38,
+                style: TextStyle(
+                  color: Theme.of(
+                    context,
+                  ).colorScheme.onSurface.withOpacity(0.38),
                   fontSize: 11,
                   fontWeight: FontWeight.bold,
                 ),
@@ -615,11 +664,18 @@ class _SponsorOfferCardState extends State<_SponsorOfferCard> {
             const SizedBox(height: 12),
             Row(
               children: [
-                Expanded(child: _tacticBtn("AGGRESSIVE", Colors.redAccent)),
+                Expanded(child: _tacticBtn("AGGRESSIVE", Colors.red)),
                 const SizedBox(width: 8),
-                Expanded(child: _tacticBtn("PROFESSIONAL", Colors.white)),
+                Expanded(
+                  child: _tacticBtn(
+                    "PROFESSIONAL",
+                    Theme.of(context).colorScheme.onSurface,
+                  ),
+                ),
                 const SizedBox(width: 8),
-                Expanded(child: _tacticBtn("FRIENDLY", Colors.greenAccent)),
+                Expanded(
+                  child: _tacticBtn("FRIENDLY", Theme.of(context).primaryColor),
+                ),
               ],
             ),
           ],
@@ -633,19 +689,27 @@ class _SponsorOfferCardState extends State<_SponsorOfferCard> {
       padding: const EdgeInsets.symmetric(vertical: 4),
       child: Row(
         children: [
-          Icon(icon, size: 16, color: Colors.white24),
+          Icon(icon, size: 16, color: Theme.of(context).dividerColor),
           const SizedBox(width: 8),
           Text(
             label,
-            style: const TextStyle(color: Colors.white38, fontSize: 12),
-          ),
-          const Spacer(),
-          Text(
-            value,
             style: TextStyle(
-              color: valueColor,
-              fontWeight: FontWeight.bold,
-              fontSize: 13,
+              color: Theme.of(context).colorScheme.onSurface.withOpacity(0.38),
+              fontSize: 12,
+            ),
+          ),
+          const SizedBox(width: 8),
+          Expanded(
+            child: Text(
+              value,
+              textAlign: TextAlign.end,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: TextStyle(
+                color: valueColor,
+                fontWeight: FontWeight.bold,
+                fontSize: 13,
+              ),
             ),
           ),
         ],
@@ -685,13 +749,13 @@ class _DetailItem extends StatelessWidget {
       children: [
         Text(
           label,
-          style: const TextStyle(color: Colors.tealAccent, fontSize: 12),
+          style: TextStyle(color: Theme.of(context).primaryColor, fontSize: 12),
         ),
         const SizedBox(height: 4),
         Text(
           value,
-          style: const TextStyle(
-            color: Colors.white,
+          style: TextStyle(
+            color: Theme.of(context).colorScheme.onSurface,
             fontSize: 18,
             fontWeight: FontWeight.bold,
           ),
@@ -746,7 +810,7 @@ class _SponsorCarouselModalState extends State<_SponsorCarouselModal> {
             width: 40,
             height: 4,
             decoration: BoxDecoration(
-              color: Colors.white24,
+              color: Theme.of(context).dividerColor,
               borderRadius: BorderRadius.circular(2),
             ),
           ),
@@ -758,15 +822,19 @@ class _SponsorCarouselModalState extends State<_SponsorCarouselModal> {
               children: [
                 Text(
                   "AVAILABLE SPONSORS",
-                  style: const TextStyle(
-                    color: Colors.white,
+                  style: TextStyle(
+                    color: Theme.of(context).colorScheme.onSurface,
                     fontSize: 18,
                     fontWeight: FontWeight.bold,
                   ),
                 ),
                 Text(
                   "${_currentIndex + 1}/${widget.offers.length}",
-                  style: const TextStyle(color: Colors.white38),
+                  style: TextStyle(
+                    color: Theme.of(
+                      context,
+                    ).colorScheme.onSurface.withOpacity(0.38),
+                  ),
                 ),
               ],
             ),

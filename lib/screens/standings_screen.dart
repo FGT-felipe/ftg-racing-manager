@@ -13,17 +13,19 @@ class StandingsScreen extends StatelessWidget {
     return DefaultTabController(
       length: 3,
       child: Scaffold(
-        backgroundColor: const Color(0xFF121212),
+        backgroundColor: Theme.of(context).scaffoldBackgroundColor,
         appBar: AppBar(
           title: const Text("STANDINGS & CALENDAR"),
           centerTitle: true,
           backgroundColor: Colors.transparent,
           elevation: 0,
-          bottom: const TabBar(
-            indicatorColor: Colors.tealAccent,
-            labelColor: Colors.tealAccent,
-            unselectedLabelColor: Colors.grey,
-            tabs: [
+          bottom: TabBar(
+            indicatorColor: Theme.of(context).primaryColor,
+            labelColor: Theme.of(context).primaryColor,
+            unselectedLabelColor: Theme.of(
+              context,
+            ).colorScheme.onSurface.withOpacity(0.5),
+            tabs: const [
               Tab(text: "DRIVERS"),
               Tab(text: "TEAMS"),
               Tab(text: "CALENDAR"),
@@ -50,7 +52,11 @@ class _DriversTab extends StatelessWidget {
           .snapshots(),
       builder: (context, snapshot) {
         if (!snapshot.hasData)
-          return const Center(child: CircularProgressIndicator());
+          return Center(
+            child: CircularProgressIndicator(
+              color: Theme.of(context).primaryColor,
+            ),
+          );
         final docs = snapshot.data!.docs;
 
         return ListView.builder(
@@ -61,7 +67,7 @@ class _DriversTab extends StatelessWidget {
               docs[index].data() as Map<String, dynamic>,
             );
             return Card(
-              color: const Color(0xFF1E1E1E),
+              color: Theme.of(context).cardTheme.color,
               child: ListTile(
                 leading: CircleAvatar(
                   backgroundColor: index == 0
@@ -70,21 +76,23 @@ class _DriversTab extends StatelessWidget {
                   child: Text(
                     "#${index + 1}",
                     style: TextStyle(
-                      color: index == 0 ? Colors.black : Colors.tealAccent,
+                      color: index == 0
+                          ? Colors.black
+                          : Theme.of(context).primaryColor,
                     ),
                   ),
                 ),
                 title: Text(
                   driver.name,
-                  style: const TextStyle(
-                    color: Colors.white,
+                  style: TextStyle(
+                    color: Theme.of(context).colorScheme.onSurface,
                     fontWeight: FontWeight.bold,
                   ),
                 ),
                 trailing: Text(
                   "${driver.points} pts",
-                  style: const TextStyle(
-                    color: Colors.tealAccent,
+                  style: TextStyle(
+                    color: Theme.of(context).primaryColor,
                     fontSize: 16,
                     fontWeight: FontWeight.bold,
                   ),
@@ -110,7 +118,11 @@ class _TeamsTab extends StatelessWidget {
           .snapshots(),
       builder: (context, snapshot) {
         if (!snapshot.hasData)
-          return const Center(child: CircularProgressIndicator());
+          return Center(
+            child: CircularProgressIndicator(
+              color: Theme.of(context).primaryColor,
+            ),
+          );
         final docs = snapshot.data!.docs;
 
         return ListView.builder(
@@ -121,7 +133,7 @@ class _TeamsTab extends StatelessWidget {
               docs[index].data() as Map<String, dynamic>,
             );
             return Card(
-              color: const Color(0xFF1E1E1E),
+              color: Theme.of(context).cardTheme.color,
               child: ListTile(
                 leading: CircleAvatar(
                   backgroundColor: index == 0
@@ -130,21 +142,23 @@ class _TeamsTab extends StatelessWidget {
                   child: Text(
                     "#${index + 1}",
                     style: TextStyle(
-                      color: index == 0 ? Colors.black : Colors.tealAccent,
+                      color: index == 0
+                          ? Colors.black
+                          : Theme.of(context).primaryColor,
                     ),
                   ),
                 ),
                 title: Text(
                   team.name,
-                  style: const TextStyle(
-                    color: Colors.white,
+                  style: TextStyle(
+                    color: Theme.of(context).colorScheme.onSurface,
                     fontWeight: FontWeight.bold,
                   ),
                 ),
                 trailing: Text(
                   "${team.points} pts",
-                  style: const TextStyle(
-                    color: Colors.tealAccent,
+                  style: TextStyle(
+                    color: Theme.of(context).primaryColor,
                     fontSize: 16,
                     fontWeight: FontWeight.bold,
                   ),
@@ -191,7 +205,7 @@ class _CalendarTabState extends State<_CalendarTab> {
             backgroundColor: const Color(0xFF1E1E1E),
             title: Text(
               l10n.raceResults,
-              style: const TextStyle(color: Colors.tealAccent),
+              style: TextStyle(color: Theme.of(context).primaryColor),
             ),
             content: SingleChildScrollView(
               child: Column(
@@ -315,7 +329,11 @@ class _CalendarTabState extends State<_CalendarTab> {
           .snapshots(),
       builder: (context, snapshot) {
         if (!snapshot.hasData)
-          return const Center(child: CircularProgressIndicator());
+          return Center(
+            child: CircularProgressIndicator(
+              color: Theme.of(context).primaryColor,
+            ),
+          );
         if (snapshot.data!.docs.isEmpty)
           return const Center(child: Text("No Calendar found"));
 
@@ -337,12 +355,14 @@ class _CalendarTabState extends State<_CalendarTab> {
               opacity: event.isCompleted ? 0.6 : 1.0,
               child: Card(
                 color: isNext
-                    ? Colors.tealAccent.withOpacity(0.05)
-                    : const Color(0xFF1E1E1E),
+                    ? Theme.of(context).primaryColor.withOpacity(0.05)
+                    : Theme.of(context).cardTheme.color,
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(12),
                   side: BorderSide(
-                    color: isNext ? Colors.tealAccent : Colors.transparent,
+                    color: isNext
+                        ? Theme.of(context).primaryColor
+                        : Colors.transparent,
                     width: 1,
                   ),
                 ),
@@ -357,8 +377,10 @@ class _CalendarTabState extends State<_CalendarTab> {
                             children: [
                               Text(
                                 event.trackName,
-                                style: const TextStyle(
-                                  color: Colors.white,
+                                style: TextStyle(
+                                  color: Theme.of(
+                                    context,
+                                  ).colorScheme.onSurface,
                                   fontSize: 18,
                                   fontWeight: FontWeight.bold,
                                 ),
@@ -379,7 +401,7 @@ class _CalendarTabState extends State<_CalendarTab> {
                                 vertical: 4,
                               ),
                               decoration: BoxDecoration(
-                                color: Colors.tealAccent,
+                                color: Theme.of(context).primaryColor,
                                 borderRadius: BorderRadius.circular(4),
                               ),
                               child: const Text(
@@ -415,16 +437,22 @@ class _CalendarTabState extends State<_CalendarTab> {
                                     event.trackName,
                                   ),
                             style: ElevatedButton.styleFrom(
-                              backgroundColor: Colors.tealAccent,
-                              foregroundColor: Colors.black,
+                              backgroundColor: Theme.of(
+                                context,
+                              ).colorScheme.secondary,
+                              foregroundColor: Theme.of(
+                                context,
+                              ).colorScheme.onSecondary,
                             ),
                             child: _isSimulating
-                                ? const SizedBox(
+                                ? SizedBox(
                                     height: 20,
                                     width: 20,
                                     child: CircularProgressIndicator(
                                       strokeWidth: 2,
-                                      color: Colors.black,
+                                      color: Theme.of(
+                                        context,
+                                      ).colorScheme.onSecondary,
                                     ),
                                   )
                                 : Text(l10n.simulateBtn.toUpperCase()),

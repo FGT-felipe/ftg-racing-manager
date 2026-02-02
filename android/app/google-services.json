@@ -1,0 +1,54 @@
+{
+  "project_info": {
+    "project_number": "822361821036",
+    "project_id": "ftg-racing-manager",
+    "storage_bucket": "ftg-racing-manager.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:822361821036:android:ae317c8dd178d51848ed49",
+        "android_client_info": {
+          "package_name": "com.firetower.racingmanager"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "822361821036-poq5vukpgrki01bl9gog4kihjcdtu7v4.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.firetower.racingmanager",
+            "certificate_hash": "a9a58e7f37e1f8529cf4ac209a38f1a518fdeeff"
+          }
+        },
+        {
+          "client_id": "822361821036-s5k1q9u89ks6tdu5cj0nef38dtcvlqqp.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyABVXH5RRcZV8UgAS8oOC2XEC2fpUzuYpw"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "822361821036-s5k1q9u89ks6tdu5cj0nef38dtcvlqqp.apps.googleusercontent.com",
+              "client_type": 3
+            },
+            {
+              "client_id": "822361821036-shp1s82ioam62qu6q23dictq6ep9j7u0.apps.googleusercontent.com",
+              "client_type": 2,
+              "ios_info": {
+                "bundle_id": "com.firetower.racingmanager"
+              }
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
