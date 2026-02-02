@@ -222,7 +222,7 @@ class DashboardScreen extends StatelessWidget {
         color: Theme.of(context).cardTheme.color,
         borderRadius: BorderRadius.circular(12),
         border: Border.all(
-          color: Theme.of(context).dividerColor.withOpacity(0.05),
+          color: Theme.of(context).dividerColor.withValues(alpha: 0.05),
         ),
       ),
       child: Row(
@@ -233,7 +233,9 @@ class DashboardScreen extends StatelessWidget {
             title,
             style: TextStyle(
               color: completed
-                  ? Theme.of(context).colorScheme.secondary.withOpacity(0.5)
+                  ? Theme.of(
+                      context,
+                    ).colorScheme.secondary.withValues(alpha: 0.5)
                   : Theme.of(context).colorScheme.onSurface,
               decoration: completed ? TextDecoration.lineThrough : null,
               fontWeight: FontWeight.bold,

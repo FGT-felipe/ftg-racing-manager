@@ -1,5 +1,6 @@
 import 'dart:math';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:flutter/foundation.dart';
 import '../models/core_models.dart';
 
 class DatabaseSeeder {
@@ -69,14 +70,16 @@ class DatabaseSeeder {
 
   static Future<void> nukeAndReseed() async {
     try {
-      print("NUKE: Iniciando borrado total...");
+      debugPrint("NUKE: Iniciando borrado total...");
 
       final driversSnapshot = await _db.collectionGroup('drivers').get();
       if (driversSnapshot.docs.isNotEmpty) {
         final batch = _db.batch();
-        for (var doc in driversSnapshot.docs) batch.delete(doc.reference);
+        for (var doc in driversSnapshot.docs) {
+          batch.delete(doc.reference);
+        }
         await batch.commit();
-        print("NUKE: Pilotos eliminados.");
+        debugPrint("NUKE: Pilotos eliminados.");
       }
 
       final collectionsToClear = ['teams', 'leagues', 'seasons', 'divisions'];
@@ -84,24 +87,26 @@ class DatabaseSeeder {
         final snapshot = await _db.collection(collection).get();
         if (snapshot.docs.isNotEmpty) {
           final batch = _db.batch();
-          for (var doc in snapshot.docs) batch.delete(doc.reference);
+          for (var doc in snapshot.docs) {
+            batch.delete(doc.reference);
+          }
           await batch.commit();
-          print("NUKE: Colección '$collection' eliminada.");
+          debugPrint("NUKE: Colección '$collection' eliminada.");
         }
       }
 
-      print("NUKE: Borrado completado.");
+      debugPrint("NUKE: Borrado completado.");
       await seedWorld(force: true);
     } catch (e, stack) {
-      print("ERROR FATAL EN NUKE: $e");
-      print(stack);
+      debugPrint("ERROR FATAL EN NUKE: $e");
+      debugPrint(stack.toString());
       rethrow;
     }
   }
 
   static Future<void> seedWorld({bool force = false}) async {
     try {
-      print("SEEDING: Iniciando...");
+      debugPrint("SEEDING: Iniciando...");
 
       if (!force) {
         final leaguesSnapshot = await _db.collection('leagues').limit(1).get();
@@ -231,9 +236,9 @@ class DatabaseSeeder {
       }
 
       await batch.commit();
-      print("SEEDING: ÉXITO.");
+      debugPrint("SEEDING: ÉXITO.");
     } catch (e, stack) {
-      print("SEED ERROR: $e\n$stack");
+      debugPrint("SEED ERROR: $e\n$stack");
       rethrow;
     }
   }

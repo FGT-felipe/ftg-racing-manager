@@ -24,7 +24,7 @@ class StandingsScreen extends StatelessWidget {
             labelColor: Theme.of(context).primaryColor,
             unselectedLabelColor: Theme.of(
               context,
-            ).colorScheme.onSurface.withOpacity(0.5),
+            ).colorScheme.onSurface.withValues(alpha: 0.5),
             tabs: const [
               Tab(text: "DRIVERS"),
               Tab(text: "TEAMS"),
@@ -51,12 +51,13 @@ class _DriversTab extends StatelessWidget {
           .orderBy('points', descending: true)
           .snapshots(),
       builder: (context, snapshot) {
-        if (!snapshot.hasData)
+        if (!snapshot.hasData) {
           return Center(
             child: CircularProgressIndicator(
               color: Theme.of(context).primaryColor,
             ),
           );
+        }
         final docs = snapshot.data!.docs;
 
         return ListView.builder(
@@ -72,7 +73,7 @@ class _DriversTab extends StatelessWidget {
                 leading: CircleAvatar(
                   backgroundColor: index == 0
                       ? Colors.yellow
-                      : Colors.tealAccent.withOpacity(0.1),
+                      : Colors.tealAccent.withValues(alpha: 0.1),
                   child: Text(
                     "#${index + 1}",
                     style: TextStyle(
@@ -117,12 +118,13 @@ class _TeamsTab extends StatelessWidget {
           .orderBy('points', descending: true)
           .snapshots(),
       builder: (context, snapshot) {
-        if (!snapshot.hasData)
+        if (!snapshot.hasData) {
           return Center(
             child: CircularProgressIndicator(
               color: Theme.of(context).primaryColor,
             ),
           );
+        }
         final docs = snapshot.data!.docs;
 
         return ListView.builder(
@@ -138,7 +140,7 @@ class _TeamsTab extends StatelessWidget {
                 leading: CircleAvatar(
                   backgroundColor: index == 0
                       ? Colors.yellow
-                      : Colors.tealAccent.withOpacity(0.1),
+                      : Colors.tealAccent.withValues(alpha: 0.1),
                   child: Text(
                     "#${index + 1}",
                     style: TextStyle(
@@ -328,14 +330,16 @@ class _CalendarTabState extends State<_CalendarTab> {
           .limit(1)
           .snapshots(),
       builder: (context, snapshot) {
-        if (!snapshot.hasData)
+        if (!snapshot.hasData) {
           return Center(
             child: CircularProgressIndicator(
               color: Theme.of(context).primaryColor,
             ),
           );
-        if (snapshot.data!.docs.isEmpty)
+        }
+        if (snapshot.data!.docs.isEmpty) {
           return const Center(child: Text("No Calendar found"));
+        }
 
         final seasonDoc = snapshot.data!.docs.first;
         final season = Season.fromMap(seasonDoc.data() as Map<String, dynamic>);
@@ -355,7 +359,7 @@ class _CalendarTabState extends State<_CalendarTab> {
               opacity: event.isCompleted ? 0.6 : 1.0,
               child: Card(
                 color: isNext
-                    ? Theme.of(context).primaryColor.withOpacity(0.05)
+                    ? Theme.of(context).primaryColor.withValues(alpha: 0.05)
                     : Theme.of(context).cardTheme.color,
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(12),

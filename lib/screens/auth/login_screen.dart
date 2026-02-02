@@ -161,7 +161,7 @@ class _LoginScreenState extends State<LoginScreen> {
                   style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                     color: Theme.of(
                       context,
-                    ).colorScheme.onSurface.withOpacity(0.5),
+                    ).colorScheme.onSurface.withValues(alpha: 0.5),
                   ),
                 ),
                 const SizedBox(height: 48),
@@ -185,7 +185,7 @@ class _LoginScreenState extends State<LoginScreen> {
                       side: BorderSide(
                         color: Theme.of(
                           context,
-                        ).colorScheme.onSurface.withOpacity(0.1),
+                        ).colorScheme.onSurface.withValues(alpha: 0.1),
                       ),
                     ),
                   ),
@@ -198,7 +198,7 @@ class _LoginScreenState extends State<LoginScreen> {
                       child: Divider(
                         color: Theme.of(
                           context,
-                        ).colorScheme.onSurface.withOpacity(0.1),
+                        ).colorScheme.onSurface.withValues(alpha: 0.1),
                       ),
                     ),
                     Padding(
@@ -216,7 +216,7 @@ class _LoginScreenState extends State<LoginScreen> {
                       child: Divider(
                         color: Theme.of(
                           context,
-                        ).colorScheme.onSurface.withOpacity(0.1),
+                        ).colorScheme.onSurface.withValues(alpha: 0.1),
                       ),
                     ),
                   ],
@@ -303,7 +303,7 @@ class _LoginScreenState extends State<LoginScreen> {
                     fontSize: 10,
                     color: Theme.of(
                       context,
-                    ).colorScheme.secondary.withOpacity(0.5),
+                    ).colorScheme.secondary.withValues(alpha: 0.5),
                     letterSpacing: 2,
                   ),
                 ),
@@ -329,10 +329,12 @@ class _LoginScreenState extends State<LoginScreen> {
       decoration: InputDecoration(
         labelText: label,
         labelStyle: TextStyle(
-          color: Theme.of(context).colorScheme.onSurface.withOpacity(0.5),
+          color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.5),
         ),
         filled: true,
-        fillColor: Theme.of(context).colorScheme.onSurface.withOpacity(0.05),
+        fillColor: Theme.of(
+          context,
+        ).colorScheme.onSurface.withValues(alpha: 0.05),
         border: OutlineInputBorder(
           borderRadius: BorderRadius.circular(12),
           borderSide: BorderSide.none,
@@ -340,7 +342,9 @@ class _LoginScreenState extends State<LoginScreen> {
         enabledBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(12),
           borderSide: BorderSide(
-            color: Theme.of(context).colorScheme.onSurface.withOpacity(0.05),
+            color: Theme.of(
+              context,
+            ).colorScheme.onSurface.withValues(alpha: 0.05),
           ),
         ),
         focusedBorder: OutlineInputBorder(

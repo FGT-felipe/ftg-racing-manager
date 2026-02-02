@@ -212,11 +212,14 @@ class _TeamCard extends StatelessWidget {
       child: Container(
         decoration: BoxDecoration(
           borderRadius: BorderRadius.circular(12),
-          border: Border.all(color: Colors.tealAccent.withOpacity(0.1)),
+          border: Border.all(color: Colors.tealAccent.withValues(alpha: 0.1)),
           gradient: LinearGradient(
             begin: Alignment.topLeft,
             end: Alignment.bottomRight,
-            colors: [Colors.tealAccent.withOpacity(0.05), Colors.transparent],
+            colors: [
+              Colors.tealAccent.withValues(alpha: 0.05),
+              Colors.transparent,
+            ],
           ),
         ),
         padding: const EdgeInsets.all(20),
@@ -247,7 +250,7 @@ class _TeamCard extends StatelessWidget {
                   style: TextStyle(
                     color: Theme.of(
                       context,
-                    ).colorScheme.onSurface.withOpacity(0.7),
+                    ).colorScheme.onSurface.withValues(alpha: 0.7),
                   ),
                 ),
               ],

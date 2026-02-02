@@ -19,10 +19,11 @@ class EngineeringScreen extends StatelessWidget {
           .doc(teamId)
           .snapshots(),
       builder: (context, snapshot) {
-        if (snapshot.hasError)
+        if (snapshot.hasError) {
           return Scaffold(
             body: Center(child: Text("Error: ${snapshot.error}")),
           );
+        }
         if (snapshot.connectionState == ConnectionState.waiting) {
           return Scaffold(
             body: Center(
@@ -60,7 +61,7 @@ class EngineeringScreen extends StatelessWidget {
                         colors: [
                           Theme.of(
                             context,
-                          ).colorScheme.primary.withOpacity(0.1),
+                          ).colorScheme.primary.withValues(alpha: 0.1),
                           Colors.transparent,
                         ],
                       ),
@@ -68,7 +69,7 @@ class EngineeringScreen extends StatelessWidget {
                       border: Border.all(
                         color: Theme.of(
                           context,
-                        ).colorScheme.primary.withOpacity(0.2),
+                        ).colorScheme.primary.withValues(alpha: 0.2),
                       ),
                     ),
                     child: Column(
@@ -163,7 +164,7 @@ class _UpgradeTileState extends State<_UpgradeTile> {
         color: Theme.of(context).cardTheme.color,
         borderRadius: BorderRadius.circular(12),
         border: Border.all(
-          color: Theme.of(context).dividerColor.withOpacity(0.05),
+          color: Theme.of(context).dividerColor.withValues(alpha: 0.05),
         ),
       ),
       child: Column(
@@ -194,7 +195,7 @@ class _UpgradeTileState extends State<_UpgradeTile> {
             value: widget.level / 100,
             backgroundColor: Theme.of(
               context,
-            ).colorScheme.onSurface.withOpacity(0.05),
+            ).colorScheme.onSurface.withValues(alpha: 0.05),
             color: Theme.of(context).primaryColor,
             minHeight: 8,
             borderRadius: BorderRadius.circular(4),
@@ -209,7 +210,7 @@ class _UpgradeTileState extends State<_UpgradeTile> {
                   Text(
                     l10n.costLabel(
                       l10n.currencySymbol,
-                      "${costFormatted}${l10n.millionsSuffix}",
+                      "$costFormatted${l10n.millionsSuffix}",
                     ),
                     style: TextStyle(
                       color: canAfford
@@ -242,7 +243,7 @@ class _UpgradeTileState extends State<_UpgradeTile> {
                             currentBudget: widget.currentBudget,
                           );
                         } catch (e) {
-                          if (mounted) {
+                          if (context.mounted) {
                             ScaffoldMessenger.of(context).showSnackBar(
                               SnackBar(
                                 content: Text(e.toString()),
