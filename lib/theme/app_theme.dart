@@ -3,10 +3,10 @@ import 'package:google_fonts/google_fonts.dart';
 
 class AppTheme {
   // Brand Palette
-  static const Color neonApex = Color(0xFF00FF94); // Neon Green
+  static const Color neonApex = Color(0xFF10B981); // Emerald Green
   static const Color carbonFiber = Color(0xFF0F172A); // Slate 900
   static const Color metalCool = Color(0xFF94A3B8); // Slate 400
-  static const Color background = Color(0xFFF8FAFC); // Slate 50
+  static const Color background = Color(0xFFF4F6F8); // Soft Cool Grey
   static const Color surface = Colors.white;
   static const Color error = Color(0xFFEF5350);
   static const Color success = Color(0xFF66BB6A);
@@ -54,8 +54,8 @@ class AppTheme {
       // Card Theme
       cardTheme: CardThemeData(
         color: surface,
-        elevation: 1,
-        shadowColor: carbonFiber.withOpacity(0.1),
+        elevation: 2,
+        shadowColor: carbonFiber.withOpacity(0.08),
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(16),
           side: BorderSide(color: carbonFiber.withOpacity(0.05)),

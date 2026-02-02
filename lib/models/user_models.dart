@@ -66,6 +66,76 @@ extension ManagerRoleExtension on ManagerRole {
         return "(-) No specialized bonuses";
     }
   }
+
+  List<String> get pros {
+    switch (this) {
+      case ManagerRole.exDriver:
+        return [
+          "Technical bonus in racing sessions",
+          "Better driver feedback accuracy",
+          "Respect from pit crew",
+        ];
+      case ManagerRole.businessAdmin:
+        return [
+          "Higher sponsor payouts (+15%)",
+          "Reduced interest on loans",
+          "Cheaper facility upgrades",
+        ];
+      case ManagerRole.bureaucrat:
+        return [
+          "Lower personnel salary demands",
+          "Easier rule changes approval",
+          "Political influence in paddock",
+        ];
+      case ManagerRole.exEngineer:
+        return [
+          "Faster car development (R&D)",
+          "Improved car reliability",
+          "Precise wind tunnel data",
+        ];
+      case ManagerRole.noExperience:
+        return [
+          "Maximum growth potential",
+          "No pre-existing rivalries",
+          "Balanced leadership style",
+        ];
+    }
+  }
+
+  List<String> get cons {
+    switch (this) {
+      case ManagerRole.exDriver:
+        return [
+          "Slow management skill progression",
+          "Higher salary expectation",
+          "Aggressive strategy bias",
+        ];
+      case ManagerRole.businessAdmin:
+        return [
+          "Strict focus on profits vs performance",
+          "High driver pressure/fatigue",
+          "Personnel feel undervalued",
+        ];
+      case ManagerRole.bureaucrat:
+        return [
+          "Slow decision making",
+          "Poor team harmony",
+          "Bureaucratic overhead",
+        ];
+      case ManagerRole.exEngineer:
+        return [
+          "Difficulty managing driver egos",
+          "Drivers gain experience slower",
+          "Perfectionism delays parts",
+        ];
+      case ManagerRole.noExperience:
+        return [
+          "No starting bonuses",
+          "Lower initial reputation",
+          "Learning curve for telemetry",
+        ];
+    }
+  }
 }
 
 class ManagerProfile {
