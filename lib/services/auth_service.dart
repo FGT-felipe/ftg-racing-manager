@@ -1,6 +1,7 @@
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:flutter/foundation.dart';
 import '../models/user_model.dart';
 import '../models/user_models.dart';
 
@@ -23,7 +24,7 @@ class AuthService {
       final userCredential = await _auth.signInAnonymously();
       return userCredential.user;
     } catch (e) {
-      print("Error in anonymous sign-in: $e");
+      debugPrint("Error in anonymous sign-in: $e");
       return null;
     }
   }
@@ -70,7 +71,7 @@ class AuthService {
       }
       return user;
     } catch (e) {
-      print("Error en Google Sign In: $e");
+      debugPrint("Error en Google Sign In: $e");
       return null;
     }
   }
@@ -127,7 +128,7 @@ class AuthService {
       }
       return null;
     } catch (e) {
-      print("Error fetching AppUser: $e");
+      debugPrint("Error fetching AppUser: $e");
       return null;
     }
   }
@@ -141,8 +142,19 @@ class AuthService {
       }
       return null;
     } catch (e) {
-      print("Error fetching ManagerProfile: $e");
+      debugPrint("Error fetching ManagerProfile: $e");
       return null;
+    }
+  }
+
+  // Check if Manager Profile exists
+  Future<bool> hasManagerProfile(String uid) async {
+    try {
+      final doc = await _firestore.collection('managers').doc(uid).get();
+      return doc.exists;
+    } catch (e) {
+      debugPrint("Error checking ManagerProfile: $e");
+      return false;
     }
   }
 }

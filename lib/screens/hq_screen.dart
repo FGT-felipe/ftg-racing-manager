@@ -143,7 +143,9 @@ class HQScreen extends StatelessWidget {
               decoration: BoxDecoration(
                 color: const Color(0xFF1E1E1E),
                 borderRadius: BorderRadius.circular(12),
-                border: Border.all(color: Colors.orangeAccent.withOpacity(0.3)),
+                border: Border.all(
+                  color: Colors.orangeAccent.withValues(alpha: 0.3),
+                ),
               ),
               child: Row(
                 children: [
@@ -250,7 +252,7 @@ class _DriverCard extends StatelessWidget {
       elevation: 0,
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(16),
-        side: BorderSide(color: Colors.white.withOpacity(0.05)),
+        side: BorderSide(color: Colors.white.withValues(alpha: 0.05)),
       ),
       child: Padding(
         padding: const EdgeInsets.all(16.0),
@@ -262,7 +264,7 @@ class _DriverCard extends StatelessWidget {
                 Container(
                   padding: const EdgeInsets.all(10),
                   decoration: BoxDecoration(
-                    color: genderColor.withOpacity(0.1),
+                    color: genderColor.withValues(alpha: 0.1),
                     shape: BoxShape.circle,
                   ),
                   child: Icon(genderIcon, color: genderColor, size: 32),
@@ -298,7 +300,7 @@ class _DriverCard extends StatelessWidget {
                                 vertical: 2,
                               ),
                               decoration: BoxDecoration(
-                                color: Colors.tealAccent.withOpacity(0.1),
+                                color: Colors.tealAccent.withValues(alpha: 0.1),
                                 borderRadius: BorderRadius.circular(4),
                               ),
                               child: Text(
@@ -345,7 +347,7 @@ class _DriverCard extends StatelessWidget {
                     Text(
                       "POTENTIAL",
                       style: TextStyle(
-                        color: Colors.white.withOpacity(0.5),
+                        color: Colors.white.withValues(alpha: 0.5),
                         fontSize: 8,
                       ),
                     ),
@@ -389,7 +391,7 @@ class _StatBar extends StatelessWidget {
             Text(
               label.toUpperCase(),
               style: TextStyle(
-                color: Colors.white.withOpacity(0.6),
+                color: Colors.white.withValues(alpha: 0.6),
                 fontSize: 10,
                 letterSpacing: 0.5,
               ),
@@ -407,7 +409,7 @@ class _StatBar extends StatelessWidget {
         const SizedBox(height: 6),
         LinearProgressIndicator(
           value: value / 100,
-          backgroundColor: Colors.white.withOpacity(0.05),
+          backgroundColor: Colors.white.withValues(alpha: 0.05),
           color: Colors.tealAccent,
           minHeight: 4,
           borderRadius: BorderRadius.circular(2),

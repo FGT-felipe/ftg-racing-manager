@@ -2,7 +2,6 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
-import '../../services/auth_service.dart';
 import '../../services/database_seeder.dart';
 import '../auth/login_screen.dart';
 
@@ -126,7 +125,7 @@ class _LandingScreenState extends State<LandingScreen>
               setState(() => _isLoading = true);
               try {
                 await DatabaseSeeder.nukeAndReseed();
-                if (mounted) {
+                if (context.mounted) {
                   ScaffoldMessenger.of(context).showSnackBar(
                     const SnackBar(
                       content: Text("WORLD NUKE SUCCESSFUL"),
@@ -135,7 +134,7 @@ class _LandingScreenState extends State<LandingScreen>
                   );
                 }
               } catch (e) {
-                if (mounted) {
+                if (context.mounted) {
                   ScaffoldMessenger.of(context).showSnackBar(
                     SnackBar(
                       content: Text("Error: $e"),
@@ -205,7 +204,7 @@ class _LandingScreenState extends State<LandingScreen>
                                 BoxShadow(
                                   color: Theme.of(
                                     context,
-                                  ).primaryColor.withOpacity(0.2),
+                                  ).primaryColor.withValues(alpha: 0.2),
                                   blurRadius: 40,
                                   spreadRadius: 10,
                                 ),

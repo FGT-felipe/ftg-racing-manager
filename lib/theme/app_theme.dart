@@ -55,10 +55,10 @@ class AppTheme {
       cardTheme: CardThemeData(
         color: surface,
         elevation: 2,
-        shadowColor: carbonFiber.withOpacity(0.08),
+        shadowColor: carbonFiber.withValues(alpha: 0.08),
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(16),
-          side: BorderSide(color: carbonFiber.withOpacity(0.05)),
+          side: BorderSide(color: carbonFiber.withValues(alpha: 0.05)),
         ),
         margin: EdgeInsets.zero,
       ),
@@ -81,13 +81,15 @@ class AppTheme {
       navigationRailTheme: NavigationRailThemeData(
         backgroundColor: surface,
         selectedIconTheme: const IconThemeData(color: neonApex),
-        unselectedIconTheme: IconThemeData(color: metalCool.withOpacity(0.7)),
+        unselectedIconTheme: IconThemeData(
+          color: metalCool.withValues(alpha: 0.7),
+        ),
         selectedLabelTextStyle: GoogleFonts.inter(
           color: carbonFiber,
           fontWeight: FontWeight.bold,
         ),
         unselectedLabelTextStyle: GoogleFonts.inter(color: metalCool),
-        indicatorColor: neonApex.withOpacity(0.2),
+        indicatorColor: neonApex.withValues(alpha: 0.2),
       ),
 
       // Bottom Navigation Bar Theme

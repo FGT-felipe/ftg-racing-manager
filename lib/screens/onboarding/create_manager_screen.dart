@@ -135,12 +135,12 @@ class _CreateManagerScreenState extends State<CreateManagerScreen> {
             'createdAt': FieldValue.serverTimestamp(),
           });
 
-      if (mounted) {
-        Navigator.of(context).pushReplacement(
-          MaterialPageRoute(builder: (context) => const TeamSelectionScreen()),
-        );
-      }
+      if (!mounted) return;
+      Navigator.of(context).pushReplacement(
+        MaterialPageRoute(builder: (context) => const TeamSelectionScreen()),
+      );
     } catch (e) {
+      if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text("Error: $e"), backgroundColor: Colors.red),
       );
@@ -182,7 +182,7 @@ class _CreateManagerScreenState extends State<CreateManagerScreen> {
                               style: TextStyle(
                                 fontSize: 20,
                                 fontWeight: FontWeight.w800,
-                                color: textColor.withOpacity(0.8),
+                                color: textColor.withValues(alpha: 0.8),
                                 letterSpacing: 1.5,
                               ),
                             ),
@@ -218,7 +218,7 @@ class _CreateManagerScreenState extends State<CreateManagerScreen> {
                               children: [
                                 Expanded(
                                   child: DropdownButtonFormField<String>(
-                                    value: _selectedCountry,
+                                    initialValue: _selectedCountry,
                                     decoration: _inputDeco("Country"),
                                     dropdownColor: Colors.white,
                                     items:
@@ -232,6 +232,7 @@ class _CreateManagerScreenState extends State<CreateManagerScreen> {
                                               'Spain',
                                               'Italy',
                                               'Germany',
+                                              'Overseas',
                                             ]
                                             .map(
                                               (c) => DropdownMenuItem(
@@ -247,7 +248,7 @@ class _CreateManagerScreenState extends State<CreateManagerScreen> {
                                 const SizedBox(width: 16),
                                 Expanded(
                                   child: DropdownButtonFormField<String>(
-                                    value: _selectedGender,
+                                    initialValue: _selectedGender,
                                     decoration: _inputDeco("Gender"),
                                     dropdownColor: Colors.white,
                                     items: ['Male', 'Female', 'Non-binary']
@@ -411,7 +412,7 @@ class _CreateManagerScreenState extends State<CreateManagerScreen> {
             padding: const EdgeInsets.all(16),
             decoration: BoxDecoration(
               color: isSelected
-                  ? const Color(0xFF10B981).withOpacity(0.1)
+                  ? const Color(0xFF10B981).withValues(alpha: 0.1)
                   : Colors.white,
               borderRadius: BorderRadius.circular(16),
               border: Border.all(
@@ -480,7 +481,9 @@ class _CreateManagerScreenState extends State<CreateManagerScreen> {
                   ),
                   onTap: () => setState(() => _selectedRoleIndex = index),
                   selected: isSelected,
-                  selectedTileColor: const Color(0xFF10B981).withOpacity(0.05),
+                  selectedTileColor: const Color(
+                    0xFF10B981,
+                  ).withValues(alpha: 0.05),
                 );
               },
             ),

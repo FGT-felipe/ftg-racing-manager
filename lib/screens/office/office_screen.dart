@@ -50,13 +50,13 @@ class OfficeScreen extends StatelessWidget {
                         (isNegative
                                 ? Colors.redAccent
                                 : Theme.of(context).primaryColor)
-                            .withOpacity(0.1),
+                            .withValues(alpha: 0.1),
                   ),
                   boxShadow: [
                     BoxShadow(
                       color: Theme.of(
                         context,
-                      ).colorScheme.onSurface.withOpacity(0.05),
+                      ).colorScheme.onSurface.withValues(alpha: 0.05),
                       blurRadius: 20,
                       offset: const Offset(0, 10),
                     ),
@@ -162,7 +162,7 @@ class OfficeScreen extends StatelessWidget {
                               size: 64,
                               color: Theme.of(
                                 context,
-                              ).colorScheme.onSurface.withOpacity(0.1),
+                              ).colorScheme.onSurface.withValues(alpha: 0.1),
                             ),
                             const SizedBox(height: 16),
                             const Text(
@@ -238,7 +238,7 @@ class OfficeScreen extends StatelessWidget {
         color: Theme.of(context).cardTheme.color,
         borderRadius: BorderRadius.circular(16),
         border: Border.all(
-          color: Theme.of(context).dividerColor.withOpacity(0.05),
+          color: Theme.of(context).dividerColor.withValues(alpha: 0.05),
         ),
       ),
       child: ListTile(
@@ -246,7 +246,7 @@ class OfficeScreen extends StatelessWidget {
         leading: Container(
           padding: const EdgeInsets.all(10),
           decoration: BoxDecoration(
-            color: iconColor.withOpacity(0.1),
+            color: iconColor.withValues(alpha: 0.1),
             borderRadius: BorderRadius.circular(12),
           ),
           child: Icon(icon, color: iconColor),

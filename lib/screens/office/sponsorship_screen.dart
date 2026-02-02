@@ -73,12 +73,13 @@ class _SponsorshipScreenState extends State<SponsorshipScreen> {
             .doc(AuthService().currentUser?.uid)
             .get(),
         builder: (context, managerSnapshot) {
-          if (!managerSnapshot.hasData)
+          if (!managerSnapshot.hasData) {
             return Center(
               child: CircularProgressIndicator(
                 color: Theme.of(context).primaryColor,
               ),
             );
+          }
 
           final managerData =
               managerSnapshot.data!.data() as Map<String, dynamic>?;
@@ -94,12 +95,13 @@ class _SponsorshipScreenState extends State<SponsorshipScreen> {
                 .doc(widget.teamId)
                 .snapshots(),
             builder: (context, teamSnapshot) {
-              if (!teamSnapshot.hasData)
+              if (!teamSnapshot.hasData) {
                 return Center(
                   child: CircularProgressIndicator(
                     color: Theme.of(context).primaryColor,
                   ),
                 );
+              }
 
               final teamData =
                   teamSnapshot.data!.data() as Map<String, dynamic>?;
@@ -159,13 +161,13 @@ class _SponsorshipScreenState extends State<SponsorshipScreen> {
               color: Theme.of(context).colorScheme.surface,
               borderRadius: BorderRadius.circular(32),
               border: Border.all(
-                color: Theme.of(context).dividerColor.withOpacity(0.08),
+                color: Theme.of(context).dividerColor.withValues(alpha: 0.08),
               ),
               boxShadow: [
                 BoxShadow(
                   color: Theme.of(
                     context,
-                  ).colorScheme.onSurface.withOpacity(0.03),
+                  ).colorScheme.onSurface.withValues(alpha: 0.03),
                   blurRadius: 30,
                   offset: const Offset(0, 10),
                 ),
@@ -184,7 +186,9 @@ class _SponsorshipScreenState extends State<SponsorshipScreen> {
         child: Text(
           "Select a car part to manage sponsorships",
           style: TextStyle(
-            color: Theme.of(context).colorScheme.onSurface.withOpacity(0.38),
+            color: Theme.of(
+              context,
+            ).colorScheme.onSurface.withValues(alpha: 0.38),
           ),
         ),
       );
@@ -211,7 +215,7 @@ class _SponsorshipScreenState extends State<SponsorshipScreen> {
           Container(
             padding: const EdgeInsets.all(32),
             decoration: BoxDecoration(
-              color: Theme.of(context).primaryColor.withOpacity(0.05),
+              color: Theme.of(context).primaryColor.withValues(alpha: 0.05),
               borderRadius: BorderRadius.circular(20),
               border: Border.all(color: Theme.of(context).primaryColor),
             ),
@@ -392,7 +396,7 @@ class _SponsorshipScreenState extends State<SponsorshipScreen> {
         height: 70,
         decoration: BoxDecoration(
           color: (hasContract || isSelected)
-              ? color.withOpacity(0.05)
+              ? color.withValues(alpha: 0.05)
               : Theme.of(context).cardTheme.color,
           borderRadius: BorderRadius.circular(16),
           border: Border.all(
@@ -400,11 +404,11 @@ class _SponsorshipScreenState extends State<SponsorshipScreen> {
                 ? Theme.of(context).primaryColor
                 : (hasContract
                       ? color
-                      : Theme.of(context).dividerColor.withOpacity(0.05)),
+                      : Theme.of(context).dividerColor.withValues(alpha: 0.05)),
             width: isSelected ? 2 : 1,
           ),
           boxShadow: hasContract
-              ? [BoxShadow(color: color.withOpacity(0.2), blurRadius: 10)]
+              ? [BoxShadow(color: color.withValues(alpha: 0.2), blurRadius: 10)]
               : null,
         ),
         child: Center(
@@ -418,7 +422,7 @@ class _SponsorshipScreenState extends State<SponsorshipScreen> {
                       ? color
                       : Theme.of(
                           context,
-                        ).colorScheme.onSurface.withOpacity(0.38),
+                        ).colorScheme.onSurface.withValues(alpha: 0.38),
                   fontSize: 10,
                   fontWeight: FontWeight.bold,
                 ),
@@ -450,7 +454,7 @@ class _SponsorshipScreenState extends State<SponsorshipScreen> {
         color: Theme.of(context).cardTheme.color,
         borderRadius: BorderRadius.circular(20),
         border: Border.all(
-          color: Theme.of(context).dividerColor.withOpacity(0.05),
+          color: Theme.of(context).dividerColor.withValues(alpha: 0.05),
         ),
       ),
       child: Column(
@@ -467,14 +471,18 @@ class _SponsorshipScreenState extends State<SponsorshipScreen> {
           Text(
             "• Choose a strategy that matches the sponsor's personality.",
             style: TextStyle(
-              color: Theme.of(context).colorScheme.onSurface.withOpacity(0.7),
+              color: Theme.of(
+                context,
+              ).colorScheme.onSurface.withValues(alpha: 0.7),
               fontSize: 13,
             ),
           ),
           Text(
             "• You have 3 attempts total. Fail and they leave for 7 days.",
             style: TextStyle(
-              color: Theme.of(context).colorScheme.onSurface.withOpacity(0.7),
+              color: Theme.of(
+                context,
+              ).colorScheme.onSurface.withValues(alpha: 0.7),
               fontSize: 13,
             ),
           ),
@@ -556,11 +564,13 @@ class _SponsorOfferCardState extends State<_SponsorOfferCard> {
         color: Theme.of(context).cardTheme.color,
         borderRadius: BorderRadius.circular(24),
         border: Border.all(
-          color: Theme.of(context).dividerColor.withOpacity(0.05),
+          color: Theme.of(context).dividerColor.withValues(alpha: 0.05),
         ),
         boxShadow: [
           BoxShadow(
-            color: Theme.of(context).colorScheme.onSurface.withOpacity(0.05),
+            color: Theme.of(
+              context,
+            ).colorScheme.onSurface.withValues(alpha: 0.05),
             blurRadius: 10,
             offset: const Offset(0, 5),
           ),
@@ -590,7 +600,7 @@ class _SponsorOfferCardState extends State<_SponsorOfferCard> {
                     vertical: 4,
                   ),
                   decoration: BoxDecoration(
-                    color: Colors.green.withOpacity(0.2),
+                    color: Colors.green.withValues(alpha: 0.2),
                     borderRadius: BorderRadius.circular(8),
                   ),
                   child: const Text(
@@ -617,7 +627,7 @@ class _SponsorOfferCardState extends State<_SponsorOfferCard> {
             widget.financeService.formatCurrency(
               widget.offer.weeklyBasePayment,
             ),
-            Theme.of(context).colorScheme.onSurface.withOpacity(0.7),
+            Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.7),
           ),
           _infoRow(
             Icons.timer_outlined,
@@ -655,7 +665,7 @@ class _SponsorOfferCardState extends State<_SponsorOfferCard> {
                 style: TextStyle(
                   color: Theme.of(
                     context,
-                  ).colorScheme.onSurface.withOpacity(0.38),
+                  ).colorScheme.onSurface.withValues(alpha: 0.38),
                   fontSize: 11,
                   fontWeight: FontWeight.bold,
                 ),
@@ -694,7 +704,9 @@ class _SponsorOfferCardState extends State<_SponsorOfferCard> {
           Text(
             label,
             style: TextStyle(
-              color: Theme.of(context).colorScheme.onSurface.withOpacity(0.38),
+              color: Theme.of(
+                context,
+              ).colorScheme.onSurface.withValues(alpha: 0.38),
               fontSize: 12,
             ),
           ),
@@ -721,7 +733,7 @@ class _SponsorOfferCardState extends State<_SponsorOfferCard> {
     return OutlinedButton(
       onPressed: () => _negotiate(label),
       style: OutlinedButton.styleFrom(
-        side: BorderSide(color: color.withOpacity(0.4)),
+        side: BorderSide(color: color.withValues(alpha: 0.4)),
         padding: const EdgeInsets.symmetric(vertical: 12),
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
       ),
@@ -833,7 +845,7 @@ class _SponsorCarouselModalState extends State<_SponsorCarouselModal> {
                   style: TextStyle(
                     color: Theme.of(
                       context,
-                    ).colorScheme.onSurface.withOpacity(0.38),
+                    ).colorScheme.onSurface.withValues(alpha: 0.38),
                   ),
                 ),
               ],

@@ -71,7 +71,9 @@ class TeamSelectionScreen extends StatelessWidget {
               "Your career profile is ready. Now, apply for a management position in one of the available teams.",
               textAlign: TextAlign.center,
               style: TextStyle(
-                color: Theme.of(context).colorScheme.onSurface.withOpacity(0.7),
+                color: Theme.of(
+                  context,
+                ).colorScheme.onSurface.withValues(alpha: 0.7),
                 fontSize: 16,
               ),
             ),
@@ -161,7 +163,7 @@ class _TeamSelectionCard extends StatelessWidget {
         decoration: BoxDecoration(
           borderRadius: BorderRadius.circular(12),
           border: Border.all(
-            color: Theme.of(context).primaryColor.withOpacity(0.1),
+            color: Theme.of(context).primaryColor.withValues(alpha: 0.1),
           ),
         ),
         padding: const EdgeInsets.all(20),
@@ -182,7 +184,9 @@ class _TeamSelectionCard extends StatelessWidget {
             Text(
               "Initial Budget: $budgetFormatted",
               style: TextStyle(
-                color: Theme.of(context).colorScheme.onSurface.withOpacity(0.7),
+                color: Theme.of(
+                  context,
+                ).colorScheme.onSurface.withValues(alpha: 0.7),
               ),
             ),
             const Spacer(),

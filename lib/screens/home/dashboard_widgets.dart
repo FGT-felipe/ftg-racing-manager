@@ -22,7 +22,7 @@ class TeamHeader extends StatelessWidget {
             width: 60,
             height: 60,
             decoration: BoxDecoration(
-              color: teamColor.withOpacity(0.2),
+              color: teamColor.withValues(alpha: 0.2),
               shape: BoxShape.circle,
               border: Border.all(color: teamColor, width: 2),
             ),
@@ -84,11 +84,11 @@ class StatusCard extends StatelessWidget {
       decoration: BoxDecoration(
         color: Theme.of(context).cardTheme.color,
         borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: mainColor.withOpacity(0.3), width: 1),
+        border: Border.all(color: mainColor.withValues(alpha: 0.3), width: 1),
         gradient: LinearGradient(
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
-          colors: [mainColor.withOpacity(0.1), Colors.transparent],
+          colors: [mainColor.withValues(alpha: 0.1), Colors.transparent],
         ),
       ),
       child: Column(
@@ -159,11 +159,13 @@ class FinanceCard extends StatelessWidget {
           color: Theme.of(context).cardTheme.color,
           borderRadius: BorderRadius.circular(16),
           border: Border.all(
-            color: Theme.of(context).dividerColor.withOpacity(0.05),
+            color: Theme.of(context).dividerColor.withValues(alpha: 0.05),
           ),
           boxShadow: [
             BoxShadow(
-              color: Theme.of(context).colorScheme.onSurface.withOpacity(0.05),
+              color: Theme.of(
+                context,
+              ).colorScheme.onSurface.withValues(alpha: 0.05),
               blurRadius: 10,
               offset: const Offset(0, 4),
             ),
@@ -174,7 +176,7 @@ class FinanceCard extends StatelessWidget {
             Container(
               padding: const EdgeInsets.all(12),
               decoration: BoxDecoration(
-                color: color.withOpacity(0.1),
+                color: color.withValues(alpha: 0.1),
                 borderRadius: BorderRadius.circular(12),
               ),
               child: Icon(Icons.account_balance_wallet, color: color),
@@ -238,7 +240,9 @@ class NewsItemCard extends StatelessWidget {
         color: Theme.of(context).cardTheme.color,
         borderRadius: BorderRadius.circular(12),
         border: Border.all(
-          color: Theme.of(context).colorScheme.onSurface.withOpacity(0.05),
+          color: Theme.of(
+            context,
+          ).colorScheme.onSurface.withValues(alpha: 0.05),
         ),
       ),
       child: Column(

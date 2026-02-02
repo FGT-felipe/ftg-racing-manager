@@ -1,7 +1,7 @@
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:flutter/foundation.dart' show kIsWeb;
+import 'package:flutter/foundation.dart';
 
 class GoogleAuthService {
   final FirebaseAuth _auth = FirebaseAuth.instance;
@@ -22,7 +22,7 @@ class GoogleAuthService {
       googleUser ??= await _googleSignIn.signIn();
 
       if (googleUser == null) {
-        print("El usuario canceló el login");
+        debugPrint("El usuario canceló el login");
         return null;
       }
 
@@ -49,7 +49,7 @@ class GoogleAuthService {
 
       return user;
     } catch (e) {
-      print("ERROR CRÍTICO GOOGLE SIGN IN: $e");
+      debugPrint("ERROR CRÍTICO GOOGLE SIGN IN: $e");
       rethrow;
     }
   }

@@ -85,7 +85,7 @@ class _ResponsiveMainScaffoldState extends State<ResponsiveMainScaffold> {
                 VerticalDivider(
                   thickness: 1,
                   width: 1,
-                  color: Theme.of(context).dividerColor.withOpacity(0.1),
+                  color: Theme.of(context).dividerColor.withValues(alpha: 0.1),
                 ),
 
                 // Content Area
@@ -114,7 +114,9 @@ class _ResponsiveMainScaffoldState extends State<ResponsiveMainScaffold> {
               decoration: BoxDecoration(
                 border: Border(
                   top: BorderSide(
-                    color: Theme.of(context).dividerColor.withOpacity(0.1),
+                    color: Theme.of(
+                      context,
+                    ).dividerColor.withValues(alpha: 0.1),
                     width: 1,
                   ),
                 ),
