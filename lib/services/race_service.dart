@@ -1,6 +1,8 @@
 import 'dart:math';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import '../models/core_models.dart';
+import '../models/simulation_models.dart';
+import '../services/circuit_service.dart';
 
 class RaceService {
   static final RaceService _instance = RaceService._internal();
@@ -8,6 +10,340 @@ class RaceService {
   RaceService._internal();
 
   final FirebaseFirestore _db = FirebaseFirestore.instance;
+
+  /// Genera un setup aproximado para la IA basado en la calidad del equipo
+  CarSetup _generateAISetup(CircuitProfile circuit, Team team) {
+    final random = Random();
+    final ideal = circuit.idealSetup;
+
+    // Competencia de la IA basada en stats del coche (Aero + Engine)
+    // 100 stats = 0 desviación. 50 stats = +/- 10 desviación.
+    double avgStat =
+        ((team.carStats['aero'] ?? 50) + (team.carStats['engine'] ?? 50)) / 2.0;
+    int maxDeviation = ((100 - avgStat) / 4).round().clamp(2, 25);
+
+    int dev() => random.nextInt(maxDeviation * 2 + 1) - maxDeviation;
+
+    return CarSetup(
+      frontWing: (ideal.frontWing + dev()).clamp(0, 100),
+      rearWing: (ideal.rearWing + dev()).clamp(0, 100),
+      suspension: (ideal.suspension + dev()).clamp(0, 100),
+      gearRatio: (ideal.gearRatio + dev()).clamp(0, 100),
+      tyrePressure: (ideal.tyrePressure + dev()).clamp(0, 100),
+    );
+  }
+
+  Future<List<Map<String, dynamic>>> simulateQualifying(String seasonId) async {
+    // 1. Obtener Datos
+    final seasonDoc = await _db.collection('seasons').doc(seasonId).get();
+    if (!seasonDoc.exists) throw Exception("Season not found");
+    final season = Season.fromMap(seasonDoc.data()!);
+
+    final raceIndex = season.calendar.indexWhere((r) => !r.isCompleted);
+    if (raceIndex == -1) throw Exception("No pending races");
+    // final currentRace = season.calendar[raceIndex];
+
+    // TODO: Usar el ID real del circuito cuando esté disponible en RaceEvent
+    // Por ahora usamos el nombre o ID genérico derivado
+    // final circuit = CircuitService().getCircuitProfile(currentRace.circuitId);
+    final circuit = CircuitService().getCircuitProfile(
+      'interlagos',
+    ); // Mock default
+
+    final teamsSnapshot = await _db.collection('teams').get();
+    List<Map<String, dynamic>> qualyResults = [];
+
+    for (var teamDoc in teamsSnapshot.docs) {
+      final team = Team.fromMap(teamDoc.data());
+      CarSetup teamSetup;
+
+      // 2. Determinar Setup
+      if (team.isBot) {
+        teamSetup = _generateAISetup(circuit, team);
+      } else {
+        // Player Team: Recuperar setup guardado o usar default
+        if (team.weekStatus['currentSetup'] != null) {
+          teamSetup = CarSetup.fromMap(
+            Map<String, dynamic>.from(team.weekStatus['currentSetup']),
+          );
+        } else {
+          teamSetup = CarSetup(); // Default 50-50-50...
+        }
+      }
+
+      // 3. Simular Vueltas para cada piloto
+      final driversSnapshot = await teamDoc.reference
+          .collection('drivers')
+          .get();
+      for (var driverDoc in driversSnapshot.docs) {
+        final driver = Driver.fromMap(driverDoc.data());
+
+        // Simular vuelta
+        final result = simulatePracticeRun(
+          circuit: circuit,
+          team: team,
+          driver: driver,
+          setup: teamSetup,
+        );
+
+        qualyResults.add({
+          'driverId': driver.id,
+          'driverName': driver.name,
+          'teamName': team.name,
+          'lapTime': result.lapTime,
+          'gap': 0.0, // Se calcula después de ordenar
+        });
+      }
+    }
+
+    // 4. Ordenar Grid (Menor tiempo primero)
+    qualyResults.sort(
+      (a, b) => (a['lapTime'] as double).compareTo(b['lapTime'] as double),
+    );
+
+    // 5. Calcular Gaps
+    if (qualyResults.isNotEmpty) {
+      double poleTime = qualyResults.first['lapTime'];
+      for (var res in qualyResults) {
+        res['gap'] = (res['lapTime'] as double) - poleTime;
+      }
+    }
+
+    return qualyResults;
+  }
+
+  /// Simula una vuelta de práctica para un conductor específico con un setup dado
+  PracticeRunResult simulatePracticeRun({
+    required CircuitProfile circuit,
+    required Team team,
+    required Driver driver,
+    required CarSetup setup,
+  }) {
+    final random = Random();
+    final ideal = circuit.idealSetup;
+
+    // 1. Calcular la desviación del setup (Penalty)
+    double setupPenalty = 0.0;
+    List<String> feedback = [];
+
+    // Aero Front
+    int gapFront = setup.frontWing - ideal.frontWing;
+    setupPenalty += gapFront.abs() * 0.05; // 0.05s por punto de diferencia
+    if (gapFront > 15)
+      feedback.add("Steering feels too sensitive (Oversteer).");
+    if (gapFront < -15)
+      feedback.add("The car doesn't want to turn in (Understeer).");
+
+    // Aero Rear
+    int gapRear = setup.rearWing - ideal.rearWing;
+    setupPenalty += gapRear.abs() * 0.05;
+    if (gapRear > 15) feedback.add("Too much drag on the straights.");
+    if (gapRear < -15) feedback.add("The rear is loose on exit.");
+
+    // Suspension
+    int gapSusp = setup.suspension - ideal.suspension;
+    setupPenalty += gapSusp.abs() * 0.03;
+    if (gapSusp > 15) feedback.add("Car is bouncing too much over kerbs.");
+    if (gapSusp < -15) feedback.add("Car feels sluggish to precise inputs.");
+
+    // Gear Ratio
+    int gapGear = setup.gearRatio - ideal.gearRatio;
+    setupPenalty += gapGear.abs() * 0.04;
+    if (gapGear > 15) feedback.add("Hitting the rev limiter too early.");
+    if (gapGear < -15) feedback.add("Acceleration out of corners is poor.");
+
+    // Tyre Pressure
+    int gapTyre = setup.tyrePressure - ideal.tyrePressure;
+    setupPenalty += gapTyre.abs() * 0.02;
+    if (gapTyre > 10) feedback.add("Tyres are overheating quickly.");
+    if (gapTyre < -10) feedback.add("Struggling to get heat into the tyres.");
+
+    // 2. Calcular Base Lap Time ajustado por el coche y conductor
+    // Car Score: (Aero + Engine + Reliability) / 300 -> 0.5 to 1.0 factor?
+    // Better car = Lower lap time.
+    double carPerformanceFactor =
+        1.0 -
+        (((team.carStats['aero'] ?? 50) + (team.carStats['engine'] ?? 50)) /
+            200.0 *
+            0.05);
+    // Max reduction 5%. This is conservative. Let's make it 2s range.
+
+    // Driver Score
+    double driverFactor =
+        1.0 -
+        (((driver.stats['speed'] ?? 50) + (driver.stats['cornering'] ?? 50)) /
+            200.0 *
+            0.03);
+
+    double actualLapTime =
+        circuit.baseLapTime * carPerformanceFactor * driverFactor;
+
+    // Add Setup Penalty
+    actualLapTime += setupPenalty;
+
+    // Add Randomness (Driver consistency)
+    double consistency =
+        (driver.stats['consistency'] ?? 50) / 100.0; // 0.5 to 1.0
+    double randomVariation =
+        (random.nextDouble() - 0.5) *
+        2 *
+        (1.0 - consistency); // +/- based on consistency
+    actualLapTime += randomVariation;
+
+    // 3. Calcular Setup Confidence
+    // 0 gap = 100%. Max gap approx 50 per component * 5 = 250.
+    double totalGap =
+        (gapFront.abs() +
+                gapRear.abs() +
+                gapSusp.abs() +
+                gapGear.abs() +
+                gapTyre.abs())
+            .toDouble();
+    double confidence = (1.0 - (totalGap / 200.0)).clamp(0.0, 1.0);
+
+    if (feedback.isEmpty) {
+      if (confidence > 0.95)
+        feedback.add("The balance feels perfect!");
+      else
+        feedback.add("The car feels okay, maybe small tweaks needed.");
+    }
+
+    return PracticeRunResult(
+      lapTime: actualLapTime,
+      driverFeedback: feedback,
+      setupConfidence: confidence,
+    );
+  }
+
+  /// Simula una carrera completa vuelta a vuelta
+  Future<RaceSessionResult> simulateRaceSession({
+    required String raceId,
+    required CircuitProfile circuit,
+    required List<Map<String, dynamic>> grid, // [ {driverId, team, setup...} ]
+    required Map<String, Team> teamsMap, // id -> Team
+    required Map<String, Driver> driversMap, // id -> Driver
+    required Map<String, CarSetup> setupsMap, // driverId -> Setup
+  }) async {
+    final random = Random();
+    int totalLaps = 50;
+
+    // Initial State
+    List<String> currentOrder = grid
+        .map((e) => e['driverId'] as String)
+        .toList();
+    Map<String, double> totalTimes = {for (var id in currentOrder) id: 0.0};
+    Map<String, double> tyreWear = {for (var id in currentOrder) id: 0.0};
+    List<String> dnfs = [];
+    List<LapData> raceLog = [];
+
+    // Base loop
+    for (int lap = 1; lap <= totalLaps; lap++) {
+      Map<String, double> currentLapTimes = {};
+      List<RaceEventLog> lapEvents = [];
+
+      // 1. Calculate Times
+      for (var driverId in currentOrder) {
+        if (dnfs.contains(driverId)) continue;
+
+        final driver = driversMap[driverId]!;
+        final team = teamsMap[driver.teamId!]!;
+        final setup = setupsMap[driverId]!;
+
+        // Base Performance
+        PracticeRunResult baseRun = simulatePracticeRun(
+          circuit: circuit,
+          team: team,
+          driver: driver,
+          setup: setup,
+        );
+
+        double lapTime = baseRun.lapTime;
+
+        // Tyre Wear Penalty
+        double wear = tyreWear[driverId]!;
+        lapTime += pow(wear / 100.0, 2) * 5.0; // Exponential penalty
+
+        // Fuel Effect (Car gets lighter)
+        lapTime -= (lap * 0.05);
+
+        // Pit Stop Logic
+        if (wear > 70) {
+          lapTime += 25.0; // Pit Time
+          tyreWear[driverId] = 0.0;
+          lapEvents.add(
+            RaceEventLog(
+              lapNumber: lap,
+              driverId: driverId,
+              description: "Pit Stop",
+              type: "PIT",
+            ),
+          );
+        } else {
+          // Add Wear
+          tyreWear[driverId] = wear + 3.0 + random.nextDouble();
+        }
+
+        currentLapTimes[driverId] = lapTime;
+        totalTimes[driverId] = (totalTimes[driverId] ?? 0) + lapTime;
+      }
+
+      // 2. Resolve Positions (Sort by Total Time)
+      List<String> newOrder = List.from(currentOrder);
+      newOrder.sort((a, b) {
+        if (dnfs.contains(a)) return 1;
+        if (dnfs.contains(b)) return -1;
+        return totalTimes[a]!.compareTo(totalTimes[b]!);
+      });
+
+      // Detect Overtakes
+      for (int i = 0; i < newOrder.length; i++) {
+        String driver = newOrder[i];
+        if (dnfs.contains(driver)) continue;
+
+        int oldPos = currentOrder.indexOf(driver);
+        if (oldPos != -1 && i < oldPos) {
+          lapEvents.add(
+            RaceEventLog(
+              lapNumber: lap,
+              driverId: driver,
+              description: "Overtake", // Generic for now
+              type: "OVERTAKE",
+            ),
+          );
+        }
+      }
+      currentOrder = newOrder;
+
+      // 3. Store Lap Data
+      Map<String, int> positions = {};
+      for (int i = 0; i < currentOrder.length; i++) {
+        positions[currentOrder[i]] = i + 1;
+      }
+
+      raceLog.add(
+        LapData(
+          lapNumber: lap,
+          driverLapTimes: currentLapTimes,
+          positions: positions,
+          events: lapEvents,
+        ),
+      );
+    }
+
+    // Final Result
+    Map<String, int> finalPositions = {};
+    for (int i = 0; i < currentOrder.length; i++) {
+      finalPositions[currentOrder[i]] = i + 1;
+    }
+
+    return RaceSessionResult(
+      raceId: raceId,
+      laps: raceLog,
+      finalPositions: finalPositions,
+      totalTimes: totalTimes,
+      dnfs: dnfs,
+    );
+  }
 
   Future<Map<String, dynamic>> simulateNextRace(String seasonId) async {
     final random = Random();

@@ -298,7 +298,7 @@ class _LoginScreenState extends State<LoginScreen> {
                 ),
                 const SizedBox(height: 24),
                 Text(
-                  "v2.1.2 POWERED BY FIRETOWER GAMES STUDIO",
+                  "v2.1.4 POWERED BY FIRETOWER GAMES STUDIO",
                   style: TextStyle(
                     fontSize: 10,
                     color: Theme.of(
