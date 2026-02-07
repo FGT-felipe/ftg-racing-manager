@@ -7,6 +7,7 @@ import '../../models/user_models.dart';
 import '../../models/core_models.dart';
 import 'dashboard_widgets.dart';
 import '../office/office_screen.dart';
+import '../race/garage_screen.dart';
 
 class DashboardScreen extends StatelessWidget {
   final String teamId;
@@ -15,13 +16,6 @@ class DashboardScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final timeService = TimeService();
-    final phase = timeService.getCurrentPhase();
-    final isRaceWeekend = phase == "RACE_WEEKEND";
-    final countdown = timeService.formatDuration(
-      timeService.getTimeUntilRace(),
-    );
-
     return SingleChildScrollView(
       child: SafeArea(
         child: StreamBuilder<User?>(
@@ -66,6 +60,22 @@ class DashboardScreen extends StatelessWidget {
                     }
                     final team = Team.fromMap(teamData);
 
+                    // Time Service Integration
+                    final timeService = TimeService();
+                    final currentStatus = timeService.currentStatus;
+                    final targetDate = timeService.nowBogota.add(
+                      timeService.getTimeUntilNextEvent(),
+                    );
+
+                    final practiceLapsMap =
+                        team.weekStatus['practiceLaps']
+                            as Map<String, dynamic>? ??
+                        {};
+                    int totalPracticeLaps = 0;
+                    for (var v in practiceLapsMap.values) {
+                      if (v is int) totalPracticeLaps += v;
+                    }
+
                     return Padding(
                       padding: const EdgeInsets.symmetric(
                         horizontal: 20,
@@ -78,15 +88,47 @@ class DashboardScreen extends StatelessWidget {
                             managerName: "${manager.name} ${manager.surname}",
                             teamName: team.name,
                           ),
-                          const SizedBox(height: 20),
+                          const SizedBox(height: 24),
 
-                          StatusCard(
-                            status: isRaceWeekend
-                                ? "Parc Fermé"
-                                : "Factory Open",
-                            timeUntilRace: countdown,
-                            isRaceWeekend: isRaceWeekend,
+                          RaceStatusHero(
+                            currentStatus: currentStatus,
+                            circuitName: "Interlagos Grand Prix",
+                            countryCode: "br",
+                            targetDate: targetDate,
+                            onActionPressed: () {
+                              if (currentStatus == RaceWeekStatus.practice) {
+                                Navigator.push(
+                                  context,
+                                  MaterialPageRoute(
+                                    builder: (context) =>
+                                        GarageScreen(teamId: team.id),
+                                  ),
+                                );
+                              } else {
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  SnackBar(
+                                    content: Text(
+                                      "Action for ${timeService.statusDisplayName} not implemented yet",
+                                    ),
+                                    backgroundColor: Colors.orange,
+                                  ),
+                                );
+                              }
+                            },
                           ),
+
+                          const SizedBox(height: 16),
+
+                          PreparationChecklist(
+                            setupSubmitted:
+                                team.weekStatus['qualifyingSetup'] != null &&
+                                totalPracticeLaps >= 1,
+                            strategySubmitted:
+                                team.weekStatus['raceStrategy'] != null,
+                            completedLaps: totalPracticeLaps,
+                            totalLaps: 20,
+                          ),
+
                           const SizedBox(height: 24),
 
                           FinanceCard(
@@ -115,12 +157,14 @@ class DashboardScreen extends StatelessWidget {
                           Text(
                             "PADDOCK RUMORS",
                             style: Theme.of(context).textTheme.labelLarge
-                                ?.copyWith(letterSpacing: 1.5),
+                                ?.copyWith(
+                                  letterSpacing: 1.5,
+                                  color: Colors.grey,
+                                ),
                           ),
                           const SizedBox(height: 16),
                           SizedBox(
-                            height:
-                                120, // Increased height for Card usage inside NewsItem
+                            height: 120,
                             child: ListView(
                               scrollDirection: Axis.horizontal,
                               children: const [
@@ -138,8 +182,6 @@ class DashboardScreen extends StatelessWidget {
                             ),
                           ),
                           const SizedBox(height: 32),
-
-                          _buildManagementTasks(context, team),
                         ],
                       ),
                     );
@@ -172,80 +214,6 @@ class DashboardScreen extends StatelessWidget {
             style: ElevatedButton.styleFrom(backgroundColor: Colors.redAccent),
             child: const Text("CONTACT ADMIN"),
           ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildManagementTasks(BuildContext context, Team team) {
-    final practiceDone = team.weekStatus['practiceCompleted'] ?? false;
-    final strategyDone = team.weekStatus['strategySet'] ?? false;
-
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          "MANAGEMENT TASKS",
-          style: Theme.of(context).textTheme.labelLarge?.copyWith(
-            color: Theme.of(context).colorScheme.secondary,
-            letterSpacing: 1.5,
-          ),
-        ),
-        const SizedBox(height: 12),
-        _buildTaskItem(
-          context,
-          Icons.psychology,
-          "Practice Session",
-          practiceDone,
-        ),
-        _buildTaskItem(
-          context,
-          Icons.settings_suggest,
-          "Strategy Setup",
-          strategyDone,
-        ),
-        _buildTaskItem(context, Icons.handshake, "Sponsor Review", false),
-      ],
-    );
-  }
-
-  Widget _buildTaskItem(
-    BuildContext context,
-    IconData icon,
-    String title,
-    bool completed,
-  ) {
-    return Container(
-      margin: const EdgeInsets.only(bottom: 12),
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: Theme.of(context).cardTheme.color,
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(
-          color: Theme.of(context).dividerColor.withValues(alpha: 0.05),
-        ),
-      ),
-      child: Row(
-        children: [
-          Icon(icon, color: completed ? Colors.greenAccent : Colors.grey),
-          const SizedBox(width: 16),
-          Text(
-            title,
-            style: TextStyle(
-              color: completed
-                  ? Theme.of(
-                      context,
-                    ).colorScheme.secondary.withValues(alpha: 0.5)
-                  : Theme.of(context).colorScheme.onSurface,
-              decoration: completed ? TextDecoration.lineThrough : null,
-              fontWeight: FontWeight.bold,
-            ),
-          ),
-          const Spacer(),
-          if (completed)
-            const Icon(Icons.check_circle, color: Colors.greenAccent, size: 20)
-          else
-            const Icon(Icons.chevron_right, color: Colors.white24, size: 20),
         ],
       ),
     );

@@ -363,6 +363,7 @@ class Team {
 
 class Driver {
   final String id;
+  final String? teamId;
   final String name;
   final int age;
   final int potential;
@@ -372,6 +373,7 @@ class Driver {
 
   Driver({
     required this.id,
+    this.teamId,
     required this.name,
     required this.age,
     required this.potential,
@@ -383,6 +385,7 @@ class Driver {
   Map<String, dynamic> toMap() {
     return {
       'id': id,
+      'teamId': teamId,
       'name': name,
       'age': age,
       'potential': potential,
@@ -395,6 +398,7 @@ class Driver {
   factory Driver.fromMap(Map<String, dynamic> map) {
     return Driver(
       id: map['id'] ?? '',
+      teamId: map['teamId'],
       name: map['name'] ?? 'Unknown Driver',
       age: map['age'] ?? 21,
       potential: map['potential'] ?? 50,
