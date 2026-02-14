@@ -3,6 +3,7 @@ import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
+import 'package:timezone/data/latest.dart' as tz_data;
 import 'firebase_options.dart';
 import 'l10n/app_localizations.dart';
 import 'theme/app_theme.dart';
@@ -13,6 +14,7 @@ import 'screens/main_layout.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  tz_data.initializeTimeZones();
   await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
   runApp(const FTGRacingApp());
 }

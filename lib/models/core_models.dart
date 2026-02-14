@@ -17,6 +17,9 @@ class RaceEvent {
   final String id;
   final String trackName;
   final String countryCode;
+  /// Circuit identifier for CircuitService (e.g. 'interlagos', 'monza').
+  /// Used to get ideal setup and lap time. If null/empty, generic circuit is used.
+  final String circuitId;
   final DateTime date;
   final bool isCompleted;
 
@@ -24,6 +27,7 @@ class RaceEvent {
     required this.id,
     required this.trackName,
     required this.countryCode,
+    this.circuitId = 'generic',
     required this.date,
     required this.isCompleted,
   });
@@ -33,6 +37,7 @@ class RaceEvent {
       'id': id,
       'trackName': trackName,
       'countryCode': countryCode,
+      'circuitId': circuitId,
       'date': date.toIso8601String(),
       'isCompleted': isCompleted,
     };
@@ -43,6 +48,7 @@ class RaceEvent {
       id: map['id'] ?? '',
       trackName: map['trackName'] ?? '',
       countryCode: map['countryCode'] ?? '',
+      circuitId: map['circuitId'] ?? 'generic',
       date: map['date'] != null ? DateTime.parse(map['date']) : DateTime.now(),
       isCompleted: map['isCompleted'] ?? false,
     );

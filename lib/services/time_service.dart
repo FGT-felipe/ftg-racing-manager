@@ -1,3 +1,5 @@
+import 'package:timezone/timezone.dart' as tz;
+
 enum RaceWeekStatus {
   practice, // Lunes 00:00 - Sábado 1:59 PM
   qualifying, // Sábado 2:00 PM - 3:00 PM (Setup Bloqueado)
@@ -11,9 +13,30 @@ class TimeService {
   factory TimeService() => _instance;
   TimeService._internal();
 
-  /// Mock time for simulation: Friday Feb 6, 2026 at 8:00 PM Bogotá time
+  /// Set to true to use fixed mock time (Friday 20:00) for testing. False = real Bogotá time.
+  static bool useMockTime = true;
+
+  static const String _bogotaZone = 'America/Bogota';
+
+  /// Current time in Bogotá (UTC-5). Uses mock time when [useMockTime] is true.
   DateTime get nowBogota {
-    return DateTime.parse("2026-02-06T20:00:00");
+    if (useMockTime) {
+      return DateTime.parse("2026-02-06T20:00:00");
+    }
+    try {
+      final location = tz.getLocation(_bogotaZone);
+      final tzNow = tz.TZDateTime.now(location);
+      return DateTime(
+        tzNow.year,
+        tzNow.month,
+        tzNow.day,
+        tzNow.hour,
+        tzNow.minute,
+        tzNow.second,
+      );
+    } catch (_) {
+      return DateTime.now();
+    }
   }
 
   RaceWeekStatus get currentStatus {

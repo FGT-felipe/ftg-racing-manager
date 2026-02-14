@@ -3,6 +3,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import '../models/core_models.dart';
 import '../models/simulation_models.dart';
 import '../services/circuit_service.dart';
+import '../services/season_service.dart';
 
 class RaceService {
   static final RaceService _instance = RaceService._internal();
@@ -34,21 +35,22 @@ class RaceService {
   }
 
   Future<List<Map<String, dynamic>>> simulateQualifying(String seasonId) async {
-    // 1. Obtener Datos
+    // 1. Obtener temporada y carrera actual
     final seasonDoc = await _db.collection('seasons').doc(seasonId).get();
     if (!seasonDoc.exists) throw Exception("Season not found");
     final season = Season.fromMap(seasonDoc.data()!);
 
-    final raceIndex = season.calendar.indexWhere((r) => !r.isCompleted);
-    if (raceIndex == -1) throw Exception("No pending races");
-    // final currentRace = season.calendar[raceIndex];
+    final current = SeasonService().getCurrentRace(season);
+    if (current == null) throw Exception("No pending races");
+    final currentRace = current.event;
 
-    // TODO: Usar el ID real del circuito cuando esté disponible en RaceEvent
-    // Por ahora usamos el nombre o ID genérico derivado
-    // final circuit = CircuitService().getCircuitProfile(currentRace.circuitId);
-    final circuit = CircuitService().getCircuitProfile(
-      'interlagos',
-    ); // Mock default
+    final circuit =
+        CircuitService().getCircuitProfile(currentRace.circuitId);
+
+    final raceId = await SeasonService().getOrCreateRaceDocument(
+      seasonId,
+      currentRace,
+    );
 
     final teamsSnapshot = await _db.collection('teams').get();
     List<Map<String, dynamic>> qualyResults = [];
@@ -108,6 +110,9 @@ class RaceService {
         res['gap'] = (res['lapTime'] as double) - poleTime;
       }
     }
+
+    // 6. Guardar parrilla en races/{raceId}
+    await SeasonService().saveQualifyingGrid(raceId, qualyResults);
 
     return qualyResults;
   }
