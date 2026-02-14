@@ -9,8 +9,10 @@ import 'widgets/internal_timing_card.dart';
 
 class GarageScreen extends StatefulWidget {
   final String teamId;
+  /// Circuit id for setup/profile (e.g. 'interlagos'). Uses current race circuit when opened from dashboard.
+  final String? circuitId;
 
-  const GarageScreen({super.key, required this.teamId});
+  const GarageScreen({super.key, required this.teamId, this.circuitId});
 
   @override
   State<GarageScreen> createState() => _GarageScreenState();
@@ -72,10 +74,10 @@ class _GarageScreenState extends State<GarageScreen> {
         }
       }
 
-      // 3. Fetch Circuit (Mock for now)
+      // 3. Fetch Circuit (from current race when circuitId passed, else default)
       _circuit = CircuitService().getCircuitProfile(
-        'interlagos',
-      ); // TODO: Get from current Season/Race
+        widget.circuitId ?? 'interlagos',
+      );
 
       // 4. Load last practice results for each driver
       await _loadLastPracticeResults();
@@ -364,7 +366,7 @@ class _GarageScreenState extends State<GarageScreen> {
     return Scaffold(
       backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       appBar: AppBar(
-        title: const Text("Garage - Interlagos"),
+        title: Text("Garage - ${_circuit?.name ?? 'Circuit'}"),
         backgroundColor: Theme.of(context).colorScheme.surface,
         elevation: 0,
         actions: [

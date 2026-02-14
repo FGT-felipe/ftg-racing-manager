@@ -121,13 +121,14 @@ class DatabaseSeeder {
       final league = League(id: leagueRef.id, name: "Copa Suramericana");
       batch.set(leagueRef, league.toMap());
 
-      // 2. CALENDARIO
+      // 2. CALENDARIO (circuitId matches CircuitService profiles where available)
       final now = DateTime.now();
       final List<RaceEvent> calendar = [
         RaceEvent(
           id: 'r1',
           trackName: "GP Interlagos",
           countryCode: "BR",
+          circuitId: 'interlagos',
           date: now.add(const Duration(days: 2)),
           isCompleted: false,
         ),
@@ -135,6 +136,7 @@ class DatabaseSeeder {
           id: 'r2',
           trackName: "GP Hermanos Rodríguez",
           countryCode: "MX",
+          circuitId: 'hermanos_rodriguez',
           date: now.add(const Duration(days: 11)),
           isCompleted: false,
         ),
@@ -142,6 +144,7 @@ class DatabaseSeeder {
           id: 'r3',
           trackName: "GP Termas de Río Hondo",
           countryCode: "AR",
+          circuitId: 'termas',
           date: now.add(const Duration(days: 18)),
           isCompleted: false,
         ),
@@ -149,6 +152,7 @@ class DatabaseSeeder {
           id: 'r4',
           trackName: "GP Tocancipá",
           countryCode: "CO",
+          circuitId: 'tocancipa',
           date: now.add(const Duration(days: 25)),
           isCompleted: false,
         ),
@@ -156,6 +160,7 @@ class DatabaseSeeder {
           id: 'r5',
           trackName: "GP El Pinar",
           countryCode: "UY",
+          circuitId: 'el_pinar',
           date: now.add(const Duration(days: 32)),
           isCompleted: false,
         ),
@@ -163,6 +168,7 @@ class DatabaseSeeder {
           id: 'r6',
           trackName: "GP Yahuarcocha",
           countryCode: "EC",
+          circuitId: 'yahuarcocha',
           date: now.add(const Duration(days: 39)),
           isCompleted: false,
         ),

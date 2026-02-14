@@ -3,11 +3,14 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import '../../services/time_service.dart';
 import '../../services/auth_service.dart';
+import '../../services/season_service.dart';
 import '../../models/user_models.dart';
 import '../../models/core_models.dart';
 import 'dashboard_widgets.dart';
 import '../office/office_screen.dart';
 import '../race/garage_screen.dart';
+import '../race/qualifying_screen.dart';
+import '../race/race_live_screen.dart';
 
 class DashboardScreen extends StatelessWidget {
   final String teamId;
@@ -60,130 +63,177 @@ class DashboardScreen extends StatelessWidget {
                     }
                     final team = Team.fromMap(teamData);
 
-                    // Time Service Integration
-                    final timeService = TimeService();
-                    final currentStatus = timeService.currentStatus;
-                    final targetDate = timeService.nowBogota.add(
-                      timeService.getTimeUntilNextEvent(),
-                    );
+                    return StreamBuilder<Season?>(
+                      stream: SeasonService().getActiveSeasonStream(),
+                      builder: (context, seasonSnapshot) {
+                        final season = seasonSnapshot.data;
+                        final currentRace =
+                            season != null
+                                ? SeasonService().getCurrentRace(season)
+                                : null;
+                        final circuitName =
+                            currentRace?.event.trackName ?? "Grand Prix";
+                        final countryCode =
+                            (currentRace?.event.countryCode ?? "—")
+                                .toLowerCase();
+                        final circuitId =
+                            currentRace?.event.circuitId ?? 'generic';
+                        final seasonId = season?.id;
 
-                    final practiceLapsMap =
-                        team.weekStatus['practiceLaps']
-                            as Map<String, dynamic>? ??
-                        {};
-                    int totalPracticeLaps = 0;
-                    for (var v in practiceLapsMap.values) {
-                      if (v is int) totalPracticeLaps += v;
-                    }
+                        final timeService = TimeService();
+                        final currentStatus = timeService.currentStatus;
+                        final targetDate = timeService.nowBogota.add(
+                          timeService.getTimeUntilNextEvent(),
+                        );
 
-                    return Padding(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 20,
-                        vertical: 20,
-                      ),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          TeamHeader(
-                            managerName: "${manager.name} ${manager.surname}",
-                            teamName: team.name,
-                          ),
-                          const SizedBox(height: 24),
+                        final practiceLapsMap =
+                            team.weekStatus['practiceLaps']
+                                as Map<String, dynamic>? ??
+                            {};
+                        int totalPracticeLaps = 0;
+                        for (var v in practiceLapsMap.values) {
+                          if (v is int) totalPracticeLaps += v;
+                        }
 
-                          RaceStatusHero(
-                            currentStatus: currentStatus,
-                            circuitName: "Interlagos Grand Prix",
-                            countryCode: "br",
-                            targetDate: targetDate,
-                            onActionPressed: () {
-                              if (currentStatus == RaceWeekStatus.practice) {
-                                Navigator.push(
-                                  context,
-                                  MaterialPageRoute(
-                                    builder: (context) =>
-                                        GarageScreen(teamId: team.id),
-                                  ),
-                                );
-                              } else {
-                                ScaffoldMessenger.of(context).showSnackBar(
-                                  SnackBar(
-                                    content: Text(
-                                      "Action for ${timeService.statusDisplayName} not implemented yet",
-                                    ),
-                                    backgroundColor: Colors.orange,
-                                  ),
-                                );
-                              }
-                            },
-                          ),
-
-                          const SizedBox(height: 16),
-
-                          PreparationChecklist(
-                            setupSubmitted:
-                                team.weekStatus['qualifyingSetup'] != null &&
-                                totalPracticeLaps >= 1,
-                            strategySubmitted:
-                                team.weekStatus['raceStrategy'] != null,
-                            completedLaps: totalPracticeLaps,
-                            totalLaps: 20,
-                          ),
-
-                          const SizedBox(height: 24),
-
-                          FinanceCard(
-                            budget: team.budget,
-                            onTap: () {
-                              if (team.id.isEmpty) {
-                                ScaffoldMessenger.of(context).showSnackBar(
-                                  const SnackBar(
-                                    content: Text("Error: Team ID is invalid"),
-                                    backgroundColor: Colors.red,
-                                  ),
-                                );
-                                return;
-                              }
-                              Navigator.push(
-                                context,
-                                MaterialPageRoute(
-                                  builder: (context) =>
-                                      OfficeScreen(teamId: team.id),
+                        void onHeroAction() {
+                          if (currentStatus == RaceWeekStatus.practice) {
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (context) => GarageScreen(
+                                  teamId: team.id,
+                                  circuitId: circuitId,
+                                ),
+                              ),
+                            );
+                          } else if (currentStatus == RaceWeekStatus.qualifying ||
+                              currentStatus == RaceWeekStatus.raceStrategy) {
+                            if (seasonId == null) {
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                const SnackBar(
+                                  content: Text("No active season"),
+                                  backgroundColor: Colors.orange,
                                 ),
                               );
-                            },
-                          ),
-                          const SizedBox(height: 32),
+                              return;
+                            }
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (context) =>
+                                    QualifyingScreen(seasonId: seasonId),
+                              ),
+                            );
+                          } else if (currentStatus == RaceWeekStatus.race ||
+                              currentStatus == RaceWeekStatus.postRace) {
+                            if (seasonId == null) {
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                const SnackBar(
+                                  content: Text("No active season"),
+                                  backgroundColor: Colors.orange,
+                                ),
+                              );
+                              return;
+                            }
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (context) =>
+                                    RaceLiveScreen(seasonId: seasonId),
+                              ),
+                            );
+                          }
+                        }
 
-                          Text(
-                            "PADDOCK RUMORS",
-                            style: Theme.of(context).textTheme.labelLarge
-                                ?.copyWith(
+                        return Padding(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 20,
+                            vertical: 20,
+                          ),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              TeamHeader(
+                                managerName:
+                                    "${manager.name} ${manager.surname}",
+                                teamName: team.name,
+                              ),
+                              const SizedBox(height: 24),
+                              RaceStatusHero(
+                                currentStatus: currentStatus,
+                                circuitName: circuitName,
+                                countryCode: countryCode,
+                                targetDate: targetDate,
+                                onActionPressed: onHeroAction,
+                              ),
+
+                              const SizedBox(height: 16),
+                              PreparationChecklist(
+                                setupSubmitted:
+                                    team.weekStatus['qualifyingSetup'] !=
+                                        null &&
+                                    totalPracticeLaps >= 1,
+                                strategySubmitted:
+                                    team.weekStatus['raceStrategy'] != null,
+                                completedLaps: totalPracticeLaps,
+                                totalLaps: 20,
+                              ),
+                              const SizedBox(height: 24),
+                              FinanceCard(
+                                budget: team.budget,
+                                onTap: () {
+                                  if (team.id.isEmpty) {
+                                    ScaffoldMessenger.of(context).showSnackBar(
+                                      const SnackBar(
+                                        content: Text(
+                                            "Error: Team ID is invalid"),
+                                        backgroundColor: Colors.red,
+                                      ),
+                                    );
+                                    return;
+                                  }
+                                  Navigator.push(
+                                    context,
+                                    MaterialPageRoute(
+                                      builder: (context) =>
+                                          OfficeScreen(teamId: team.id),
+                                    ),
+                                  );
+                                },
+                              ),
+                              const SizedBox(height: 32),
+                              Text(
+                                "PADDOCK RUMORS",
+                                style: Theme.of(context).textTheme.labelLarge
+                                    ?.copyWith(
                                   letterSpacing: 1.5,
                                   color: Colors.grey,
                                 ),
-                          ),
-                          const SizedBox(height: 16),
-                          SizedBox(
-                            height: 120,
-                            child: ListView(
-                              scrollDirection: Axis.horizontal,
-                              children: const [
-                                NewsItemCard(
-                                  headline:
-                                      "New technical regulations might favor engine power in 2027.",
-                                  source: "Racing Daily",
+                              ),
+                              const SizedBox(height: 16),
+                              SizedBox(
+                                height: 120,
+                                child: ListView(
+                                  scrollDirection: Axis.horizontal,
+                                  children: const [
+                                    NewsItemCard(
+                                      headline:
+                                          "New technical regulations might favor engine power in 2027.",
+                                      source: "Racing Daily",
+                                    ),
+                                    NewsItemCard(
+                                      headline:
+                                          "Rumors of a new street circuit in Buenos Aires growing stronger.",
+                                      source: "Paddock Pass",
+                                    ),
+                                  ],
                                 ),
-                                NewsItemCard(
-                                  headline:
-                                      "Rumors of a new street circuit in Buenos Aires growing stronger.",
-                                  source: "Paddock Pass",
-                                ),
-                              ],
-                            ),
+                              ),
+                              const SizedBox(height: 32),
+                            ],
                           ),
-                          const SizedBox(height: 32),
-                        ],
-                      ),
+                        );
+                      },
                     );
                   },
                 );
