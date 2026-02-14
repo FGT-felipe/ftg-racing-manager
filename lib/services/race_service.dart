@@ -44,8 +44,7 @@ class RaceService {
     if (current == null) throw Exception("No pending races");
     final currentRace = current.event;
 
-    final circuit =
-        CircuitService().getCircuitProfile(currentRace.circuitId);
+    final circuit = CircuitService().getCircuitProfile(currentRace.circuitId);
 
     final raceId = await SeasonService().getOrCreateRaceDocument(
       seasonId,
@@ -489,6 +488,7 @@ class RaceService {
       trackName: currentRace.trackName,
       countryCode: currentRace.countryCode,
       date: currentRace.date,
+      circuitId: currentRace.circuitId,
       isCompleted: true,
     );
 
@@ -504,6 +504,162 @@ class RaceService {
       'podium': performances.take(3).map((p) => p.driver).toList(),
       'dnfDrivers': dnfNames,
       'playerEarnings': playerEarnings,
+    };
+  }
+
+  /// Aplica los resultados de una sesión de carrera (RaceSessionResult) a la temporada:
+  /// - Actualiza puntos de pilotos y equipos.
+  /// - Actualiza presupuesto (premios).
+  /// - Mejora IA (opcional).
+  /// - Actualiza calendario (marca carrera como completada).
+  Future<Map<String, dynamic>> applyRaceResults(
+    String seasonId,
+    RaceSessionResult result,
+  ) async {
+    final seasonDoc = await _db.collection('seasons').doc(seasonId).get();
+    if (!seasonDoc.exists) throw Exception("Season not found");
+    final season = Season.fromMap(seasonDoc.data()!);
+
+    // Identify current race index based on UNCOMPLETED races
+    final raceIndex = season.calendar.indexWhere((r) => !r.isCompleted);
+    if (raceIndex == -1)
+      throw Exception("No pending races to apply results to");
+    final currentRace = season.calendar[raceIndex];
+
+    final batch = _db.batch();
+    final pointSystem = [25, 18, 15, 12, 10, 8, 6, 4, 2, 1];
+    final random = Random();
+
+    // 1. Fetch all teams/drivers to update them
+    final teamsSnapshot = await _db.collection('teams').get();
+    Map<String, Team> teamsMap = {};
+    // Map driverId -> DocumentReference needed for points update
+    Map<String, DocumentReference> driverRefs = {};
+    Map<String, String> driverTeamIds = {};
+    int playerEarnings = 0;
+
+    for (var teamDoc in teamsSnapshot.docs) {
+      final team = Team.fromMap(teamDoc.data());
+      teamsMap[team.id] = team;
+
+      // AI Upgrades (Logic from simulateNextRace)
+      if (team.isBot) {
+        bool upgraded = false;
+        final newStats = Map<String, int>.from(team.carStats);
+        if (random.nextInt(100) < 40) {
+          newStats['aero'] = (newStats['aero'] ?? 50) + 1;
+          upgraded = true;
+        }
+        if (random.nextInt(100) < 40) {
+          newStats['engine'] = (newStats['engine'] ?? 50) + 1;
+          upgraded = true;
+        }
+        if (upgraded) {
+          batch.update(teamDoc.reference, {'carStats': newStats});
+        }
+      }
+
+      final driversSnapshot = await teamDoc.reference
+          .collection('drivers')
+          .get();
+      for (var dDoc in driversSnapshot.docs) {
+        driverRefs[dDoc.id] = dDoc.reference;
+        driverTeamIds[dDoc.id] = team.id;
+      }
+    }
+
+    // 2. Process Results
+    Map<String, int> teamPointUpdates = {}; // teamId -> new points to add
+
+    // Get sorted list of driverIds based on finalPositions (1st place = 1)
+    List<String> sortedDriverIds = result.finalPositions.keys.toList();
+    sortedDriverIds.sort(
+      (a, b) => (result.finalPositions[a] ?? 999).compareTo(
+        result.finalPositions[b] ?? 999,
+      ),
+    );
+
+    // Filter out DNFs from points?
+    // Usually DNFs are at the bottom anyway if sorted by position,
+    // but position mapping should handle it (e.g. DNF = 20).
+    // Let's assume finalPositions are valid 1..N.
+
+    for (int i = 0; i < sortedDriverIds.length; i++) {
+      final driverId = sortedDriverIds[i];
+      if (result.dnfs.contains(driverId)) continue;
+
+      // Points for top 10 (i=0 is 1st place)
+      if (i < pointSystem.length) {
+        int points = pointSystem[i];
+
+        // Update Driver Points
+        if (driverRefs.containsKey(driverId)) {
+          batch.update(driverRefs[driverId]!, {
+            'points': FieldValue.increment(points),
+          });
+        }
+
+        // Accumulate Team Points
+        final tId = driverTeamIds[driverId];
+        if (tId != null) {
+          teamPointUpdates[tId] = (teamPointUpdates[tId] ?? 0) + points;
+        }
+      }
+    }
+
+    // 3. Update Team Points and Budget
+    const int basePrize = 250000;
+    const int pointValue = 150000;
+
+    for (var teamId in teamsMap.keys) {
+      final earnedPoints = teamPointUpdates[teamId] ?? 0;
+      final earnings = basePrize + (earnedPoints * pointValue);
+      final team = teamsMap[teamId]!;
+
+      final teamRef = _db.collection('teams').doc(teamId);
+
+      Map<String, dynamic> updates = {'budget': FieldValue.increment(earnings)};
+
+      if (earnedPoints > 0) {
+        updates['points'] = FieldValue.increment(earnedPoints);
+      }
+
+      // Reset week status
+      updates['weekStatus'] = {
+        'practiceCompleted': false,
+        'strategySet': false,
+        'sponsorReviewed': false,
+        // Preserve structure if needed, but clearing flags is key
+      };
+
+      batch.update(teamRef, updates);
+
+      if (!team.isBot) {
+        playerEarnings = earnings;
+      }
+    }
+
+    // 4. Update Calendar
+    final updatedCalendar = List<RaceEvent>.from(season.calendar);
+    updatedCalendar[raceIndex] = RaceEvent(
+      id: currentRace.id,
+      trackName: currentRace.trackName,
+      countryCode: currentRace.countryCode,
+      date: currentRace.date,
+      circuitId: currentRace.circuitId, // Preserve circuitId
+      isCompleted: true,
+    );
+
+    batch.update(seasonDoc.reference, {
+      'calendar': updatedCalendar.map((e) => e.toMap()).toList(),
+    });
+
+    // 5. Commit
+    await batch.commit();
+
+    return {
+      'playerEarnings': playerEarnings,
+      'pointsAwarded': teamPointUpdates,
     };
   }
 }

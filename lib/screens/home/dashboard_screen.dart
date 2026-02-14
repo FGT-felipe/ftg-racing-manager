@@ -11,6 +11,9 @@ import '../office/office_screen.dart';
 import '../race/garage_screen.dart';
 import '../race/qualifying_screen.dart';
 import '../race/race_live_screen.dart';
+import '../race/race_strategy_screen.dart';
+import '../standings_screen.dart';
+import '../../utils/app_constants.dart';
 
 class DashboardScreen extends StatelessWidget {
   final String teamId;
@@ -67,10 +70,9 @@ class DashboardScreen extends StatelessWidget {
                       stream: SeasonService().getActiveSeasonStream(),
                       builder: (context, seasonSnapshot) {
                         final season = seasonSnapshot.data;
-                        final currentRace =
-                            season != null
-                                ? SeasonService().getCurrentRace(season)
-                                : null;
+                        final currentRace = season != null
+                            ? SeasonService().getCurrentRace(season)
+                            : null;
                         final circuitName =
                             currentRace?.event.trackName ?? "Grand Prix";
                         final countryCode =
@@ -106,8 +108,8 @@ class DashboardScreen extends StatelessWidget {
                                 ),
                               ),
                             );
-                          } else if (currentStatus == RaceWeekStatus.qualifying ||
-                              currentStatus == RaceWeekStatus.raceStrategy) {
+                          } else if (currentStatus ==
+                              RaceWeekStatus.qualifying) {
                             if (seasonId == null) {
                               ScaffoldMessenger.of(context).showSnackBar(
                                 const SnackBar(
@@ -124,6 +126,19 @@ class DashboardScreen extends StatelessWidget {
                                     QualifyingScreen(seasonId: seasonId),
                               ),
                             );
+                          } else if (currentStatus ==
+                              RaceWeekStatus.raceStrategy) {
+                            // Check if seasonId is available, though we just need teamId mostly
+                            if (seasonId == null) return;
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (context) => RaceStrategyScreen(
+                                  teamId: team.id,
+                                  circuitId: circuitId,
+                                ),
+                              ),
+                            );
                           } else if (currentStatus == RaceWeekStatus.race ||
                               currentStatus == RaceWeekStatus.postRace) {
                             if (seasonId == null) {
@@ -135,6 +150,28 @@ class DashboardScreen extends StatelessWidget {
                               );
                               return;
                             }
+
+                            // Check if the current race (pending) is actually "this week's" race or a future one.
+                            // If it's far in the future (> 4 days away), it means we already finished this week's race.
+                            if (currentRace != null) {
+                              final now = TimeService().nowBogota;
+                              final diff = currentRace.event.date
+                                  .difference(now)
+                                  .inDays;
+
+                              if (diff > 4) {
+                                // Current pending race is in future. We likely finished today's race.
+                                Navigator.push(
+                                  context,
+                                  MaterialPageRoute(
+                                    builder: (context) =>
+                                        const StandingsScreen(),
+                                  ),
+                                );
+                                return;
+                              }
+                            }
+
                             Navigator.push(
                               context,
                               MaterialPageRoute(
@@ -176,7 +213,7 @@ class DashboardScreen extends StatelessWidget {
                                 strategySubmitted:
                                     team.weekStatus['raceStrategy'] != null,
                                 completedLaps: totalPracticeLaps,
-                                totalLaps: 20,
+                                totalLaps: kMaxPracticeLapsPerDriver * 2,
                               ),
                               const SizedBox(height: 24),
                               FinanceCard(
@@ -186,7 +223,8 @@ class DashboardScreen extends StatelessWidget {
                                     ScaffoldMessenger.of(context).showSnackBar(
                                       const SnackBar(
                                         content: Text(
-                                            "Error: Team ID is invalid"),
+                                          "Error: Team ID is invalid",
+                                        ),
                                         backgroundColor: Colors.red,
                                       ),
                                     );
@@ -206,9 +244,9 @@ class DashboardScreen extends StatelessWidget {
                                 "PADDOCK RUMORS",
                                 style: Theme.of(context).textTheme.labelLarge
                                     ?.copyWith(
-                                  letterSpacing: 1.5,
-                                  color: Colors.grey,
-                                ),
+                                      letterSpacing: 1.5,
+                                      color: Colors.grey,
+                                    ),
                               ),
                               const SizedBox(height: 16),
                               SizedBox(

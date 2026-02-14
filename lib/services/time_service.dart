@@ -14,7 +14,9 @@ class TimeService {
   TimeService._internal();
 
   /// Set to true to use fixed mock time (Friday 20:00) for testing. False = real Bogotá time.
-  static bool useMockTime = true;
+  /// En desarrollo, poner `TimeService.useMockTime = true` en main.dart para usar hora fija.
+  /// En producción, dejar `false`.
+  static bool useMockTime = false;
 
   static const String _bogotaZone = 'America/Bogota';
 

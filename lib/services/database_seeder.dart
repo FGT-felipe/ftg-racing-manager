@@ -235,7 +235,11 @@ class DatabaseSeeder {
               potential: 70 + random.nextInt(30),
               points: 0,
               gender: isFemale ? 'F' : 'M',
-              stats: {'speed': speed, 'cornering': cornering},
+              stats: {
+                'speed': speed,
+                'cornering': cornering,
+                'consistency': 40 + random.nextInt(41),
+              },
             ).toMap(),
           );
         }

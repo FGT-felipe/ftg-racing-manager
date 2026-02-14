@@ -6,9 +6,11 @@ import '../../services/race_service.dart';
 import '../../services/circuit_service.dart';
 import '../../services/time_service.dart';
 import 'widgets/internal_timing_card.dart';
+import '../../utils/app_constants.dart';
 
 class GarageScreen extends StatefulWidget {
   final String teamId;
+
   /// Circuit id for setup/profile (e.g. 'interlagos'). Uses current race circuit when opened from dashboard.
   final String? circuitId;
 
@@ -178,10 +180,12 @@ class _GarageScreenState extends State<GarageScreen> {
     if (_circuit == null || _selectedDriverId == null) return;
 
     final currentLaps = _driverLaps[_selectedDriverId] ?? 0;
-    if (currentLaps >= 10) {
+    if (currentLaps >= kMaxPracticeLapsPerDriver) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
-          content: Text("Driver finished practice session (Max 10 laps)"),
+          content: Text(
+            "Driver finished practice session (Max $kMaxPracticeLapsPerDriver laps)",
+          ),
           backgroundColor: Colors.red,
         ),
       );
@@ -457,10 +461,10 @@ class _GarageScreenState extends State<GarageScreen> {
                                       overflow: TextOverflow.ellipsis,
                                     ),
                                     Text(
-                                      "$laps/10 laps",
+                                      "$laps/$kMaxPracticeLapsPerDriver laps",
                                       style: TextStyle(
                                         fontSize: 10,
-                                        color: laps >= 10
+                                        color: laps >= kMaxPracticeLapsPerDriver
                                             ? Colors.redAccent
                                             : Colors.grey,
                                       ),

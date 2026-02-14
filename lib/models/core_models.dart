@@ -17,6 +17,7 @@ class RaceEvent {
   final String id;
   final String trackName;
   final String countryCode;
+
   /// Circuit identifier for CircuitService (e.g. 'interlagos', 'monza').
   /// Used to get ideal setup and lap time. If null/empty, generic circuit is used.
   final String circuitId;
@@ -411,7 +412,7 @@ class Driver {
       points: map['points'] ?? 0,
       gender: map['gender'] ?? 'M',
       stats: Map<String, int>.from(
-        map['stats'] ?? {'speed': 50, 'cornering': 50},
+        map['stats'] ?? {'speed': 50, 'cornering': 50, 'consistency': 50},
       ),
     );
   }

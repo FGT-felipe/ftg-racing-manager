@@ -96,6 +96,88 @@ class CircuitService {
         'Weather': 'Unpredictable',
       },
     ),
+    // GP Hermanos Rodríguez - Mexico (Alta altitud, gran recta)
+    'hermanos_rodriguez': CircuitProfile(
+      id: 'hermanos_rodriguez',
+      name: 'Autódromo Hermanos Rodríguez',
+      baseLapTime: 76.0,
+      idealSetup: CarSetup(
+        frontWing: 80, // Alta carga por aire fino
+        rearWing: 75,
+        suspension: 50,
+        gearRatio: 85, // Larga recta
+        tyrePressure: 45,
+      ),
+      difficulty: 0.6,
+      overtakingDifficulty: 0.4,
+      characteristics: {
+        'Altitude': 'Very High',
+        'Cooling': 'Difficult',
+        'Top Speed': 'High',
+      },
+    ),
+    // GP Termas de Río Hondo - Argentina (Fluido, rápido)
+    'termas': CircuitProfile(
+      id: 'termas',
+      name: 'Autódromo Termas de Río Hondo',
+      baseLapTime: 98.0,
+      idealSetup: CarSetup(
+        frontWing: 60,
+        rearWing: 55,
+        suspension: 60,
+        gearRatio: 60,
+        tyrePressure: 55,
+      ),
+      difficulty: 0.5,
+      overtakingDifficulty: 0.3,
+      characteristics: {'Flow': 'Good', 'Tyre Wear': 'Medium'},
+    ),
+    // GP Tocancipá - Colombia (Corto, trabado, altura)
+    'tocancipa': CircuitProfile(
+      id: 'tocancipa',
+      name: 'Autódromo de Tocancipá',
+      baseLapTime: 65.0, // Vuelta corta
+      idealSetup: CarSetup(
+        frontWing: 85,
+        rearWing: 80,
+        suspension: 40,
+        gearRatio: 30, // Corta
+        tyrePressure: 50,
+      ),
+      difficulty: 0.55,
+      overtakingDifficulty: 0.7,
+      characteristics: {'Layout': 'Tight', 'Altitude': 'High'},
+    ),
+    // GP El Pinar - Uruguay (Técnico)
+    'el_pinar': CircuitProfile(
+      id: 'el_pinar',
+      name: 'Autódromo Víctor Borrat Fabini',
+      baseLapTime: 72.0,
+      idealSetup: CarSetup(
+        frontWing: 65,
+        rearWing: 60,
+        suspension: 55,
+        gearRatio: 45,
+        tyrePressure: 50,
+      ),
+      difficulty: 0.5,
+      overtakingDifficulty: 0.6,
+    ),
+    // GP Yahuarcocha - Ecuador (Escénico, media velocidad)
+    'yahuarcocha': CircuitProfile(
+      id: 'yahuarcocha',
+      name: 'Autódromo Internacional de Yahuarcocha',
+      baseLapTime: 90.0,
+      idealSetup: CarSetup(
+        frontWing: 55,
+        rearWing: 50,
+        suspension: 50,
+        gearRatio: 55,
+        tyrePressure: 50,
+      ),
+      difficulty: 0.45,
+      overtakingDifficulty: 0.4,
+    ),
   };
 
   /// Obtiene el perfil del circuito por ID (o nombre parcial para fallback)
