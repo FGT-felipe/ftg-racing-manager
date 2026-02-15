@@ -44,8 +44,7 @@ class RaceService {
     if (current == null) throw Exception("No pending races");
     final currentRace = current.event;
 
-    final circuit =
-        CircuitService().getCircuitProfile(currentRace.circuitId);
+    final circuit = CircuitService().getCircuitProfile(currentRace.circuitId);
 
     final raceId = await SeasonService().getOrCreateRaceDocument(
       seasonId,
@@ -114,6 +113,25 @@ class RaceService {
     // 6. Guardar parrilla en races/{raceId}
     await SeasonService().saveQualifyingGrid(raceId, qualyResults);
 
+    // 7. Increment Pole Stat for the winner
+    if (qualyResults.isNotEmpty) {
+      final poleDriverId = qualyResults.first['driverId'] as String;
+      // We need the reference. This is a bit tricky since we don't have it here easily.
+      // But we can find which team is it from qualyResults or just run a query.
+      final teams = await _db.collection('teams').get();
+      for (var tDoc in teams.docs) {
+        final dDoc = await tDoc.reference
+            .collection('drivers')
+            .doc(poleDriverId)
+            .get();
+        if (dDoc.exists) {
+          await dDoc.reference.update({'poles': FieldValue.increment(1)});
+          await tDoc.reference.update({'poles': FieldValue.increment(1)});
+          break;
+        }
+      }
+    }
+
     return qualyResults;
   }
 
@@ -133,52 +151,82 @@ class RaceService {
 
     // Aero Front
     int gapFront = setup.frontWing - ideal.frontWing;
-    setupPenalty += gapFront.abs() * 0.05; // 0.05s por punto de diferencia
-    if (gapFront > 15)
-      feedback.add("Steering feels too sensitive (Oversteer).");
-    if (gapFront < -15)
-      feedback.add("The car doesn't want to turn in (Understeer).");
+    setupPenalty += gapFront.abs() * 0.04; // Slightly reduced from 0.05
+    if (gapFront > 15) {
+      feedback.add(
+        "The front end is way too sharp, I'm fighting oversteer in every corner.",
+      );
+    } else if (gapFront < -15) {
+      feedback.add("The car is lazy on entry, we have too much understeer.");
+    }
 
     // Aero Rear
     int gapRear = setup.rearWing - ideal.rearWing;
-    setupPenalty += gapRear.abs() * 0.05;
-    if (gapRear > 15) feedback.add("Too much drag on the straights.");
-    if (gapRear < -15) feedback.add("The rear is loose on exit.");
+    setupPenalty += gapRear.abs() * 0.04;
+    if (gapRear > 15) {
+      feedback.add(
+        "We're slow on the straights, feels like we have a parachute attached.",
+      );
+    } else if (gapRear < -15) {
+      feedback.add(
+        "The rear is very nervous. I can't put the power down without losing it.",
+      );
+    }
 
     // Suspension
     int gapSusp = setup.suspension - ideal.suspension;
-    setupPenalty += gapSusp.abs() * 0.03;
-    if (gapSusp > 15) feedback.add("Car is bouncing too much over kerbs.");
-    if (gapSusp < -15) feedback.add("Car feels sluggish to precise inputs.");
+    setupPenalty += gapSusp.abs() * 0.025;
+    if (gapSusp > 15) {
+      feedback.add(
+        "The car is too stiff, it's bouncing like crazy over the kerbs.",
+      );
+    } else if (gapSusp < -15) {
+      feedback.add(
+        "The suspension feels like jelly, the car is rolling too much in the turns.",
+      );
+    }
 
     // Gear Ratio
     int gapGear = setup.gearRatio - ideal.gearRatio;
-    setupPenalty += gapGear.abs() * 0.04;
-    if (gapGear > 15) feedback.add("Hitting the rev limiter too early.");
-    if (gapGear < -15) feedback.add("Acceleration out of corners is poor.");
+    setupPenalty += gapGear.abs() * 0.035;
+    if (gapGear > 15) {
+      feedback.add(
+        "The gears are too short, I'm hitting the limiter way before the end of the straight.",
+      );
+    } else if (gapGear < -15) {
+      feedback.add(
+        "The gear ratios are too long, the acceleration out of slow corners is non-existent.",
+      );
+    }
 
     // Tyre Pressure
     int gapTyre = setup.tyrePressure - ideal.tyrePressure;
     setupPenalty += gapTyre.abs() * 0.02;
-    if (gapTyre > 10) feedback.add("Tyres are overheating quickly.");
-    if (gapTyre < -10) feedback.add("Struggling to get heat into the tyres.");
+    if (gapTyre > 10) {
+      feedback.add(
+        "Tyre pressures are too high, they're overheating and losing grip after three corners.",
+      );
+    } else if (gapTyre < -10) {
+      feedback.add(
+        "I can't get any heat into the tyres, they feel stone cold.",
+      );
+    }
 
     // 2. Calcular Base Lap Time ajustado por el coche y conductor
-    // Car Score: (Aero + Engine + Reliability) / 300 -> 0.5 to 1.0 factor?
-    // Better car = Lower lap time.
-    double carPerformanceFactor =
-        1.0 -
-        (((team.carStats['aero'] ?? 50) + (team.carStats['engine'] ?? 50)) /
-            200.0 *
-            0.05);
-    // Max reduction 5%. This is conservative. Let's make it 2s range.
+    // Car Score: Quality levels 1-20.
+    double aeroVal = (team.carStats['aero'] ?? 1).toDouble().clamp(1, 20);
+    double engineVal = (team.carStats['engine'] ?? 1).toDouble().clamp(1, 20);
+
+    // Performance factor impact increased to 20% (0.20) to make car quality much more significant.
+    // Level 20 = 0.80 factor, Level 1 = 0.99 factor approx.
+    double carPerformanceFactor = 1.0 - (((aeroVal + engineVal) / 40.0) * 0.20);
 
     // Driver Score
     double driverFactor =
         1.0 -
         (((driver.stats['speed'] ?? 50) + (driver.stats['cornering'] ?? 50)) /
             200.0 *
-            0.03);
+            0.05);
 
     double actualLapTime =
         circuit.baseLapTime * carPerformanceFactor * driverFactor;
@@ -187,16 +235,14 @@ class RaceService {
     actualLapTime += setupPenalty;
 
     // Add Randomness (Driver consistency)
-    double consistency =
-        (driver.stats['consistency'] ?? 50) / 100.0; // 0.5 to 1.0
+    double consistency = (driver.stats['consistency'] ?? 50) / 100.0;
     double randomVariation =
         (random.nextDouble() - 0.5) *
-        2 *
-        (1.0 - consistency); // +/- based on consistency
+        1.2 * // Slightly reduced random swing
+        (1.0 - consistency);
     actualLapTime += randomVariation;
 
     // 3. Calcular Setup Confidence
-    // 0 gap = 100%. Max gap approx 50 per component * 5 = 250.
     double totalGap =
         (gapFront.abs() +
                 gapRear.abs() +
@@ -204,19 +250,58 @@ class RaceService {
                 gapGear.abs() +
                 gapTyre.abs())
             .toDouble();
-    double confidence = (1.0 - (totalGap / 200.0)).clamp(0.0, 1.0);
+    double confidence = (1.0 - (totalGap / 120.0)).clamp(0.0, 1.0);
 
     if (feedback.isEmpty) {
-      if (confidence > 0.95)
-        feedback.add("The balance feels perfect!");
-      else
-        feedback.add("The car feels okay, maybe small tweaks needed.");
+      if (confidence > 0.98) {
+        feedback.add(
+          "The balance is spot on! I wouldn't change a single thing.",
+        );
+      } else if (confidence > 0.92) {
+        feedback.add(
+          "The car feels excellent, only very minor tweaks could improve it.",
+        );
+      } else {
+        // Find the part with the largest remaining gap
+        Map<String, int> gaps = {
+          "front wing": gapFront,
+          "rear wing": gapRear,
+          "suspension": gapSusp,
+          "gearing": gapGear,
+          "tyre pressures": gapTyre,
+        };
+
+        String worstPart = "";
+        int maxAbsGap = 0;
+        gaps.forEach((key, val) {
+          if (val.abs() > maxAbsGap) {
+            maxAbsGap = val.abs();
+            worstPart = key;
+          }
+        });
+
+        int gapValue = gaps[worstPart]!;
+        if (gapValue > 5) {
+          feedback.add(
+            "I still feel $worstPart is a bit too high for this track.",
+          );
+        } else if (gapValue < -5) {
+          feedback.add(
+            "I think we could gain time by increasing the $worstPart.",
+          );
+        } else {
+          feedback.add(
+            "The setup is okay, but I feel there is still more potential in the car.",
+          );
+        }
+      }
     }
 
     return PracticeRunResult(
       lapTime: actualLapTime,
       driverFeedback: feedback,
       setupConfidence: confidence,
+      setupUsed: setup,
     );
   }
 
@@ -448,10 +533,17 @@ class RaceService {
         pointsEarned = pointSystem[i];
       }
 
-      if (pointsEarned > 0) {
-        batch.update(perf.driverRef, {
-          'points': FieldValue.increment(pointsEarned),
-        });
+      if (pointsEarned > 0 || !perf.isDNF) {
+        Map<String, dynamic> driverUpdates = {'races': FieldValue.increment(1)};
+        if (pointsEarned > 0)
+          driverUpdates['points'] = FieldValue.increment(pointsEarned);
+        if (i == 0 && !perf.isDNF)
+          driverUpdates['wins'] = FieldValue.increment(1);
+        if (i < 3 && !perf.isDNF)
+          driverUpdates['podiums'] = FieldValue.increment(1);
+
+        batch.update(perf.driverRef, driverUpdates);
+
         teamPointUpdates[perf.teamRef] =
             (teamPointUpdates[perf.teamRef] ?? 0) + pointsEarned;
       }
@@ -477,10 +569,29 @@ class RaceService {
       }
     }
 
-    // Update Team Documents with points
-    teamPointUpdates.forEach((ref, pts) {
-      batch.update(ref, {'points': FieldValue.increment(pts)});
-    });
+    // Update Team Documents with points and participation stats
+    for (var teamRef in teamPointUpdates.keys) {
+      int pts = teamPointUpdates[teamRef]!;
+      Map<String, dynamic> teamUpdates = {
+        'points': FieldValue.increment(pts),
+        'races': FieldValue.increment(1),
+      };
+
+      // Check if team had a winner or podiums in this simulated race
+      bool teamWon = false;
+      int teamPodiums = 0;
+      for (int i = 0; i < performances.length; i++) {
+        if (performances[i].teamRef == teamRef) {
+          if (i == 0 && !performances[i].isDNF) teamWon = true;
+          if (i < 3 && !performances[i].isDNF) teamPodiums++;
+        }
+      }
+      if (teamWon) teamUpdates['wins'] = FieldValue.increment(1);
+      if (teamPodiums > 0)
+        teamUpdates['podiums'] = FieldValue.increment(teamPodiums);
+
+      batch.update(teamRef, teamUpdates);
+    }
 
     // 7. Update Season Calendar
     final updatedCalendar = List<RaceEvent>.from(season.calendar);
@@ -489,6 +600,7 @@ class RaceService {
       trackName: currentRace.trackName,
       countryCode: currentRace.countryCode,
       date: currentRace.date,
+      circuitId: currentRace.circuitId,
       isCompleted: true,
     );
 
@@ -504,6 +616,186 @@ class RaceService {
       'podium': performances.take(3).map((p) => p.driver).toList(),
       'dnfDrivers': dnfNames,
       'playerEarnings': playerEarnings,
+    };
+  }
+
+  /// Aplica los resultados de una sesión de carrera (RaceSessionResult) a la temporada:
+  /// - Actualiza puntos de pilotos y equipos.
+  /// - Actualiza presupuesto (premios).
+  /// - Mejora IA (opcional).
+  /// - Actualiza calendario (marca carrera como completada).
+  Future<Map<String, dynamic>> applyRaceResults(
+    String seasonId,
+    RaceSessionResult result,
+  ) async {
+    final seasonDoc = await _db.collection('seasons').doc(seasonId).get();
+    if (!seasonDoc.exists) throw Exception("Season not found");
+    final season = Season.fromMap(seasonDoc.data()!);
+
+    // Identify current race index based on UNCOMPLETED races
+    final raceIndex = season.calendar.indexWhere((r) => !r.isCompleted);
+    if (raceIndex == -1)
+      throw Exception("No pending races to apply results to");
+    final currentRace = season.calendar[raceIndex];
+
+    final batch = _db.batch();
+    final pointSystem = [25, 18, 15, 12, 10, 8, 6, 4, 2, 1];
+    final random = Random();
+
+    // 1. Fetch all teams/drivers to update them
+    final teamsSnapshot = await _db.collection('teams').get();
+    Map<String, Team> teamsMap = {};
+    // Map driverId -> DocumentReference needed for points update
+    Map<String, DocumentReference> driverRefs = {};
+    Map<String, String> driverTeamIds = {};
+    int playerEarnings = 0;
+
+    for (var teamDoc in teamsSnapshot.docs) {
+      final team = Team.fromMap(teamDoc.data());
+      teamsMap[team.id] = team;
+
+      // AI Upgrades (Logic from simulateNextRace)
+      if (team.isBot) {
+        bool upgraded = false;
+        final newStats = Map<String, int>.from(team.carStats);
+        if (random.nextInt(100) < 40) {
+          newStats['aero'] = (newStats['aero'] ?? 50) + 1;
+          upgraded = true;
+        }
+        if (random.nextInt(100) < 40) {
+          newStats['engine'] = (newStats['engine'] ?? 50) + 1;
+          upgraded = true;
+        }
+        if (upgraded) {
+          batch.update(teamDoc.reference, {'carStats': newStats});
+        }
+      }
+
+      final driversSnapshot = await teamDoc.reference
+          .collection('drivers')
+          .get();
+      for (var dDoc in driversSnapshot.docs) {
+        driverRefs[dDoc.id] = dDoc.reference;
+        driverTeamIds[dDoc.id] = team.id;
+      }
+    }
+
+    // 2. Process Results
+    Map<String, int> teamPointUpdates = {}; // teamId -> new points to add
+
+    // Get sorted list of driverIds based on finalPositions (1st place = 1)
+    List<String> sortedDriverIds = result.finalPositions.keys.toList();
+    sortedDriverIds.sort(
+      (a, b) => (result.finalPositions[a] ?? 999).compareTo(
+        result.finalPositions[b] ?? 999,
+      ),
+    );
+
+    // Filter out DNFs from points?
+    // Usually DNFs are at the bottom anyway if sorted by position,
+    // but position mapping should handle it (e.g. DNF = 20).
+    // Let's assume finalPositions are valid 1..N.
+
+    for (int i = 0; i < sortedDriverIds.length; i++) {
+      final driverId = sortedDriverIds[i];
+      if (result.dnfs.contains(driverId)) continue;
+
+      // Points for top 10 (i=0 is 1st place)
+      int points = (i < pointSystem.length) ? pointSystem[i] : 0;
+      bool isWin = i == 0;
+      bool isPodium = i < 3;
+
+      // Update Driver Stats
+      if (driverRefs.containsKey(driverId)) {
+        Map<String, dynamic> driverUpdates = {'races': FieldValue.increment(1)};
+        if (points > 0) driverUpdates['points'] = FieldValue.increment(points);
+        if (isWin) driverUpdates['wins'] = FieldValue.increment(1);
+        if (isPodium) driverUpdates['podiums'] = FieldValue.increment(1);
+
+        batch.update(driverRefs[driverId]!, driverUpdates);
+      }
+
+      // Accumulate Team Stats
+      final tId = driverTeamIds[driverId];
+      if (tId != null) {
+        teamPointUpdates[tId] = (teamPointUpdates[tId] ?? 0) + points;
+        // We will apply races/wins/podiums to teams in the next loop to avoid duplicate increments
+        // if both drivers get a podium (though only 1 win is possible per race,
+        // but multiple drivers can contribute to 'races' and 'podiums').
+      }
+    }
+
+    // 3. Update Team Stats and Budget
+    const int basePrize = 250000;
+    const int pointValue = 150000;
+
+    for (var teamId in teamsMap.keys) {
+      final earnedPoints = teamPointUpdates[teamId] ?? 0;
+      final earnings = basePrize + (earnedPoints * pointValue);
+      final team = teamsMap[teamId]!;
+
+      final teamRef = _db.collection('teams').doc(teamId);
+
+      Map<String, dynamic> updates = {
+        'budget': FieldValue.increment(earnings),
+        'races': FieldValue.increment(
+          1,
+        ), // Assume team participated if at least one driver did
+      };
+
+      if (earnedPoints > 0) {
+        updates['points'] = FieldValue.increment(earnedPoints);
+      }
+
+      // Determine if team got a win or podium in this race
+      bool teamWon = false;
+      int teamPodiums = 0;
+      for (int i = 0; i < sortedDriverIds.length; i++) {
+        if (driverTeamIds[sortedDriverIds[i]] == teamId) {
+          if (i == 0) teamWon = true;
+          if (i < 3) teamPodiums++;
+        }
+      }
+      if (teamWon) updates['wins'] = FieldValue.increment(1);
+      if (teamPodiums > 0)
+        updates['podiums'] = FieldValue.increment(teamPodiums);
+
+      // Reset week status
+      updates['weekStatus'] = {
+        'practiceCompleted': false,
+        'strategySet': false,
+        'sponsorReviewed': false,
+        // Preserve structure if needed, but clearing flags is key
+      };
+
+      batch.update(teamRef, updates);
+
+      if (!team.isBot) {
+        playerEarnings = earnings;
+      }
+    }
+
+    // 4. Update Calendar
+    final updatedCalendar = List<RaceEvent>.from(season.calendar);
+    updatedCalendar[raceIndex] = RaceEvent(
+      id: currentRace.id,
+      trackName: currentRace.trackName,
+      countryCode: currentRace.countryCode,
+      date: currentRace.date,
+      circuitId: currentRace.circuitId, // Preserve circuitId
+      isCompleted: true,
+    );
+
+    batch.update(seasonDoc.reference, {
+      'calendar': updatedCalendar.map((e) => e.toMap()).toList(),
+    });
+
+    // 5. Commit
+    await batch.commit();
+
+    return {
+      'playerEarnings': playerEarnings,
+      'pointsAwarded': teamPointUpdates,
     };
   }
 }

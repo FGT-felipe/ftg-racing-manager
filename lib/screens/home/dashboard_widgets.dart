@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import '../../services/time_service.dart';
 
@@ -264,9 +265,7 @@ class NewsItemCard extends StatelessWidget {
             overflow: TextOverflow.ellipsis,
             style: Theme.of(context).textTheme.bodyMedium?.copyWith(
               fontWeight: FontWeight.w600,
-              color: Theme.of(
-                context,
-              ).textTheme.bodyLarge?.color, // Ensure readable
+              color: Theme.of(context).textTheme.bodyLarge?.color,
             ),
           ),
         ],
@@ -298,7 +297,7 @@ class UpcomingCircuitCard extends StatelessWidget {
         padding: const EdgeInsets.all(20),
         decoration: BoxDecoration(
           borderRadius: BorderRadius.circular(16),
-          gradient: LinearGradient(
+          gradient: const LinearGradient(
             colors: [Colors.black87, Colors.black54],
             begin: Alignment.bottomLeft,
             end: Alignment.topRight,
@@ -341,32 +340,26 @@ class UpcomingCircuitCard extends StatelessWidget {
             Text(
               circuitName,
               style: Theme.of(context).textTheme.headlineMedium?.copyWith(
-                color: const Color(0xFF1A1A1A),
+                color: Colors.white,
                 fontWeight: FontWeight.w900,
               ),
             ),
             const SizedBox(height: 4),
             Text(
               date,
-              style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                color: Theme.of(context).textTheme.bodyMedium?.color,
-              ),
+              style: Theme.of(
+                context,
+              ).textTheme.titleMedium?.copyWith(color: Colors.white70),
             ),
             const Spacer(),
             Row(
               children: [
-                Icon(
-                  Icons.route,
-                  color: Theme.of(context).textTheme.bodyMedium?.color,
-                  size: 20,
-                ),
+                const Icon(Icons.route, color: Colors.white70, size: 20),
                 const SizedBox(width: 8),
                 Text(
                   "4.309 km | 71 Laps",
-                  style: TextStyle(
-                    color: Theme.of(context).textTheme.bodyMedium?.color,
-                  ),
-                ), // Mock details
+                  style: const TextStyle(color: Colors.white70),
+                ),
               ],
             ),
           ],
@@ -376,7 +369,8 @@ class UpcomingCircuitCard extends StatelessWidget {
   }
 }
 
-class RaceStatusHero extends StatelessWidget {
+/// Live countdown widget with seconds ticking down in real-time.
+class RaceStatusHero extends StatefulWidget {
   final RaceWeekStatus currentStatus;
   final String circuitName;
   final String countryCode;
@@ -393,36 +387,74 @@ class RaceStatusHero extends StatelessWidget {
   });
 
   @override
-  Widget build(BuildContext context) {
-    // Current Time (Mocked from TimeService usually, but we can use DateTime.now() if checking difference)
-    // Actually, to be consistent visually with the countdown, we should use TimeService().nowBogota if available,
-    // but visual countdown usually uses real time relative to target.
-    // However, since targetDate is likely mocked, we should use TimeService().nowBogota for diff.
+  State<RaceStatusHero> createState() => _RaceStatusHeroState();
+}
 
+class _RaceStatusHeroState extends State<RaceStatusHero> {
+  late Timer _timer;
+  Duration _timeLeft = Duration.zero;
+
+  @override
+  void initState() {
+    super.initState();
+    _updateTimeLeft();
+    _timer = Timer.periodic(const Duration(seconds: 1), (_) {
+      _updateTimeLeft();
+    });
+  }
+
+  void _updateTimeLeft() {
     final now = TimeService().nowBogota;
-    final timeLeft = targetDate.difference(now);
-    final days = timeLeft.inDays;
-    final hours = timeLeft.inHours % 24;
-    final minutes = timeLeft.inMinutes % 60;
+    setState(() {
+      _timeLeft = widget.targetDate.difference(now);
+      if (_timeLeft.isNegative) _timeLeft = Duration.zero;
+    });
+  }
+
+  @override
+  void didUpdateWidget(covariant RaceStatusHero oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.targetDate != widget.targetDate) {
+      _updateTimeLeft();
+    }
+  }
+
+  @override
+  void dispose() {
+    _timer.cancel();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final days = _timeLeft.inDays;
+    final hours = _timeLeft.inHours % 24;
+    final minutes = _timeLeft.inMinutes % 60;
+    final seconds = _timeLeft.inSeconds % 60;
 
     String statusText = "PADDOCK OPEN";
-    Color statusColor = const Color(0xFF00FF88);
-    String buttonLabel = "ENTER PRACTICE SESSION";
+    Color statusColor = const Color(0xFF00C853);
+    String buttonLabel = "ENTER PADDOCK";
     IconData buttonIcon = Icons.speed;
 
-    switch (currentStatus) {
+    switch (widget.currentStatus) {
       case RaceWeekStatus.practice:
         statusText = "PADDOCK OPEN";
-        statusColor = const Color(0xFF00FF88);
-        buttonLabel = "ENTER PRACTICE SESSION";
+        statusColor = const Color(0xFF00C853);
+        buttonLabel = "ENTER PADDOCK";
         buttonIcon = Icons.speed;
         break;
       case RaceWeekStatus.qualifying:
-      case RaceWeekStatus.raceStrategy:
-        statusText = "QUALIFYING / STRATEGY";
+        statusText = "QUALIFYING";
         statusColor = const Color(0xFFFFB800);
-        buttonLabel = "VIEW QUALIFYING RESULTS";
+        buttonLabel = "VIEW QUALIFYING";
         buttonIcon = Icons.list_alt;
+        break;
+      case RaceWeekStatus.raceStrategy:
+        statusText = "RACE STRATEGY";
+        statusColor = const Color(0xFFFF6D00);
+        buttonLabel = "SET RACE STRATEGY";
+        buttonIcon = Icons.tune;
         break;
       case RaceWeekStatus.race:
         statusText = "RACE WEEKEND";
@@ -491,7 +523,7 @@ class RaceStatusHero extends StatelessWidget {
                   ),
                   const SizedBox(width: 4),
                   Text(
-                    countryCode,
+                    widget.countryCode,
                     style: TextStyle(
                       color: Theme.of(context).textTheme.bodyMedium?.color,
                       fontWeight: FontWeight.bold,
@@ -503,35 +535,46 @@ class RaceStatusHero extends StatelessWidget {
           ),
           const SizedBox(height: 24),
           Text(
-            circuitName.toUpperCase(),
+            widget.circuitName.toUpperCase(),
             style: TextStyle(
-              fontSize: 32,
+              fontSize: 28,
               fontWeight: FontWeight.w900,
               color: Theme.of(context).textTheme.headlineMedium?.color,
               letterSpacing: 1.0,
             ),
           ),
-          const SizedBox(height: 8),
-          Text(
-            "EVENT STARTS IN: ${days}D ${hours}H ${minutes}M",
-            style: TextStyle(
-              fontFamily: 'monospace',
-              fontSize: 16,
-              color: Theme.of(context).textTheme.bodyMedium?.color,
-              fontWeight: FontWeight.w500,
-            ),
+          const SizedBox(height: 12),
+          // Live countdown with individual digit boxes
+          Row(
+            children: [
+              _buildTimeBlock(context, days.toString().padLeft(2, '0'), "DAYS"),
+              _buildTimeSeparator(context),
+              _buildTimeBlock(context, hours.toString().padLeft(2, '0'), "HRS"),
+              _buildTimeSeparator(context),
+              _buildTimeBlock(
+                context,
+                minutes.toString().padLeft(2, '0'),
+                "MIN",
+              ),
+              _buildTimeSeparator(context),
+              _buildTimeBlock(
+                context,
+                seconds.toString().padLeft(2, '0'),
+                "SEC",
+              ),
+            ],
           ),
           const SizedBox(height: 24),
           SizedBox(
             width: double.infinity,
             child: ElevatedButton.icon(
-              onPressed: onActionPressed,
+              onPressed: widget.onActionPressed,
               icon: Icon(buttonIcon, color: Colors.black),
               label: Text(buttonLabel),
               style: ElevatedButton.styleFrom(
-                backgroundColor: const Color(0xFF00FF88),
+                backgroundColor: statusColor,
                 foregroundColor: Colors.black,
-                padding: const EdgeInsets.symmetric(vertical: 20),
+                padding: const EdgeInsets.symmetric(vertical: 18),
                 textStyle: const TextStyle(
                   fontWeight: FontWeight.w900,
                   letterSpacing: 1.2,
@@ -543,6 +586,55 @@ class RaceStatusHero extends StatelessWidget {
             ),
           ),
         ],
+      ),
+    );
+  }
+
+  Widget _buildTimeBlock(BuildContext context, String value, String label) {
+    return Column(
+      children: [
+        Container(
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+          decoration: BoxDecoration(
+            color: Theme.of(
+              context,
+            ).colorScheme.onSurface.withValues(alpha: 0.05),
+            borderRadius: BorderRadius.circular(8),
+          ),
+          child: Text(
+            value,
+            style: TextStyle(
+              fontFamily: 'monospace',
+              fontSize: 28,
+              fontWeight: FontWeight.w900,
+              color: Theme.of(context).colorScheme.onSurface,
+            ),
+          ),
+        ),
+        const SizedBox(height: 4),
+        Text(
+          label,
+          style: TextStyle(
+            fontSize: 10,
+            fontWeight: FontWeight.bold,
+            letterSpacing: 1.2,
+            color: Theme.of(context).textTheme.bodyMedium?.color,
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildTimeSeparator(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 16, left: 4, right: 4),
+      child: Text(
+        ":",
+        style: TextStyle(
+          fontSize: 24,
+          fontWeight: FontWeight.bold,
+          color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.3),
+        ),
       ),
     );
   }
@@ -576,10 +668,10 @@ class PreparationChecklist extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text(
+          Text(
             "PRE-RACE CHECKLIST",
             style: TextStyle(
-              color: Colors.grey,
+              color: Theme.of(context).textTheme.bodyMedium?.color,
               fontSize: 12,
               fontWeight: FontWeight.bold,
               letterSpacing: 1.5,
@@ -587,6 +679,17 @@ class PreparationChecklist extends StatelessWidget {
           ),
           const SizedBox(height: 16),
           _buildItem(
+            context,
+            "Practice Program",
+            "$completedLaps/$totalLaps LAPS",
+            completedLaps >= totalLaps,
+          ),
+          Divider(
+            color: Theme.of(context).dividerColor.withValues(alpha: 0.2),
+            height: 24,
+          ),
+          _buildItem(
+            context,
             "Qualifying Setup",
             setupSubmitted ? "READY" : "PENDING",
             setupSubmitted,
@@ -596,37 +699,34 @@ class PreparationChecklist extends StatelessWidget {
             height: 24,
           ),
           _buildItem(
+            context,
             "Race Strategy",
             strategySubmitted ? "READY" : "PENDING",
             strategySubmitted,
-          ),
-          Divider(
-            color: Theme.of(context).dividerColor.withValues(alpha: 0.2),
-            height: 24,
-          ),
-          _buildItem(
-            "Practice Program",
-            "$completedLaps/$totalLaps LAPS",
-            completedLaps >= totalLaps,
           ),
         ],
       ),
     );
   }
 
-  Widget _buildItem(String label, String status, bool isComplete) {
+  Widget _buildItem(
+    BuildContext context,
+    String label,
+    String status,
+    bool isComplete,
+  ) {
     final color = isComplete
-        ? const Color(0xFF00E676)
-        : const Color(0xFFFFEA00);
+        ? const Color(0xFF00C853)
+        : const Color(0xFFFFAB00);
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
         Text(
           label,
-          style: const TextStyle(
+          style: TextStyle(
             fontSize: 16,
             fontWeight: FontWeight.w600,
-            color: const Color(0xFF1A1A1A),
+            color: Theme.of(context).colorScheme.onSurface,
           ),
         ),
         Container(
@@ -655,6 +755,191 @@ class PreparationChecklist extends StatelessWidget {
             ],
           ),
         ),
+      ],
+    );
+  }
+}
+
+class CircuitInfoCard extends StatelessWidget {
+  final String circuitName;
+  final int totalLaps;
+  final String weatherPractice;
+  final String weatherQualifying;
+  final String weatherRace;
+
+  final Map<String, String> characteristics;
+
+  const CircuitInfoCard({
+    super.key,
+    required this.circuitName,
+    required this.totalLaps,
+    required this.weatherPractice,
+    required this.weatherQualifying,
+    required this.weatherRace,
+    this.characteristics = const {},
+  });
+
+  IconData _getWeatherIcon(String status) {
+    status = status.toLowerCase();
+    if (status.contains('rain')) return Icons.umbrella;
+    if (status.contains('cloud')) return Icons.cloud;
+    if (status.contains('storm')) return Icons.thunderstorm;
+    return Icons.wb_sunny;
+  }
+
+  Color _getWeatherColor(String status) {
+    status = status.toLowerCase();
+    if (status.contains('rain')) return Colors.blue;
+    if (status.contains('cloud')) return Colors.blueGrey;
+    if (status.contains('storm')) return Colors.deepPurple;
+    return Colors.orange;
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        color: Theme.of(context).colorScheme.surface,
+        borderRadius: BorderRadius.circular(24),
+        border: Border.all(
+          color: Theme.of(context).dividerColor.withValues(alpha: 0.2),
+        ),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Icon(
+                Icons.calendar_today,
+                size: 14,
+                color: Theme.of(context).primaryColor,
+              ),
+              const SizedBox(width: 8),
+              Text(
+                "CIRCUIT INFO",
+                style: TextStyle(
+                  color: Theme.of(context).textTheme.bodyMedium?.color,
+                  fontSize: 12,
+                  fontWeight: FontWeight.bold,
+                  letterSpacing: 1.5,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 16),
+          Text(
+            circuitName.toUpperCase(),
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: const TextStyle(fontWeight: FontWeight.w900, fontSize: 18),
+          ),
+          const SizedBox(height: 8),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Row(
+                children: [
+                  const Icon(Icons.loop, size: 16, color: Colors.grey),
+                  const SizedBox(width: 4),
+                  Text(
+                    "$totalLaps LAPS",
+                    style: const TextStyle(
+                      color: Colors.grey,
+                      fontWeight: FontWeight.bold,
+                      fontSize: 14,
+                    ),
+                  ),
+                ],
+              ),
+              Row(
+                children: [
+                  _buildCompactWeatherDay("P", weatherPractice),
+                  const SizedBox(width: 12),
+                  _buildCompactWeatherDay("Q", weatherQualifying),
+                  const SizedBox(width: 12),
+                  _buildCompactWeatherDay("R", weatherRace),
+                ],
+              ),
+            ],
+          ),
+          if (characteristics.isNotEmpty) ...[
+            const SizedBox(height: 16),
+            const Text(
+              "CIRCUIT INTEL",
+              style: TextStyle(
+                fontSize: 10,
+                fontWeight: FontWeight.bold,
+                color: Colors.grey,
+              ),
+            ),
+            const SizedBox(height: 12),
+            Wrap(
+              spacing: 8,
+              runSpacing: 8,
+              children: characteristics.entries.map((e) {
+                return Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 8,
+                    vertical: 4,
+                  ),
+                  decoration: BoxDecoration(
+                    color: Theme.of(
+                      context,
+                    ).primaryColor.withValues(alpha: 0.1),
+                    borderRadius: BorderRadius.circular(8),
+                    border: Border.all(
+                      color: Theme.of(
+                        context,
+                      ).primaryColor.withValues(alpha: 0.2),
+                    ),
+                  ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Text(
+                        "${e.key}: ",
+                        style: TextStyle(
+                          fontSize: 10,
+                          fontWeight: FontWeight.bold,
+                          color: Theme.of(context).primaryColor,
+                        ),
+                      ),
+                      Text(
+                        e.value,
+                        style: TextStyle(
+                          fontSize: 10,
+                          fontWeight: FontWeight.w600,
+                          color: Theme.of(context).textTheme.bodyMedium?.color,
+                        ),
+                      ),
+                    ],
+                  ),
+                );
+              }).toList(),
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+
+  Widget _buildCompactWeatherDay(String label, String weather) {
+    final color = _getWeatherColor(weather);
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Text(
+          label,
+          style: const TextStyle(
+            fontSize: 10,
+            fontWeight: FontWeight.bold,
+            color: Colors.grey,
+          ),
+        ),
+        const SizedBox(width: 4),
+        Icon(_getWeatherIcon(weather), color: color, size: 16),
       ],
     );
   }

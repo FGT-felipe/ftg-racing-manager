@@ -1,0 +1,26 @@
+﻿Analyzing ftg-racing-manager...                                 
+
+   info - The private field _driverSetups could be 'final' - lib\screens\race\garage_screen.dart:33:25 - prefer_final_fields
+   info - The private field _driverLapHistory could be 'final' - lib\screens\race\garage_screen.dart:36:43 - prefer_final_fields
+   info - The private field _feedbackHistory could be 'final' - lib\screens\race\garage_screen.dart:39:30 - prefer_final_fields
+   info - Don't use 'BuildContext's across async gaps - lib\screens\race\garage_screen.dart:242:35 - use_build_context_synchronously
+   info - Statements in an if should be enclosed in a block - lib\screens\race\qualifying_screen.dart:28:9 - curly_braces_in_flow_control_structures
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\screens\race\qualifying_screen.dart:66:57 - deprecated_member_use
+   info - Unnecessary use of 'toList' in a spread - lib\screens\race\widgets\internal_timing_card.dart:263:24 - unnecessary_to_list_in_spreads
+   info - Statements in an if should be enclosed in a block - lib\services\race_service.dart:137:7 - curly_braces_in_flow_control_structures
+   info - Statements in an if should be enclosed in a block - lib\services\race_service.dart:139:7 - curly_braces_in_flow_control_structures
+   info - Statements in an if should be enclosed in a block - lib\services\race_service.dart:210:9 - curly_braces_in_flow_control_structures
+   info - Statements in an if should be enclosed in a block - lib\services\race_service.dart:212:9 - curly_braces_in_flow_control_structures
+   info - Statements in an if should be enclosed in a block - lib\services\race_service.dart:526:7 - curly_braces_in_flow_control_structures
+   info - Statements in an if should be enclosed in a block - lib\services\time_service.dart:65:9 - curly_braces_in_flow_control_structures
+   info - 'background' is deprecated and shouldn't be used. Use surface instead. This feature was deprecated after v3.18.0-0.1.pre - lib\theme\app_theme.dart:26:9 - deprecated_member_use
+   info - 'onBackground' is deprecated and shouldn't be used. Use onSurface instead. This feature was deprecated after v3.18.0-0.1.pre - lib\theme\app_theme.dart:27:9 - deprecated_member_use
+
+flutter : 15 issues found. (ran in 2.5s)
+En línea: 1 Carácter: 1
++ flutter analyze --no-pub 2>&1 | ForEach-Object { $_ } | Out-File -Fil ...
++ ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpecified: (15 issues found. (ran in 2.5s):String)  
+   [], RemoteException
+    + FullyQualifiedErrorId : NativeCommandError
+ 

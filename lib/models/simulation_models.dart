@@ -75,12 +75,14 @@ class PracticeRunResult {
   final double gapToBest; // 0.0 if best
   final List<String> driverFeedback;
   final double setupConfidence; // 0.0 to 1.0
+  final CarSetup setupUsed;
 
   PracticeRunResult({
     required this.lapTime,
     this.gapToBest = 0.0,
     required this.driverFeedback,
     required this.setupConfidence,
+    required this.setupUsed,
   });
 }
 

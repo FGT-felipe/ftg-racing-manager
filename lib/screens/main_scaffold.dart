@@ -57,7 +57,7 @@ class _MainScaffoldState extends State<MainScaffold> {
             ),
             BottomNavigationBarItem(
               icon: Icon(Icons.emoji_events),
-              label: 'Paddock',
+              label: 'Season',
             ),
             BottomNavigationBarItem(icon: Icon(Icons.groups), label: 'Market'),
           ],

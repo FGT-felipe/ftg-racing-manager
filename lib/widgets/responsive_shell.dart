@@ -3,7 +3,7 @@ import '../screens/home/dashboard_screen.dart';
 import '../screens/engineering_screen.dart';
 import '../screens/standings_screen.dart';
 import '../screens/job_market_screen.dart';
-import '../screens/office/office_screen.dart';
+import '../screens/office/finances_screen.dart';
 
 class ResponsiveMainScaffold extends StatefulWidget {
   final String teamId;
@@ -24,7 +24,7 @@ class _ResponsiveMainScaffoldState extends State<ResponsiveMainScaffold> {
     super.initState();
     _pages = [
       DashboardScreen(teamId: widget.teamId),
-      OfficeScreen(teamId: widget.teamId), // Integrated Office
+      FinancesScreen(teamId: widget.teamId), // Integrated Office
       EngineeringScreen(teamId: widget.teamId),
       const StandingsScreen(),
       const JobMarketScreen(),

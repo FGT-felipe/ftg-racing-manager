@@ -3,6 +3,8 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/foundation.dart';
 import '../models/core_models.dart';
 
+import '../config/game_config.dart';
+
 class DatabaseSeeder {
   static final FirebaseFirestore _db = FirebaseFirestore.instance;
 
@@ -68,7 +70,7 @@ class DatabaseSeeder {
     "Montevideo Performance",
   ];
 
-  static Future<void> nukeAndReseed() async {
+  static Future<void> nukeAndReseed({DateTime? startDate}) async {
     try {
       debugPrint("NUKE: Iniciando borrado total...");
 
@@ -82,7 +84,13 @@ class DatabaseSeeder {
         debugPrint("NUKE: Pilotos eliminados.");
       }
 
-      final collectionsToClear = ['teams', 'leagues', 'seasons', 'divisions'];
+      final collectionsToClear = [
+        'teams',
+        'leagues',
+        'seasons',
+        'divisions',
+        'races',
+      ]; // Added races
       for (var collection in collectionsToClear) {
         final snapshot = await _db.collection(collection).get();
         if (snapshot.docs.isNotEmpty) {
@@ -96,7 +104,10 @@ class DatabaseSeeder {
       }
 
       debugPrint("NUKE: Borrado completado.");
-      await seedWorld(force: true);
+      await seedWorld(
+        force: true,
+        startDate: startDate ?? GameConfig.seasonStart,
+      );
     } catch (e, stack) {
       debugPrint("ERROR FATAL EN NUKE: $e");
       debugPrint(stack.toString());
@@ -104,7 +115,10 @@ class DatabaseSeeder {
     }
   }
 
-  static Future<void> seedWorld({bool force = false}) async {
+  static Future<void> seedWorld({
+    bool force = false,
+    DateTime? startDate,
+  }) async {
     try {
       debugPrint("SEEDING: Iniciando...");
 
@@ -121,56 +135,81 @@ class DatabaseSeeder {
       final league = League(id: leagueRef.id, name: "Copa Suramericana");
       batch.set(leagueRef, league.toMap());
 
-      // 2. CALENDARIO (circuitId matches CircuitService profiles where available)
-      final now = DateTime.now();
+      // 2. CALENDARIO
+      final now = startDate ?? DateTime.now();
+
       final List<RaceEvent> calendar = [
         RaceEvent(
           id: 'r1',
           trackName: "GP Interlagos",
           countryCode: "BR",
           circuitId: 'interlagos',
-          date: now.add(const Duration(days: 2)),
+          date: now,
           isCompleted: false,
+          totalLaps: 71,
+          weatherPractice: "Sunny",
+          weatherQualifying: "Cloudy",
+          weatherRace: "Rainy",
         ),
         RaceEvent(
           id: 'r2',
           trackName: "GP Hermanos Rodríguez",
           countryCode: "MX",
           circuitId: 'hermanos_rodriguez',
-          date: now.add(const Duration(days: 11)),
+          date: now.add(const Duration(days: 7)),
           isCompleted: false,
+          totalLaps: 71,
+          weatherPractice: "Sunny",
+          weatherQualifying: "Sunny",
+          weatherRace: "Sunny",
         ),
         RaceEvent(
           id: 'r3',
           trackName: "GP Termas de Río Hondo",
           countryCode: "AR",
           circuitId: 'termas',
-          date: now.add(const Duration(days: 18)),
+          date: now.add(const Duration(days: 14)),
           isCompleted: false,
+          totalLaps: 52,
+          weatherPractice: "Sunny",
+          weatherQualifying: "Sunny",
+          weatherRace: "Cloudy",
         ),
         RaceEvent(
           id: 'r4',
           trackName: "GP Tocancipá",
           countryCode: "CO",
           circuitId: 'tocancipa',
-          date: now.add(const Duration(days: 25)),
+          date: now.add(const Duration(days: 21)),
           isCompleted: false,
+          totalLaps: 40,
+          weatherPractice: "Sunny",
+          weatherQualifying: "Rainy",
+          weatherRace: "Rainy",
         ),
         RaceEvent(
           id: 'r5',
           trackName: "GP El Pinar",
           countryCode: "UY",
           circuitId: 'el_pinar',
-          date: now.add(const Duration(days: 32)),
+          date: now.add(const Duration(days: 28)),
           isCompleted: false,
+          totalLaps: 45,
+          weatherPractice: "Cloudy",
+          weatherQualifying: "Cloudy",
+          weatherRace: "Sunny",
         ),
         RaceEvent(
           id: 'r6',
           trackName: "GP Yahuarcocha",
           countryCode: "EC",
           circuitId: 'yahuarcocha',
-          date: now.add(const Duration(days: 39)),
+          date: now.add(const Duration(days: 35)),
           isCompleted: false,
+          totalLaps: 60,
+          weatherPractice: "Sunny",
+          weatherQualifying: "Sunny",
+          weatherRace: "Sunny",
         ),
       ];
 
@@ -181,6 +220,7 @@ class DatabaseSeeder {
         leagueId: leagueRef.id,
         year: 2026,
         calendar: calendar,
+        startDate: now, // Persist start date
       );
       batch.set(seasonRef, season.toMap());
 
@@ -202,11 +242,11 @@ class DatabaseSeeder {
           isBot: true,
           budget: 10000000 + random.nextInt(5000000),
           points: 0,
-          carStats: {
-            'aero': 50 + random.nextInt(10),
-            'engine': 50 + random.nextInt(10),
-            'reliability': 50 + random.nextInt(10),
-          },
+          races: 0,
+          wins: 0,
+          podiums: 0,
+          poles: 0,
+          carStats: {'aero': 1, 'engine': 1, 'reliability': 1},
           weekStatus: {
             'practiceCompleted': false,
             'strategySet': false,
@@ -235,7 +275,11 @@ class DatabaseSeeder {
               potential: 70 + random.nextInt(30),
               points: 0,
               gender: isFemale ? 'F' : 'M',
-              stats: {'speed': speed, 'cornering': cornering},
+              stats: {
+                'speed': speed,
+                'cornering': cornering,
+                'consistency': 40 + random.nextInt(41),
+              },
             ).toMap(),
           );
         }

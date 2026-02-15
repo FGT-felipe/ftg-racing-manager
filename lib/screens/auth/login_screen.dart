@@ -20,6 +20,7 @@ class _LoginScreenState extends State<LoginScreen> {
   final _passCtrl = TextEditingController();
   final _nameCtrl = TextEditingController();
   final _lastNameCtrl = TextEditingController();
+  int _adminTapCount = 0;
 
   // AUTH LOGIC: GOOGLE
   Future<void> _signInWithGoogle() async {
@@ -297,14 +298,23 @@ class _LoginScreenState extends State<LoginScreen> {
                   ),
                 ),
                 const SizedBox(height: 24),
-                Text(
-                  "v2.1.4 POWERED BY FIRETOWER GAMES STUDIO",
-                  style: TextStyle(
-                    fontSize: 10,
-                    color: Theme.of(
-                      context,
-                    ).colorScheme.secondary.withValues(alpha: 0.5),
-                    letterSpacing: 2,
+                GestureDetector(
+                  onTap: () {
+                    _adminTapCount++;
+                    if (_adminTapCount >= 5) {
+                      _adminTapCount = 0;
+                      Navigator.pushNamed(context, '/admin');
+                    }
+                  },
+                  child: Text(
+                    "v2.1.4 POWERED BY FIRETOWER GAMES STUDIO",
+                    style: TextStyle(
+                      fontSize: 10,
+                      color: Theme.of(
+                        context,
+                      ).colorScheme.secondary.withValues(alpha: 0.5),
+                      letterSpacing: 2,
+                    ),
                   ),
                 ),
               ],

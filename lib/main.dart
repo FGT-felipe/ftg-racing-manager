@@ -4,6 +4,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:timezone/data/latest.dart' as tz_data;
+import 'package:flutter_web_plugins/url_strategy.dart';
 import 'firebase_options.dart';
 import 'l10n/app_localizations.dart';
 import 'theme/app_theme.dart';
@@ -11,11 +12,26 @@ import 'screens/auth/login_screen.dart';
 import 'screens/onboarding/create_manager_screen.dart';
 import 'screens/onboarding/team_selection_screen.dart';
 import 'screens/main_layout.dart';
+import 'screens/admin_screen.dart';
+
+import 'config/game_config.dart';
+import 'services/database_seeder.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  usePathUrlStrategy();
   tz_data.initializeTimeZones();
   await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
+
+  // Check for automatic database reset via configuration
+  if (GameConfig.shouldReset) {
+    debugPrint("CONFIG: auto-reset is enabled. NUKING database...");
+    await DatabaseSeeder.nukeAndReseed();
+    debugPrint(
+      "CONFIG: Reset complete. Please set GameConfig.shouldReset to false.",
+    );
+  }
+
   runApp(const FTGRacingApp());
 }
 
@@ -35,7 +51,11 @@ class FTGRacingApp extends StatelessWidget {
         GlobalCupertinoLocalizations.delegate,
       ],
       supportedLocales: AppLocalizations.supportedLocales,
-      home: const AuthWrapper(),
+      initialRoute: '/',
+      routes: {
+        '/': (context) => const AuthWrapper(),
+        '/admin': (context) => const AdminScreen(),
+      },
     );
   }
 }
