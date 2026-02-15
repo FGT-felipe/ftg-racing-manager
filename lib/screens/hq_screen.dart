@@ -13,24 +13,25 @@ class HQScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
+    final theme = Theme.of(context);
 
     return Scaffold(
-      backgroundColor: const Color(0xFF121212),
+      backgroundColor: theme.scaffoldBackgroundColor,
       appBar: AppBar(
         title: Text(l10n.hqTitle),
         centerTitle: true,
-        backgroundColor: Colors.transparent,
+        backgroundColor: theme.colorScheme.surface,
         elevation: 0,
         actions: [
           IconButton(
-            icon: const Icon(Icons.emoji_events, color: Colors.yellowAccent),
+            icon: const Icon(Icons.emoji_events, color: Colors.orangeAccent),
             onPressed: () => Navigator.push(
               context,
               MaterialPageRoute(builder: (context) => const StandingsScreen()),
             ),
           ),
           IconButton(
-            icon: const Icon(Icons.build, color: Colors.tealAccent),
+            icon: const Icon(Icons.build, color: Colors.teal),
             onPressed: () => Navigator.push(
               context,
               MaterialPageRoute(
@@ -65,9 +66,12 @@ class HQScreen extends StatelessWidget {
                 final budgetM = (team.budget / 1000000).toStringAsFixed(0);
 
                 return Card(
-                  color: const Color(0xFF1E1E1E),
+                  color: theme.colorScheme.surface,
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(16),
+                    side: BorderSide(
+                      color: theme.dividerColor.withValues(alpha: 0.1),
+                    ),
                   ),
                   child: Padding(
                     padding: const EdgeInsets.all(24.0),
@@ -80,8 +84,8 @@ class HQScreen extends StatelessWidget {
                             children: [
                               Text(
                                 team.name,
-                                style: const TextStyle(
-                                  color: Colors.white,
+                                style: TextStyle(
+                                  color: theme.colorScheme.onSurface,
                                   fontSize: 28,
                                   fontWeight: FontWeight.bold,
                                 ),
@@ -89,8 +93,10 @@ class HQScreen extends StatelessWidget {
                               const SizedBox(height: 4),
                               Text(
                                 "ID: $teamId",
-                                style: const TextStyle(
-                                  color: Colors.grey,
+                                style: TextStyle(
+                                  color: theme.colorScheme.onSurface.withValues(
+                                    alpha: 0.5,
+                                  ),
                                   fontSize: 12,
                                 ),
                               ),
@@ -103,15 +109,15 @@ class HQScreen extends StatelessWidget {
                             Text(
                               l10n.budgetLabel.toUpperCase(),
                               style: const TextStyle(
-                                color: Colors.tealAccent,
+                                color: Colors.teal,
                                 fontSize: 12,
                                 fontWeight: FontWeight.bold,
                               ),
                             ),
                             Text(
-                              "${l10n.currencySymbol} $budgetM${l10n.millionsSuffix}",
-                              style: const TextStyle(
-                                color: Colors.white,
+                              "${l10n.currencySymbol} $budgetM M",
+                              style: TextStyle(
+                                color: theme.colorScheme.onSurface,
                                 fontSize: 24,
                                 fontWeight: FontWeight.bold,
                               ),
@@ -129,8 +135,8 @@ class HQScreen extends StatelessWidget {
             // 2. Next Race Section
             Text(
               l10n.nextRace.toUpperCase(),
-              style: const TextStyle(
-                color: Colors.white70,
+              style: TextStyle(
+                color: theme.colorScheme.onSurface.withValues(alpha: 0.7),
                 fontSize: 14,
                 fontWeight: FontWeight.bold,
                 letterSpacing: 1.2,
@@ -141,7 +147,7 @@ class HQScreen extends StatelessWidget {
               width: double.infinity,
               padding: const EdgeInsets.all(20),
               decoration: BoxDecoration(
-                color: const Color(0xFF1E1E1E),
+                color: theme.colorScheme.surface,
                 borderRadius: BorderRadius.circular(12),
                 border: Border.all(
                   color: Colors.orangeAccent.withValues(alpha: 0.3),
@@ -157,8 +163,8 @@ class HQScreen extends StatelessWidget {
                   const SizedBox(width: 16),
                   Text(
                     l10n.gpPlaceholder,
-                    style: const TextStyle(
-                      color: Colors.white,
+                    style: TextStyle(
+                      color: theme.colorScheme.onSurface,
                       fontSize: 18,
                       fontWeight: FontWeight.w500,
                     ),
@@ -171,8 +177,8 @@ class HQScreen extends StatelessWidget {
             // 3. Drivers Section
             Text(
               l10n.activeDrivers.toUpperCase(),
-              style: const TextStyle(
-                color: Colors.white70,
+              style: TextStyle(
+                color: theme.colorScheme.onSurface.withValues(alpha: 0.7),
                 fontSize: 14,
                 fontWeight: FontWeight.bold,
                 letterSpacing: 1.2,
@@ -230,12 +236,13 @@ class _DriverCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
+    final theme = Theme.of(context);
     final speed = (driver.stats['speed'] ?? 0).toDouble();
     final cornering = (driver.stats['cornering'] ?? 0).toDouble();
 
     final isFemale = driver.gender == 'F';
     final genderIcon = isFemale ? Icons.face_3 : Icons.person;
-    final genderColor = isFemale ? Colors.pinkAccent : Colors.cyanAccent;
+    final genderColor = isFemale ? Colors.pinkAccent : Colors.cyan;
 
     // Role Logic
     String? roleLabel;
@@ -248,11 +255,11 @@ class _DriverCard extends StatelessWidget {
     }
 
     return Card(
-      color: const Color(0xFF1E1E1E),
-      elevation: 0,
+      color: theme.colorScheme.surface,
+      elevation: 2,
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(16),
-        side: BorderSide(color: Colors.white.withValues(alpha: 0.05)),
+        side: BorderSide(color: theme.dividerColor.withValues(alpha: 0.1)),
       ),
       child: Padding(
         padding: const EdgeInsets.all(16.0),
@@ -276,8 +283,8 @@ class _DriverCard extends StatelessWidget {
                     children: [
                       Text(
                         driver.name,
-                        style: const TextStyle(
-                          color: Colors.white,
+                        style: TextStyle(
+                          color: theme.colorScheme.onSurface,
                           fontSize: 18,
                           fontWeight: FontWeight.bold,
                         ),
@@ -287,8 +294,10 @@ class _DriverCard extends StatelessWidget {
                         children: [
                           Text(
                             l10n.ageLabel(driver.age),
-                            style: const TextStyle(
-                              color: Colors.grey,
+                            style: TextStyle(
+                              color: theme.colorScheme.onSurface.withValues(
+                                alpha: 0.6,
+                              ),
                               fontSize: 13,
                             ),
                           ),
@@ -300,13 +309,13 @@ class _DriverCard extends StatelessWidget {
                                 vertical: 2,
                               ),
                               decoration: BoxDecoration(
-                                color: Colors.tealAccent.withValues(alpha: 0.1),
+                                color: Colors.teal.withValues(alpha: 0.1),
                                 borderRadius: BorderRadius.circular(4),
                               ),
                               child: Text(
                                 roleLabel.toUpperCase(),
                                 style: const TextStyle(
-                                  color: Colors.tealAccent,
+                                  color: Colors.teal,
                                   fontSize: 10,
                                   fontWeight: FontWeight.bold,
                                 ),
@@ -329,13 +338,14 @@ class _DriverCard extends StatelessWidget {
                           CircularProgressIndicator(
                             value: driver.potential / 100,
                             strokeWidth: 3,
-                            backgroundColor: Colors.white10,
-                            color: Colors.tealAccent,
+                            backgroundColor: theme.colorScheme.onSurface
+                                .withValues(alpha: 0.1),
+                            color: Colors.teal,
                           ),
                           Text(
                             driver.potential.toString(),
-                            style: const TextStyle(
-                              color: Colors.white,
+                            style: TextStyle(
+                              color: theme.colorScheme.onSurface,
                               fontSize: 10,
                               fontWeight: FontWeight.bold,
                             ),
@@ -347,7 +357,9 @@ class _DriverCard extends StatelessWidget {
                     Text(
                       "POTENTIAL",
                       style: TextStyle(
-                        color: Colors.white.withValues(alpha: 0.5),
+                        color: theme.colorScheme.onSurface.withValues(
+                          alpha: 0.5,
+                        ),
                         fontSize: 8,
                       ),
                     ),
@@ -382,6 +394,7 @@ class _StatBar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -391,15 +404,15 @@ class _StatBar extends StatelessWidget {
             Text(
               label.toUpperCase(),
               style: TextStyle(
-                color: Colors.white.withValues(alpha: 0.6),
+                color: theme.colorScheme.onSurface.withValues(alpha: 0.6),
                 fontSize: 10,
                 letterSpacing: 0.5,
               ),
             ),
             Text(
               value.toInt().toString(),
-              style: const TextStyle(
-                color: Colors.white,
+              style: TextStyle(
+                color: theme.colorScheme.onSurface,
                 fontSize: 11,
                 fontWeight: FontWeight.bold,
               ),
@@ -409,8 +422,8 @@ class _StatBar extends StatelessWidget {
         const SizedBox(height: 6),
         LinearProgressIndicator(
           value: value / 100,
-          backgroundColor: Colors.white.withValues(alpha: 0.05),
-          color: Colors.tealAccent,
+          backgroundColor: theme.colorScheme.onSurface.withValues(alpha: 0.1),
+          color: Colors.teal,
           minHeight: 4,
           borderRadius: BorderRadius.circular(2),
         ),

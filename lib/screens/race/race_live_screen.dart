@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import '../../services/race_service.dart';
@@ -8,20 +9,43 @@ import '../../models/simulation_models.dart';
 
 class RaceLiveScreen extends StatefulWidget {
   final String seasonId;
-  const RaceLiveScreen({super.key, required this.seasonId});
+  final bool isEmbed;
+  const RaceLiveScreen({
+    super.key,
+    required this.seasonId,
+    this.isEmbed = false,
+  });
 
   @override
   State<RaceLiveScreen> createState() => _RaceLiveScreenState();
 }
 
 class _RaceLiveScreenState extends State<RaceLiveScreen> {
-  bool _isLoading = false;
+  bool _initializing = true;
+  bool _simulating = false;
+  RaceSessionResult? _fullResult;
+  int _currentLapIndex = 0; // 0-based index for UI loop
+  Timer? _raceTimer;
 
-  Future<void> _simulateRace() async {
-    setState(() => _isLoading = true);
+  // Cache for display
+  Map<String, Driver> _driversMap = {};
+  Map<String, Team> _teamsMap = {};
 
+  @override
+  void initState() {
+    super.initState();
+    _startSimulation();
+  }
+
+  @override
+  void dispose() {
+    _raceTimer?.cancel();
+    super.dispose();
+  }
+
+  Future<void> _startSimulation() async {
     try {
-      // 1. Get Season and Current Race
+      // 1. Fetch Data
       final seasonDoc = await FirebaseFirestore.instance
           .collection('seasons')
           .doc(widget.seasonId)
@@ -30,184 +54,328 @@ class _RaceLiveScreenState extends State<RaceLiveScreen> {
       final season = Season.fromMap(seasonDoc.data()!);
 
       final current = SeasonService().getCurrentRace(season);
-      if (current == null) {
-        throw Exception("No pending race in calendar");
-      }
+      if (current == null) throw Exception("No pending race");
       final raceEvent = current.event;
-
-      // 2. Get Race Document (for Grid)
       final raceId = SeasonService().raceDocumentId(widget.seasonId, raceEvent);
+
       final raceDoc = await FirebaseFirestore.instance
           .collection('races')
           .doc(raceId)
           .get();
-
-      if (!raceDoc.exists) {
-        throw Exception("Race document not found. Did you run Qualifying?");
-      }
-
+      if (!raceDoc.exists)
+        throw Exception("Race not found. Run Qualifying first.");
       final raceData = raceDoc.data()!;
-      if (raceData['grid'] == null) {
-        throw Exception("Grid not found. Run Qualifying first.");
-      }
+      if (raceData['grid'] == null) throw Exception("Grid not found.");
 
       final List<Map<String, dynamic>> grid = List<Map<String, dynamic>>.from(
         raceData['grid'],
       );
 
-      // 3. Prepare data for simulation (Teams, Drivers, Setups)
+      // 2. Prepare Participants and Setups
       final teamsSnapshot = await FirebaseFirestore.instance
           .collection('teams')
           .get();
-      Map<String, Team> teamsMap = {};
-      Map<String, Driver> driversMap = {};
       Map<String, CarSetup> setupsMap = {};
 
       for (var teamDoc in teamsSnapshot.docs) {
         final team = Team.fromMap(teamDoc.data());
-        teamsMap[team.id] = team;
+        _teamsMap[team.id] = team;
 
-        // Fetch drivers
         final driversSnapshot = await teamDoc.reference
             .collection('drivers')
             .get();
         for (var dDoc in driversSnapshot.docs) {
           final driver = Driver.fromMap(dDoc.data());
-          driversMap[driver.id] = driver;
+          _driversMap[driver.id] = driver;
 
-          // Determine setup (Player vs AI)
+          // Setup Logic
           if (team.isBot) {
-            // For AI, we generate setup or use a default if not stored.
-            // SimulateRaceSession handles logic if we pass it, OR we generate here.
-            // The old logic generated it inside simulateNextRace, but simulateRaceSession expects it passed.
-            // Let's create a Helper in RaceService to generate AI Setup or do it here.
-            // Re-using logic: circuit.idealSetup
             final circuit = CircuitService().getCircuitProfile(
               raceEvent.circuitId,
             );
-            // Simple deviation for now
             setupsMap[driver.id] = circuit.idealSetup;
-            // Ideally we should reuse _generateAISetup from RaceService but it's private.
-            // We can make it public or just use ideal setup for now (AI is perfect!)
-            // OR: rely on WeekStatus if AI set it? (AI doesn't currently set it in weekStatus).
-            // Let's assume ideal setup for AI to make them competitive.
           } else {
-            // Player: Use Race Strategy setup or Qualifying setup
-            if (team.weekStatus['raceSetup'] != null) {
-              setupsMap[driver.id] = CarSetup.fromMap(
+            CarSetup? setup;
+            // 1. Try per-driver race setup
+            if (team.weekStatus['driverRaceSetups'] != null) {
+              final setups = team.weekStatus['driverRaceSetups'] as Map;
+              if (setups.containsKey(driver.id)) {
+                setup = CarSetup.fromMap(
+                  Map<String, dynamic>.from(setups[driver.id]),
+                );
+              }
+            }
+            // 2. Try single race setup
+            if (setup == null && team.weekStatus['raceSetup'] != null) {
+              setup = CarSetup.fromMap(
                 Map<String, dynamic>.from(team.weekStatus['raceSetup']),
               );
-            } else if (team.weekStatus['qualifyingSetup'] != null) {
-              setupsMap[driver.id] = CarSetup.fromMap(
+            }
+            // 3. Try per-driver qualy setup
+            if (setup == null &&
+                team.weekStatus['driverQualysSetups'] != null) {
+              final setups = team.weekStatus['driverQualysSetups'] as Map;
+              if (setups.containsKey(driver.id)) {
+                setup = CarSetup.fromMap(
+                  Map<String, dynamic>.from(setups[driver.id]),
+                );
+              }
+            }
+            // 4. Try single qualy setup
+            if (setup == null && team.weekStatus['qualifyingSetup'] != null) {
+              setup = CarSetup.fromMap(
                 Map<String, dynamic>.from(team.weekStatus['qualifyingSetup']),
               );
-            } else {
-              setupsMap[driver.id] = CarSetup(); // Default
             }
+
+            setupsMap[driver.id] = setup ?? CarSetup();
           }
         }
       }
 
       final circuit = CircuitService().getCircuitProfile(raceEvent.circuitId);
 
-      // 4. Run Simulation (Lap by Lap)
-      final result = await RaceService().simulateRaceSession(
+      // 3. Run Simulation (Calculate all laps)
+      _fullResult = await RaceService().simulateRaceSession(
         raceId: raceId,
         circuit: circuit,
         grid: grid,
-        teamsMap: teamsMap,
-        driversMap: driversMap,
+        teamsMap: _teamsMap,
+        driversMap: _driversMap,
         setupsMap: setupsMap,
       );
 
-      // 5. Apply Results (Points, Economy, Calendar)
-      final applyRes = await RaceService().applyRaceResults(
-        widget.seasonId,
-        result,
-      );
+      setState(() {
+        _initializing = false;
+        _simulating = true;
+      });
 
-      // 6. Show Result
-      if (mounted) {
-        setState(() => _isLoading = false);
-
-        final winnerId = result.finalPositions.entries
-            .firstWhere((e) => e.value == 1)
-            .key;
-        final winnerName = driversMap[winnerId]?.name ?? "Unknown";
-
-        showDialog(
-          context: context,
-          barrierDismissible: false,
-          builder: (_) => AlertDialog(
-            title: const Text("RACE FINISHED"),
-            content: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text("Winner: $winnerName"),
-                const SizedBox(height: 10),
-                Text("Your team earnings: \$${applyRes['playerEarnings']}"),
-                const SizedBox(height: 20),
-                const Text("Results applied to season."),
-              ],
-            ),
-            actions: [
-              TextButton(
-                onPressed: () {
-                  Navigator.pop(context); // Close dialog
-                  Navigator.pop(context); // Exit RaceLiveScreen
-                },
-                child: const Text("RETURN TO DASHBOARD"),
-              ),
-            ],
-          ),
-        );
-      }
+      // 4. Start Replay Timer
+      _startReplay();
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text("Error: $e"), backgroundColor: Colors.red),
-        );
-        setState(() => _isLoading = false);
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text("Error: $e")));
+        Navigator.pop(context);
       }
     }
   }
 
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(title: const Text("Grand Prix - LIVE")),
-      body: Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
+  void _startReplay() {
+    // Show one lap every 800ms
+    _raceTimer = Timer.periodic(const Duration(milliseconds: 800), (
+      timer,
+    ) async {
+      if (_fullResult == null) return;
+
+      if (_currentLapIndex < _fullResult!.laps.length - 1) {
+        setState(() {
+          _currentLapIndex++;
+        });
+      } else {
+        timer.cancel();
+        await _finishRace();
+      }
+    });
+  }
+
+  void _skipSimulation() {
+    _raceTimer?.cancel();
+    setState(() {
+      _currentLapIndex = _fullResult!.laps.length - 1;
+    });
+    _finishRace();
+  }
+
+  Future<void> _finishRace() async {
+    if (_fullResult == null) return;
+
+    setState(() => _simulating = false); // Show saving indicator?
+
+    // Apply Results
+    final applyRes = await RaceService().applyRaceResults(
+      widget.seasonId,
+      _fullResult!,
+    );
+
+    if (!mounted) return;
+
+    // Show Dialog
+    final winnerId = _fullResult!.finalPositions.entries
+        .firstWhere((e) => e.value == 1)
+        .key;
+    final winnerName = _driversMap[winnerId]?.name ?? "Unknown";
+
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (_) => AlertDialog(
+        backgroundColor: Theme.of(context).cardColor,
+        title: const Text(
+          "RACE FINISHED",
+          style: TextStyle(fontWeight: FontWeight.bold),
+        ),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const Icon(Icons.flag, size: 100, color: Colors.green),
+            Text("Winner: $winnerName"),
+            const SizedBox(height: 10),
+            Text("Your team earnings: \$${applyRes['playerEarnings']}"),
             const SizedBox(height: 20),
-            Text(
-              "Main Race Event",
-              style: Theme.of(context).textTheme.headlineMedium,
-            ),
-            const SizedBox(height: 40),
-            if (_isLoading)
-              const CircularProgressIndicator()
-            else
-              ElevatedButton(
-                onPressed: _simulateRace,
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: Colors.redAccent,
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 40,
-                    vertical: 20,
-                  ),
-                ),
-                child: const Text(
-                  "WATCH RACE SIMULATION",
-                  style: TextStyle(color: Colors.white, fontSize: 18),
-                ),
-              ),
+            const Text("Results applied to season."),
           ],
         ),
+        actions: [
+          TextButton(
+            onPressed: () {
+              Navigator.pop(context); // Close dialog
+              Navigator.pop(context); // Exit RaceLiveScreen
+            },
+            child: const Text("RETURN TO DASHBOARD"),
+          ),
+        ],
       ),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    if (_initializing) {
+      final loadingIndicator = Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: const [
+            CircularProgressIndicator(),
+            SizedBox(height: 16),
+            Text("Preparing Race Simulation..."),
+          ],
+        ),
+      );
+      if (widget.isEmbed) return loadingIndicator;
+      return Scaffold(body: loadingIndicator);
+    }
+
+    if (_fullResult == null) {
+      const errorContent = Center(child: Text("Simulation Error"));
+      if (widget.isEmbed) return errorContent;
+      return const Scaffold(body: errorContent);
+    }
+
+    final currentLapData = _fullResult!.laps[_currentLapIndex];
+    final totalLaps = _fullResult!.laps.length;
+
+    // Sort drivers by position in this lap
+    final sortedDrivers = currentLapData.positions.entries.toList()
+      ..sort((a, b) => a.value.compareTo(b.value));
+
+    // Determine recent events (from this lap)
+    final events = currentLapData.events;
+
+    final content = Column(
+      children: [
+        // Race Monitor Header (Events)
+        Container(
+          height: 80,
+          width: double.infinity,
+          color: Theme.of(context).colorScheme.surfaceContainerHighest,
+          padding: const EdgeInsets.all(12),
+          child: events.isEmpty
+              ? Center(
+                  child: Text(
+                    "Green Flag",
+                    style: TextStyle(
+                      color: Theme.of(context).colorScheme.primary,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                )
+              : ListView(
+                  children: events
+                      .map(
+                        (e) => Text(
+                          "[Lap ${e.lapNumber}] ${e.type}: ${_driversMap[e.driverId]?.name}",
+                          style: TextStyle(
+                            color: Theme.of(context).colorScheme.secondary,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      )
+                      .toList(),
+                ),
+        ),
+
+        // Leaderboard
+        Expanded(
+          child: ListView.builder(
+            itemCount: sortedDrivers.length,
+            itemBuilder: (context, index) {
+              final entry = sortedDrivers[index];
+              final driverId = entry.key;
+              final pos = entry.value;
+              final driver = _driversMap[driverId];
+              final team = _teamsMap[driver?.teamId];
+              final lapTime = currentLapData.driverLapTimes[driverId] ?? 0.0;
+
+              return Card(
+                color: index == 0
+                    ? Theme.of(context).colorScheme.secondaryContainer
+                    : null,
+                margin: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                child: ListTile(
+                  leading: Container(
+                    width: 30,
+                    alignment: Alignment.center,
+                    child: Text(
+                      "$pos",
+                      style: const TextStyle(
+                        fontWeight: FontWeight.bold,
+                        fontSize: 18,
+                      ),
+                    ),
+                  ),
+                  title: Text(driver?.name ?? "Unknown"),
+                  subtitle: Text(team?.name ?? "Unknown Team"),
+                  trailing: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    crossAxisAlignment: CrossAxisAlignment.end,
+                    children: [
+                      Text(
+                        "Lap: ${lapTime.toStringAsFixed(3)}s",
+                        style: TextStyle(
+                          color: Theme.of(context).primaryColor,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              );
+            },
+          ),
+        ),
+      ],
+    );
+
+    if (widget.isEmbed) return content;
+
+    return Scaffold(
+      appBar: AppBar(
+        title: Text("Lap ${currentLapData.lapNumber} / $totalLaps"),
+        centerTitle: true,
+        actions: [
+          if (_simulating)
+            TextButton(
+              onPressed: _skipSimulation,
+              child: Text(
+                "SKIP",
+                style: TextStyle(color: Theme.of(context).colorScheme.primary),
+              ),
+            ),
+        ],
+      ),
+      body: content,
     );
   }
 }

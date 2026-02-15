@@ -20,16 +20,12 @@ class EngineeringScreen extends StatelessWidget {
           .snapshots(),
       builder: (context, snapshot) {
         if (snapshot.hasError) {
-          return Scaffold(
-            body: Center(child: Text("Error: ${snapshot.error}")),
-          );
+          return Center(child: Text("Error: ${snapshot.error}"));
         }
         if (snapshot.connectionState == ConnectionState.waiting) {
-          return Scaffold(
-            body: Center(
-              child: CircularProgressIndicator(
-                color: Theme.of(context).primaryColor,
-              ),
+          return Center(
+            child: CircularProgressIndicator(
+              color: Theme.of(context).primaryColor,
             ),
           );
         }
@@ -38,90 +34,86 @@ class EngineeringScreen extends StatelessWidget {
         final team = Team.fromMap(data);
         final budgetM = (team.budget / 1000000).toStringAsFixed(1);
 
-        return Scaffold(
-          backgroundColor: Theme.of(context).scaffoldBackgroundColor,
-          appBar: AppBar(title: Text(l10n.engineeringTitle)),
-          body: SingleChildScrollView(
-            padding: const EdgeInsets.all(20.0),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                // Budget Header
-                Card(
-                  color: Theme.of(context).cardTheme.color,
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  elevation: 2,
-                  child: Container(
-                    width: double.infinity,
-                    padding: const EdgeInsets.all(24),
-                    decoration: BoxDecoration(
-                      gradient: LinearGradient(
-                        colors: [
-                          Theme.of(
-                            context,
-                          ).colorScheme.primary.withValues(alpha: 0.1),
-                          Colors.transparent,
-                        ],
-                      ),
-                      borderRadius: BorderRadius.circular(16),
-                      border: Border.all(
-                        color: Theme.of(
+        return SingleChildScrollView(
+          padding: const EdgeInsets.all(20.0),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // Budget Header
+              Card(
+                color: Theme.of(context).cardTheme.color,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                elevation: 2,
+                child: Container(
+                  width: double.infinity,
+                  padding: const EdgeInsets.all(24),
+                  decoration: BoxDecoration(
+                    gradient: LinearGradient(
+                      colors: [
+                        Theme.of(
                           context,
-                        ).colorScheme.primary.withValues(alpha: 0.2),
-                      ),
-                    ),
-                    child: Column(
-                      children: [
-                        Text(
-                          l10n.budgetLabel.toUpperCase(),
-                          style: TextStyle(
-                            color: Theme.of(context).primaryColor,
-                            fontSize: 13,
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
-                        const SizedBox(height: 8),
-                        Text(
-                          "${l10n.currencySymbol}$budgetM${l10n.millionsSuffix}",
-                          style: TextStyle(
-                            color: Theme.of(context).colorScheme.onSurface,
-                            fontSize: 36,
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
+                        ).colorScheme.primary.withValues(alpha: 0.1),
+                        Colors.transparent,
                       ],
                     ),
+                    borderRadius: BorderRadius.circular(16),
+                    border: Border.all(
+                      color: Theme.of(
+                        context,
+                      ).colorScheme.primary.withValues(alpha: 0.2),
+                    ),
+                  ),
+                  child: Column(
+                    children: [
+                      Text(
+                        l10n.budgetLabel.toUpperCase(),
+                        style: TextStyle(
+                          color: Theme.of(context).primaryColor,
+                          fontSize: 13,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                      const SizedBox(height: 8),
+                      Text(
+                        "${l10n.currencySymbol}$budgetM${l10n.millionsSuffix}",
+                        style: TextStyle(
+                          color: Theme.of(context).colorScheme.onSurface,
+                          fontSize: 36,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ],
                   ),
                 ),
-                const SizedBox(height: 32),
+              ),
+              const SizedBox(height: 32),
 
-                _UpgradeTile(
-                  title: l10n.aero,
-                  partKey: 'aero',
-                  level: team.carStats['aero'] ?? 50,
-                  currentBudget: team.budget,
-                  teamId: team.id,
-                ),
-                const SizedBox(height: 16),
-                _UpgradeTile(
-                  title: l10n.engine,
-                  partKey: 'engine',
-                  level: team.carStats['engine'] ?? 50,
-                  currentBudget: team.budget,
-                  teamId: team.id,
-                ),
-                const SizedBox(height: 16),
-                _UpgradeTile(
-                  title: l10n.reliability,
-                  partKey: 'reliability',
-                  level: team.carStats['reliability'] ?? 50,
-                  currentBudget: team.budget,
-                  teamId: team.id,
-                ),
-              ],
-            ),
+              _UpgradeTile(
+                title: l10n.aero,
+                partKey: 'aero',
+                level: team.carStats['aero'] ?? 1,
+                currentBudget: team.budget,
+                teamId: team.id,
+              ),
+              const SizedBox(height: 16),
+              _UpgradeTile(
+                title: l10n.engine,
+                partKey: 'engine',
+                level: team.carStats['engine'] ?? 1,
+                currentBudget: team.budget,
+                teamId: team.id,
+              ),
+              const SizedBox(height: 16),
+              _UpgradeTile(
+                title: l10n.reliability,
+                partKey: 'reliability',
+                level: team.carStats['reliability'] ?? 1,
+                currentBudget: team.budget,
+                teamId: team.id,
+              ),
+            ],
           ),
         );
       },
@@ -154,9 +146,17 @@ class _UpgradeTileState extends State<_UpgradeTile> {
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
-    final cost = widget.level * 100000;
+    final cost = CarService().getUpgradeCost(widget.level);
     final canAfford = widget.currentBudget >= cost;
-    final costFormatted = (cost / 1000000).toStringAsFixed(1);
+
+    // Formatting cost nicely (e.g. $100k, $1.1M)
+    String costFormatted;
+    if (cost >= 1000000) {
+      costFormatted =
+          "${(cost / 1000000).toStringAsFixed(1)}${l10n.millionsSuffix}";
+    } else {
+      costFormatted = "${(cost / 1000).toStringAsFixed(0)}k";
+    }
 
     return Container(
       padding: const EdgeInsets.all(20),
@@ -192,7 +192,7 @@ class _UpgradeTileState extends State<_UpgradeTile> {
           ),
           const SizedBox(height: 12),
           LinearProgressIndicator(
-            value: widget.level / 100,
+            value: (widget.level / 20).clamp(0.0, 1.0),
             backgroundColor: Theme.of(
               context,
             ).colorScheme.onSurface.withValues(alpha: 0.05),
@@ -208,10 +208,7 @@ class _UpgradeTileState extends State<_UpgradeTile> {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    l10n.costLabel(
-                      l10n.currencySymbol,
-                      "$costFormatted${l10n.millionsSuffix}",
-                    ),
+                    l10n.costLabel(l10n.currencySymbol, costFormatted),
                     style: TextStyle(
                       color: canAfford
                           ? Theme.of(context).colorScheme.onSurfaceVariant

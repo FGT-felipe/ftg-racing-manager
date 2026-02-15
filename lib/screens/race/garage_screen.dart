@@ -13,8 +13,14 @@ class GarageScreen extends StatefulWidget {
 
   /// Circuit id for setup/profile (e.g. 'interlagos').
   final String? circuitId;
+  final bool isEmbed;
 
-  const GarageScreen({super.key, required this.teamId, this.circuitId});
+  const GarageScreen({
+    super.key,
+    required this.teamId,
+    this.circuitId,
+    this.isEmbed = false,
+  });
 
   @override
   State<GarageScreen> createState() => _GarageScreenState();
@@ -155,6 +161,9 @@ class _GarageScreenState extends State<GarageScreen>
           'lapTime': (data['lapTime'] as num).toDouble(),
           'confidence': data['setupConfidence'] ?? 0.0,
           'feedback': data['feedback'] ?? '',
+          'setup': data['setupUsed'] != null
+              ? CarSetup.fromMap(Map<String, dynamic>.from(data['setupUsed']))
+              : null,
         });
 
         // Add to feedback history
@@ -280,6 +289,7 @@ class _GarageScreenState extends State<GarageScreen>
         'feedback': result.driverFeedback.isNotEmpty
             ? result.driverFeedback.first
             : '',
+        'setup': setup.copyWith(), // Copy the setup used
       });
 
       // Save practice result
@@ -423,16 +433,50 @@ class _GarageScreenState extends State<GarageScreen>
     final theme = Theme.of(context);
 
     if (_isLoading && _circuit == null) {
+      final loadingIndicator = Center(
+        child: CircularProgressIndicator(color: theme.primaryColor),
+      );
+      if (widget.isEmbed) return loadingIndicator;
       return Scaffold(
         backgroundColor: theme.scaffoldBackgroundColor,
-        body: Center(
-          child: CircularProgressIndicator(color: theme.primaryColor),
-        ),
+        body: loadingIndicator,
       );
     }
 
     final timeService = TimeService();
     final isPaddockOpen = timeService.currentStatus == RaceWeekStatus.practice;
+
+    final content = Column(
+      children: [
+        TabBar(
+          controller: _tabController,
+          labelColor: theme.primaryColor,
+          unselectedLabelColor: theme.colorScheme.onSurface.withValues(
+            alpha: 0.5,
+          ),
+          indicatorColor: theme.primaryColor,
+          tabs: const [
+            Tab(text: "PRACTICE"),
+            Tab(text: "QUALIFYING"),
+            Tab(text: "RACE"),
+          ],
+        ),
+        Expanded(
+          child: TabBarView(
+            controller: _tabController,
+            children: [
+              _buildPracticeTab(theme, isPaddockOpen),
+              _buildQualifyingTab(theme, isPaddockOpen),
+              _buildRaceTab(theme, isPaddockOpen),
+            ],
+          ),
+        ),
+      ],
+    );
+
+    if (widget.isEmbed) {
+      return content;
+    }
 
     return Scaffold(
       backgroundColor: theme.scaffoldBackgroundColor,
@@ -468,28 +512,8 @@ class _GarageScreenState extends State<GarageScreen>
               ),
             ),
         ],
-        bottom: TabBar(
-          controller: _tabController,
-          labelColor: theme.primaryColor,
-          unselectedLabelColor: theme.colorScheme.onSurface.withValues(
-            alpha: 0.5,
-          ),
-          indicatorColor: theme.primaryColor,
-          tabs: const [
-            Tab(text: "PRACTICE"),
-            Tab(text: "QUALIFYING"),
-            Tab(text: "RACE"),
-          ],
-        ),
       ),
-      body: TabBarView(
-        controller: _tabController,
-        children: [
-          _buildPracticeTab(theme, isPaddockOpen),
-          _buildQualifyingTab(theme, isPaddockOpen),
-          _buildRaceTab(theme, isPaddockOpen),
-        ],
-      ),
+      body: content,
     );
   }
 
@@ -1289,60 +1313,67 @@ class _GarageScreenState extends State<GarageScreen>
                     .reduce((a, b) => a < b ? a : b);
                 final isBest = lapTime == bestTime;
 
-                return Container(
-                  padding: const EdgeInsets.symmetric(vertical: 3),
-                  decoration: BoxDecoration(
-                    color: isBest
-                        ? theme.primaryColor.withValues(alpha: 0.08)
-                        : Colors.transparent,
-                    borderRadius: BorderRadius.circular(4),
-                  ),
-                  child: Row(
-                    children: [
-                      SizedBox(
-                        width: 30,
-                        child: Text(
-                          "${i + 1}",
-                          style: TextStyle(
-                            fontSize: 12,
-                            fontFamily: 'monospace',
-                            fontWeight: FontWeight.bold,
-                            color: isBest
-                                ? theme.primaryColor
-                                : theme.colorScheme.onSurface,
+                return InkWell(
+                  onTap: () => _showLapSetupDialog(lap),
+                  borderRadius: BorderRadius.circular(4),
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(
+                      vertical: 4,
+                      horizontal: 4,
+                    ),
+                    decoration: BoxDecoration(
+                      color: isBest
+                          ? theme.primaryColor.withValues(alpha: 0.08)
+                          : Colors.transparent,
+                      borderRadius: BorderRadius.circular(4),
+                    ),
+                    child: Row(
+                      children: [
+                        SizedBox(
+                          width: 30,
+                          child: Text(
+                            "${i + 1}",
+                            style: TextStyle(
+                              fontSize: 12,
+                              fontFamily: 'monospace',
+                              fontWeight: FontWeight.bold,
+                              color: isBest
+                                  ? theme.primaryColor
+                                  : theme.colorScheme.onSurface,
+                            ),
                           ),
                         ),
-                      ),
-                      Expanded(
-                        child: Text(
-                          _formatLapTime(lapTime),
-                          style: TextStyle(
-                            fontSize: 13,
-                            fontFamily: 'monospace',
-                            fontWeight: isBest
-                                ? FontWeight.bold
-                                : FontWeight.normal,
-                            color: isBest
-                                ? theme.primaryColor
-                                : theme.colorScheme.onSurface,
+                        Expanded(
+                          child: Text(
+                            _formatLapTime(lapTime),
+                            style: TextStyle(
+                              fontSize: 13,
+                              fontFamily: 'monospace',
+                              fontWeight: isBest
+                                  ? FontWeight.bold
+                                  : FontWeight.normal,
+                              color: isBest
+                                  ? theme.primaryColor
+                                  : theme.colorScheme.onSurface,
+                            ),
+                            textAlign: TextAlign.right,
                           ),
-                          textAlign: TextAlign.right,
                         ),
-                      ),
-                      const SizedBox(width: 12),
-                      SizedBox(
-                        width: 50,
-                        child: Text(
-                          "${(conf * 100).toStringAsFixed(0)}%",
-                          style: TextStyle(
-                            fontSize: 12,
-                            fontFamily: 'monospace',
-                            color: _getConfidenceColor(conf),
+                        const SizedBox(width: 12),
+                        SizedBox(
+                          width: 50,
+                          child: Text(
+                            "${(conf * 100).toStringAsFixed(0)}%",
+                            style: TextStyle(
+                              fontSize: 12,
+                              fontFamily: 'monospace',
+                              color: _getConfidenceColor(conf),
+                            ),
+                            textAlign: TextAlign.right,
                           ),
-                          textAlign: TextAlign.right,
                         ),
-                      ),
-                    ],
+                      ],
+                    ),
                   ),
                 );
               }),
@@ -1462,6 +1493,99 @@ class _GarageScreenState extends State<GarageScreen>
               ),
           ],
         ),
+      ),
+    );
+  }
+
+  void _showLapSetupDialog(Map<String, dynamic> lap) {
+    final setup = lap['setup'] as CarSetup?;
+    if (setup == null) return;
+
+    showDialog(
+      context: context,
+      builder: (context) {
+        final theme = Theme.of(context);
+        return AlertDialog(
+          backgroundColor: theme.colorScheme.surface,
+          title: Text(
+            "LAP SETUP — ${_formatLapTime(lap['lapTime'])}",
+            style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+          ),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              _buildSetupDetailRow("Front Wing", setup.frontWing),
+              _buildSetupDetailRow("Rear Wing", setup.rearWing),
+              _buildSetupDetailRow("Suspension", setup.suspension),
+              _buildSetupDetailRow("Gear Ratio", setup.gearRatio),
+              _buildSetupDetailRow("Tyre Pressure", setup.tyrePressure),
+              const Divider(height: 24),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  const Text("Confidence"),
+                  Text(
+                    "${((lap['confidence'] ?? 0) * 100).toStringAsFixed(0)}%",
+                    style: TextStyle(
+                      fontWeight: FontWeight.bold,
+                      color: _getConfidenceColor(lap['confidence'] ?? 0),
+                    ),
+                  ),
+                ],
+              ),
+              if (lap['feedback'] != null && lap['feedback'].isNotEmpty) ...[
+                const SizedBox(height: 12),
+                Text(
+                  "\"${lap['feedback']}\"",
+                  style: TextStyle(
+                    fontStyle: FontStyle.italic,
+                    color: theme.colorScheme.onSurface.withValues(alpha: 0.7),
+                    fontSize: 13,
+                  ),
+                  textAlign: TextAlign.center,
+                ),
+              ],
+            ],
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: const Text("CLOSE"),
+            ),
+            ElevatedButton(
+              onPressed: () {
+                _updateCurrentDriverSetup(setup.copyWith());
+                Navigator.pop(context);
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(
+                    content: Text("Setup restored to current session"),
+                  ),
+                );
+              },
+              child: const Text("RESTORE THIS SETUP"),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  Widget _buildSetupDetailRow(String label, int value) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 4),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          Text(label, style: const TextStyle(fontSize: 14)),
+          Text(
+            "$value",
+            style: const TextStyle(
+              fontWeight: FontWeight.bold,
+              fontFamily: 'monospace',
+              fontSize: 14,
+            ),
+          ),
+        ],
       ),
     );
   }

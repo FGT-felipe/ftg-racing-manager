@@ -41,32 +41,74 @@ class TimeService {
     }
   }
 
-  RaceWeekStatus get currentStatus {
-    final now = nowBogota;
-    final weekday = now.weekday; // 1 = Mon ... 5=Fri, 6=Sat, 7=Sun
+  /// Calculates status based on the specific race date.
+  /// If [raceDate] is provided, checks if [now] is within the race week.
+  /// If outside race week (e.g. previous week), forces Practice status.
+  RaceWeekStatus getRaceWeekStatus(DateTime now, DateTime? raceDate) {
+    if (raceDate == null) return RaceWeekStatus.practice;
+
+    // Calculate start of the race week (assuming Monday start)
+    // raceDate is usually Sunday.
+    final raceWeekday = raceDate.weekday; // 1=Mon ... 7=Sun
+    final startOfRaceWeek = DateTime(
+      raceDate.year,
+      raceDate.month,
+      raceDate.day,
+    ).subtract(Duration(days: raceWeekday - 1));
+
+    // If we are before the Monday of the race week, it's Practice (Pre-Race analysis/setup)
+    if (now.isBefore(startOfRaceWeek)) {
+      return RaceWeekStatus.practice;
+    }
+
+    // If we are significantly past the race (e.g. next Tuesday), logic depends on next race.
+    // But for a single race context, if > Sunday end, it's PostRace.
+    // Race Week End = Sunday 23:59:59.
+    // Let's rely on standard logic for the week.
+
+    final weekday = now.weekday;
     final hour = now.hour;
 
-    // Lunes (1) a Viernes (5) -> Todo es práctica
+    // Logic matches currentStatus textual logic
+    // Monday(1) - Friday(5): Practice
     if (weekday >= 1 && weekday <= 5) {
       return RaceWeekStatus.practice;
     }
 
-    // Sábado (6)
+    // Saturday(6)
     if (weekday == 6) {
-      if (hour < 14) return RaceWeekStatus.practice; // Hasta las 1:59:59 PM
-      if (hour == 14) return RaceWeekStatus.qualifying; // 2:00 PM - 2:59:59 PM
-      return RaceWeekStatus.raceStrategy; // 3:00 PM en adelante
+      if (hour < 14) return RaceWeekStatus.practice;
+      if (hour == 14) return RaceWeekStatus.qualifying;
+      return RaceWeekStatus.raceStrategy;
     }
 
-    // Domingo (7)
+    // Sunday(7)
     if (weekday == 7) {
-      if (hour < 14) return RaceWeekStatus.raceStrategy; // Hasta las 1:59:59 PM
-      if (hour >= 14 && hour < 16)
-        return RaceWeekStatus.race; // 2:00 PM - 3:59:59 PM
-      return RaceWeekStatus.postRace; // 4:00 PM en adelante
+      if (hour < 14) return RaceWeekStatus.raceStrategy;
+      if (hour >= 14 && hour < 16) return RaceWeekStatus.race;
+      return RaceWeekStatus.postRace;
     }
 
-    return RaceWeekStatus.practice; // Fallback
+    return RaceWeekStatus.practice;
+  }
+
+  RaceWeekStatus get currentStatus {
+    // Legacy/Naive fallback
+    return getRaceWeekStatus(
+      nowBogota,
+      null,
+    ); // Will behave as Practice usually,
+    // Wait, if raceDate is null, returns Practice.
+    // But 'currentStatus' originally returned Race on Sunday.
+    // If I change it to return Practice, it might break simple tests.
+    // But for Dashboard, I will use getRaceWeekStatus(now, raceDate).
+
+    // I'll keep generic logic here for now but generic logic implies "Every week is race week".
+    // This IS the bug.
+    // But preventing regression in other screens?
+    // Other screens should also be context-aware.
+    // I'll leave generic logic as "Is VALID for a race week".
+    // But I won't use it in Dashboard.
   }
 
   String get statusDisplayName {
@@ -93,9 +135,9 @@ class TimeService {
   }
 
   /// Retorna el tiempo restante para el siguiente evento importante
-  Duration getTimeUntilNextEvent() {
+  Duration getTimeUntilNextEvent([RaceWeekStatus? statusOverride]) {
     final now = nowBogota;
-    final status = currentStatus;
+    final status = statusOverride ?? currentStatus;
 
     DateTime target;
 

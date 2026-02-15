@@ -1,12 +1,9 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import '../models/core_models.dart';
+import 'database_seeder.dart';
 
 /// Race document status in Firestore `races/{raceId}`.
-enum RaceDocumentStatus {
-  scheduled,
-  qualifying,
-  completed,
-}
+enum RaceDocumentStatus { scheduled, qualifying, completed }
 
 /// Service for active season and current race. Provides race document id
 /// for qualifying grid and race results.
@@ -57,7 +54,10 @@ class SeasonService {
 
   /// Gets or creates the race document for the current weekend.
   /// Returns the race document id. Creates with status 'scheduled' if missing.
-  Future<String> getOrCreateRaceDocument(String seasonId, RaceEvent event) async {
+  Future<String> getOrCreateRaceDocument(
+    String seasonId,
+    RaceEvent event,
+  ) async {
     final raceId = raceDocumentId(seasonId, event);
     final ref = _db.collection('races').doc(raceId);
     final doc = await ref.get();
@@ -113,5 +113,10 @@ class SeasonService {
     };
     if (extraResults != null) update.addAll(extraResults);
     await ref.update(update);
+  }
+
+  /// PROCESO DE RESET (DEBUG)
+  Future<void> resetSeason({DateTime? startDate}) async {
+    await DatabaseSeeder.nukeAndReseed(startDate: startDate);
   }
 }

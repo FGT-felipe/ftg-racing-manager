@@ -64,57 +64,52 @@ class _SponsorshipScreenState extends State<SponsorshipScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
-      appBar: AppBar(title: const Text("SPONSORSHIP DEALS")),
-      body: FutureBuilder<DocumentSnapshot>(
-        future: FirebaseFirestore.instance
-            .collection('managers')
-            .doc(AuthService().currentUser?.uid)
-            .get(),
-        builder: (context, managerSnapshot) {
-          if (!managerSnapshot.hasData) {
-            return Center(
-              child: CircularProgressIndicator(
-                color: Theme.of(context).primaryColor,
-              ),
-            );
-          }
-
-          final managerData =
-              managerSnapshot.data!.data() as Map<String, dynamic>?;
-          final managerRoleStr = managerData?['role'] ?? 'noExperience';
-          final managerRole = ManagerRole.values.firstWhere(
-            (e) => e.name == managerRoleStr,
-            orElse: () => ManagerRole.noExperience,
+    return FutureBuilder<DocumentSnapshot>(
+      future: FirebaseFirestore.instance
+          .collection('managers')
+          .doc(AuthService().currentUser?.uid)
+          .get(),
+      builder: (context, managerSnapshot) {
+        if (!managerSnapshot.hasData) {
+          return Center(
+            child: CircularProgressIndicator(
+              color: Theme.of(context).primaryColor,
+            ),
           );
+        }
 
-          return StreamBuilder<DocumentSnapshot>(
-            stream: FirebaseFirestore.instance
-                .collection('teams')
-                .doc(widget.teamId)
-                .snapshots(),
-            builder: (context, teamSnapshot) {
-              if (!teamSnapshot.hasData) {
-                return Center(
-                  child: CircularProgressIndicator(
-                    color: Theme.of(context).primaryColor,
-                  ),
-                );
-              }
+        final managerData =
+            managerSnapshot.data!.data() as Map<String, dynamic>?;
+        final managerRoleStr = managerData?['role'] ?? 'noExperience';
+        final managerRole = ManagerRole.values.firstWhere(
+          (e) => e.name == managerRoleStr,
+          orElse: () => ManagerRole.noExperience,
+        );
 
-              final teamData =
-                  teamSnapshot.data!.data() as Map<String, dynamic>?;
-              final team = Team.fromMap(teamData ?? {});
-
-              return ResponsiveLayout(
-                mobileBody: _buildMobileLayout(team, managerRole),
-                desktopBody: _buildDesktopLayout(team, managerRole),
+        return StreamBuilder<DocumentSnapshot>(
+          stream: FirebaseFirestore.instance
+              .collection('teams')
+              .doc(widget.teamId)
+              .snapshots(),
+          builder: (context, teamSnapshot) {
+            if (!teamSnapshot.hasData) {
+              return Center(
+                child: CircularProgressIndicator(
+                  color: Theme.of(context).primaryColor,
+                ),
               );
-            },
-          );
-        },
-      ),
+            }
+
+            final teamData = teamSnapshot.data!.data() as Map<String, dynamic>?;
+            final team = Team.fromMap(teamData ?? {});
+
+            return ResponsiveLayout(
+              mobileBody: _buildMobileLayout(team, managerRole),
+              desktopBody: _buildDesktopLayout(team, managerRole),
+            );
+          },
+        );
+      },
     );
   }
 

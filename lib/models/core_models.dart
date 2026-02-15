@@ -1,3 +1,5 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
+
 class League {
   final String id;
   final String name;
@@ -23,6 +25,10 @@ class RaceEvent {
   final String circuitId;
   final DateTime date;
   final bool isCompleted;
+  final int totalLaps;
+  final String weatherPractice;
+  final String weatherQualifying;
+  final String weatherRace;
 
   RaceEvent({
     required this.id,
@@ -31,6 +37,10 @@ class RaceEvent {
     this.circuitId = 'generic',
     required this.date,
     required this.isCompleted,
+    this.totalLaps = 50,
+    this.weatherPractice = 'Sunny',
+    this.weatherQualifying = 'Cloudy',
+    this.weatherRace = 'Sunny',
   });
 
   Map<String, dynamic> toMap() {
@@ -39,19 +49,37 @@ class RaceEvent {
       'trackName': trackName,
       'countryCode': countryCode,
       'circuitId': circuitId,
-      'date': date.toIso8601String(),
+      'date': Timestamp.fromDate(date),
       'isCompleted': isCompleted,
+      'totalLaps': totalLaps,
+      'weatherPractice': weatherPractice,
+      'weatherQualifying': weatherQualifying,
+      'weatherRace': weatherRace,
     };
   }
 
   factory RaceEvent.fromMap(Map<String, dynamic> map) {
+    final rawDate = map['date'];
+    DateTime date;
+    if (rawDate is Timestamp) {
+      date = rawDate.toDate();
+    } else if (rawDate is String) {
+      date = DateTime.tryParse(rawDate) ?? DateTime.now();
+    } else {
+      date = DateTime.now();
+    }
+
     return RaceEvent(
       id: map['id'] ?? '',
       trackName: map['trackName'] ?? '',
       countryCode: map['countryCode'] ?? '',
       circuitId: map['circuitId'] ?? 'generic',
-      date: map['date'] != null ? DateTime.parse(map['date']) : DateTime.now(),
+      date: date,
       isCompleted: map['isCompleted'] ?? false,
+      totalLaps: map['totalLaps'] ?? 50,
+      weatherPractice: map['weatherPractice'] ?? 'Sunny',
+      weatherQualifying: map['weatherQualifying'] ?? 'Cloudy',
+      weatherRace: map['weatherRace'] ?? 'Sunny',
     );
   }
 }
@@ -61,12 +89,14 @@ class Season {
   final String leagueId;
   final int year;
   final List<RaceEvent> calendar;
+  final DateTime startDate;
 
   Season({
     required this.id,
     required this.leagueId,
     required this.year,
     required this.calendar,
+    required this.startDate,
   });
 
   Map<String, dynamic> toMap() {
@@ -75,14 +105,26 @@ class Season {
       'leagueId': leagueId,
       'year': year,
       'calendar': calendar.map((e) => e.toMap()).toList(),
+      'startDate': Timestamp.fromDate(startDate),
     };
   }
 
   factory Season.fromMap(Map<String, dynamic> map) {
+    final rawStart = map['startDate'];
+    DateTime start;
+    if (rawStart is Timestamp) {
+      start = rawStart.toDate();
+    } else if (rawStart is String) {
+      start = DateTime.tryParse(rawStart) ?? DateTime.now();
+    } else {
+      start = DateTime.now();
+    }
+
     return Season(
       id: map['id'] ?? '',
       leagueId: map['leagueId'] ?? '',
       year: map['year'] ?? 2024,
+      startDate: start,
       calendar: (map['calendar'] as List? ?? [])
           .map((e) => RaceEvent.fromMap(Map<String, dynamic>.from(e)))
           .toList(),
@@ -318,6 +360,10 @@ class Team {
   final bool isBot;
   final int budget;
   final int points;
+  final int races;
+  final int wins;
+  final int podiums;
+  final int poles;
   final Map<String, int> carStats;
   final Map<String, dynamic> weekStatus;
   final Map<String, ActiveContract> sponsors;
@@ -329,6 +375,10 @@ class Team {
     required this.isBot,
     required this.budget,
     required this.points,
+    this.races = 0,
+    this.wins = 0,
+    this.podiums = 0,
+    this.poles = 0,
     required this.carStats,
     required this.weekStatus,
     this.sponsors = const {},
@@ -342,6 +392,10 @@ class Team {
       'isBot': isBot,
       'budget': budget,
       'points': points,
+      'races': races,
+      'wins': wins,
+      'podiums': podiums,
+      'poles': poles,
       'carStats': carStats,
       'weekStatus': weekStatus,
       'sponsors': sponsors.map((k, v) => MapEntry(k, v.toMap())),
@@ -356,6 +410,10 @@ class Team {
       isBot: map['isBot'] ?? false,
       budget: map['budget'] ?? 0,
       points: map['points'] ?? 0,
+      races: map['races'] ?? 0,
+      wins: map['wins'] ?? 0,
+      podiums: map['podiums'] ?? 0,
+      poles: map['poles'] ?? 0,
       carStats: Map<String, int>.from(
         map['carStats'] ?? {'aero': 50, 'engine': 50, 'reliability': 50},
       ),
@@ -376,6 +434,10 @@ class Driver {
   final int potential;
   final int points;
   final String gender;
+  final int races;
+  final int wins;
+  final int podiums;
+  final int poles;
   final Map<String, int> stats;
 
   Driver({
@@ -386,6 +448,10 @@ class Driver {
     required this.potential,
     required this.points,
     required this.gender,
+    this.races = 0,
+    this.wins = 0,
+    this.podiums = 0,
+    this.poles = 0,
     required this.stats,
   });
 
@@ -398,6 +464,10 @@ class Driver {
       'potential': potential,
       'points': points,
       'gender': gender,
+      'races': races,
+      'wins': wins,
+      'podiums': podiums,
+      'poles': poles,
       'stats': stats,
     };
   }
@@ -411,6 +481,10 @@ class Driver {
       potential: map['potential'] ?? 50,
       points: map['points'] ?? 0,
       gender: map['gender'] ?? 'M',
+      races: map['races'] ?? 0,
+      wins: map['wins'] ?? 0,
+      podiums: map['podiums'] ?? 0,
+      poles: map['poles'] ?? 0,
       stats: Map<String, int>.from(
         map['stats'] ?? {'speed': 50, 'cornering': 50, 'consistency': 50},
       ),
