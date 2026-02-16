@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:google_fonts/google_fonts.dart';
 
 class AppLogo extends StatelessWidget {
   final double size; // Base size for the icon
@@ -15,36 +16,39 @@ class AppLogo extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final Color primaryColor = const Color(0xFF10B981); // Emerald
-    final Color textColor = isDark ? const Color(0xFF1E1E24) : Colors.white;
+    final Color textColor = Theme.of(context).colorScheme.onSurface;
 
     return Row(
-      // Row for horizontal layout (Icon + Text)
       mainAxisSize: MainAxisSize.min,
       crossAxisAlignment: CrossAxisAlignment.center,
       children: [
-        Icon(Icons.sports_motorsports, size: size, color: primaryColor),
+        Icon(
+          Icons.sports_motorsports,
+          size: size,
+          color: Theme.of(context).colorScheme.secondary,
+        ),
         if (withText) ...[
           SizedBox(width: size * 0.3),
           Column(
             crossAxisAlignment: CrossAxisAlignment.start,
+            mainAxisSize: MainAxisSize.min,
             children: [
               Text(
-                "FTG RACING",
-                style: TextStyle(
-                  fontSize: size * 0.45,
+                "FTG",
+                style: GoogleFonts.montserrat(
+                  fontSize: size * 0.6,
                   fontWeight: FontWeight.w900,
                   color: textColor,
-                  letterSpacing: 1.2,
+                  letterSpacing: -1.0,
                   height: 1.0,
                 ),
               ),
               Text(
-                "MANAGER 2026",
-                style: TextStyle(
-                  fontSize: size * 0.22,
+                "RACING MANAGER",
+                style: GoogleFonts.montserrat(
+                  fontSize: size * 0.18,
                   fontWeight: FontWeight.w600,
-                  color: primaryColor,
+                  color: textColor,
                   letterSpacing: 2.5,
                 ),
               ),

@@ -218,6 +218,7 @@ class DatabaseSeeder {
       final season = Season(
         id: seasonRef.id,
         leagueId: leagueRef.id,
+        number: 1,
         year: 2026,
         calendar: calendar,
         startDate: now, // Persist start date

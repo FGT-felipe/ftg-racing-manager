@@ -2,73 +2,73 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 
 class AppTheme {
-  // FTG Brand Colors
-  static const Color neonGreen = Color(0xFF00FF88); // Verde Neón FTG
-  static const Color darkText = Color(0xFF1A1A1A); // Casi negro para texto
-  static const Color lightBackground = Color(0xFFF5F5F5); // Blanco grisáceo
-  static const Color cardWhite = Colors.white;
+  // FTG Brand Colors - Updated Palette
+  static const Color appBackground = Color(0xFF15151E);
+  static const Color textNormal = Color(0xFFFFFFFF);
+  static const Color accentHighlight = Color(
+    0xFFC1C4F4,
+  ); // Icons, badges, highlights
+  static const Color primaryButton = Color(0xFF3A40B1);
+  static const Color secondaryButton = Color(0xFF292A33);
+  static const Color buttonHover = Color(0xFF424686);
   static const Color error = Color(0xFFEF5350);
 
   static ThemeData get lightTheme {
     return ThemeData(
       useMaterial3: true,
-      brightness: Brightness.light,
-      scaffoldBackgroundColor: lightBackground,
-      primaryColor: neonGreen,
+      brightness: Brightness.dark, // Changed to dark as background is dark
+      scaffoldBackgroundColor: appBackground,
+      primaryColor: primaryButton,
 
-      colorScheme: ColorScheme.light(
-        primary: neonGreen,
-        onPrimary: Colors.black,
-        secondary: neonGreen.withValues(alpha: 0.7),
-        surface: cardWhite,
-        onSurface: darkText,
+      colorScheme: ColorScheme.dark(
+        primary: primaryButton,
+        onPrimary: textNormal,
+        secondary: accentHighlight,
+        onSecondary: Colors.black, // Dark text on light accent color
+        surface: appBackground,
+        onSurface: textNormal,
         error: error,
-        background: lightBackground,
-        onBackground: darkText,
       ),
 
       textTheme: TextTheme(
         headlineMedium: GoogleFonts.outfit(
-          color: darkText,
+          color: textNormal,
           fontWeight: FontWeight.bold,
         ),
         headlineSmall: GoogleFonts.outfit(
-          color: darkText,
-          fontWeight: FontWeight.w600,
+          color: textNormal,
+          fontWeight: FontWeight.bold, // Always bold as requested
         ),
         titleLarge: GoogleFonts.outfit(
-          color: darkText,
+          color: textNormal,
           fontWeight: FontWeight.bold,
         ),
-        bodyLarge: GoogleFonts.inter(color: darkText, fontSize: 16),
+        bodyLarge: GoogleFonts.inter(color: textNormal, fontSize: 16),
         bodyMedium: GoogleFonts.inter(
-          color: darkText.withValues(alpha: 0.7),
+          color: textNormal.withValues(alpha: 0.8),
           fontSize: 14,
         ),
         labelLarge: GoogleFonts.inter(
-          color: darkText,
+          color: textNormal,
           fontWeight: FontWeight.bold,
         ),
       ),
 
       cardTheme: CardThemeData(
-        color: cardWhite,
+        color: secondaryButton, // Using secondary dark color for cards
         elevation: 2,
-        shadowColor: Colors.black.withValues(alpha: 0.1),
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(16),
-          side: BorderSide(color: neonGreen.withValues(alpha: 0.2), width: 1),
-        ),
+        shadowColor: Colors.black.withValues(alpha: 0.3),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
         margin: EdgeInsets.zero,
       ),
 
       appBarTheme: AppBarTheme(
-        backgroundColor: cardWhite,
+        backgroundColor: appBackground,
         elevation: 0,
         centerTitle: true,
-        iconTheme: const IconThemeData(color: darkText),
+        iconTheme: const IconThemeData(color: textNormal),
         titleTextStyle: GoogleFonts.outfit(
-          color: darkText,
+          color: textNormal,
           fontSize: 20,
           fontWeight: FontWeight.bold,
           letterSpacing: 1.0,
@@ -76,34 +76,51 @@ class AppTheme {
       ),
 
       elevatedButtonTheme: ElevatedButtonThemeData(
-        style: ElevatedButton.styleFrom(
-          backgroundColor: neonGreen,
-          foregroundColor: Colors.black,
-          elevation: 0,
-          textStyle: GoogleFonts.inter(fontWeight: FontWeight.bold),
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(12),
+        style: ButtonStyle(
+          backgroundColor: WidgetStateProperty.resolveWith<Color>((states) {
+            if (states.contains(WidgetState.hovered)) return buttonHover;
+            return primaryButton;
+          }),
+          foregroundColor: WidgetStateProperty.all(textNormal),
+          elevation: WidgetStateProperty.all(0),
+          textStyle: WidgetStateProperty.all(
+            GoogleFonts.inter(fontWeight: FontWeight.bold),
           ),
-          padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+          shape: WidgetStateProperty.all(
+            RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+          ),
+          padding: WidgetStateProperty.all(
+            const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+          ),
         ),
       ),
 
       outlinedButtonTheme: OutlinedButtonThemeData(
-        style: OutlinedButton.styleFrom(
-          foregroundColor: darkText,
-          side: const BorderSide(color: neonGreen, width: 2),
-          textStyle: GoogleFonts.inter(fontWeight: FontWeight.bold),
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(12),
-          ),
-          padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
-        ),
+        style:
+            OutlinedButton.styleFrom(
+              foregroundColor: textNormal,
+              backgroundColor: secondaryButton,
+              side: BorderSide(
+                color: textNormal.withValues(alpha: 0.1),
+                width: 1,
+              ),
+              textStyle: GoogleFonts.inter(fontWeight: FontWeight.bold),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(8),
+              ),
+              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+            ).copyWith(
+              backgroundColor: WidgetStateProperty.resolveWith<Color>((states) {
+                if (states.contains(WidgetState.hovered)) return buttonHover;
+                return secondaryButton;
+              }),
+            ),
       ),
 
       bottomNavigationBarTheme: BottomNavigationBarThemeData(
-        backgroundColor: cardWhite,
-        selectedItemColor: neonGreen,
-        unselectedItemColor: darkText.withValues(alpha: 0.5),
+        backgroundColor: secondaryButton,
+        selectedItemColor: accentHighlight,
+        unselectedItemColor: textNormal.withValues(alpha: 0.5),
         elevation: 8,
         type: BottomNavigationBarType.fixed,
         selectedLabelStyle: GoogleFonts.inter(

@@ -151,14 +151,14 @@ class _CreateManagerScreenState extends State<CreateManagerScreen> {
 
   @override
   Widget build(BuildContext context) {
-    const bgColor = Color(0xFFF4F6F8);
-    const primaryColor = Color(0xFF10B981);
-    const textColor = Color(0xFF1E1E24);
+    const bgColor = Color(0xFF15151E);
+    final accentHighlight = Theme.of(context).colorScheme.secondary;
+    final textColor = Theme.of(context).colorScheme.onSurface;
 
     return Scaffold(
       backgroundColor: bgColor,
       body: _isLoading
-          ? const Center(child: CircularProgressIndicator(color: primaryColor))
+          ? Center(child: CircularProgressIndicator(color: accentHighlight))
           : Center(
               child: Container(
                 constraints: const BoxConstraints(maxWidth: 1000),
@@ -321,11 +321,11 @@ class _CreateManagerScreenState extends State<CreateManagerScreen> {
                           child: ElevatedButton(
                             onPressed: _establishCareer,
                             style: ElevatedButton.styleFrom(
-                              backgroundColor: primaryColor,
-                              foregroundColor: Colors.white,
+                              backgroundColor: accentHighlight,
+                              foregroundColor: Colors.black,
                               elevation: 4,
                               shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(16),
+                                borderRadius: BorderRadius.circular(8),
                               ),
                             ),
                             child: const Text(
@@ -350,10 +350,10 @@ class _CreateManagerScreenState extends State<CreateManagerScreen> {
   Widget _buildSectionTitle(String title) {
     return Text(
       title,
-      style: const TextStyle(
+      style: TextStyle(
         fontSize: 14,
         fontWeight: FontWeight.w900,
-        color: Color(0xFF10B981),
+        color: Theme.of(context).colorScheme.secondary,
         letterSpacing: 1.2,
       ),
     );
@@ -383,16 +383,19 @@ class _CreateManagerScreenState extends State<CreateManagerScreen> {
       filled: true,
       fillColor: Colors.white,
       border: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: BorderRadius.circular(8),
         borderSide: BorderSide.none,
       ),
       enabledBorder: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(12),
-        borderSide: BorderSide(color: Colors.grey.shade200),
+        borderRadius: BorderRadius.circular(8),
+        borderSide: BorderSide(color: Colors.white.withValues(alpha: 0.1)),
       ),
       focusedBorder: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(12),
-        borderSide: const BorderSide(color: Color(0xFF10B981), width: 2),
+        borderRadius: BorderRadius.circular(8),
+        borderSide: BorderSide(
+          color: Theme.of(context).colorScheme.secondary,
+          width: 2,
+        ),
       ),
     );
   }
@@ -412,13 +415,15 @@ class _CreateManagerScreenState extends State<CreateManagerScreen> {
             padding: const EdgeInsets.all(16),
             decoration: BoxDecoration(
               color: isSelected
-                  ? const Color(0xFF10B981).withValues(alpha: 0.1)
-                  : Colors.white,
-              borderRadius: BorderRadius.circular(16),
+                  ? Theme.of(
+                      context,
+                    ).colorScheme.secondary.withValues(alpha: 0.1)
+                  : Theme.of(context).cardTheme.color,
+              borderRadius: BorderRadius.circular(8),
               border: Border.all(
                 color: isSelected
-                    ? const Color(0xFF10B981)
-                    : Colors.grey.shade200,
+                    ? Theme.of(context).colorScheme.secondary
+                    : Colors.white.withValues(alpha: 0.1),
                 width: 2,
               ),
             ),
@@ -446,9 +451,8 @@ class _CreateManagerScreenState extends State<CreateManagerScreen> {
     return Container(
       height: 400,
       decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(24),
-        border: Border.all(color: Colors.grey.shade200),
+        color: Theme.of(context).cardTheme.color,
+        borderRadius: BorderRadius.circular(8),
       ),
       clipBehavior: Clip.antiAlias,
       child: Row(
@@ -466,7 +470,9 @@ class _CreateManagerScreenState extends State<CreateManagerScreen> {
                 return ListTile(
                   leading: Icon(
                     _roles[index]['icon'],
-                    color: isSelected ? const Color(0xFF10B981) : Colors.grey,
+                    color: isSelected
+                        ? Theme.of(context).colorScheme.secondary
+                        : Colors.grey,
                   ),
                   title: Text(
                     _roles[index]['title'],
@@ -481,9 +487,9 @@ class _CreateManagerScreenState extends State<CreateManagerScreen> {
                   ),
                   onTap: () => setState(() => _selectedRoleIndex = index),
                   selected: isSelected,
-                  selectedTileColor: const Color(
-                    0xFF10B981,
-                  ).withValues(alpha: 0.05),
+                  selectedTileColor: Theme.of(
+                    context,
+                  ).colorScheme.secondary.withValues(alpha: 0.05),
                 );
               },
             ),
@@ -500,7 +506,7 @@ class _CreateManagerScreenState extends State<CreateManagerScreen> {
                         Icon(
                           selectedRole['icon'],
                           size: 48,
-                          color: const Color(0xFF10B981),
+                          color: Theme.of(context).colorScheme.secondary,
                         ),
                         const SizedBox(width: 16),
                         Column(
@@ -533,10 +539,12 @@ class _CreateManagerScreenState extends State<CreateManagerScreen> {
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              const Text(
+                              Text(
                                 "ADVANTAGES",
                                 style: TextStyle(
-                                  color: Color(0xFF10B981),
+                                  color: Theme.of(
+                                    context,
+                                  ).colorScheme.secondary,
                                   fontWeight: FontWeight.bold,
                                   fontSize: 12,
                                 ),
@@ -547,10 +555,12 @@ class _CreateManagerScreenState extends State<CreateManagerScreen> {
                                   padding: const EdgeInsets.only(bottom: 8),
                                   child: Row(
                                     children: [
-                                      const Icon(
+                                      Icon(
                                         Icons.add_circle,
                                         size: 16,
-                                        color: Color(0xFF10B981),
+                                        color: Theme.of(
+                                          context,
+                                        ).colorScheme.secondary,
                                       ),
                                       const SizedBox(width: 8),
                                       Expanded(
