@@ -49,13 +49,6 @@ class TeamHeader extends StatelessWidget {
               ],
             ),
           ),
-          CircleAvatar(
-            backgroundColor: Theme.of(context).colorScheme.surface,
-            child: Icon(
-              Icons.notifications_outlined,
-              color: Theme.of(context).colorScheme.onSurface,
-            ),
-          ),
         ],
       ),
     );
