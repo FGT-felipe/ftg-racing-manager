@@ -63,7 +63,7 @@ class _MainLayoutState extends State<MainLayout> {
     // Global Header with Logo
     final globalAppBar = AppBar(
       title: AppLogo(size: 28, isDark: theme.brightness == Brightness.light),
-      backgroundColor: theme.colorScheme.surface,
+      backgroundColor: theme.scaffoldBackgroundColor,
       elevation: 0,
       centerTitle: false,
       actions: [
@@ -179,7 +179,7 @@ class _MainLayoutState extends State<MainLayout> {
                   onDestinationSelected: _onItemTapped,
                   extended: !_isCollapsed,
                   destinations: navDestinations,
-                  backgroundColor: theme.colorScheme.surface,
+                  backgroundColor: theme.scaffoldBackgroundColor,
                   minExtendedWidth: 200,
                   leading: IconButton(
                     icon: Icon(_isCollapsed ? Icons.menu : Icons.menu_open),

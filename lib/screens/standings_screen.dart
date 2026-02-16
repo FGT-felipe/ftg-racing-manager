@@ -8,34 +8,76 @@ class StandingsScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return DefaultTabController(
-      length: 3,
-      child: Column(
-        children: [
-          TabBar(
-            indicatorColor: Theme.of(context).primaryColor,
-            labelColor: Theme.of(context).primaryColor,
-            unselectedLabelColor: Theme.of(
-              context,
-            ).colorScheme.onSurface.withValues(alpha: 0.5),
-            indicatorSize: TabBarIndicatorSize.label,
-            tabs: const [
-              Tab(text: "DRIVERS"),
-              Tab(text: "CONSTRUCTORS"),
-              Tab(text: "LAST RACE"),
+    return FutureBuilder<Season?>(
+      future: SeasonService().getActiveSeason(),
+      builder: (context, snapshot) {
+        final seasonNumber = snapshot.data?.number ?? 1;
+
+        return Padding(
+          padding: const EdgeInsets.all(16.0),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                "SEASON $seasonNumber STANDINGS",
+                style: const TextStyle(
+                  fontSize: 24,
+                  fontWeight: FontWeight.w900,
+                  letterSpacing: -0.5,
+                ),
+              ),
+              const SizedBox(height: 16),
+              Expanded(
+                child: Card(
+                  color: Colors.black,
+                  margin: EdgeInsets.zero,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: DefaultTabController(
+                    length: 3,
+                    child: Column(
+                      children: [
+                        TabBar(
+                          indicatorColor: Theme.of(
+                            context,
+                          ).colorScheme.secondary,
+                          labelColor: Theme.of(context).colorScheme.secondary,
+                          unselectedLabelColor: Theme.of(
+                            context,
+                          ).colorScheme.onSurface.withValues(alpha: 0.5),
+                          indicatorSize: TabBarIndicatorSize.label,
+                          tabs: const [
+                            Tab(text: "DRIVERS"),
+                            Tab(text: "CONSTRUCTORS"),
+                            Tab(text: "LAST RACE"),
+                          ],
+                        ),
+                        Divider(
+                          height: 1,
+                          thickness: 1,
+                          color: Theme.of(
+                            context,
+                          ).colorScheme.onSurface.withValues(alpha: 0.1),
+                        ),
+                        const Expanded(
+                          child: TabBarView(
+                            children: [
+                              _DriversStandingsTab(),
+                              _ConstructorsStandingsTab(),
+                              _LastRaceStandingsTab(),
+                            ],
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ),
             ],
           ),
-          const Expanded(
-            child: TabBarView(
-              children: [
-                _DriversStandingsTab(),
-                _ConstructorsStandingsTab(),
-                _LastRaceStandingsTab(),
-              ],
-            ),
-          ),
-        ],
-      ),
+        );
+      },
     );
   }
 }
@@ -51,35 +93,43 @@ class _DriversStandingsTab extends StatelessWidget {
         if (!snapshot.hasData)
           return const Center(child: CircularProgressIndicator());
 
-        final drivers = snapshot.data!.docs
-            .map((d) => Driver.fromMap(d.data() as Map<String, dynamic>))
-            .toList();
+        final drivers = snapshot.data!.docs.map((d) {
+          final data = d.data() as Map<String, dynamic>;
+          // Ensure teamId is captured from the document path if missing in data
+          if (data['teamId'] == null) {
+            data['teamId'] = d.reference.parent.parent?.id;
+          }
+          return Driver.fromMap(data);
+        }).toList();
 
-        // Calculate ranks based on points before sorting alphabetically
-        final sortedByPoints = List<Driver>.from(drivers)
-          ..sort((a, b) => b.points.compareTo(a.points));
+        // Sort by points DESC (primary) then Name ASC (secondary tie-breaker)
+        drivers.sort((a, b) {
+          if (b.points != a.points) return b.points.compareTo(a.points);
+          return a.name.toLowerCase().compareTo(b.name.toLowerCase());
+        });
+
         Map<String, int> ranks = {};
-        for (int i = 0; i < sortedByPoints.length; i++) {
-          ranks[sortedByPoints[i].id] = i + 1;
+        for (int i = 0; i < drivers.length; i++) {
+          ranks[drivers[i].id] = i + 1;
         }
 
-        // Sort alphabetically as requested
-        drivers.sort(
-          (a, b) => a.name.toLowerCase().compareTo(b.name.toLowerCase()),
-        );
-
-        return StreamBuilder<QuerySnapshot>(
-          stream: FirebaseFirestore.instance.collection('teams').snapshots(),
-          builder: (context, teamSnapshot) {
-            if (!teamSnapshot.hasData)
-              return const Center(child: CircularProgressIndicator());
-
-            final teamMap = {
-              for (var t in teamSnapshot.data!.docs)
-                t.id: (t.data() as Map<String, dynamic>)['name'] as String,
-            };
+        final user = FirebaseFirestore
+            .instance
+            .app
+            .options
+            .projectId; // Just a placeholder, we use FirebaseAuth below
+        return StreamBuilder<DocumentSnapshot>(
+          stream: FirebaseFirestore.instance
+              .collection('managers')
+              .doc(FirebaseAuth.instance.currentUser?.uid)
+              .snapshots(),
+          builder: (context, managerSnapshot) {
+            final playerTeamId =
+                (managerSnapshot.data?.data()
+                    as Map<String, dynamic>?)?['teamId'];
 
             return _StandingsTable(
+              flexValues: const [1, 3, 3, 1, 1, 1, 1, 1],
               columns: const [
                 "Pos",
                 "Driver",
@@ -90,12 +140,18 @@ class _DriversStandingsTab extends StatelessWidget {
                 "Pl",
                 "Pts",
               ],
+              highlightIndices: drivers
+                  .asMap()
+                  .entries
+                  .where((e) => e.value.teamId == playerTeamId)
+                  .map((e) => e.key)
+                  .toList(),
               rows: drivers
                   .map(
                     (d) => <String>[
                       "#${ranks[d.id] ?? '-'}",
                       d.name,
-                      teamMap[d.teamId] ?? 'Freelance',
+                      teamMap[d.teamId] ?? '—',
                       "${d.races}",
                       "${d.wins}",
                       "${d.podiums}",
@@ -127,34 +183,51 @@ class _ConstructorsStandingsTab extends StatelessWidget {
             .map((d) => Team.fromMap(d.data() as Map<String, dynamic>))
             .toList();
 
-        // Calculate ranks
-        final sortedByPoints = List<Team>.from(teams)
-          ..sort((a, b) => b.points.compareTo(a.points));
+        // Sort by points DESC (primary) then Name ASC (secondary tie-breaker)
+        teams.sort((a, b) {
+          if (b.points != a.points) return b.points.compareTo(a.points);
+          return a.name.toLowerCase().compareTo(b.name.toLowerCase());
+        });
+
         Map<String, int> ranks = {};
-        for (int i = 0; i < sortedByPoints.length; i++) {
-          ranks[sortedByPoints[i].id] = i + 1;
+        for (int i = 0; i < teams.length; i++) {
+          ranks[teams[i].id] = i + 1;
         }
 
-        // Sort alphabetically
-        teams.sort(
-          (a, b) => a.name.toLowerCase().compareTo(b.name.toLowerCase()),
-        );
+        return StreamBuilder<DocumentSnapshot>(
+          stream: FirebaseFirestore.instance
+              .collection('managers')
+              .doc(FirebaseAuth.instance.currentUser?.uid)
+              .snapshots(),
+          builder: (context, managerSnapshot) {
+            final playerTeamId =
+                (managerSnapshot.data?.data()
+                    as Map<String, dynamic>?)?['teamId'];
 
-        return _StandingsTable(
-          columns: const ["Pos", "Team", "R", "W", "P", "Pl", "Pts"],
-          rows: teams
-              .map(
-                (t) => <String>[
-                  "#${ranks[t.id] ?? '-'}",
-                  t.name,
-                  "${t.races}",
-                  "${t.wins}",
-                  "${t.podiums}",
-                  "${t.poles}",
-                  "${t.points}",
-                ],
-              )
-              .toList(),
+            return _StandingsTable(
+              flexValues: const [1, 4, 1, 1, 1, 1, 2],
+              columns: const ["Pos", "Team", "R", "W", "P", "Pl", "Pts"],
+              highlightIndices: teams
+                  .asMap()
+                  .entries
+                  .where((e) => e.value.id == playerTeamId)
+                  .map((e) => e.key)
+                  .toList(),
+              rows: teams
+                  .map(
+                    (t) => <String>[
+                      "#${ranks[t.id] ?? '-'}",
+                      t.name,
+                      "${t.races}",
+                      "${t.wins}",
+                      "${t.podiums}",
+                      "${t.poles}",
+                      "${t.points}",
+                    ],
+                  )
+                  .toList(),
+            );
+          },
         );
       },
     );
@@ -215,10 +288,10 @@ class _LastRaceStandingsTab extends StatelessWidget {
               children: [
                 Text(
                   "RESULTS: ${lastRaceEvent.trackName}",
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontWeight: FontWeight.bold,
                     fontSize: 16,
-                    color: Colors.tealAccent,
+                    color: Theme.of(context).colorScheme.secondary,
                   ),
                 ),
                 const SizedBox(height: 16),
@@ -228,6 +301,7 @@ class _LastRaceStandingsTab extends StatelessWidget {
                   style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13),
                 ),
                 _StandingsTable(
+                  flexValues: const [1, 4, 4, 2],
                   columns: const ["Pos", "Driver", "Team", "Pts"],
                   rows: results.take(10).toList().asMap().entries.map((e) {
                     final res = e.value;
@@ -260,15 +334,33 @@ class _LastRaceStandingsTab extends StatelessWidget {
                     final constructorResults = teamPointsMap.entries.toList()
                       ..sort((a, b) => b.value.compareTo(a.value));
 
-                    return _StandingsTable(
-                      columns: const ["Pos", "Team", "Pts"],
-                      rows: constructorResults.asMap().entries.map((e) {
-                        return <String>[
-                          "${e.key + 1}",
-                          e.value.key,
-                          "+${e.value.value}",
-                        ];
-                      }).toList(),
+                    return StreamBuilder<DocumentSnapshot>(
+                      stream: FirebaseFirestore.instance
+                          .collection('managers')
+                          .doc(FirebaseAuth.instance.currentUser?.uid)
+                          .snapshots(),
+                      builder: (context, managerSnapshot) {
+                        final playerTeamId =
+                            (managerSnapshot.data?.data()
+                                as Map<String, dynamic>?)?['teamId'];
+
+                        // Last race results are tricky as they might not have IDs in the results map
+                        // but they have teamName and driverName.
+                        // We'll need a way to identify the player team name.
+                        // For now we use the ID comparison for Team Standings only if available.
+
+                        return _StandingsTable(
+                          flexValues: const [1, 7, 2],
+                          columns: const ["Pos", "Team", "Pts"],
+                          rows: constructorResults.asMap().entries.map((e) {
+                            return <String>[
+                              "${e.key + 1}",
+                              e.value.key,
+                              "+${e.value.value}",
+                            ];
+                          }).toList(),
+                        );
+                      },
                     );
                   },
                 ),
@@ -284,47 +376,85 @@ class _LastRaceStandingsTab extends StatelessWidget {
 class _StandingsTable extends StatelessWidget {
   final List<String> columns;
   final List<List<String>> rows;
+  final List<int> flexValues;
+  final List<int> highlightIndices;
 
-  const _StandingsTable({required this.columns, required this.rows});
+  const _StandingsTable({
+    required this.columns,
+    required this.rows,
+    required this.flexValues,
+    this.highlightIndices = const [],
+  });
 
   @override
   Widget build(BuildContext context) {
     return SingleChildScrollView(
-      child: SingleChildScrollView(
-        scrollDirection: Axis.horizontal,
-        child: DataTable(
-          columnSpacing: 16,
-          headingRowHeight: 40,
-          dataRowMinHeight: 32,
-          dataRowMaxHeight: 48,
-          columns: columns
-              .map(
-                (c) => DataColumn(
-                  label: Text(
-                    c,
-                    style: const TextStyle(
-                      fontWeight: FontWeight.bold,
-                      fontSize: 12,
-                      color: Colors.tealAccent,
-                    ),
+      padding: const EdgeInsets.symmetric(vertical: 24, horizontal: 32),
+      child: Column(
+        children: [
+          // HEADER ROW
+          Row(
+            children: List.generate(columns.length, (i) {
+              return Expanded(
+                flex: flexValues[i],
+                child: Text(
+                  columns[i].toUpperCase(),
+                  style: TextStyle(
+                    fontWeight: FontWeight.bold,
+                    fontSize: 12,
+                    color: Theme.of(context).colorScheme.secondary,
                   ),
                 ),
-              )
-              .toList(),
-          rows: rows
-              .map(
-                (r) => DataRow(
-                  cells: r
-                      .map(
-                        (cell) => DataCell(
-                          Text(cell, style: const TextStyle(fontSize: 12)),
-                        ),
-                      )
-                      .toList(),
+              );
+            }),
+          ),
+          const SizedBox(height: 12),
+          // DATA ROWS
+          ...rows.asMap().entries.map((entry) {
+            final index = entry.key;
+            final row = entry.value;
+            final isHighlighted = highlightIndices.contains(index);
+
+            return Container(
+              decoration: BoxDecoration(
+                color: isHighlighted
+                    ? Theme.of(
+                        context,
+                      ).colorScheme.secondary.withValues(alpha: 0.1)
+                    : null,
+                border: const Border(
+                  bottom: BorderSide(color: Color(0xFF303037), width: 1),
                 ),
-              )
-              .toList(),
-        ),
+              ),
+              child: Container(
+                padding: const EdgeInsets.symmetric(
+                  vertical: 12,
+                  horizontal: 4,
+                ),
+                child: Row(
+                  children: List.generate(row.length, (i) {
+                    return Expanded(
+                      flex: flexValues[i],
+                      child: Text(
+                        row[i],
+                        style: TextStyle(
+                          fontSize: 12,
+                          color: isHighlighted
+                              ? Theme.of(context).colorScheme.secondary
+                              : Colors.white,
+                          fontWeight: isHighlighted
+                              ? FontWeight.bold
+                              : FontWeight.normal,
+                        ),
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    );
+                  }),
+                ),
+              ),
+            );
+          }),
+        ],
       ),
     );
   }

@@ -85,8 +85,7 @@ class StatusCard extends StatelessWidget {
       padding: const EdgeInsets.all(24),
       decoration: BoxDecoration(
         color: Theme.of(context).cardTheme.color,
-        borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: mainColor.withValues(alpha: 0.3), width: 1),
+        borderRadius: BorderRadius.circular(8),
         gradient: LinearGradient(
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
@@ -150,7 +149,7 @@ class FinanceCard extends StatelessWidget {
     final budgetMillions = (budget / 1000000).toStringAsFixed(1);
     final color = isNegative
         ? Theme.of(context).colorScheme.error
-        : Theme.of(context).colorScheme.primary;
+        : Theme.of(context).colorScheme.secondary;
 
     return InkWell(
       onTap: onTap,
@@ -159,10 +158,7 @@ class FinanceCard extends StatelessWidget {
         padding: const EdgeInsets.all(20),
         decoration: BoxDecoration(
           color: Theme.of(context).cardTheme.color,
-          borderRadius: BorderRadius.circular(16),
-          border: Border.all(
-            color: Theme.of(context).dividerColor.withValues(alpha: 0.05),
-          ),
+          borderRadius: BorderRadius.circular(8),
           boxShadow: [
             BoxShadow(
               color: Theme.of(
@@ -240,12 +236,7 @@ class NewsItemCard extends StatelessWidget {
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
         color: Theme.of(context).cardTheme.color,
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(
-          color: Theme.of(
-            context,
-          ).colorScheme.onSurface.withValues(alpha: 0.05),
-        ),
+        borderRadius: BorderRadius.circular(8),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -253,7 +244,7 @@ class NewsItemCard extends StatelessWidget {
           Text(
             source.toUpperCase(),
             style: TextStyle(
-              color: Theme.of(context).primaryColor,
+              color: Theme.of(context).colorScheme.secondary,
               fontSize: 10,
               fontWeight: FontWeight.bold,
             ),
@@ -290,15 +281,15 @@ class UpcomingCircuitCard extends StatelessWidget {
   Widget build(BuildContext context) {
     return Card(
       elevation: 4,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
       child: Container(
         height: 180,
         width: double.infinity,
         padding: const EdgeInsets.all(20),
         decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(16),
+          borderRadius: BorderRadius.circular(8),
           gradient: const LinearGradient(
-            colors: [Colors.black87, Colors.black54],
+            colors: [Color(0xFF15151E), Color(0xFF292A33)],
             begin: Alignment.bottomLeft,
             end: Alignment.topRight,
           ),
@@ -474,16 +465,13 @@ class _RaceStatusHeroState extends State<RaceStatusHero> {
       width: double.infinity,
       padding: const EdgeInsets.all(24),
       decoration: BoxDecoration(
-        color: Theme.of(context).colorScheme.surface,
-        borderRadius: BorderRadius.circular(24),
-        border: Border.all(
-          color: Theme.of(context).dividerColor.withValues(alpha: 0.2),
-        ),
+        color: Theme.of(context).cardTheme.color,
+        borderRadius: BorderRadius.circular(8),
         gradient: LinearGradient(
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
           colors: [
-            Theme.of(context).colorScheme.surface,
+            Theme.of(context).cardTheme.color!,
             Theme.of(context).scaffoldBackgroundColor,
           ],
         ),
@@ -580,7 +568,7 @@ class _RaceStatusHeroState extends State<RaceStatusHero> {
                   letterSpacing: 1.2,
                 ),
                 shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12),
+                  borderRadius: BorderRadius.circular(8),
                 ),
               ),
             ),
@@ -659,11 +647,8 @@ class PreparationChecklist extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(24),
       decoration: BoxDecoration(
-        color: Theme.of(context).colorScheme.surface,
-        borderRadius: BorderRadius.circular(24),
-        border: Border.all(
-          color: Theme.of(context).dividerColor.withValues(alpha: 0.2),
-        ),
+        color: Theme.of(context).cardTheme.color,
+        borderRadius: BorderRadius.circular(8),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -800,11 +785,8 @@ class CircuitInfoCard extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
-        color: Theme.of(context).colorScheme.surface,
-        borderRadius: BorderRadius.circular(24),
-        border: Border.all(
-          color: Theme.of(context).dividerColor.withValues(alpha: 0.2),
-        ),
+        color: Theme.of(context).cardTheme.color,
+        borderRadius: BorderRadius.circular(8),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -814,7 +796,7 @@ class CircuitInfoCard extends StatelessWidget {
               Icon(
                 Icons.calendar_today,
                 size: 14,
-                color: Theme.of(context).primaryColor,
+                color: Theme.of(context).colorScheme.secondary,
               ),
               const SizedBox(width: 8),
               Text(
@@ -887,12 +869,12 @@ class CircuitInfoCard extends StatelessWidget {
                   decoration: BoxDecoration(
                     color: Theme.of(
                       context,
-                    ).primaryColor.withValues(alpha: 0.1),
+                    ).colorScheme.secondary.withValues(alpha: 0.1),
                     borderRadius: BorderRadius.circular(8),
                     border: Border.all(
                       color: Theme.of(
                         context,
-                      ).primaryColor.withValues(alpha: 0.2),
+                      ).colorScheme.secondary.withValues(alpha: 0.2),
                     ),
                   ),
                   child: Row(
@@ -903,7 +885,7 @@ class CircuitInfoCard extends StatelessWidget {
                         style: TextStyle(
                           fontSize: 10,
                           fontWeight: FontWeight.bold,
-                          color: Theme.of(context).primaryColor,
+                          color: Theme.of(context).colorScheme.secondary,
                         ),
                       ),
                       Text(

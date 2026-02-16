@@ -43,7 +43,7 @@ class EngineeringScreen extends StatelessWidget {
               Card(
                 color: Theme.of(context).cardTheme.color,
                 shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12),
+                  borderRadius: BorderRadius.circular(8),
                 ),
                 elevation: 2,
                 child: Container(
@@ -58,12 +58,7 @@ class EngineeringScreen extends StatelessWidget {
                         Colors.transparent,
                       ],
                     ),
-                    borderRadius: BorderRadius.circular(16),
-                    border: Border.all(
-                      color: Theme.of(
-                        context,
-                      ).colorScheme.primary.withValues(alpha: 0.2),
-                    ),
+                    borderRadius: BorderRadius.circular(8),
                   ),
                   child: Column(
                     children: [
@@ -162,10 +157,7 @@ class _UpgradeTileState extends State<_UpgradeTile> {
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
         color: Theme.of(context).cardTheme.color,
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(
-          color: Theme.of(context).dividerColor.withValues(alpha: 0.05),
-        ),
+        borderRadius: BorderRadius.circular(8),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -254,7 +246,7 @@ class _UpgradeTileState extends State<_UpgradeTile> {
                       }
                     : null,
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: Colors.tealAccent,
+                  backgroundColor: Theme.of(context).colorScheme.secondary,
                   foregroundColor: Colors.black,
                   disabledBackgroundColor: Colors.white10,
                   disabledForegroundColor: Colors.white24,

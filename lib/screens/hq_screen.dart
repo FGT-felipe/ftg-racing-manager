@@ -20,7 +20,7 @@ class HQScreen extends StatelessWidget {
       appBar: AppBar(
         title: Text(l10n.hqTitle),
         centerTitle: true,
-        backgroundColor: theme.colorScheme.surface,
+        backgroundColor: theme.scaffoldBackgroundColor,
         elevation: 0,
         actions: [
           IconButton(
@@ -66,12 +66,9 @@ class HQScreen extends StatelessWidget {
                 final budgetM = (team.budget / 1000000).toStringAsFixed(0);
 
                 return Card(
-                  color: theme.colorScheme.surface,
+                  color: theme.cardTheme.color,
                   shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(16),
-                    side: BorderSide(
-                      color: theme.dividerColor.withValues(alpha: 0.1),
-                    ),
+                    borderRadius: BorderRadius.circular(8),
                   ),
                   child: Padding(
                     padding: const EdgeInsets.all(24.0),
@@ -108,8 +105,8 @@ class HQScreen extends StatelessWidget {
                           children: [
                             Text(
                               l10n.budgetLabel.toUpperCase(),
-                              style: const TextStyle(
-                                color: Colors.teal,
+                              style: TextStyle(
+                                color: theme.colorScheme.secondary,
                                 fontSize: 12,
                                 fontWeight: FontWeight.bold,
                               ),
@@ -147,17 +144,14 @@ class HQScreen extends StatelessWidget {
               width: double.infinity,
               padding: const EdgeInsets.all(20),
               decoration: BoxDecoration(
-                color: theme.colorScheme.surface,
-                borderRadius: BorderRadius.circular(12),
-                border: Border.all(
-                  color: Colors.orangeAccent.withValues(alpha: 0.3),
-                ),
+                color: theme.cardTheme.color,
+                borderRadius: BorderRadius.circular(8),
               ),
               child: Row(
                 children: [
-                  const Icon(
+                  Icon(
                     Icons.flag_circle,
-                    color: Colors.orangeAccent,
+                    color: theme.colorScheme.secondary,
                     size: 40,
                   ),
                   const SizedBox(width: 16),
@@ -255,12 +249,9 @@ class _DriverCard extends StatelessWidget {
     }
 
     return Card(
-      color: theme.colorScheme.surface,
+      color: theme.cardTheme.color,
       elevation: 2,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(16),
-        side: BorderSide(color: theme.dividerColor.withValues(alpha: 0.1)),
-      ),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
       child: Padding(
         padding: const EdgeInsets.all(16.0),
         child: Column(
@@ -309,13 +300,15 @@ class _DriverCard extends StatelessWidget {
                                 vertical: 2,
                               ),
                               decoration: BoxDecoration(
-                                color: Colors.teal.withValues(alpha: 0.1),
-                                borderRadius: BorderRadius.circular(4),
+                                color: theme.colorScheme.secondary.withValues(
+                                  alpha: 0.1,
+                                ),
+                                borderRadius: BorderRadius.circular(8),
                               ),
                               child: Text(
                                 roleLabel.toUpperCase(),
-                                style: const TextStyle(
-                                  color: Colors.teal,
+                                style: TextStyle(
+                                  color: theme.colorScheme.secondary,
                                   fontSize: 10,
                                   fontWeight: FontWeight.bold,
                                 ),
@@ -340,7 +333,7 @@ class _DriverCard extends StatelessWidget {
                             strokeWidth: 3,
                             backgroundColor: theme.colorScheme.onSurface
                                 .withValues(alpha: 0.1),
-                            color: Colors.teal,
+                            color: theme.colorScheme.secondary,
                           ),
                           Text(
                             driver.potential.toString(),

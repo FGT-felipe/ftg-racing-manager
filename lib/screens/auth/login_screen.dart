@@ -181,14 +181,7 @@ class _LoginScreenState extends State<LoginScreen> {
                         letterSpacing: 1.1,
                       ),
                     ),
-                    style: OutlinedButton.styleFrom(
-                      foregroundColor: Theme.of(context).colorScheme.onSurface,
-                      side: BorderSide(
-                        color: Theme.of(
-                          context,
-                        ).colorScheme.onSurface.withValues(alpha: 0.1),
-                      ),
-                    ),
+                    style: Theme.of(context).outlinedButtonTheme.style,
                   ),
                 ),
 
@@ -208,7 +201,7 @@ class _LoginScreenState extends State<LoginScreen> {
                         "OR USE EMAIL",
                         style: TextStyle(
                           fontSize: 12,
-                          color: Theme.of(context).colorScheme.primary,
+                          color: Theme.of(context).colorScheme.onSurface,
                           fontWeight: FontWeight.bold,
                         ),
                       ),
@@ -292,7 +285,7 @@ class _LoginScreenState extends State<LoginScreen> {
                         ? "Already have an account? Sign In"
                         : "New manager? Join the Paddock",
                     style: TextStyle(
-                      color: Theme.of(context).colorScheme.primary,
+                      color: Theme.of(context).colorScheme.onSurface,
                       fontWeight: FontWeight.bold,
                     ),
                   ),
@@ -312,7 +305,7 @@ class _LoginScreenState extends State<LoginScreen> {
                       fontSize: 10,
                       color: Theme.of(
                         context,
-                      ).colorScheme.secondary.withValues(alpha: 0.5),
+                      ).colorScheme.onSurface.withValues(alpha: 0.6),
                       letterSpacing: 2,
                     ),
                   ),
@@ -346,19 +339,15 @@ class _LoginScreenState extends State<LoginScreen> {
           context,
         ).colorScheme.onSurface.withValues(alpha: 0.05),
         border: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(12),
+          borderRadius: BorderRadius.circular(8),
           borderSide: BorderSide.none,
         ),
         enabledBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(12),
-          borderSide: BorderSide(
-            color: Theme.of(
-              context,
-            ).colorScheme.onSurface.withValues(alpha: 0.05),
-          ),
+          borderRadius: BorderRadius.circular(8),
+          borderSide: BorderSide.none,
         ),
         focusedBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(12),
+          borderRadius: BorderRadius.circular(8),
           borderSide: BorderSide(
             color: Theme.of(context).primaryColor,
             width: 2,
@@ -386,7 +375,6 @@ class _BrandLogo extends StatelessWidget {
   Widget build(BuildContext context) {
     final primaryColor = Theme.of(context).primaryColor;
     final onSurface = Theme.of(context).colorScheme.onSurface;
-    final secondary = Theme.of(context).colorScheme.secondary;
 
     return Column(
       mainAxisSize: MainAxisSize.min,
@@ -457,7 +445,7 @@ class _BrandLogo extends StatelessWidget {
             fontWeight: FontWeight.w500,
             fontSize: 13,
             letterSpacing: 7.2, // Adjust tracking to match FTG width
-            color: secondary,
+            color: Theme.of(context).colorScheme.onSurface,
           ),
         ),
       ],

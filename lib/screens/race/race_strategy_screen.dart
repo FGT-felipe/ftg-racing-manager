@@ -199,7 +199,7 @@ class _RaceStrategyScreenState extends State<RaceStrategyScreen> {
           min: 0,
           max: 100,
           divisions: 100,
-          activeColor: Theme.of(context).primaryColor,
+          activeColor: Theme.of(context).colorScheme.secondary,
           onChanged: _isSubmitted ? null : (v) => onChanged(v.round()),
         ),
         const SizedBox(height: 8),
@@ -320,8 +320,11 @@ class _RaceStrategyScreenState extends State<RaceStrategyScreen> {
                         if (selected)
                           setState(() => _selectedDriverId = driver.id);
                       },
-                      selectedColor: theme.primaryColor,
-                      backgroundColor: theme.cardColor,
+                      selectedColor: theme.colorScheme.secondary,
+                      backgroundColor: theme.cardTheme.color,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(8),
+                      ),
                       labelStyle: TextStyle(
                         color: isSelected
                             ? theme.colorScheme.onPrimary

@@ -20,7 +20,7 @@ class TeamSelectionScreen extends StatelessWidget {
         barrierDismissible: false,
         builder: (context) => Center(
           child: CircularProgressIndicator(
-            color: Theme.of(context).primaryColor,
+            color: Theme.of(context).colorScheme.secondary,
           ),
         ),
       );
@@ -92,7 +92,7 @@ class TeamSelectionScreen extends StatelessWidget {
                 if (snapshot.connectionState == ConnectionState.waiting) {
                   return Center(
                     child: CircularProgressIndicator(
-                      color: Theme.of(context).primaryColor,
+                      color: Theme.of(context).colorScheme.secondary,
                     ),
                   );
                 }
@@ -157,15 +157,10 @@ class _TeamSelectionCard extends StatelessWidget {
   Widget build(BuildContext context) {
     return Card(
       color: Theme.of(context).cardTheme.color,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
       elevation: 4,
       child: Container(
-        decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(12),
-          border: Border.all(
-            color: Theme.of(context).primaryColor.withValues(alpha: 0.1),
-          ),
-        ),
+        decoration: BoxDecoration(borderRadius: BorderRadius.circular(8)),
         padding: const EdgeInsets.all(20),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -195,8 +190,7 @@ class _TeamSelectionCard extends StatelessWidget {
               child: ElevatedButton(
                 onPressed: onApply,
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: Theme.of(context).primaryColor,
-                  foregroundColor: Colors.black,
+                  foregroundColor: Colors.white,
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(8),
                   ),

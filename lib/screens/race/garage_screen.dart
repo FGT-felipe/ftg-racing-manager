@@ -450,11 +450,11 @@ class _GarageScreenState extends State<GarageScreen>
       children: [
         TabBar(
           controller: _tabController,
-          labelColor: theme.primaryColor,
+          labelColor: theme.colorScheme.secondary,
           unselectedLabelColor: theme.colorScheme.onSurface.withValues(
             alpha: 0.5,
           ),
-          indicatorColor: theme.primaryColor,
+          indicatorColor: theme.colorScheme.secondary,
           tabs: const [
             Tab(text: "PRACTICE"),
             Tab(text: "QUALIFYING"),
@@ -499,7 +499,7 @@ class _GarageScreenState extends State<GarageScreen>
                 ),
                 decoration: BoxDecoration(
                   border: Border.all(color: Colors.redAccent),
-                  borderRadius: BorderRadius.circular(4),
+                  borderRadius: BorderRadius.circular(8),
                 ),
                 child: const Text(
                   "PARC FERMÉ",
@@ -643,7 +643,7 @@ class _GarageScreenState extends State<GarageScreen>
           padding: const EdgeInsets.all(16),
           decoration: BoxDecoration(
             color: const Color(0xFFFFB800).withValues(alpha: 0.08),
-            borderRadius: BorderRadius.circular(12),
+            borderRadius: BorderRadius.circular(8),
             border: Border.all(
               color: const Color(0xFFFFB800).withValues(alpha: 0.3),
             ),
@@ -669,7 +669,7 @@ class _GarageScreenState extends State<GarageScreen>
             padding: const EdgeInsets.all(12),
             decoration: BoxDecoration(
               color: Colors.green.withValues(alpha: 0.08),
-              borderRadius: BorderRadius.circular(12),
+              borderRadius: BorderRadius.circular(8),
               border: Border.all(color: Colors.green.withValues(alpha: 0.3)),
             ),
             child: const Row(
@@ -747,7 +747,7 @@ class _GarageScreenState extends State<GarageScreen>
           padding: const EdgeInsets.all(16),
           decoration: BoxDecoration(
             color: const Color(0xFFFF5252).withValues(alpha: 0.08),
-            borderRadius: BorderRadius.circular(12),
+            borderRadius: BorderRadius.circular(8),
             border: Border.all(
               color: const Color(0xFFFF5252).withValues(alpha: 0.3),
             ),
@@ -773,7 +773,7 @@ class _GarageScreenState extends State<GarageScreen>
             padding: const EdgeInsets.all(12),
             decoration: BoxDecoration(
               color: Colors.green.withValues(alpha: 0.08),
-              borderRadius: BorderRadius.circular(12),
+              borderRadius: BorderRadius.circular(8),
               border: Border.all(color: Colors.green.withValues(alpha: 0.3)),
             ),
             child: const Row(
@@ -860,13 +860,9 @@ class _GarageScreenState extends State<GarageScreen>
               padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
               decoration: BoxDecoration(
                 color: isSelected
-                    ? theme.primaryColor.withValues(alpha: 0.1)
-                    : theme.colorScheme.surface,
-                border: Border.all(
-                  color: isSelected ? theme.primaryColor : Colors.transparent,
-                  width: 2,
-                ),
-                borderRadius: BorderRadius.circular(12),
+                    ? theme.colorScheme.secondary.withValues(alpha: 0.1)
+                    : theme.cardTheme.color,
+                borderRadius: BorderRadius.circular(8),
               ),
               child: Row(
                 mainAxisSize: MainAxisSize.min,
@@ -923,12 +919,9 @@ class _GarageScreenState extends State<GarageScreen>
 
   Widget _buildCircuitIntel(ThemeData theme) {
     return Card(
-      color: theme.colorScheme.surface,
+      color: theme.cardTheme.color,
       elevation: 0,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(12),
-        side: BorderSide(color: theme.dividerColor.withValues(alpha: 0.1)),
-      ),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
       child: Padding(
         padding: const EdgeInsets.all(12),
         child: Column(
@@ -1014,12 +1007,9 @@ class _GarageScreenState extends State<GarageScreen>
     void Function(String field, int value) onChanged,
   ) {
     return Card(
-      color: theme.colorScheme.surface,
+      color: theme.cardTheme.color,
       elevation: 0,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(12),
-        side: BorderSide(color: theme.dividerColor.withValues(alpha: 0.1)),
-      ),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
       child: Padding(
         padding: const EdgeInsets.all(12),
         child: AbsorbPointer(
@@ -1100,12 +1090,14 @@ class _GarageScreenState extends State<GarageScreen>
           Expanded(
             child: SliderTheme(
               data: SliderThemeData(
-                activeTrackColor: theme.primaryColor,
+                activeTrackColor: theme.colorScheme.secondary,
                 inactiveTrackColor: theme.colorScheme.onSurface.withValues(
                   alpha: 0.1,
                 ),
-                thumbColor: theme.primaryColor,
-                overlayColor: theme.primaryColor.withValues(alpha: 0.1),
+                thumbColor: theme.colorScheme.secondary,
+                overlayColor: theme.colorScheme.secondary.withValues(
+                  alpha: 0.1,
+                ),
                 trackHeight: 3,
                 thumbShape: const RoundSliderThumbShape(enabledThumbRadius: 6),
                 overlayShape: const RoundSliderOverlayShape(overlayRadius: 12),
@@ -1140,12 +1132,9 @@ class _GarageScreenState extends State<GarageScreen>
   Widget _buildLastLapCard(ThemeData theme) {
     return Card(
       margin: const EdgeInsets.fromLTRB(0, 12, 12, 0),
-      color: theme.colorScheme.surface,
+      color: theme.cardTheme.color,
       elevation: 0,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(12),
-        side: BorderSide(color: theme.dividerColor.withValues(alpha: 0.1)),
-      ),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
       child: Padding(
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
         child: Row(
@@ -1217,12 +1206,9 @@ class _GarageScreenState extends State<GarageScreen>
 
     return Card(
       margin: const EdgeInsets.fromLTRB(0, 4, 12, 0),
-      color: theme.colorScheme.surface,
+      color: theme.cardTheme.color,
       elevation: 0,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(12),
-        side: BorderSide(color: theme.dividerColor.withValues(alpha: 0.1)),
-      ),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
       child: Padding(
         padding: const EdgeInsets.all(12),
         child: Column(
@@ -1230,7 +1216,7 @@ class _GarageScreenState extends State<GarageScreen>
           children: [
             Row(
               children: [
-                Icon(Icons.timer, color: theme.primaryColor, size: 16),
+                Icon(Icons.timer, color: theme.colorScheme.secondary, size: 16),
                 const SizedBox(width: 6),
                 Text(
                   "LAP TIMES — ${selectedDriver?.name.split(' ').last.toUpperCase() ?? ''}",
@@ -1315,7 +1301,7 @@ class _GarageScreenState extends State<GarageScreen>
 
                 return InkWell(
                   onTap: () => _showLapSetupDialog(lap),
-                  borderRadius: BorderRadius.circular(4),
+                  borderRadius: BorderRadius.circular(8),
                   child: Container(
                     padding: const EdgeInsets.symmetric(
                       vertical: 4,
@@ -1323,9 +1309,9 @@ class _GarageScreenState extends State<GarageScreen>
                     ),
                     decoration: BoxDecoration(
                       color: isBest
-                          ? theme.primaryColor.withValues(alpha: 0.08)
+                          ? theme.colorScheme.secondary.withValues(alpha: 0.08)
                           : Colors.transparent,
-                      borderRadius: BorderRadius.circular(4),
+                      borderRadius: BorderRadius.circular(8),
                     ),
                     child: Row(
                       children: [
@@ -1353,7 +1339,7 @@ class _GarageScreenState extends State<GarageScreen>
                                   ? FontWeight.bold
                                   : FontWeight.normal,
                               color: isBest
-                                  ? theme.primaryColor
+                                  ? theme.colorScheme.secondary
                                   : theme.colorScheme.onSurface,
                             ),
                             textAlign: TextAlign.right,
@@ -1387,12 +1373,9 @@ class _GarageScreenState extends State<GarageScreen>
   Widget _buildFeedbackCard(ThemeData theme) {
     return Card(
       margin: const EdgeInsets.fromLTRB(0, 4, 12, 12),
-      color: theme.colorScheme.surface,
+      color: theme.cardTheme.color,
       elevation: 0,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(12),
-        side: BorderSide(color: theme.dividerColor.withValues(alpha: 0.1)),
-      ),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
       child: Padding(
         padding: const EdgeInsets.all(12),
         child: Column(

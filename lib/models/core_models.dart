@@ -87,6 +87,7 @@ class RaceEvent {
 class Season {
   final String id;
   final String leagueId;
+  final int number; // e.g. 1, 2, 3
   final int year;
   final List<RaceEvent> calendar;
   final DateTime startDate;
@@ -94,6 +95,7 @@ class Season {
   Season({
     required this.id,
     required this.leagueId,
+    required this.number,
     required this.year,
     required this.calendar,
     required this.startDate,
@@ -103,6 +105,7 @@ class Season {
     return {
       'id': id,
       'leagueId': leagueId,
+      'number': number,
       'year': year,
       'calendar': calendar.map((e) => e.toMap()).toList(),
       'startDate': Timestamp.fromDate(startDate),
@@ -123,6 +126,7 @@ class Season {
     return Season(
       id: map['id'] ?? '',
       leagueId: map['leagueId'] ?? '',
+      number: map['number'] ?? 1,
       year: map['year'] ?? 2024,
       startDate: start,
       calendar: (map['calendar'] as List? ?? [])

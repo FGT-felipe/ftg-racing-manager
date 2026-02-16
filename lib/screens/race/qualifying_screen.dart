@@ -103,7 +103,11 @@ class _QualifyingScreenState extends State<QualifyingScreen> {
     final theme = Theme.of(context);
 
     final content = _isLoading
-        ? const Center(child: CircularProgressIndicator())
+        ? Center(
+            child: CircularProgressIndicator(
+              color: theme.colorScheme.secondary,
+            ),
+          )
         : Padding(
             padding: const EdgeInsets.all(16.0),
             child: Column(
@@ -131,8 +135,10 @@ class _QualifyingScreenState extends State<QualifyingScreen> {
                         final row = _results[index];
                         return Card(
                           color: index == 0
-                              ? Colors.purple.withValues(alpha: 0.2)
-                              : theme.cardColor,
+                              ? theme.colorScheme.secondary.withValues(
+                                  alpha: 0.1,
+                                )
+                              : theme.cardTheme.color,
                           child: ListTile(
                             leading: CircleAvatar(
                               backgroundColor: Colors.grey[800],
@@ -163,7 +169,7 @@ class _QualifyingScreenState extends State<QualifyingScreen> {
                               style: TextStyle(
                                 fontWeight: FontWeight.bold,
                                 fontSize: 16,
-                                color: theme.colorScheme.primary,
+                                color: theme.colorScheme.secondary,
                               ),
                             ),
                           ),

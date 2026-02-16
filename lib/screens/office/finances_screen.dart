@@ -22,7 +22,7 @@ class FinancesScreen extends StatelessWidget {
         if (!teamSnapshot.hasData) {
           return Center(
             child: CircularProgressIndicator(
-              color: Theme.of(context).primaryColor,
+              color: Theme.of(context).colorScheme.secondary,
             ),
           );
         }
@@ -40,23 +40,8 @@ class FinancesScreen extends StatelessWidget {
               width: double.infinity,
               decoration: BoxDecoration(
                 color: Theme.of(context).cardTheme.color,
-                borderRadius: BorderRadius.circular(24),
-                border: Border.all(
-                  color:
-                      (isNegative
-                              ? Colors.redAccent
-                              : Theme.of(context).primaryColor)
-                          .withValues(alpha: 0.1),
-                ),
-                boxShadow: [
-                  BoxShadow(
-                    color: Theme.of(
-                      context,
-                    ).colorScheme.onSurface.withValues(alpha: 0.05),
-                    blurRadius: 20,
-                    offset: const Offset(0, 10),
-                  ),
-                ],
+                borderRadius: BorderRadius.circular(8),
+                // Removed boxShadow for consistency with dashboard cards
               ),
               child: Column(
                 children: [
@@ -119,7 +104,7 @@ class FinancesScreen extends StatelessWidget {
                       ConnectionState.waiting) {
                     return Center(
                       child: CircularProgressIndicator(
-                        color: Theme.of(context).primaryColor,
+                        color: Theme.of(context).colorScheme.secondary,
                       ),
                     );
                   }
@@ -179,7 +164,7 @@ class FinancesScreen extends StatelessWidget {
     switch (tx.type) {
       case 'SPONSOR':
         icon = Icons.handshake_outlined;
-        iconColor = Theme.of(context).primaryColor;
+        iconColor = Theme.of(context).colorScheme.secondary;
         break;
       case 'SALARY':
         icon = Icons.person_outline;
@@ -205,10 +190,7 @@ class FinancesScreen extends StatelessWidget {
       margin: const EdgeInsets.only(bottom: 12),
       decoration: BoxDecoration(
         color: Theme.of(context).cardTheme.color,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(
-          color: Theme.of(context).dividerColor.withValues(alpha: 0.05),
-        ),
+        borderRadius: BorderRadius.circular(8),
       ),
       child: ListTile(
         contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
@@ -216,7 +198,7 @@ class FinancesScreen extends StatelessWidget {
           padding: const EdgeInsets.all(10),
           decoration: BoxDecoration(
             color: iconColor.withValues(alpha: 0.1),
-            borderRadius: BorderRadius.circular(12),
+            borderRadius: BorderRadius.circular(8),
           ),
           child: Icon(icon, color: iconColor),
         ),

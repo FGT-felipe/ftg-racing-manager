@@ -21,8 +21,10 @@ class JobMarketScreen extends StatelessWidget {
       showDialog(
         context: context,
         barrierDismissible: false,
-        builder: (context) => const Center(
-          child: CircularProgressIndicator(color: Colors.tealAccent),
+        builder: (context) => Center(
+          child: CircularProgressIndicator(
+            color: Theme.of(context).colorScheme.secondary,
+          ),
         ),
       );
 
@@ -135,7 +137,7 @@ class JobMarketScreen extends StatelessWidget {
           if (snapshot.connectionState == ConnectionState.waiting) {
             return Center(
               child: CircularProgressIndicator(
-                color: Theme.of(context).primaryColor,
+                color: Theme.of(context).colorScheme.secondary,
               ),
             );
           }
@@ -207,17 +209,16 @@ class _TeamCard extends StatelessWidget {
 
     return Card(
       color: Theme.of(context).cardTheme.color,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
       elevation: 2,
       child: Container(
         decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(12),
-          border: Border.all(color: Colors.tealAccent.withValues(alpha: 0.1)),
+          borderRadius: BorderRadius.circular(8),
           gradient: LinearGradient(
             begin: Alignment.topLeft,
             end: Alignment.bottomRight,
             colors: [
-              Colors.tealAccent.withValues(alpha: 0.05),
+              Theme.of(context).colorScheme.secondary.withValues(alpha: 0.1),
               Colors.transparent,
             ],
           ),
@@ -242,7 +243,7 @@ class _TeamCard extends StatelessWidget {
                 Icon(
                   Icons.account_balance_wallet,
                   size: 16,
-                  color: Theme.of(context).primaryColor,
+                  color: Theme.of(context).colorScheme.secondary,
                 ),
                 const SizedBox(width: 8),
                 Text(
