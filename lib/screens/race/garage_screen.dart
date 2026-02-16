@@ -863,6 +863,12 @@ class _GarageScreenState extends State<GarageScreen>
                     ? theme.colorScheme.secondary.withValues(alpha: 0.1)
                     : theme.cardTheme.color,
                 borderRadius: BorderRadius.circular(8),
+                border: Border.all(
+                  color: isSelected
+                      ? theme.colorScheme.secondary
+                      : Colors.transparent,
+                  width: 1,
+                ),
               ),
               child: Row(
                 mainAxisSize: MainAxisSize.min,
