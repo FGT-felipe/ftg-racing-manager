@@ -375,7 +375,7 @@ class _DriversStandingsTab extends StatelessWidget {
             }
 
             return _StandingsTable(
-              flexValues: const [1, 3, 3, 1, 1, 1, 1, 1],
+              flexValues: const [1, 4, 4, 1, 1, 1, 1, 2],
               columns: const [
                 "Pos",
                 "Driver",
@@ -457,7 +457,7 @@ class _ConstructorsStandingsTab extends StatelessWidget {
         }
 
         return _StandingsTable(
-          flexValues: const [1, 4, 1, 1, 1, 1, 2],
+          flexValues: const [1, 6, 1, 1, 1, 1, 2],
           columns: const ["Pos", "Team", "R", "W", "P", "Pl", "Pts"],
           highlightIndices: teams
               .asMap()
@@ -708,7 +708,7 @@ class _StandingsTable extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return SingleChildScrollView(
-      padding: const EdgeInsets.symmetric(vertical: 24, horizontal: 32),
+      padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 16),
       child: Column(
         children: [
           // HEADER ROW

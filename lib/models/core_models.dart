@@ -757,6 +757,7 @@ class Driver {
 
   final int points;
   final String gender;
+  final int championships; // New field
   final int races;
   final int wins;
   final int podiums;
@@ -798,6 +799,7 @@ class Driver {
     required this.potential,
     required this.points,
     required this.gender,
+    this.championships = 0,
     this.races = 0,
     this.wins = 0,
     this.podiums = 0,
@@ -851,6 +853,7 @@ class Driver {
       'potential': potential,
       'points': points,
       'gender': gender,
+      'championships': championships,
       'races': races,
       'wins': wins,
       'podiums': podiums,
@@ -894,6 +897,7 @@ class Driver {
       potential: map['potential'] ?? 3,
       points: map['points'] ?? 0,
       gender: map['gender'] ?? 'M',
+      championships: map['championships'] ?? 0,
       races: map['races'] ?? 0,
       wins: map['wins'] ?? 0,
       podiums: map['podiums'] ?? 0,
@@ -964,6 +968,7 @@ class Driver {
     int? potential,
     int? points,
     String? gender,
+    int? championships,
     int? races,
     int? wins,
     int? podiums,
@@ -988,6 +993,7 @@ class Driver {
       potential: potential ?? this.potential,
       points: points ?? this.points,
       gender: gender ?? this.gender,
+      championships: championships ?? this.championships,
       races: races ?? this.races,
       wins: wins ?? this.wins,
       podiums: podiums ?? this.podiums,

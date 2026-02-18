@@ -155,10 +155,13 @@ class DriverCard extends StatelessWidget {
               style: const TextStyle(fontSize: 20),
             ),
             const SizedBox(width: 8),
-            Text(
-              driver.name,
-              style: theme.textTheme.titleLarge?.copyWith(
-                fontWeight: FontWeight.bold,
+            Flexible(
+              child: Text(
+                driver.name,
+                style: theme.textTheme.titleLarge?.copyWith(
+                  fontWeight: FontWeight.bold,
+                ),
+                overflow: TextOverflow.ellipsis,
               ),
             ),
           ],
@@ -323,6 +326,7 @@ class DriverCard extends StatelessWidget {
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
           Text(
             'CAREER STATS',
@@ -331,15 +335,21 @@ class DriverCard extends StatelessWidget {
               color: theme.colorScheme.secondary,
             ),
           ),
-          const SizedBox(height: 20),
+          const SizedBox(height: 12),
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               _buildCareerStatCircle(
                 context,
+                'TITLES',
+                '${driver.championships}',
+                Icons.emoji_events_rounded,
+              ),
+              _buildCareerStatCircle(
+                context,
                 'WINS',
                 '${driver.wins}',
-                Icons.emoji_events_rounded,
+                Icons.military_tech_rounded,
               ),
               _buildCareerStatCircle(
                 context,
@@ -355,7 +365,7 @@ class DriverCard extends StatelessWidget {
               ),
             ],
           ),
-          const Spacer(),
+          const SizedBox(height: 12),
           // Status Title Badge
           Center(
             child: Tooltip(
@@ -411,17 +421,20 @@ class DriverCard extends StatelessWidget {
     return Expanded(
       child: Column(
         children: [
-          Text(
-            value,
-            style: const TextStyle(
-              fontSize: 18,
-              fontWeight: FontWeight.w900,
-              letterSpacing: -0.5,
+          FittedBox(
+            fit: BoxFit.scaleDown,
+            child: Text(
+              value,
+              style: const TextStyle(
+                fontSize: 16,
+                fontWeight: FontWeight.w900,
+                letterSpacing: -0.5,
+              ),
             ),
           ),
-          const SizedBox(height: 8),
+          const SizedBox(height: 6),
           Container(
-            padding: const EdgeInsets.all(12),
+            padding: const EdgeInsets.all(10),
             decoration: BoxDecoration(
               color: const Color(0xFF15151E), // App Background
               shape: BoxShape.circle,
@@ -430,15 +443,19 @@ class DriverCard extends StatelessWidget {
                 width: 1,
               ),
             ),
-            child: Icon(icon, color: theme.colorScheme.secondary, size: 20),
+            child: Icon(icon, color: theme.colorScheme.secondary, size: 16),
           ),
-          const SizedBox(height: 8),
-          Text(
-            label,
-            style: theme.textTheme.labelSmall?.copyWith(
-              color: Colors.white54,
-              fontWeight: FontWeight.bold,
-              letterSpacing: 0.5,
+          const SizedBox(height: 6),
+          FittedBox(
+            fit: BoxFit.scaleDown,
+            child: Text(
+              label,
+              style: theme.textTheme.labelSmall?.copyWith(
+                color: Colors.white54,
+                fontSize: 8,
+                fontWeight: FontWeight.bold,
+                letterSpacing: 0.5,
+              ),
             ),
           ),
         ],
@@ -471,18 +488,21 @@ class DriverCard extends StatelessWidget {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Text(
-                'CHAMPIONSHIP FORM',
-                style: theme.textTheme.labelMedium?.copyWith(
-                  fontWeight: FontWeight.bold,
-                  color: theme.colorScheme.secondary,
+              Flexible(
+                child: Text(
+                  'CHAMPIONSHIP FORM',
+                  style: theme.textTheme.labelMedium?.copyWith(
+                    fontWeight: FontWeight.bold,
+                    color: theme.colorScheme.secondary,
+                  ),
+                  overflow: TextOverflow.ellipsis,
                 ),
               ),
               TextButton(
                 onPressed: () {
                   // Navigate to standings (already in main layout usually)
                 },
-                child: const Text('Season Standings'),
+                child: const Text('Standings'),
               ),
             ],
           ),
@@ -502,7 +522,8 @@ class DriverCard extends StatelessWidget {
           const SizedBox(height: 16),
           _buildTinyTable(
             context,
-            headers: ['Event', 'Qualy', 'Race', 'Pts'],
+            headers: ['Event', 'Q', 'R', 'P'],
+            flexValues: [3, 1, 1, 1],
             alignments: [
               TextAlign.left,
               TextAlign.center,
@@ -537,14 +558,7 @@ class DriverCard extends StatelessWidget {
           const SizedBox(height: 16),
           _buildTinyTable(
             context,
-            headers: [
-              'Season',
-              'Team',
-              'Championship',
-              'Races',
-              'Podiums',
-              'Wins',
-            ],
+            headers: ['Year', 'Team', 'Series', 'R', 'P', 'W'],
             flexValues: [1, 2, 2, 1, 1, 1],
             alignments: [
               TextAlign.center,
@@ -585,10 +599,21 @@ class DriverCard extends StatelessWidget {
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          Text(label, style: const TextStyle(fontSize: 12, color: Colors.grey)),
-          Text(
-            value,
-            style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold),
+          Expanded(
+            child: Text(
+              label,
+              style: const TextStyle(fontSize: 12, color: Colors.grey),
+              overflow: TextOverflow.ellipsis,
+            ),
+          ),
+          const SizedBox(width: 8),
+          Flexible(
+            child: Text(
+              value,
+              style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold),
+              textAlign: TextAlign.right,
+              overflow: TextOverflow.ellipsis,
+            ),
           ),
         ],
       ),
@@ -760,10 +785,10 @@ class DriverCard extends StatelessWidget {
       TextAlign.right: Alignment.centerRight,
     };
 
-    return UnconstrainedBox(
+    return Align(
       alignment: alignmentMap[alignment] ?? Alignment.centerLeft,
       child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+        padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
         decoration: BoxDecoration(
           color: theme.colorScheme.secondary.withValues(alpha: 0.15),
           borderRadius: BorderRadius.circular(4),
@@ -793,7 +818,7 @@ class DriverCard extends StatelessWidget {
   ) {
     final List<List<String>> rows = [];
 
-    // Fila de la temporada actual (siempre 0 al inicio)
+    // Fila de la temporada actual (pendientes de correr)
     rows.add([
       '${currentYear ?? 2026}',
       currentTeam,
@@ -809,35 +834,72 @@ class DriverCard extends StatelessWidget {
     int remainingRaces = driver.races;
     int remainingPodiums = driver.podiums;
     int remainingWins = driver.wins;
+    int remainingTitles = driver.championships;
 
-    // Años a generar basados en la edad (máximo hasta 2020)
-    int yearsPro = (driver.age - 20).clamp(1, 6);
+    // Años a generar basados en la edad y carreras
+    const int racesPerYear = 9;
+    int yearsPro = (remainingRaces / racesPerYear).ceil();
+    if (yearsPro < 1) yearsPro = 1;
+    // Capped a un máximo razonable de visualización, pero priorizando mostrar todo
+    if (yearsPro > 15) yearsPro = 15;
 
     for (int i = 0; i < yearsPro; i++) {
       int year = 2025 - i;
 
-      // Distribución de carreras (max 9 por año)
-      int yearRaces = (remainingRaces / (yearsPro - i)).ceil();
-      if (yearRaces > 9) yearRaces = 9;
+      // Distribución de carreras
+      int yearRaces;
+      if (i == yearsPro - 1) {
+        // Último año mostrado toma el resto
+        yearRaces = remainingRaces;
+      } else {
+        yearRaces = racesPerYear;
+      }
+
       if (yearRaces > remainingRaces) yearRaces = remainingRaces;
+      if (yearRaces <= 0) break;
 
-      // Distribución de victorias y podios (más probable en años recientes por progresión)
-      // Ajustamos un poco para que no sea todo lineal
-      double weight = 1.0 - (i * 0.1); // Peso decreciente para años más viejos
+      // Distribución de victorias y podios
+      double weight =
+          1.0 - (i * 0.05); // Ligeramente más victorias en años recientes
+      if (weight < 0.5) weight = 0.5;
 
-      int yearWins = (remainingWins * (yearRaces / remainingRaces) * weight)
-          .floor();
+      int yearWins;
+      if (i == yearsPro - 1) {
+        yearWins = remainingWins;
+      } else {
+        yearWins = (remainingWins * (yearRaces / remainingRaces) * weight)
+            .floor();
+      }
       if (yearWins > yearRaces) yearWins = yearRaces;
 
-      int yearPodiums =
-          (remainingPodiums * (yearRaces / remainingRaces) * weight).floor();
+      int yearPodiums;
+      if (i == yearsPro - 1) {
+        yearPodiums = remainingPodiums;
+      } else {
+        yearPodiums = (remainingPodiums * (yearRaces / remainingRaces) * weight)
+            .floor();
+      }
       if (yearPodiums > yearRaces) yearPodiums = yearRaces;
       if (yearPodiums < yearWins) yearPodiums = yearWins;
+
+      // Lógica de Campeón: Si tiene títulos restantes y ganó mucho ese año, o si es el último año y quedan títulos
+      bool isChampion = false;
+      if (remainingTitles > 0) {
+        if (yearWins >= (yearRaces * 0.8).ceil() || i == yearsPro - 1) {
+          isChampion = true;
+          remainingTitles--;
+        }
+      }
+
+      String divDisplay = i == 0 ? currentDiv : 'Lower Division';
+      if (isChampion) {
+        divDisplay = '🏆 CHAMPION';
+      }
 
       rows.add([
         '$year',
         currentTeam,
-        i == 0 ? currentDiv : 'División Inferior',
+        divDisplay,
         '$yearRaces',
         '$yearPodiums',
         '$yearWins',

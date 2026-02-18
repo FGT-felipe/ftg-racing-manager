@@ -331,8 +331,62 @@ abstract class AppLocalizations {
   /// No description provided for @engineeringDescription.
   ///
   /// In en, this message translates to:
-  /// **'Improve your cars\' performance by developing specific parts. Remember that you can only perform ONE upgrade per team each week. Use your resources wisely to stay ahead of the competition!'**
+  /// **'Improve your cars\' performance by developing specific parts. Remember that you can only perform ONE upgrade each week. Use your resources wisely to stay ahead of the competition!'**
   String get engineeringDescription;
+
+  /// No description provided for @circuitMexico.
+  ///
+  /// In en, this message translates to:
+  /// **'Autodromo Hermanos Rodriguez'**
+  String get circuitMexico;
+
+  /// No description provided for @circuitVegas.
+  ///
+  /// In en, this message translates to:
+  /// **'Las Vegas Strip Circuit'**
+  String get circuitVegas;
+
+  /// No description provided for @circuitInterlagos.
+  ///
+  /// In en, this message translates to:
+  /// **'Autódromo José Carlos Pace'**
+  String get circuitInterlagos;
+
+  /// No description provided for @circuitMiami.
+  ///
+  /// In en, this message translates to:
+  /// **'Miami International Autodrome'**
+  String get circuitMiami;
+
+  /// No description provided for @circuitSanPabloStreet.
+  ///
+  /// In en, this message translates to:
+  /// **'Sao Paulo Street Circuit'**
+  String get circuitSanPabloStreet;
+
+  /// No description provided for @circuitIndianapolis.
+  ///
+  /// In en, this message translates to:
+  /// **'Indianapolis Motor Speedway'**
+  String get circuitIndianapolis;
+
+  /// No description provided for @circuitMontreal.
+  ///
+  /// In en, this message translates to:
+  /// **'Circuit Gilles Villeneuve'**
+  String get circuitMontreal;
+
+  /// No description provided for @circuitTexas.
+  ///
+  /// In en, this message translates to:
+  /// **'Circuit of the Americas'**
+  String get circuitTexas;
+
+  /// No description provided for @circuitBuenosAires.
+  ///
+  /// In en, this message translates to:
+  /// **'Autódromo Oscar y Juan Gálvez'**
+  String get circuitBuenosAires;
 }
 
 class _AppLocalizationsDelegate

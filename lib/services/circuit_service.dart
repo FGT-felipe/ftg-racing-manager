@@ -9,7 +9,7 @@ class CircuitService {
   final Map<String, CircuitProfile> _circuits = {
     'mexico': CircuitProfile(
       id: 'mexico',
-      name: 'Autódromo Hermanos Rodríguez',
+      name: 'Autodromo Hermanos Rodriguez',
       flagEmoji: '🇲🇽',
       baseLapTime: 76.0,
       laps: 71,
@@ -36,7 +36,7 @@ class CircuitService {
     ),
     'vegas': CircuitProfile(
       id: 'vegas',
-      name: 'Circuito Urbano de Las Vegas',
+      name: 'Las Vegas Strip Circuit',
       flagEmoji: '🇺🇸',
       baseLapTime: 92.0,
       laps: 50,
@@ -88,7 +88,7 @@ class CircuitService {
     ),
     'miami': CircuitProfile(
       id: 'miami',
-      name: 'Autódromo Internacional de Miami',
+      name: 'Miami International Autodrome',
       flagEmoji: '🇺🇸',
       baseLapTime: 90.0,
       laps: 57,
@@ -110,7 +110,7 @@ class CircuitService {
     ),
     'san_pablo_street': CircuitProfile(
       id: 'san_pablo_street',
-      name: 'Circuito Callejero de San Pablo',
+      name: 'Sao Paulo Street Circuit',
       flagEmoji: '🇧🇷',
       baseLapTime: 82.0,
       laps: 40,
@@ -132,7 +132,7 @@ class CircuitService {
     ),
     'indianapolis': CircuitProfile(
       id: 'indianapolis',
-      name: 'Circuito de Indianápolis',
+      name: 'Indianapolis Motor Speedway',
       flagEmoji: '🇺🇸',
       baseLapTime: 72.0,
       laps: 73,
@@ -154,7 +154,7 @@ class CircuitService {
     ),
     'montreal': CircuitProfile(
       id: 'montreal',
-      name: 'Circuito Gilles Villeneuve',
+      name: 'Circuit Gilles Villeneuve',
       flagEmoji: '🇨🇦',
       baseLapTime: 73.0,
       laps: 70,
@@ -180,7 +180,7 @@ class CircuitService {
     ),
     'texas': CircuitProfile(
       id: 'texas',
-      name: 'Circuito de las Américas',
+      name: 'Circuit of the Americas',
       flagEmoji: '🇺🇸',
       baseLapTime: 94.0,
       laps: 56,

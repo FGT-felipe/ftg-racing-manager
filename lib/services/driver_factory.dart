@@ -53,6 +53,7 @@ class DriverFactory {
       potential: potential,
       points: 0,
       gender: gender,
+      championships: priorStats['championships']!,
       races: priorStats['races']!,
       wins: priorStats['wins']!,
       podiums: priorStats['podiums']!,
@@ -110,32 +111,63 @@ class DriverFactory {
     return _random.nextBool() ? 'M' : 'F';
   }
 
-  /// Genera estadísticas históricas coherentes (Races, Wins, Podiums)
+  /// Genera estadísticas históricas coherentes (Races, Wins, Podiums, Titles)
   /// Basado en edad, potencial y división.
   Map<String, int> _generatePriorStats(bool isElite, int age, int potential) {
-    // Años de carrera profesional (máximo 6 para el histórico visible)
-    final yearsPro = (age - 20).clamp(0, 6);
+    // Años de carrera profesional
+    final yearsPro = (age - 20).clamp(0, 15);
     if (yearsPro == 0) {
-      return {'races': 0, 'wins': 0, 'podiums': 0, 'poles': 0};
+      return {
+        'races': 0,
+        'wins': 0,
+        'podiums': 0,
+        'poles': 0,
+        'championships': 0,
+      };
     }
 
-    // Temporadas de 9 carreras
-    final totalPossibleRaces = yearsPro * 9;
-    final races =
-        (totalPossibleRaces * 0.8).floor() +
-        _random.nextInt((totalPossibleRaces * 0.2).floor() + 1);
+    int totalRaces = 0;
+    int totalWins = 0;
+    int totalPodiums = 0;
+    int totalTitles = 0;
 
     // Ratios de éxito basados en potencial (estrellas 1-5)
-    // 5 estrellas -> ~15% win rate, ~30% podium rate
-    // 1 estrella -> ~1% win rate, ~5% podium rate
-    final winRatio = (potential * 0.03) + (_random.nextDouble() * 0.02);
-    final podiumRatio = (potential * 0.07) + (_random.nextDouble() * 0.05);
+    final baseWinRatio = potential * 0.05; // 0.05 to 0.25
+    final basePodiumRatio = potential * 0.12; // 0.12 to 0.60
 
-    final wins = (races * winRatio).floor();
-    final podiums = (races * podiumRatio).floor().clamp(wins, races);
-    final poles = (wins * 1.2).floor(); // Generalmente similar a wins
+    for (int i = 0; i < yearsPro; i++) {
+      // Temporadas de 9 carreras (estándar del juego)
+      final seasonRaces = 9;
+      totalRaces += seasonRaces;
 
-    return {'races': races, 'wins': wins, 'podiums': podiums, 'poles': poles};
+      // Variación por año (algunos años mejores que otros)
+      final yearMod = 0.5 + _random.nextDouble(); // 0.5x to 1.5x
+
+      int yearWins = (seasonRaces * baseWinRatio * yearMod).floor();
+      if (yearWins > seasonRaces) yearWins = seasonRaces;
+
+      int yearPodiums = (seasonRaces * basePodiumRatio * yearMod).floor();
+      if (yearPodiums > seasonRaces) yearPodiums = seasonRaces;
+      if (yearPodiums < yearWins) yearPodiums = yearWins;
+
+      totalWins += yearWins;
+      totalPodiums += yearPodiums;
+
+      // Lógica de Campeón: 80% o más de victorias en la temporada
+      if (yearWins >= (seasonRaces * 0.8).ceil()) {
+        totalTitles++;
+      }
+    }
+
+    final poles = (totalWins * 1.1).floor();
+
+    return {
+      'races': totalRaces,
+      'wins': totalWins,
+      'podiums': totalPodiums,
+      'poles': poles,
+      'championships': totalTitles,
+    };
   }
 
   /// Genera todos los stats del piloto con los nuevos 11 atributos.
