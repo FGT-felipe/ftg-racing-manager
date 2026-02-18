@@ -30,20 +30,25 @@ class DriverFactory {
     final id = _generateId();
     final gender = _generateGender();
     final age = _generateAge(isElite);
+    final stats = _generateStats(isElite, age);
+    final statPotentials = _generateStatPotentials(isElite, stats);
+    final traits = _generateTraits(age);
 
     return Driver(
       id: id,
       teamId: null, // Se asignará después
       name: _generateName(),
       age: age,
-      potential: _generatePotential(isElite),
+      potential: _generatePotentialStars(isElite),
       points: 0,
       gender: gender,
       races: _generatePriorRaces(isElite),
-      wins: 0, // Sin victorias iniciales
+      wins: 0,
       podiums: 0,
       poles: 0,
-      stats: _generateStats(isElite),
+      stats: stats,
+      statPotentials: statPotentials,
+      traits: traits,
       countryCode: country.code,
       portraitUrl: DriverPortraitService().getPortraitUrl(
         driverId: id,
@@ -59,7 +64,6 @@ class DriverFactory {
     final countryCode = country.code.toLowerCase();
     final counter = _countryCounters[country.code]!;
     _countryCounters[country.code] = counter + 1;
-
     return 'driver_${countryCode}_$counter';
   }
 
@@ -67,38 +71,26 @@ class DriverFactory {
   String _generateName() {
     final firstNames = _firstNamesByCountry[country.code] ?? _defaultFirstNames;
     final lastNames = _lastNamesByCountry[country.code] ?? _defaultLastNames;
-
     final firstName = firstNames[_random.nextInt(firstNames.length)];
     final lastName = lastNames[_random.nextInt(lastNames.length)];
-
     return '$firstName $lastName';
   }
 
-  /// Genera edad basada en división
-  /// Élite: 22-35 años (pilotos en su prime)
-  /// Profesional: 20-38 años (más variedad, incluye jóvenes y veteranos)
+  /// Genera edad basada en división.
+  /// Todos los equipos empiezan con pilotos entre 29 y 40 años
+  /// para motivar el uso de la academia.
   int _generateAge(bool isElite) {
-    // OLD Logic:
-    // if (isElite) {
-    //   return 22 + _random.nextInt(14); // 22 to 35
-    // } else {
-    //   return 20 + _random.nextInt(19); // 20 to 38
-    // }
-
-    // NEW Logic:
-    // Todos los equipos empiezan con pilotos entre 29 y 40 años
-    // para motivar el uso de la academia.
     return 29 + _random.nextInt(12); // 29 to 40
   }
 
-  /// Genera potencial basado en división
-  /// Élite: 70-95 (alto potencial)
-  /// Profesional: 50-80 (potencial medio)
-  int _generatePotential(bool isElite) {
+  /// Genera potencial como estrellas de ojeo (1-5).
+  /// Élite: 3-5 estrellas
+  /// Profesional: 1-4 estrellas
+  int _generatePotentialStars(bool isElite) {
     if (isElite) {
-      return 70 + _random.nextInt(26); // 70 to 95
+      return 3 + _random.nextInt(3); // 3, 4, 5
     } else {
-      return 50 + _random.nextInt(31); // 50 to 80
+      return 1 + _random.nextInt(4); // 1, 2, 3, 4
     }
   }
 
@@ -108,8 +100,6 @@ class DriverFactory {
   }
 
   /// Genera carreras previas basado en división
-  /// Élite: 10-50 carreras (experiencia significativa)
-  /// Profesional: 0-20 carreras (menos experiencia)
   int _generatePriorRaces(bool isElite) {
     if (isElite) {
       return 10 + _random.nextInt(41); // 10 to 50
@@ -118,23 +108,132 @@ class DriverFactory {
     }
   }
 
-  /// Genera stats completos basados en división
-  /// Élite: 60-85 en cada stat
-  /// Profesional: 40-65 en cada stat
-  Map<String, int> _generateStats(bool isElite) {
-    final min = isElite ? 60 : 40;
-    final max = isElite ? 85 : 65;
+  /// Genera todos los stats del piloto con los nuevos 11 atributos.
+  ///
+  /// Élite: 60-85 en stats de conducción, 55-80 en mentales
+  /// Profesional: 40-65 en stats de conducción, 35-60 en mentales
+  Map<String, int> _generateStats(bool isElite, int age) {
+    final drivingMin = isElite ? 60 : 40;
+    final drivingMax = isElite ? 85 : 65;
+    final mentalMin = isElite ? 55 : 35;
+    final mentalMax = isElite ? 80 : 60;
+
+    int r(int min, int max) => min + _random.nextInt(max - min + 1);
+
+    // Ajuste por edad: pilotos mayores tienen mejor feedback/consistency pero peor fitness
+    final ageFitnessBonus = age > 35 ? -10 : (age < 25 ? 5 : 0);
+    final ageFeedbackBonus = age > 32 ? 8 : 0;
+    final ageConsistencyBonus = age > 32 ? 5 : 0;
 
     return {
-      'consistency': min + _random.nextInt(max - min + 1),
-      'overtaking': min + _random.nextInt(max - min + 1),
-      'defending': min + _random.nextInt(max - min + 1),
-      'racecraft': min + _random.nextInt(max - min + 1),
-      'speed': min + _random.nextInt(max - min + 1),
+      // Habilidades de Conducción
+      DriverStats.braking: r(drivingMin, drivingMax),
+      DriverStats.cornering: r(drivingMin, drivingMax),
+      DriverStats.smoothness: r(drivingMin, drivingMax),
+      DriverStats.overtaking: r(drivingMin, drivingMax),
+      DriverStats.consistency: (r(drivingMin, drivingMax) + ageConsistencyBonus)
+          .clamp(0, 100),
+      DriverStats.adaptability: r(drivingMin, drivingMax),
+      // Estadísticas Mentales y de Equipo
+      DriverStats.fitness: (r(mentalMin, mentalMax) + ageFitnessBonus).clamp(
+        0,
+        100,
+      ),
+      DriverStats.feedback: (r(mentalMin, mentalMax) + ageFeedbackBonus).clamp(
+        0,
+        100,
+      ),
+      DriverStats.focus: r(mentalMin, mentalMax),
+      DriverStats.morale:
+          65 +
+          _random.nextInt(21), // 65-85 (todos empiezan relativamente felices)
+      // Atributos Externos
+      DriverStats.marketability: r(30, isElite ? 75 : 55),
     };
   }
 
-  /// Nombres por país
+  /// Genera el potencial máximo por stat.
+  /// El techo de cada stat es ligeramente superior al valor actual,
+  /// con variación para crear diversidad entre pilotos.
+  Map<String, int> _generateStatPotentials(
+    bool isElite,
+    Map<String, int> currentStats,
+  ) {
+    final potentials = <String, int>{};
+
+    for (final statKey in DriverStats.all) {
+      final current = currentStats[statKey] ?? 50;
+      // El potencial máximo es el valor actual + un margen de mejora
+      // Élite: puede mejorar 5-20 puntos más
+      // Profesional: puede mejorar 3-15 puntos más
+      final maxGrowth = isElite
+          ? 5 +
+                _random.nextInt(16) // 5 to 20
+          : 3 + _random.nextInt(13); // 3 to 15
+
+      // Stats físicos tienen menor techo de mejora para veteranos
+      int ceiling = (current + maxGrowth).clamp(0, 100);
+
+      // Algunos pilotos son "one-trick ponies": excelentes en un área
+      // pero con techo bajo en otras. Esto crea diversidad.
+      if (_random.nextInt(100) < 20) {
+        // 20% de chance de tener un stat con techo muy alto (especialista)
+        ceiling = (current + 15 + _random.nextInt(16)).clamp(0, 100);
+      } else if (_random.nextInt(100) < 15) {
+        // 15% de chance de tener un stat con techo bajo (debilidad permanente)
+        ceiling = (current + _random.nextInt(6)).clamp(0, 100);
+      }
+
+      potentials[statKey] = ceiling;
+    }
+
+    return potentials;
+  }
+
+  /// Genera rasgos aleatorios para el piloto.
+  /// La mayoría de pilotos tienen 0-2 rasgos.
+  List<DriverTrait> _generateTraits(int age) {
+    final traits = <DriverTrait>[];
+    final allTraits = DriverTrait.values;
+
+    // Rasgos basados en edad
+    if (age > 35 && _random.nextInt(100) < 40) {
+      traits.add(DriverTrait.veteran);
+    }
+    if (age < 23 && _random.nextInt(100) < 30) {
+      traits.add(DriverTrait.youngProdigy);
+    }
+
+    // Rasgos aleatorios (excluyendo los ya asignados por edad)
+    final remainingTraits = allTraits
+        .where(
+          (t) =>
+              !traits.contains(t) &&
+              t != DriverTrait.veteran &&
+              t != DriverTrait.youngProdigy,
+        )
+        .toList();
+
+    // 30% de chance de tener un rasgo adicional
+    if (_random.nextInt(100) < 30 && remainingTraits.isNotEmpty) {
+      traits.add(remainingTraits[_random.nextInt(remainingTraits.length)]);
+    }
+
+    // 10% de chance de tener un segundo rasgo adicional
+    if (_random.nextInt(100) < 10 && remainingTraits.length > 1) {
+      final available = remainingTraits
+          .where((t) => !traits.contains(t))
+          .toList();
+      if (available.isNotEmpty) {
+        traits.add(available[_random.nextInt(available.length)]);
+      }
+    }
+
+    return traits;
+  }
+
+  // ─── Nombres por país ──────────────────────────────────────────────────────
+
   static const Map<String, List<String>> _firstNamesByCountry = {
     'BR': [
       'Lucas',

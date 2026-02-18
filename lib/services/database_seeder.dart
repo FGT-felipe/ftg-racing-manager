@@ -334,32 +334,60 @@ class DatabaseSeeder {
               : _maleNames[random.nextInt(_maleNames.length)];
           final lastName = _lastNames[random.nextInt(_lastNames.length)];
           final age = 29 + random.nextInt(12);
-          final speed = 40 + random.nextInt(51);
-          final cornering = 40 + random.nextInt(51);
 
           final gender = isFemale ? 'F' : 'M';
           final driverRef = teamRef.collection('drivers').doc();
+
+          // Generar stats con el nuevo modelo de 11 atributos
+          int r(int min, int max) => min + random.nextInt(max - min + 1);
+          final ageFitnessBonus = age > 35 ? -10 : 0;
+          final ageFeedbackBonus = age > 32 ? 8 : 0;
+
+          final stats = {
+            DriverStats.braking: r(40, 70),
+            DriverStats.cornering: r(40, 70),
+            DriverStats.smoothness: r(40, 70),
+            DriverStats.overtaking: r(40, 70),
+            DriverStats.consistency: r(40, 70),
+            DriverStats.adaptability: r(40, 70),
+            DriverStats.fitness: (r(40, 70) + ageFitnessBonus).clamp(0, 100),
+            DriverStats.feedback: (r(35, 65) + ageFeedbackBonus).clamp(0, 100),
+            DriverStats.focus: r(35, 65),
+            DriverStats.morale: r(60, 85),
+            DriverStats.marketability: r(25, 60),
+          };
+
+          // Potenciales por stat (techo de mejora)
+          final statPotentials = <String, int>{};
+          for (final key in DriverStats.all) {
+            final current = stats[key]!;
+            statPotentials[key] = (current + 5 + random.nextInt(16)).clamp(
+              0,
+              100,
+            );
+          }
+
           batch.set(
             driverRef,
             Driver(
               id: driverRef.id,
               teamId: teamRef.id,
-              carIndex: i, // 0 for Car A, 1 for Car B
+              carIndex: i,
               name: "$firstName $lastName",
               age: age,
-              potential: 70 + random.nextInt(30),
+              potential: 2 + random.nextInt(3), // 2-4 estrellas
               points: 0,
               gender: gender,
-              stats: {
-                'speed': speed,
-                'cornering': cornering,
-                'consistency': 40 + random.nextInt(41),
-              },
-              countryCode: 'CO', // Manual seeding fallback
+              stats: stats,
+              statPotentials: statPotentials,
+              countryCode: 'CO',
               role: i == 0 ? 'Main Driver' : 'Secondary Driver',
               salary: 500000,
               contractYearsRemaining: 1,
-              weeklyGrowth: {'speed': 0.2, 'consistency': 0.1},
+              weeklyGrowth: {
+                DriverStats.feedback: 0.2,
+                DriverStats.consistency: 0.1,
+              },
               portraitUrl: DriverPortraitService().getPortraitUrl(
                 driverId: driverRef.id,
                 countryCode: 'CO',
