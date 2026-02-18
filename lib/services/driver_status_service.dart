@@ -16,7 +16,7 @@ class DriverStatusService {
       return "Era Dominator";
     }
     if (potential == 5 && age <= 24) {
-      return "The Heir";
+      return driver.gender == 'F' ? "The Heiress" : "The Heir";
     }
 
     // --- The Old Guard ---
@@ -50,15 +50,15 @@ class DriverStatusService {
     if (potential == 3 && (podiums >= 3 || races > 40)) {
       // Check if they consistent but not top tier
       if (podiums >= 5) return "Midfield Spark";
-      return "Journeyman";
+      return driver.gender == 'F' ? "Journeywoman" : "Journeyman";
     }
 
     if (races >= 40 && podiums == 0) {
       return "Unsung Driver";
     }
 
-    if (races >= 40 && wins == 0) {
-      return "Journeyman";
+    if (races >= 40 && (wins == 0 || podiums < 5)) {
+      return driver.gender == 'F' ? "Journeywoman" : "Journeyman";
     }
 
     // --- The Raw Side (Grid Filler) ---
@@ -70,7 +70,7 @@ class DriverStatusService {
     if (age < 24 && potential >= 3) return "Rising Star";
     if (potential <= 2) return "Grid Filler";
 
-    return "Journeyman";
+    return driver.gender == 'F' ? "Journeywoman" : "Journeyman";
   }
 
   static String getDescription(String title) {
@@ -80,6 +80,7 @@ class DriverStatusService {
       case "Era Dominator":
         return "A driver in their prime who makes the rest of the field look a class below.";
       case "The Heir":
+      case "The Heiress":
         return "The driver everyone knows will be champion as soon as they have the right car.";
       case "Elite Veteran":
         return "Many years at the top, consistent, but has passed their peak pure speed.";
@@ -94,6 +95,7 @@ class DriverStatusService {
       case "Stuck Promise":
         return "Someone who entered with high expectations but whose results have flattened.";
       case "Journeyman":
+      case "Journeywoman":
         return "Does the job, avoids errors, but rarely makes the headlines.";
       case "Unsung Driver":
         return "A driver who spends years in the category without leaving a statistical mark.";
@@ -116,6 +118,8 @@ class DriverStatusService {
           "A driver in their prime who makes the rest of the field look a class below.",
       "The Heir":
           "The driver everyone knows will be champion as soon as they have the right car.",
+      "The Heiress":
+          "The driver everyone knows will be champion as soon as they have the right car.",
       "Elite Veteran":
           "Many years at the top, consistent, but has passed their peak pure speed.",
       "Last Dance":
@@ -129,6 +133,8 @@ class DriverStatusService {
       "Stuck Promise":
           "Someone who entered with high expectations but whose results have flattened.",
       "Journeyman":
+          "Does the job, avoids errors, but rarely makes the headlines.",
+      "Journeywoman":
           "Does the job, avoids errors, but rarely makes the headlines.",
       "Unsung Driver":
           "A driver who spends years in the category without leaving a statistical mark.",
