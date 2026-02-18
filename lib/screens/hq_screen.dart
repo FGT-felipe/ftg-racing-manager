@@ -1,24 +1,45 @@
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:google_fonts/google_fonts.dart';
 import '../l10n/app_localizations.dart';
 import '../models/core_models.dart';
-import 'engineering_screen.dart';
+import '../services/facility_service.dart';
+import '../services/finance_service.dart';
+import '../widgets/common/instruction_card.dart';
 import 'standings_screen.dart';
 
-class HQScreen extends StatelessWidget {
+class HQScreen extends StatefulWidget {
   final String teamId;
 
   const HQScreen({super.key, required this.teamId});
 
   @override
+  State<HQScreen> createState() => _HQScreenState();
+}
+
+class _HQScreenState extends State<HQScreen> {
+  @override
+  void initState() {
+    super.initState();
+    FacilityService().ensureBaseFacilities(widget.teamId);
+  }
+
+  @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
     final theme = Theme.of(context);
+    final screenWidth = MediaQuery.of(context).size.width;
 
     return Scaffold(
       backgroundColor: theme.scaffoldBackgroundColor,
       appBar: AppBar(
-        title: Text(l10n.hqTitle),
+        title: Text(
+          l10n.hqTitle.toUpperCase(),
+          style: GoogleFonts.poppins(
+            fontWeight: FontWeight.w900,
+            letterSpacing: 1.5,
+          ),
+        ),
         centerTitle: true,
         backgroundColor: theme.scaffoldBackgroundColor,
         elevation: 0,
@@ -30,397 +51,409 @@ class HQScreen extends StatelessWidget {
               MaterialPageRoute(builder: (context) => const StandingsScreen()),
             ),
           ),
-          IconButton(
-            icon: const Icon(Icons.build, color: Colors.teal),
-            onPressed: () => Navigator.push(
-              context,
-              MaterialPageRoute(
-                builder: (context) => EngineeringScreen(teamId: teamId),
-              ),
-            ),
-          ),
         ],
       ),
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.all(16.0),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            // 1. Header Section: Team Info
-            StreamBuilder<DocumentSnapshot>(
-              stream: FirebaseFirestore.instance
-                  .collection('teams')
-                  .doc(teamId)
-                  .snapshots(),
-              builder: (context, snapshot) {
-                if (!snapshot.hasData) {
-                  return const SizedBox(
-                    height: 100,
-                    child: Center(child: CircularProgressIndicator()),
-                  );
-                }
+      body: StreamBuilder<DocumentSnapshot>(
+        stream: FirebaseFirestore.instance
+            .collection('teams')
+            .doc(widget.teamId)
+            .snapshots(),
+        builder: (context, snapshot) {
+          if (!snapshot.hasData) {
+            return const Center(child: CircularProgressIndicator());
+          }
 
-                final team = Team.fromMap(
-                  snapshot.data!.data() as Map<String, dynamic>,
-                );
-                final budgetM = (team.budget / 1000000).toStringAsFixed(0);
+          final team = Team.fromMap(
+            snapshot.data!.data() as Map<String, dynamic>,
+          );
+          final budgetM = (team.budget / 1000000).toStringAsFixed(1);
 
-                return Card(
-                  color: theme.cardTheme.color,
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(8),
-                  ),
-                  child: Padding(
-                    padding: const EdgeInsets.all(24.0),
-                    child: Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        Expanded(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(
-                                team.name,
-                                style: TextStyle(
-                                  color: theme.colorScheme.onSurface,
-                                  fontSize: 28,
-                                  fontWeight: FontWeight.bold,
-                                ),
-                              ),
-                              const SizedBox(height: 4),
-                              Text(
-                                "ID: $teamId",
-                                style: TextStyle(
-                                  color: theme.colorScheme.onSurface.withValues(
-                                    alpha: 0.5,
-                                  ),
-                                  fontSize: 12,
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                        Column(
-                          crossAxisAlignment: CrossAxisAlignment.end,
-                          children: [
-                            Text(
-                              l10n.budgetLabel.toUpperCase(),
-                              style: TextStyle(
-                                color: theme.colorScheme.secondary,
-                                fontSize: 12,
-                                fontWeight: FontWeight.bold,
-                              ),
-                            ),
-                            Text(
-                              "${l10n.currencySymbol} $budgetM M",
-                              style: TextStyle(
-                                color: theme.colorScheme.onSurface,
-                                fontSize: 24,
-                                fontWeight: FontWeight.bold,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ],
-                    ),
-                  ),
-                );
-              },
-            ),
-            const SizedBox(height: 24),
-
-            // 2. Next Race Section
-            Text(
-              l10n.nextRace.toUpperCase(),
-              style: TextStyle(
-                color: theme.colorScheme.onSurface.withValues(alpha: 0.7),
-                fontSize: 14,
-                fontWeight: FontWeight.bold,
-                letterSpacing: 1.2,
-              ),
-            ),
-            const SizedBox(height: 12),
-            Container(
-              width: double.infinity,
-              padding: const EdgeInsets.all(20),
-              decoration: BoxDecoration(
-                color: theme.cardTheme.color,
-                borderRadius: BorderRadius.circular(8),
-              ),
-              child: Row(
-                children: [
-                  Icon(
-                    Icons.flag_circle,
-                    color: theme.colorScheme.secondary,
-                    size: 40,
-                  ),
-                  const SizedBox(width: 16),
-                  Text(
-                    l10n.gpPlaceholder,
-                    style: TextStyle(
-                      color: theme.colorScheme.onSurface,
-                      fontSize: 18,
-                      fontWeight: FontWeight.w500,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-            const SizedBox(height: 32),
-
-            // 3. Drivers Section
-            Text(
-              l10n.activeDrivers.toUpperCase(),
-              style: TextStyle(
-                color: theme.colorScheme.onSurface.withValues(alpha: 0.7),
-                fontSize: 14,
-                fontWeight: FontWeight.bold,
-                letterSpacing: 1.2,
-              ),
-            ),
-            const SizedBox(height: 12),
-            StreamBuilder<QuerySnapshot>(
-              stream: FirebaseFirestore.instance
-                  .collection('teams')
-                  .doc(teamId)
-                  .collection('drivers')
-                  .snapshots(),
-              builder: (context, snapshot) {
-                if (snapshot.connectionState == ConnectionState.waiting) {
-                  return const Center(child: CircularProgressIndicator());
-                }
-
-                final docs = snapshot.data?.docs ?? [];
-                if (docs.isEmpty) {
-                  return const Center(
-                    child: Text(
-                      "No drivers found",
-                      style: TextStyle(color: Colors.grey),
-                    ),
-                  );
-                }
-
-                return ListView.separated(
-                  shrinkWrap: true,
-                  physics: const NeverScrollableScrollPhysics(),
-                  itemCount: docs.length,
-                  separatorBuilder: (context, index) =>
-                      const SizedBox(height: 16),
-                  itemBuilder: (context, index) {
-                    final driver = Driver.fromMap(
-                      docs[index].data() as Map<String, dynamic>,
-                    );
-                    return _DriverCard(driver: driver);
-                  },
-                );
-              },
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-class _DriverCard extends StatelessWidget {
-  final Driver driver;
-
-  const _DriverCard({required this.driver});
-
-  @override
-  Widget build(BuildContext context) {
-    final l10n = AppLocalizations.of(context);
-    final theme = Theme.of(context);
-    final speed = (driver.stats['speed'] ?? 0).toDouble();
-    final cornering = (driver.stats['cornering'] ?? 0).toDouble();
-
-    final isFemale = driver.gender == 'F';
-    final genderIcon = isFemale ? Icons.face_3 : Icons.person;
-    final genderColor = isFemale ? Colors.pinkAccent : Colors.cyan;
-
-    // Role Logic
-    String? roleLabel;
-    if (driver.potential > 90) {
-      roleLabel = l10n.starMaterial;
-    } else if (driver.age < 21) {
-      roleLabel = l10n.rookie;
-    } else if (driver.age > 32) {
-      roleLabel = l10n.veteran;
-    }
-
-    return Card(
-      color: theme.cardTheme.color,
-      elevation: 2,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-      child: Padding(
-        padding: const EdgeInsets.all(16.0),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
+          return SingleChildScrollView(
+            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Container(
-                  padding: const EdgeInsets.all(10),
-                  decoration: BoxDecoration(
-                    color: genderColor.withValues(alpha: 0.1),
-                    shape: BoxShape.circle,
-                  ),
-                  child: Icon(genderIcon, color: genderColor, size: 32),
-                ),
-                const SizedBox(width: 16),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
+                // 1. Instruction Card with Budget
+                InstructionCard(
+                  icon: Icons.business_center_rounded,
+                  title: "HEADQUARTERS",
+                  description:
+                      "Buy and upgrade facilities to unlock powerful benefits and strategic advantages for your team. Be mindful of your investments, as advanced facilities will incur weekly maintenance costs as your empire grows.",
+                  extraContent: Column(
                     children: [
-                      Text(
-                        driver.name,
-                        style: TextStyle(
-                          color: theme.colorScheme.onSurface,
-                          fontSize: 18,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                      const SizedBox(height: 4),
+                      const Divider(height: 32),
                       Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
                           Text(
-                            l10n.ageLabel(driver.age),
-                            style: TextStyle(
-                              color: theme.colorScheme.onSurface.withValues(
-                                alpha: 0.6,
-                              ),
-                              fontSize: 13,
+                            l10n.budgetLabel.toUpperCase(),
+                            style: const TextStyle(
+                              fontSize: 12,
+                              fontWeight: FontWeight.bold,
+                              letterSpacing: 1.2,
                             ),
                           ),
-                          if (roleLabel != null) ...[
-                            const SizedBox(width: 8),
-                            Container(
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: 6,
-                                vertical: 2,
-                              ),
-                              decoration: BoxDecoration(
-                                color: theme.colorScheme.secondary.withValues(
-                                  alpha: 0.1,
-                                ),
-                                borderRadius: BorderRadius.circular(8),
-                              ),
-                              child: Text(
-                                roleLabel.toUpperCase(),
-                                style: TextStyle(
-                                  color: theme.colorScheme.secondary,
-                                  fontSize: 10,
-                                  fontWeight: FontWeight.bold,
-                                ),
-                              ),
+                          Text(
+                            "${l10n.currencySymbol} $budgetM M",
+                            style: GoogleFonts.poppins(
+                              color: theme.colorScheme.onSurface,
+                              fontSize: 24,
+                              fontWeight: FontWeight.w900,
                             ),
-                          ],
+                          ),
                         ],
                       ),
                     ],
                   ),
                 ),
-                Column(
+                const SizedBox(height: 32),
+
+                Text(
+                  "FACILITIES",
+                  style: GoogleFonts.poppins(
+                    color: theme.colorScheme.onSurface.withValues(alpha: 0.7),
+                    fontSize: 16,
+                    fontWeight: FontWeight.w900,
+                    letterSpacing: 1.5,
+                  ),
+                ),
+                const SizedBox(height: 16),
+
+                GridView.count(
+                  shrinkWrap: true,
+                  physics: const NeverScrollableScrollPhysics(),
+                  crossAxisCount: screenWidth > 900
+                      ? 4
+                      : (screenWidth > 600 ? 3 : 2),
+                  mainAxisSpacing: 20,
+                  crossAxisSpacing: 20,
+                  childAspectRatio: 1.0,
                   children: [
-                    SizedBox(
-                      height: 36,
-                      width: 36,
-                      child: Stack(
-                        alignment: Alignment.center,
-                        children: [
-                          CircularProgressIndicator(
-                            value: driver.potential / 100,
-                            strokeWidth: 3,
-                            backgroundColor: theme.colorScheme.onSurface
-                                .withValues(alpha: 0.1),
-                            color: theme.colorScheme.secondary,
-                          ),
-                          Text(
-                            driver.potential.toString(),
-                            style: TextStyle(
-                              color: theme.colorScheme.onSurface,
-                              fontSize: 10,
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
-                        ],
-                      ),
+                    _FacilityCard(
+                      facility:
+                          team.facilities[FacilityType.teamOffice.name] ??
+                          Facility(type: FacilityType.teamOffice, level: 1),
+                      teamId: widget.teamId,
+                      canUpgrade: false,
                     ),
-                    const SizedBox(height: 4),
-                    Text(
-                      "POTENTIAL",
-                      style: TextStyle(
-                        color: theme.colorScheme.onSurface.withValues(
-                          alpha: 0.5,
-                        ),
-                        fontSize: 8,
-                      ),
+                    _FacilityCard(
+                      facility:
+                          team.facilities[FacilityType.garage.name] ??
+                          Facility(type: FacilityType.garage, level: 1),
+                      teamId: widget.teamId,
+                      canUpgrade: false,
+                    ),
+                    _FacilityCard(
+                      facility:
+                          team.facilities[FacilityType.youthAcademy.name] ??
+                          Facility(type: FacilityType.youthAcademy, level: 0),
+                      teamId: widget.teamId,
+                      canUpgrade: true,
+                    ),
+                    _FacilityCard(
+                      facility: Facility(type: FacilityType.pressRoom),
+                      teamId: widget.teamId,
+                      canUpgrade: false,
+                    ),
+                    _FacilityCard(
+                      facility: Facility(type: FacilityType.scoutingOffice),
+                      teamId: widget.teamId,
+                      canUpgrade: false,
+                    ),
+                    _FacilityCard(
+                      facility: Facility(type: FacilityType.racingSimulator),
+                      teamId: widget.teamId,
+                      canUpgrade: false,
+                    ),
+                    _FacilityCard(
+                      facility: Facility(type: FacilityType.gym),
+                      teamId: widget.teamId,
+                      canUpgrade: false,
+                    ),
+                    _FacilityCard(
+                      facility: Facility(type: FacilityType.rdOffice),
+                      teamId: widget.teamId,
+                      canUpgrade: false,
                     ),
                   ],
                 ),
               ],
             ),
-            const SizedBox(height: 20),
-            Row(
-              children: [
-                Expanded(
-                  child: _StatBar(label: l10n.speed, value: speed),
-                ),
-                const SizedBox(width: 24),
-                Expanded(
-                  child: _StatBar(label: l10n.cornering, value: cornering),
-                ),
-              ],
-            ),
-          ],
-        ),
+          );
+        },
       ),
     );
   }
 }
 
-class _StatBar extends StatelessWidget {
-  final String label;
-  final double value;
+class _FacilityCard extends StatelessWidget {
+  final Facility facility;
+  final String teamId;
+  final bool canUpgrade;
 
-  const _StatBar({required this.label, required this.value});
+  const _FacilityCard({
+    required this.facility,
+    required this.teamId,
+    required this.canUpgrade,
+  });
+
+  IconData _getIcon() {
+    switch (facility.type) {
+      case FacilityType.teamOffice:
+        return Icons.corporate_fare_rounded;
+      case FacilityType.garage:
+        return Icons.directions_car_filled_rounded;
+      case FacilityType.youthAcademy:
+        return Icons.school_rounded;
+      case FacilityType.pressRoom:
+        return Icons.mic_external_on_rounded;
+      case FacilityType.scoutingOffice:
+        return Icons.search_rounded;
+      case FacilityType.racingSimulator:
+        return Icons.videogame_asset_rounded;
+      case FacilityType.gym:
+        return Icons.fitness_center_rounded;
+      case FacilityType.rdOffice:
+        return Icons.biotech_rounded;
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
+    final isSoon = facility.isSoon;
+    final isMaxLevel = facility.level >= 5;
+    final isPurchased = facility.level > 0;
+    final isEnabled = !isSoon;
+
+    final nextLevelPrice = FinanceService().formatCompactCurrency(
+      facility.level == 0 ? 100000 : facility.upgradePrice,
+    );
+    final maintenancePrice = FinanceService().formatCompactCurrency(
+      facility.maintenanceCost,
+    );
+
+    return Stack(
       children: [
-        Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: [
-            Text(
-              label.toUpperCase(),
-              style: TextStyle(
-                color: theme.colorScheme.onSurface.withValues(alpha: 0.6),
-                fontSize: 10,
-                letterSpacing: 0.5,
+        Card(
+          clipBehavior: Clip.antiAlias,
+          elevation: isEnabled ? 2 : 0,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(12),
+          ),
+          color: isEnabled
+              ? theme.cardTheme.color
+              : theme.cardTheme.color?.withValues(alpha: 0.5),
+          child: InkWell(
+            onTap: isSoon ? null : () {},
+            child: Container(
+              width: double.infinity,
+              padding: const EdgeInsets.all(16.0),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.center,
+                children: [
+                  if (isPurchased && !isSoon) ...[
+                    Text(
+                      "LEVEL ${facility.level}",
+                      style: GoogleFonts.raleway(
+                        fontSize: 9,
+                        fontWeight: FontWeight.bold,
+                        letterSpacing: 1.2,
+                        color: theme.colorScheme.secondary.withValues(
+                          alpha: 0.9,
+                        ),
+                      ),
+                    ),
+                    Divider(
+                      color: Colors.white.withValues(alpha: 0.1),
+                      thickness: 0.5,
+                      height: 12,
+                    ),
+                  ],
+                  Icon(
+                    _getIcon(),
+                    size: isPurchased ? 34 : 40,
+                    color: isEnabled
+                        ? theme.colorScheme.secondary
+                        : Colors.grey.withValues(alpha: 0.5),
+                  ),
+                  const SizedBox(height: 8),
+                  Text(
+                    facility.name,
+                    textAlign: TextAlign.center,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: GoogleFonts.poppins(
+                      fontWeight: FontWeight.w900,
+                      fontSize: 14,
+                      color: isEnabled ? Colors.white : Colors.grey,
+                    ),
+                  ),
+                  const Spacer(),
+                  if (isEnabled) ...[
+                    // Separator
+                    Divider(
+                      color: Colors.white.withValues(alpha: 0.1),
+                      thickness: 0.5,
+                      height: 16,
+                    ),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      crossAxisAlignment: CrossAxisAlignment.end,
+                      children: [
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              if (!isMaxLevel && canUpgrade)
+                                _DetailRow(
+                                  label: "Next level:",
+                                  value: nextLevelPrice,
+                                ),
+                              _DetailRow(
+                                label: "Maint cost:",
+                                value: maintenancePrice,
+                                isMuted: true,
+                              ),
+                              _DetailRow(
+                                label: "Bonus:",
+                                value: facility.bonusDescription,
+                                color: theme.colorScheme.secondary.withValues(
+                                  alpha: 0.7,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                        if (canUpgrade && !isMaxLevel)
+                          ElevatedButton(
+                            onPressed: () => _handleUpgrade(context),
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: theme.colorScheme.secondary,
+                              foregroundColor: Colors.black,
+                              elevation: 0,
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 10,
+                                vertical: 6,
+                              ),
+                              minimumSize: Size.zero,
+                              tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(6),
+                              ),
+                            ),
+                            child: Text(
+                              isPurchased ? "UPGRADE" : "BUY",
+                              style: GoogleFonts.raleway(
+                                fontSize: 9,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                          ),
+                      ],
+                    ),
+                  ] else ...[
+                    const SizedBox(height: 40),
+                  ],
+                ],
               ),
             ),
-            Text(
-              value.toInt().toString(),
+          ),
+        ),
+        if (isSoon)
+          Positioned(
+            top: 10,
+            right: -25,
+            child: Transform.rotate(
+              angle: 0.785, // 45 degrees
+              child: Container(
+                width: 100,
+                color: Colors.redAccent.withValues(alpha: 0.8),
+                padding: const EdgeInsets.symmetric(vertical: 4),
+                child: const Text(
+                  'SOON',
+                  textAlign: TextAlign.center,
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontSize: 8,
+                    fontWeight: FontWeight.bold,
+                    letterSpacing: 1.2,
+                  ),
+                ),
+              ),
+            ),
+          ),
+      ],
+    );
+  }
+
+  void _handleUpgrade(BuildContext context) async {
+    try {
+      await FacilityService().upgradeFacility(teamId, facility.type);
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text("${facility.name} improved!"),
+            backgroundColor: Colors.green,
+            behavior: SnackBarBehavior.floating,
+          ),
+        );
+      }
+    } catch (e) {
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(e.toString()),
+            backgroundColor: Colors.red,
+            behavior: SnackBarBehavior.floating,
+          ),
+        );
+      }
+    }
+  }
+}
+
+class _DetailRow extends StatelessWidget {
+  final String label;
+  final String value;
+  final bool isMuted;
+  final Color? color;
+
+  const _DetailRow({
+    required this.label,
+    required this.value,
+    this.isMuted = false,
+    this.color,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 2.0),
+      child: RichText(
+        text: TextSpan(
+          style: GoogleFonts.raleway(
+            fontSize: 8.5,
+            color: isMuted
+                ? Colors.white.withValues(alpha: 0.4)
+                : Colors.white.withValues(alpha: 0.6),
+          ),
+          children: [
+            TextSpan(text: "$label "),
+            TextSpan(
+              text: value,
               style: TextStyle(
-                color: theme.colorScheme.onSurface,
-                fontSize: 11,
                 fontWeight: FontWeight.bold,
+                color:
+                    color ??
+                    (isMuted
+                        ? Colors.white.withValues(alpha: 0.4)
+                        : Colors.white.withValues(alpha: 0.8)),
               ),
             ),
           ],
         ),
-        const SizedBox(height: 6),
-        LinearProgressIndicator(
-          value: value / 100,
-          backgroundColor: theme.colorScheme.onSurface.withValues(alpha: 0.1),
-          color: Colors.teal,
-          minHeight: 4,
-          borderRadius: BorderRadius.circular(2),
-        ),
-      ],
+      ),
     );
   }
 }

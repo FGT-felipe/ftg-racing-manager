@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:google_fonts/google_fonts.dart';
 import 'home/dashboard_screen.dart';
 import 'engineering_screen.dart';
 import 'team/team_screen.dart';
@@ -11,6 +12,7 @@ import 'calendar/calendar_screen.dart';
 import 'race/race_day_screen.dart';
 import 'hq/youth_academy_screen.dart';
 import 'management/personal_screen.dart';
+import 'hq_screen.dart';
 import '../widgets/common/app_logo.dart';
 import '../services/season_service.dart';
 import '../services/time_service.dart';
@@ -75,6 +77,7 @@ class _MainLayoutState extends State<MainLayout> {
         id: 'hq',
         title: 'HQ',
         icon: Icons.business_rounded,
+        screen: HQScreen(teamId: widget.teamId),
         children: [
           NavNode(
             id: 'hq_office',
@@ -425,7 +428,7 @@ class _Sidebar extends StatelessWidget {
           leading: Icon(node.icon, color: contentColor, size: iconSize),
           title: Text(
             node.title,
-            style: TextStyle(
+            style: GoogleFonts.raleway(
               color: contentColor,
               fontWeight: fontWeight,
               fontSize: fontSize,
@@ -455,7 +458,7 @@ class _Sidebar extends StatelessWidget {
           ? null
           : Text(
               node.title,
-              style: TextStyle(
+              style: GoogleFonts.raleway(
                 color: contentColor,
                 fontWeight: fontWeight,
                 fontSize: fontSize,
@@ -540,7 +543,7 @@ class _SubNavbar extends StatelessWidget {
                 ),
                 child: Text(
                   child.title,
-                  style: TextStyle(
+                  style: GoogleFonts.raleway(
                     color: isSelected ? Colors.white : Colors.white54,
                     fontWeight: isSelected
                         ? FontWeight.bold

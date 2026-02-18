@@ -1,10 +1,12 @@
 import 'package:flutter/material.dart';
+import 'package:google_fonts/google_fonts.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import '../l10n/app_localizations.dart';
 import '../models/core_models.dart';
 import '../services/car_service.dart';
 import '../services/driver_assignment_service.dart';
 import '../widgets/car_schematic_widget.dart';
+import '../widgets/common/instruction_card.dart';
 
 class EngineeringScreen extends StatelessWidget {
   final String teamId;
@@ -45,8 +47,8 @@ class EngineeringScreen extends StatelessWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  // R&D Lab Info Header (Common Instructions Style)
-                  _CommonInstructionCard(
+                  // R&D Lab Info Header (Shared Instruction Card)
+                  InstructionCard(
                     icon: Icons.biotech_rounded,
                     title: "GARAGE",
                     description: l10n.engineeringDescription,
@@ -205,7 +207,7 @@ class _CarUpgradesColumn extends StatelessWidget {
               ),
               child: Text(
                 driverName,
-                style: const TextStyle(fontSize: 12, color: Colors.white70),
+                style: GoogleFonts.raleway(fontSize: 12, color: Colors.white70),
               ),
             ),
           ],
@@ -417,75 +419,6 @@ class _UpgradeTileState extends State<_UpgradeTile> {
             ],
           ),
         ],
-      ),
-    );
-  }
-}
-
-class _CommonInstructionCard extends StatelessWidget {
-  final IconData icon;
-  final String title;
-  final String description;
-  final Widget? extraContent;
-
-  const _CommonInstructionCard({
-    required this.icon,
-    required this.title,
-    required this.description,
-    this.extraContent,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    return Card(
-      color: theme.cardTheme.color,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-      elevation: 4,
-      child: Container(
-        width: double.infinity,
-        padding: const EdgeInsets.all(24),
-        decoration: BoxDecoration(
-          gradient: LinearGradient(
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-            colors: [
-              theme.colorScheme.primary.withValues(alpha: 0.15),
-              theme.colorScheme.surface,
-            ],
-          ),
-          borderRadius: BorderRadius.circular(12),
-          border: Border.all(
-            color: theme.colorScheme.primary.withValues(alpha: 0.2),
-          ),
-        ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              children: [
-                Icon(icon, color: theme.colorScheme.primary, size: 32),
-                const SizedBox(width: 12),
-                Text(
-                  title,
-                  style: theme.textTheme.titleLarge?.copyWith(
-                    fontWeight: FontWeight.bold,
-                    color: theme.colorScheme.primary.withValues(alpha: 0.9),
-                  ),
-                ),
-              ],
-            ),
-            const SizedBox(height: 16),
-            Text(
-              description,
-              style: theme.textTheme.bodyMedium?.copyWith(
-                height: 1.5,
-                color: theme.colorScheme.onSurface.withValues(alpha: 0.8),
-              ),
-            ),
-            if (extraContent != null) extraContent!,
-          ],
-        ),
       ),
     );
   }

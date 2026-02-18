@@ -383,6 +383,7 @@ class Team {
   final Map<String, Map<String, int>> carStats;
   final Map<String, dynamic> weekStatus;
   final Map<String, ActiveContract> sponsors;
+  final Map<String, Facility> facilities;
 
   Team({
     required this.id,
@@ -403,6 +404,7 @@ class Team {
     required this.carStats,
     required this.weekStatus,
     this.sponsors = const {},
+    this.facilities = const {},
   });
 
   Map<String, dynamic> toMap() {
@@ -425,6 +427,7 @@ class Team {
       'carStats': carStats,
       'weekStatus': weekStatus,
       'sponsors': sponsors.map((k, v) => MapEntry(k, v.toMap())),
+      'facilities': facilities.map((k, v) => MapEntry(k, v.toMap())),
     };
   }
 
@@ -492,6 +495,110 @@ class Team {
         (k, v) =>
             MapEntry(k, ActiveContract.fromMap(Map<String, dynamic>.from(v))),
       ),
+      facilities: (map['facilities'] as Map<String, dynamic>? ?? {}).map(
+        (k, v) => MapEntry(k, Facility.fromMap(Map<String, dynamic>.from(v))),
+      ),
+    );
+  }
+}
+
+enum FacilityType {
+  teamOffice,
+  garage,
+  youthAcademy,
+  pressRoom,
+  scoutingOffice,
+  racingSimulator,
+  gym,
+  rdOffice,
+}
+
+class Facility {
+  final FacilityType type;
+  final int level;
+  final bool isLocked;
+
+  Facility({required this.type, this.level = 0, this.isLocked = false});
+
+  String get name {
+    switch (type) {
+      case FacilityType.teamOffice:
+        return "Team Office";
+      case FacilityType.garage:
+        return "Garage";
+      case FacilityType.youthAcademy:
+        return "Youth Academy";
+      case FacilityType.pressRoom:
+        return "Press Room";
+      case FacilityType.scoutingOffice:
+        return "Scouting Office";
+      case FacilityType.racingSimulator:
+        return "Racing Simulator";
+      case FacilityType.gym:
+        return "Gym";
+      case FacilityType.rdOffice:
+        return "R&D Office";
+    }
+  }
+
+  bool get isSoon {
+    return type == FacilityType.pressRoom ||
+        type == FacilityType.scoutingOffice ||
+        type == FacilityType.racingSimulator ||
+        type == FacilityType.gym ||
+        type == FacilityType.rdOffice;
+  }
+
+  int get upgradePrice {
+    if (level >= 5) return 0;
+    // Base prices
+    int basePrice = 100000;
+    // level 0 (to buy): 100k
+    // level 1: 200k
+    // level 2: 300k
+    return basePrice * (level + 1);
+  }
+
+  int get maintenanceCost {
+    if (level == 0) return 0;
+    // 10% of the next upgrade price or fixed based on current level
+    return level * 15000;
+  }
+
+  String get bonusDescription {
+    if (level == 0) return "Not purchased";
+    switch (type) {
+      case FacilityType.teamOffice:
+        return "Budget +${level * 5}%";
+      case FacilityType.garage:
+        return "Repair +${level * 2}%";
+      case FacilityType.youthAcademy:
+        return "Scouting +${level * 10}";
+      default:
+        return "TBD";
+    }
+  }
+
+  Map<String, dynamic> toMap() {
+    return {'type': type.name, 'level': level, 'isLocked': isLocked};
+  }
+
+  factory Facility.fromMap(Map<String, dynamic> map) {
+    return Facility(
+      type: FacilityType.values.firstWhere(
+        (e) => e.name == map['type'],
+        orElse: () => FacilityType.teamOffice,
+      ),
+      level: map['level'] ?? 0,
+      isLocked: map['isLocked'] ?? false,
+    );
+  }
+
+  Facility copyWith({int? level, bool? isLocked}) {
+    return Facility(
+      type: type,
+      level: level ?? this.level,
+      isLocked: isLocked ?? this.isLocked,
     );
   }
 }

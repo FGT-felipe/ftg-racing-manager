@@ -48,20 +48,20 @@ Esta escala proporciona feedback inmediato sobre la calidad de una estadística 
 El sistema tipográfico utiliza una combinación de dos fuentes para separar la estructura de la narrativa.
 
 ### Estilos Principales
-- **Outfit (Google Fonts)**: Utilizada para **Headlines** y títulos de gran impacto.
-  - Carácter: Moderno, geométrico, audaz.
-  - Peso: Principalmente `Bold` (700) o `Extra Bold`.
-- **Inter (Google Fonts)**: Utilizada para **Body text**, botones y datos.
-  - Carácter: Alta legibilidad en tamaños pequeños.
+- **Poppins Black (Google Fonts)**: Utilizada para **Headlines** y títulos de gran impacto.
+  - Carácter: Moderno, agresivo, audaz.
+  - Peso: `Black` (900).
+- **Raleway (Google Fonts)**: Utilizada para **Body text**, botones, datos y metadatos.
+  - Carácter: Elegante, alta legibilidad.
   - Peso: `Regular` (400) para lectura, `Bold` (700) para énfasis/botones.
 
 ### Escala de Texto (Provisional)
-- **H1 (AppBar/Title)**: 20px, Outfit Bold.
-- **H2 (Section Header)**: 18px, Outfit Bold.
-- **Body Large**: 16px, Inter Regular.
-- **Body Medium**: 14px, Inter Regular.
-- **Table Data**: 12px, Inter Medium.
-- **Labels/Overlines**: 10-11px, Inter Bold (Uppercase, Letter Spacing 1.2+).
+- **H1 (AppBar/Title)**: 20px, Poppins Black (Uppercase, Letter Spacing 1.5).
+- **H2 (Section Header)**: 18px, Poppins Black.
+- **Body Large**: 16px, Raleway Regular.
+- **Body Medium**: 14px, Raleway Regular.
+- **Table Data**: 12px, Raleway Medium.
+- **Labels/Overlines**: 10-11px, Raleway Bold (Uppercase, Letter Spacing 1.2+).
 
 ---
 
@@ -79,7 +79,7 @@ Utilizadas para guiar al usuario en secciones complejas (Garage, Sponsors).
 - **Fondo**: Gradiente lineal de `TopLeft` (Primary con 15% opacidad) a `BottomRight` (Surface).
 - **Borde**: Borde completo de 1px en color `Primary` con 20% de opacidad.
 - **Layout**: 
-  - Fila superior con ícono (32px) y título en `Outfit Bold` (Primary 90% opacidad).
+  - Fila superior con ícono (32px) y título en `Poppins Black` (Primary 90% opacidad).
   - Cuerpo de texto descriptivo con altura de línea `1.5`.
 - **Ubicación**: Siempre en la parte superior de la vista, ocupando el 100% del ancho disponible.
 
@@ -88,6 +88,22 @@ Utilizadas en hubs de gestión (ej. Personal Screen).
 - **Interactividad**: Efecto `InkWell` para navegación.
 - **Estado Bloqueado**: Opacidad del 50% en el color de fondo e íconos en gris.
 - **Badge "Soon"**: Cintilla diagonal roja (`RedAccent`) en la esquina superior derecha rotada 45 grados para funcionalidades en desarrollo.
+
+#### 3. Tarjetas de Instalaciones (Facility Cards)
+Diseñadas para mostrar progresión y costos operativos.
+- **Relación de Aspecto**: 1.0 (Cuadrada).
+- **Estructura Interna**:
+  - **Nivel (Solo si está comprada)**: Texto "LEVEL X" en la parte superior (`Raleway Bold`, 9px, letter-spacing 1.2) seguido de un divisor tenue.
+  - **Parte Superior**: Ícono centrado (34-40px) y Título (`Poppins Black`, 14-16px).
+  - **Divisor Central**: Línea tenue (`White10` o opacidad 0.1) que separa la cabecera de los detalles técnicos.
+  - **Sección de Detalles**: Texto alineado a la izquierda (`Raleway`, 11-12px) con etiquetas:
+    - *Purchase/Upgrade Level*: Costo de inversión.
+    - *Maintenance Cost*: Costo operativo semanal (Color sutil/muted).
+    - *Bonus*: Beneficio otorgado por el nivel actual.
+- **Interactividad**: Botón de acción (`ElevatedButton`) alineado a la derecha en la sección inferior.
+- **Estados**: 
+  - *Bloqueado/Soon*: Opacidad 50%, íconos grises, cinta "SOON".
+  - *Activo*: Colores vibrantes, detalles visibles.
 
 ### Interactividad (Buttons & Selectors)
 - **Elevated Buttons**: Altura generosa (12-16px padding vertical), 8px border radius. Look moderno de "Flat neumorphism".
