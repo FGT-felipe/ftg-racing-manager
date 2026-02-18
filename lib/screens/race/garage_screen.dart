@@ -3,9 +3,11 @@ import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import '../../models/core_models.dart';
 import '../../models/simulation_models.dart';
+import '../../services/driver_assignment_service.dart';
 import '../../services/race_service.dart';
 import '../../services/circuit_service.dart';
 import '../../services/time_service.dart';
+import '../../services/driver_portrait_service.dart';
 import '../../utils/app_constants.dart';
 
 class GarageScreen extends StatefulWidget {
@@ -36,7 +38,12 @@ class _GarageScreenState extends State<GarageScreen>
   Map<String, int> _driverLaps = {};
 
   // Per-driver setups: driverId -> CarSetup
-  final Map<String, CarSetup> _driverSetups = {};
+  final Map<String, CarSetup> _driverPracticeSetups = {};
+  final Map<String, CarSetup> _driverQualifyingSetups = {};
+  final Map<String, CarSetup> _driverRaceSetups = {};
+
+  final Map<String, bool> _qualifyingSetupsSubmitted = {};
+  final Map<String, bool> _raceSetupsSubmitted = {};
 
   // Per-driver lap history: driverId -> [{lapTime, confidence, feedback}]
   final Map<String, List<Map<String, dynamic>>> _driverLapHistory = {};
@@ -46,12 +53,6 @@ class _GarageScreenState extends State<GarageScreen>
 
   // Setup tab: 0=Practice, 1=Qualifying, 2=Race
   late TabController _tabController;
-
-  // Qualifying & Race setups (team-level)
-  CarSetup _qualifyingSetup = CarSetup();
-  CarSetup _raceSetup = CarSetup();
-  bool _qualifyingSetupSubmitted = false;
-  bool _raceSetupSubmitted = false;
 
   @override
   void initState() {
@@ -69,7 +70,25 @@ class _GarageScreenState extends State<GarageScreen>
   Future<void> _loadInitialData() async {
     setState(() => _isLoading = true);
     try {
-      // 1. Fetch Team
+      // 1. Fetch Drivers first so we can map setups
+      _drivers = await DriverAssignmentService().getDriversByTeam(
+        widget.teamId,
+      );
+
+      if (_drivers.isNotEmpty) {
+        _selectedDriverId = _drivers.first.id;
+        for (var driver in _drivers) {
+          _driverLaps.putIfAbsent(driver.id, () => 0);
+          _driverPracticeSetups.putIfAbsent(driver.id, () => CarSetup());
+          _driverQualifyingSetups.putIfAbsent(driver.id, () => CarSetup());
+          _driverRaceSetups.putIfAbsent(driver.id, () => CarSetup());
+          _driverLapHistory.putIfAbsent(driver.id, () => []);
+          _qualifyingSetupsSubmitted.putIfAbsent(driver.id, () => false);
+          _raceSetupsSubmitted.putIfAbsent(driver.id, () => false);
+        }
+      }
+
+      // 2. Fetch Team
       final teamDoc = await FirebaseFirestore.instance
           .collection('teams')
           .doc(widget.teamId)
@@ -80,40 +99,29 @@ class _GarageScreenState extends State<GarageScreen>
         if (team.weekStatus['practiceLaps'] != null) {
           _driverLaps = Map<String, int>.from(team.weekStatus['practiceLaps']);
         }
-        // Load qualifying setup if already submitted
-        if (team.weekStatus['qualifyingSetup'] != null) {
-          _qualifyingSetup = CarSetup.fromMap(
-            Map<String, dynamic>.from(team.weekStatus['qualifyingSetup']),
-          );
-          _qualifyingSetupSubmitted =
-              team.weekStatus['setupSubmittedAt'] != null;
-        }
-        // Load race setup if already submitted
-        if (team.weekStatus['raceSetup'] != null) {
-          _raceSetup = CarSetup.fromMap(
-            Map<String, dynamic>.from(team.weekStatus['raceSetup']),
-          );
-          _raceSetupSubmitted = team.weekStatus['raceSetupSubmittedAt'] != null;
-        }
-      }
 
-      // 2. Fetch Drivers
-      final driversSnapshot = await FirebaseFirestore.instance
-          .collection('teams')
-          .doc(widget.teamId)
-          .collection('drivers')
-          .get();
+        // Load qualifying and race setups from weekStatus if they exist (backward compatibility or initial load)
+        final driverSetupsData = team.weekStatus['driverSetups'] != null
+            ? Map<String, dynamic>.from(team.weekStatus['driverSetups'])
+            : null;
 
-      _drivers = driversSnapshot.docs
-          .map((d) => Driver.fromMap(d.data()))
-          .toList();
-
-      if (_drivers.isNotEmpty) {
-        _selectedDriverId = _drivers.first.id;
-        for (var driver in _drivers) {
-          _driverLaps.putIfAbsent(driver.id, () => 0);
-          _driverSetups.putIfAbsent(driver.id, () => CarSetup());
-          _driverLapHistory.putIfAbsent(driver.id, () => []);
+        if (driverSetupsData != null) {
+          driverSetupsData.forEach((dId, data) {
+            final driverData = Map<String, dynamic>.from(data);
+            if (driverData['qualifying'] != null) {
+              _driverQualifyingSetups[dId] = CarSetup.fromMap(
+                Map<String, dynamic>.from(driverData['qualifying']),
+              );
+              _qualifyingSetupsSubmitted[dId] =
+                  driverData['qualifyingSubmitted'] == true;
+            }
+            if (driverData['race'] != null) {
+              _driverRaceSetups[dId] = CarSetup.fromMap(
+                Map<String, dynamic>.from(driverData['race']),
+              );
+              _raceSetupsSubmitted[dId] = driverData['raceSubmitted'] == true;
+            }
+          });
         }
       }
 
@@ -147,9 +155,9 @@ class _GarageScreenState extends State<GarageScreen>
         final data = doc.data();
         final driverId = data['driverId'] as String;
 
-        // Load setup from most recent run for each driver
+        // Load setup from most recent run for each driver if not already loaded from team doc
         if (!setupLoaded.contains(driverId) && data['setupUsed'] != null) {
-          _driverSetups[driverId] = CarSetup.fromMap(
+          _driverPracticeSetups[driverId] = CarSetup.fromMap(
             Map<String, dynamic>.from(data['setupUsed']),
           );
           setupLoaded.add(driverId);
@@ -200,13 +208,23 @@ class _GarageScreenState extends State<GarageScreen>
     });
   }
 
-  CarSetup get _currentDriverSetup {
-    return _driverSetups[_selectedDriverId] ?? CarSetup();
+  CarSetup get _currentDriverPracticeSetup {
+    return _driverPracticeSetups[_selectedDriverId] ?? CarSetup();
   }
 
-  void _updateCurrentDriverSetup(CarSetup setup) {
+  CarSetup get _currentDriverQualifyingSetup {
+    return _driverQualifyingSetups[_selectedDriverId] ?? CarSetup();
+  }
+
+  CarSetup get _currentDriverRaceSetup {
+    return _driverRaceSetups[_selectedDriverId] ?? CarSetup();
+  }
+
+  void _updateCurrentDriverSetup(CarSetup setup, {int tabIndex = 0}) {
     if (_selectedDriverId != null) {
-      _driverSetups[_selectedDriverId!] = setup;
+      if (tabIndex == 0) _driverPracticeSetups[_selectedDriverId!] = setup;
+      if (tabIndex == 1) _driverQualifyingSetups[_selectedDriverId!] = setup;
+      if (tabIndex == 2) _driverRaceSetups[_selectedDriverId!] = setup;
     }
   }
 
@@ -237,7 +255,7 @@ class _GarageScreenState extends State<GarageScreen>
       if (!teamDoc.exists) throw Exception("Team not found");
       final team = Team.fromMap(teamDoc.data()!);
       final driver = _drivers.firstWhere((d) => d.id == _selectedDriverId);
-      final setup = _currentDriverSetup;
+      final setup = _currentDriverPracticeSetup;
 
       final result = RaceService().simulatePracticeRun(
         circuit: _circuit!,
@@ -292,7 +310,7 @@ class _GarageScreenState extends State<GarageScreen>
         'setup': setup.copyWith(), // Copy the setup used
       });
 
-      // Save practice result
+      // Save practice result per driver
       await FirebaseFirestore.instance
           .collection('teams')
           .doc(widget.teamId)
@@ -313,9 +331,11 @@ class _GarageScreenState extends State<GarageScreen>
           .collection('teams')
           .doc(widget.teamId)
           .update({
-            'weekStatus.currentSetup': setup.toMap(),
-            'weekStatus.setupConfidence': result.setupConfidence,
             'weekStatus.practiceLaps': _driverLaps,
+            'weekStatus.driverSetups.$_selectedDriverId.practice': setup
+                .toMap(),
+            'weekStatus.driverSetups.$_selectedDriverId.practiceConfidence':
+                result.setupConfidence,
           });
 
       setState(() {
@@ -333,39 +353,24 @@ class _GarageScreenState extends State<GarageScreen>
   }
 
   Future<void> _saveQualifyingSetup() async {
+    if (_selectedDriverId == null) return;
     setState(() => _isLoading = true);
     try {
-      final totalLaps = _driverLaps.values.fold<int>(0, (s, l) => s + l);
-      if (totalLaps < 1) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text("Complete at least 1 practice lap first"),
-            backgroundColor: Colors.orange,
-          ),
-        );
-        return;
-      }
-
-      await FirebaseFirestore.instance
-          .collection('teams')
-          .doc(widget.teamId)
-          .collection('current_event')
-          .doc('qualifying_setup')
-          .set({
-            'setup': _qualifyingSetup.toMap(),
-            'submittedAt': FieldValue.serverTimestamp(),
-            'practiceLapsCompleted': totalLaps,
-          });
+      final setup = _currentDriverQualifyingSetup;
 
       await FirebaseFirestore.instance
           .collection('teams')
           .doc(widget.teamId)
           .update({
-            'weekStatus.qualifyingSetup': _qualifyingSetup.toMap(),
-            'weekStatus.setupSubmittedAt': FieldValue.serverTimestamp(),
+            'weekStatus.driverSetups.$_selectedDriverId.qualifying': setup
+                .toMap(),
+            'weekStatus.driverSetups.$_selectedDriverId.qualifyingSubmitted':
+                true,
+            'weekStatus.driverSetups.$_selectedDriverId.qualifyingSubmittedAt':
+                FieldValue.serverTimestamp(),
           });
 
-      setState(() => _qualifyingSetupSubmitted = true);
+      setState(() => _qualifyingSetupsSubmitted[_selectedDriverId!] = true);
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
@@ -386,27 +391,22 @@ class _GarageScreenState extends State<GarageScreen>
   }
 
   Future<void> _saveRaceSetup() async {
+    if (_selectedDriverId == null) return;
     setState(() => _isLoading = true);
     try {
-      await FirebaseFirestore.instance
-          .collection('teams')
-          .doc(widget.teamId)
-          .collection('current_event')
-          .doc('race_setup')
-          .set({
-            'setup': _raceSetup.toMap(),
-            'submittedAt': FieldValue.serverTimestamp(),
-          });
+      final setup = _currentDriverRaceSetup;
 
       await FirebaseFirestore.instance
           .collection('teams')
           .doc(widget.teamId)
           .update({
-            'weekStatus.raceSetup': _raceSetup.toMap(),
-            'weekStatus.raceSetupSubmittedAt': FieldValue.serverTimestamp(),
+            'weekStatus.driverSetups.$_selectedDriverId.race': setup.toMap(),
+            'weekStatus.driverSetups.$_selectedDriverId.raceSubmitted': true,
+            'weekStatus.driverSetups.$_selectedDriverId.raceSubmittedAt':
+                FieldValue.serverTimestamp(),
           });
 
-      setState(() => _raceSetupSubmitted = true);
+      setState(() => _raceSetupsSubmitted[_selectedDriverId!] = true);
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
@@ -541,11 +541,11 @@ class _GarageScreenState extends State<GarageScreen>
               _buildSetupCard(
                 theme,
                 "PRACTICE SETUP",
-                _currentDriverSetup,
+                _currentDriverPracticeSetup,
                 isPaddockOpen,
                 (field, val) {
                   setState(() {
-                    final s = _currentDriverSetup;
+                    final s = _currentDriverPracticeSetup;
                     switch (field) {
                       case 'frontWing':
                         s.frontWing = val;
@@ -558,7 +558,14 @@ class _GarageScreenState extends State<GarageScreen>
                       case 'tyrePressure':
                         s.tyrePressure = val;
                     }
-                    _updateCurrentDriverSetup(s);
+                    _updateCurrentDriverSetup(s, tabIndex: 0);
+                  });
+                },
+                (compound) {
+                  setState(() {
+                    final s = _currentDriverPracticeSetup;
+                    s.tyreCompound = compound;
+                    _updateCurrentDriverSetup(s, tabIndex: 0);
                   });
                 },
               ),
@@ -635,6 +642,10 @@ class _GarageScreenState extends State<GarageScreen>
   // ─── QUALIFYING TAB ───
 
   Widget _buildQualifyingTab(ThemeData theme, bool isPaddockOpen) {
+    if (_selectedDriverId == null)
+      return const Center(child: Text("Select a driver"));
+    final isSubmitted = _qualifyingSetupsSubmitted[_selectedDriverId] == true;
+
     return ListView(
       padding: const EdgeInsets.all(16),
       children: [
@@ -664,7 +675,7 @@ class _GarageScreenState extends State<GarageScreen>
         ),
         const SizedBox(height: 16),
 
-        if (_qualifyingSetupSubmitted)
+        if (isSubmitted)
           Container(
             padding: const EdgeInsets.all(12),
             decoration: BoxDecoration(
@@ -691,28 +702,37 @@ class _GarageScreenState extends State<GarageScreen>
         _buildSetupCard(
           theme,
           "QUALIFYING SETUP",
-          _qualifyingSetup,
-          isPaddockOpen && !_qualifyingSetupSubmitted,
+          _currentDriverQualifyingSetup,
+          isPaddockOpen && !isSubmitted,
           (field, val) {
             setState(() {
+              final s = _currentDriverQualifyingSetup;
               switch (field) {
                 case 'frontWing':
-                  _qualifyingSetup.frontWing = val;
+                  s.frontWing = val;
                 case 'rearWing':
-                  _qualifyingSetup.rearWing = val;
+                  s.rearWing = val;
                 case 'suspension':
-                  _qualifyingSetup.suspension = val;
+                  s.suspension = val;
                 case 'gearRatio':
-                  _qualifyingSetup.gearRatio = val;
+                  s.gearRatio = val;
                 case 'tyrePressure':
-                  _qualifyingSetup.tyrePressure = val;
+                  s.tyrePressure = val;
               }
+              _updateCurrentDriverSetup(s, tabIndex: 1);
+            });
+          },
+          (compound) {
+            setState(() {
+              final s = _currentDriverQualifyingSetup;
+              s.tyreCompound = compound;
+              _updateCurrentDriverSetup(s, tabIndex: 1);
             });
           },
         ),
         const SizedBox(height: 16),
 
-        if (!_qualifyingSetupSubmitted)
+        if (!isSubmitted)
           SizedBox(
             width: double.infinity,
             child: ElevatedButton.icon(
@@ -739,6 +759,10 @@ class _GarageScreenState extends State<GarageScreen>
   // ─── RACE TAB ───
 
   Widget _buildRaceTab(ThemeData theme, bool isPaddockOpen) {
+    if (_selectedDriverId == null)
+      return const Center(child: Text("Select a driver"));
+    final isSubmitted = _raceSetupsSubmitted[_selectedDriverId] == true;
+
     return ListView(
       padding: const EdgeInsets.all(16),
       children: [
@@ -768,7 +792,7 @@ class _GarageScreenState extends State<GarageScreen>
         ),
         const SizedBox(height: 16),
 
-        if (_raceSetupSubmitted)
+        if (isSubmitted)
           Container(
             padding: const EdgeInsets.all(12),
             decoration: BoxDecoration(
@@ -795,28 +819,37 @@ class _GarageScreenState extends State<GarageScreen>
         _buildSetupCard(
           theme,
           "RACE SETUP",
-          _raceSetup,
-          isPaddockOpen && !_raceSetupSubmitted,
+          _currentDriverRaceSetup,
+          isPaddockOpen && !isSubmitted,
           (field, val) {
             setState(() {
+              final s = _currentDriverRaceSetup;
               switch (field) {
                 case 'frontWing':
-                  _raceSetup.frontWing = val;
+                  s.frontWing = val;
                 case 'rearWing':
-                  _raceSetup.rearWing = val;
+                  s.rearWing = val;
                 case 'suspension':
-                  _raceSetup.suspension = val;
+                  s.suspension = val;
                 case 'gearRatio':
-                  _raceSetup.gearRatio = val;
+                  s.gearRatio = val;
                 case 'tyrePressure':
-                  _raceSetup.tyrePressure = val;
+                  s.tyrePressure = val;
               }
+              _updateCurrentDriverSetup(s, tabIndex: 2);
+            });
+          },
+          (compound) {
+            setState(() {
+              final s = _currentDriverRaceSetup;
+              s.tyreCompound = compound;
+              _updateCurrentDriverSetup(s, tabIndex: 2);
             });
           },
         ),
         const SizedBox(height: 16),
 
-        if (!_raceSetupSubmitted)
+        if (!isSubmitted)
           SizedBox(
             width: double.infinity,
             child: ElevatedButton.icon(
@@ -852,6 +885,15 @@ class _GarageScreenState extends State<GarageScreen>
           final laps = _driverLaps[driver.id] ?? 0;
           final maxed = laps >= kMaxPracticeLapsPerDriver;
 
+          final portraitUrl =
+              driver.portraitUrl ??
+              DriverPortraitService().getEffectivePortraitUrl(
+                driverId: driver.id,
+                countryCode: driver.countryCode,
+                gender: driver.gender,
+                age: driver.age,
+              );
+
           return GestureDetector(
             onTap: () => _onDriverChanged(driver.id),
             child: AnimatedContainer(
@@ -873,16 +915,24 @@ class _GarageScreenState extends State<GarageScreen>
               child: Row(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  CircleAvatar(
-                    radius: 18,
-                    backgroundColor: _driverColor(driver.name),
-                    child: Text(
-                      driver.name.substring(0, 1).toUpperCase(),
-                      style: const TextStyle(
-                        color: Colors.white,
-                        fontWeight: FontWeight.bold,
-                        fontSize: 14,
+                  Container(
+                    width: 36,
+                    height: 36,
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      color: _driverColor(driver.name),
+                      image: DecorationImage(
+                        image: portraitUrl.startsWith('http')
+                            ? NetworkImage(portraitUrl) as ImageProvider
+                            : AssetImage(portraitUrl),
+                        fit: BoxFit.cover,
                       ),
+                      border: isSelected
+                          ? Border.all(
+                              color: theme.colorScheme.secondary,
+                              width: 1.5,
+                            )
+                          : null,
                     ),
                   ),
                   const SizedBox(width: 10),
@@ -1011,6 +1061,7 @@ class _GarageScreenState extends State<GarageScreen>
     CarSetup setup,
     bool editable,
     void Function(String field, int value) onChanged,
+    ValueChanged<TyreCompound>? onCompoundChanged,
   ) {
     return Card(
       color: theme.cardTheme.color,
@@ -1064,6 +1115,58 @@ class _GarageScreenState extends State<GarageScreen>
                   "Tyre Pressure",
                   setup.tyrePressure,
                   (v) => onChanged('tyrePressure', v),
+                ),
+                const SizedBox(height: 12),
+                const Text(
+                  "Tyre Compound",
+                  style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold),
+                ),
+                const SizedBox(height: 4),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: TyreCompound.values.map((compound) {
+                    final isSelected = setup.tyreCompound == compound;
+                    Color compoundColor;
+                    switch (compound) {
+                      case TyreCompound.soft:
+                        compoundColor = Colors.red;
+                      case TyreCompound.medium:
+                        compoundColor = Colors.yellow;
+                      case TyreCompound.hard:
+                        compoundColor = Colors.white;
+                      case TyreCompound.wet:
+                        compoundColor = Colors.blue;
+                    }
+
+                    return InkWell(
+                      onTap: () => onCompoundChanged?.call(compound),
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 10,
+                          vertical: 6,
+                        ),
+                        decoration: BoxDecoration(
+                          color: isSelected
+                              ? compoundColor.withValues(alpha: 0.2)
+                              : Colors.transparent,
+                          border: Border.all(
+                            color: isSelected
+                                ? compoundColor
+                                : Colors.grey.withValues(alpha: 0.3),
+                          ),
+                          borderRadius: BorderRadius.circular(6),
+                        ),
+                        child: Text(
+                          compound.name.toUpperCase(),
+                          style: TextStyle(
+                            fontSize: 10,
+                            fontWeight: FontWeight.bold,
+                            color: isSelected ? compoundColor : Colors.grey,
+                          ),
+                        ),
+                      ),
+                    );
+                  }).toList(),
                 ),
               ],
             ),

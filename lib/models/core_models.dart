@@ -19,6 +19,7 @@ class RaceEvent {
   final String id;
   final String trackName;
   final String countryCode;
+  final String flagEmoji;
 
   /// Circuit identifier for CircuitService (e.g. 'interlagos', 'monza').
   /// Used to get ideal setup and lap time. If null/empty, generic circuit is used.
@@ -34,6 +35,7 @@ class RaceEvent {
     required this.id,
     required this.trackName,
     required this.countryCode,
+    this.flagEmoji = '🏁',
     this.circuitId = 'generic',
     required this.date,
     required this.isCompleted,
@@ -48,6 +50,7 @@ class RaceEvent {
       'id': id,
       'trackName': trackName,
       'countryCode': countryCode,
+      'flagEmoji': flagEmoji,
       'circuitId': circuitId,
       'date': Timestamp.fromDate(date),
       'isCompleted': isCompleted,
@@ -73,6 +76,7 @@ class RaceEvent {
       id: map['id'] ?? '',
       trackName: map['trackName'] ?? '',
       countryCode: map['countryCode'] ?? '',
+      flagEmoji: map['flagEmoji'] ?? '🏁',
       circuitId: map['circuitId'] ?? 'generic',
       date: date,
       isCompleted: map['isCompleted'] ?? false,
@@ -368,7 +372,7 @@ class Team {
   final int wins;
   final int podiums;
   final int poles;
-  final Map<String, int> carStats;
+  final Map<String, Map<String, int>> carStats;
   final Map<String, dynamic> weekStatus;
   final Map<String, ActiveContract> sponsors;
 
@@ -407,6 +411,47 @@ class Team {
   }
 
   factory Team.fromMap(Map<String, dynamic> map) {
+    // Migration logic for carStats
+    Map<String, Map<String, int>> carStatsMap = {};
+    final rawCarStats = map['carStats'];
+
+    if (rawCarStats is Map) {
+      if (rawCarStats.containsKey('0') || rawCarStats.containsKey('1')) {
+        // New structure
+        carStatsMap = {
+          '0': Map<String, int>.from(
+            rawCarStats['0'] ??
+                {'aero': 1, 'powertrain': 1, 'chassis': 1, 'reliability': 1},
+          ),
+          '1': Map<String, int>.from(
+            rawCarStats['1'] ??
+                {'aero': 1, 'powertrain': 1, 'chassis': 1, 'reliability': 1},
+          ),
+        };
+      } else {
+        // Old structure: migrate single car stats to both cars
+        final stats = Map<String, int>.from(rawCarStats);
+        // Rename engine to powertrain if it exists
+        if (stats.containsKey('engine')) {
+          stats['powertrain'] = stats.remove('engine')!;
+        }
+        stats.putIfAbsent('chassis', () => 1);
+        carStatsMap = {'0': stats, '1': Map<String, int>.from(stats)};
+      }
+    } else {
+      // Default
+      final defaultStats = {
+        'aero': 1,
+        'powertrain': 1,
+        'chassis': 1,
+        'reliability': 1,
+      };
+      carStatsMap = {
+        '0': defaultStats,
+        '1': Map<String, int>.from(defaultStats),
+      };
+    }
+
     return Team(
       id: map['id'] ?? '',
       name: map['name'] ?? '',
@@ -418,9 +463,7 @@ class Team {
       wins: map['wins'] ?? 0,
       podiums: map['podiums'] ?? 0,
       poles: map['poles'] ?? 0,
-      carStats: Map<String, int>.from(
-        map['carStats'] ?? {'aero': 50, 'engine': 50, 'reliability': 50},
-      ),
+      carStats: carStatsMap,
       weekStatus: Map<String, dynamic>.from(map['weekStatus'] ?? {}),
       sponsors: (map['sponsors'] as Map<String, dynamic>? ?? {}).map(
         (k, v) =>
@@ -430,23 +473,188 @@ class Team {
   }
 }
 
+/// Rasgos especiales que puede tener un piloto.
+/// Cada rasgo otorga bonificaciones o penalizaciones en la simulación.
+enum DriverTrait {
+  /// Arranca muy bien la primera vuelta (+5 overtaking en vuelta 1)
+  firstLapHero,
+
+  /// Padre o familiar famoso en el mundo del motor (mejora marketability)
+  famousFamily,
+
+  /// Experto en lluvia (+10 adaptability en condiciones húmedas)
+  rainMaster,
+
+  /// Piloto agresivo (mejor overtaking, pero más riesgo de colisión)
+  aggressive,
+
+  /// Suavísimo con los neumáticos (reduce desgaste un 15%)
+  tyreSaver,
+
+  /// Piloto veterano experimentado (consistency +5 después de los 35)
+  veteran,
+
+  /// Joven promesa (aprende un 20% más rápido antes de los 23)
+  youngProdigy,
+}
+
+/// Nombres legibles para los rasgos
+extension DriverTraitExtension on DriverTrait {
+  String get displayName {
+    switch (this) {
+      case DriverTrait.firstLapHero:
+        return 'Héroe de la Primera Vuelta';
+      case DriverTrait.famousFamily:
+        return 'Familia Famosa';
+      case DriverTrait.rainMaster:
+        return 'Maestro de la Lluvia';
+      case DriverTrait.aggressive:
+        return 'Piloto Agresivo';
+      case DriverTrait.tyreSaver:
+        return 'Cuidador de Neumáticos';
+      case DriverTrait.veteran:
+        return 'Veterano Experimentado';
+      case DriverTrait.youngProdigy:
+        return 'Joven Prodigio';
+    }
+  }
+
+  String get description {
+    switch (this) {
+      case DriverTrait.firstLapHero:
+        return '+5 Adelantamiento en la primera vuelta';
+      case DriverTrait.famousFamily:
+        return '+10 Comercialidad';
+      case DriverTrait.rainMaster:
+        return '+10 Adaptabilidad en lluvia';
+      case DriverTrait.aggressive:
+        return '+5 Adelantamiento, mayor riesgo de colisión';
+      case DriverTrait.tyreSaver:
+        return '-15% desgaste de neumáticos';
+      case DriverTrait.veteran:
+        return '+5 Consistencia después de los 35';
+      case DriverTrait.youngProdigy:
+        return '+20% velocidad de aprendizaje antes de los 23';
+    }
+  }
+}
+
+/// Claves de estadísticas del piloto.
+/// Usadas para acceder a [Driver.stats] y [Driver.statPotentials].
+class DriverStats {
+  // --- Habilidades de Conducción ---
+  /// Qué tan tarde puede frenar antes de una curva. Reduce bloqueo de neumáticos.
+  static const String braking = 'braking';
+
+  /// Velocidad de paso por curva y precisión en la línea de carrera.
+  static const String cornering = 'cornering';
+
+  /// Reduce la tasa de desgaste de neumáticos. Crítico para estrategia.
+  static const String smoothness = 'smoothness';
+
+  /// Capacidad para ver huecos y concretar maniobras de rebase.
+  static const String overtaking = 'overtaking';
+
+  /// Reduce la variabilidad de tiempos de vuelta.
+  static const String consistency = 'consistency';
+
+  /// Rapidez para adaptarse a cambios de setup y condiciones climáticas.
+  static const String adaptability = 'adaptability';
+
+  // --- Estadísticas Mentales y de Equipo ---
+  /// Controla la caída de rendimiento físico durante la carrera.
+  static const String fitness = 'fitness';
+
+  /// Velocidad y precisión para generar puntos de conocimiento en prácticas.
+  static const String feedback = 'feedback';
+
+  /// Probabilidad de cometer errores bajo presión o verse en colisiones.
+  static const String focus = 'focus';
+
+  /// Felicidad del piloto. Alta moral mejora rendimiento.
+  static const String morale = 'morale';
+
+  // --- Atributos Externos ---
+  /// Atrae mejores patrocinadores. Crucial para las finanzas del equipo.
+  static const String marketability = 'marketability';
+
+  /// Lista de todas las claves de stats de conducción (afectan tiempos de vuelta)
+  static const List<String> drivingStats = [
+    braking,
+    cornering,
+    smoothness,
+    overtaking,
+    consistency,
+    adaptability,
+  ];
+
+  /// Lista de todas las claves de stats mentales
+  static const List<String> mentalStats = [fitness, feedback, focus, morale];
+
+  /// Lista de todas las claves de stats
+  static const List<String> all = [
+    braking,
+    cornering,
+    smoothness,
+    overtaking,
+    consistency,
+    adaptability,
+    fitness,
+    feedback,
+    focus,
+    morale,
+    marketability,
+  ];
+
+  /// Stats que declinan con la edad (físicos)
+  static const List<String> physicalStats = [fitness, braking];
+
+  /// Stats que pueden mejorar con la experiencia (veteranos)
+  static const List<String> experienceStats = [feedback, consistency, focus];
+}
+
 class Driver {
   final String id;
   final String? teamId;
+  final int carIndex; // 0 for Car A, 1 for Car B
   final String name;
   final int age;
+
+  /// Potencial global como estrellas de ojeo (1-5).
+  /// Indica el techo general del piloto visible para el manager.
+  /// El potencial real por stat está en [statPotentials].
   final int potential;
+
   final int points;
   final String gender;
   final int races;
   final int wins;
   final int podiums;
   final int poles;
+
+  /// Estadísticas actuales del piloto (0-100 por stat).
+  /// Claves definidas en [DriverStats].
   final Map<String, int> stats;
+
+  /// Potencial máximo por estadística (0-100).
+  /// Un piloto no puede superar este techo sin importar cuánto entrene.
+  /// Si está vacío, se usa [potential] * 20 como techo global.
+  final Map<String, int> statPotentials;
+
+  /// Rasgos especiales del piloto.
+  final List<DriverTrait> traits;
+
+  final String countryCode;
+  final String role; // 'Main', 'Second', 'Equal', 'Reserve'
+  final int salary;
+  final int contractYearsRemaining;
+  final Map<String, double> weeklyGrowth;
+  final String? portraitUrl;
 
   Driver({
     required this.id,
     this.teamId,
+    this.carIndex = 0,
     required this.name,
     required this.age,
     required this.potential,
@@ -457,12 +665,43 @@ class Driver {
     this.podiums = 0,
     this.poles = 0,
     required this.stats,
+    this.statPotentials = const {},
+    this.traits = const [],
+    this.countryCode = 'BR',
+    this.role = 'Equal Status',
+    this.salary = 500000,
+    this.contractYearsRemaining = 1,
+    this.weeklyGrowth = const {},
+    this.portraitUrl,
   });
+
+  /// Retorna el potencial máximo de una estadística específica.
+  /// Si no está definido en [statPotentials], usa [potential] * 20 como techo.
+  int getStatPotential(String statKey) {
+    return statPotentials[statKey] ?? (potential * 20).clamp(0, 100);
+  }
+
+  /// Retorna el valor actual de una estadística, con fallback a 50.
+  int getStat(String statKey) => stats[statKey] ?? 50;
+
+  /// Calcula el multiplicador de edad para el entrenamiento.
+  /// < 22: aprende rápido (1.5x)
+  /// 22-35: prime (1.0x)
+  /// > 35: declive (-1.0x para stats físicos)
+  double get ageTrainingMultiplier {
+    if (age < 22) return 1.5;
+    if (age <= 35) return 1.0;
+    return 0.5; // Puede seguir mejorando experiencia, pero más lento
+  }
+
+  /// Retorna true si el piloto tiene un rasgo específico.
+  bool hasTrait(DriverTrait trait) => traits.contains(trait);
 
   Map<String, dynamic> toMap() {
     return {
       'id': id,
       'teamId': teamId,
+      'carIndex': carIndex,
       'name': name,
       'age': age,
       'potential': potential,
@@ -473,25 +712,139 @@ class Driver {
       'podiums': podiums,
       'poles': poles,
       'stats': stats,
+      'statPotentials': statPotentials,
+      'traits': traits.map((t) => t.name).toList(),
+      'countryCode': countryCode,
+      'role': role,
+      'salary': salary,
+      'contractYearsRemaining': contractYearsRemaining,
+      'weeklyGrowth': weeklyGrowth,
+      'portraitUrl': portraitUrl,
     };
   }
 
   factory Driver.fromMap(Map<String, dynamic> map) {
+    // Migración: si tiene stats viejos (speed, racecraft, defending), convertirlos
+    Map<String, int> rawStats = Map<String, int>.from(map['stats'] ?? {});
+    final migratedStats = _migrateOldStats(rawStats);
+
+    // Parsear traits
+    final rawTraits = (map['traits'] as List? ?? []);
+    final parsedTraits = rawTraits
+        .map((t) => DriverTrait.values.where((e) => e.name == t).firstOrNull)
+        .whereType<DriverTrait>()
+        .toList();
+
     return Driver(
       id: map['id'] ?? '',
       teamId: map['teamId'],
+      carIndex: map['carIndex'] ?? 0,
       name: map['name'] ?? 'Unknown Driver',
       age: map['age'] ?? 21,
-      potential: map['potential'] ?? 50,
+      potential: map['potential'] ?? 3,
       points: map['points'] ?? 0,
       gender: map['gender'] ?? 'M',
       races: map['races'] ?? 0,
       wins: map['wins'] ?? 0,
       podiums: map['podiums'] ?? 0,
       poles: map['poles'] ?? 0,
-      stats: Map<String, int>.from(
-        map['stats'] ?? {'speed': 50, 'cornering': 50, 'consistency': 50},
+      stats: migratedStats,
+      statPotentials: Map<String, int>.from(map['statPotentials'] ?? {}),
+      traits: parsedTraits,
+      countryCode: map['countryCode'] ?? 'BR',
+      role: map['role'] ?? 'Equal Status',
+      salary: map['salary'] ?? 500000,
+      contractYearsRemaining: map['contractYearsRemaining'] ?? 1,
+      weeklyGrowth: Map<String, double>.from(
+        (map['weeklyGrowth'] ?? {}).map(
+          (k, v) => MapEntry(k, (v as num).toDouble()),
+        ),
       ),
+      portraitUrl: map['portraitUrl'],
+    );
+  }
+
+  /// Migra stats del formato antiguo al nuevo.
+  static Map<String, int> _migrateOldStats(Map<String, int> old) {
+    // Si ya tiene el nuevo formato, retornar tal cual
+    if (old.containsKey(DriverStats.braking) ||
+        old.containsKey(DriverStats.smoothness)) {
+      // Asegurar que todos los stats existen con valores por defecto
+      final result = <String, int>{};
+      for (final key in DriverStats.all) {
+        result[key] = old[key] ?? 50;
+      }
+      return result;
+    }
+
+    // Migración desde formato viejo (speed, cornering, consistency, overtaking, defending, racecraft)
+    final speed = old['speed'] ?? 50;
+    final cornering = old['cornering'] ?? 50;
+    final consistency = old['consistency'] ?? 50;
+    final overtaking = old['overtaking'] ?? 50;
+
+    return {
+      DriverStats.braking: ((speed + (old['defending'] ?? 50)) / 2).round(),
+      DriverStats.cornering: cornering,
+      DriverStats.smoothness: ((consistency + (old['racecraft'] ?? 50)) / 2)
+          .round(),
+      DriverStats.overtaking: overtaking,
+      DriverStats.consistency: consistency,
+      DriverStats.adaptability: 50,
+      DriverStats.fitness: 50,
+      DriverStats.feedback: ((speed + consistency) / 2).round(),
+      DriverStats.focus: consistency,
+      DriverStats.morale: 70,
+      DriverStats.marketability: 40,
+    };
+  }
+
+  Driver copyWith({
+    String? id,
+    String? teamId,
+    int? carIndex,
+    String? name,
+    int? age,
+    int? potential,
+    int? points,
+    String? gender,
+    int? races,
+    int? wins,
+    int? podiums,
+    int? poles,
+    Map<String, int>? stats,
+    Map<String, int>? statPotentials,
+    List<DriverTrait>? traits,
+    String? countryCode,
+    String? role,
+    int? salary,
+    int? contractYearsRemaining,
+    Map<String, double>? weeklyGrowth,
+    String? portraitUrl,
+  }) {
+    return Driver(
+      id: id ?? this.id,
+      teamId: teamId ?? this.teamId,
+      carIndex: carIndex ?? this.carIndex,
+      name: name ?? this.name,
+      age: age ?? this.age,
+      potential: potential ?? this.potential,
+      points: points ?? this.points,
+      gender: gender ?? this.gender,
+      races: races ?? this.races,
+      wins: wins ?? this.wins,
+      podiums: podiums ?? this.podiums,
+      poles: poles ?? this.poles,
+      stats: stats ?? this.stats,
+      statPotentials: statPotentials ?? this.statPotentials,
+      traits: traits ?? this.traits,
+      countryCode: countryCode ?? this.countryCode,
+      role: role ?? this.role,
+      salary: salary ?? this.salary,
+      contractYearsRemaining:
+          contractYearsRemaining ?? this.contractYearsRemaining,
+      weeklyGrowth: weeklyGrowth ?? this.weeklyGrowth,
+      portraitUrl: portraitUrl ?? this.portraitUrl,
     );
   }
 }

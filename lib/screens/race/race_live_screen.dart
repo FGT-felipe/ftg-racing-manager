@@ -81,11 +81,14 @@ class _RaceLiveScreenState extends State<RaceLiveScreen> {
         final team = Team.fromMap(teamDoc.data());
         _teamsMap[team.id] = team;
 
-        final driversSnapshot = await teamDoc.reference
+        final driversSnapshot = await FirebaseFirestore.instance
             .collection('drivers')
+            .where('teamId', isEqualTo: team.id)
             .get();
-        for (var dDoc in driversSnapshot.docs) {
-          final driver = Driver.fromMap(dDoc.data());
+
+        for (var i = 0; i < driversSnapshot.docs.length; i++) {
+          final driverDoc = driversSnapshot.docs[i];
+          final driver = Driver.fromMap({...driverDoc.data(), 'carIndex': i});
           _driversMap[driver.id] = driver;
 
           // Setup Logic
@@ -96,32 +99,32 @@ class _RaceLiveScreenState extends State<RaceLiveScreen> {
             setupsMap[driver.id] = circuit.idealSetup;
           } else {
             CarSetup? setup;
-            // 1. Try per-driver race setup
-            if (team.weekStatus['driverRaceSetups'] != null) {
-              final setups = team.weekStatus['driverRaceSetups'] as Map;
-              if (setups.containsKey(driver.id)) {
+            final driverSetups = team.weekStatus['driverSetups'] != null
+                ? Map<String, dynamic>.from(team.weekStatus['driverSetups'])
+                : null;
+            final driverData =
+                driverSetups != null && driverSetups.containsKey(driver.id)
+                ? Map<String, dynamic>.from(driverSetups[driver.id])
+                : null;
+
+            if (driverData != null) {
+              if (driverData['race'] != null) {
                 setup = CarSetup.fromMap(
-                  Map<String, dynamic>.from(setups[driver.id]),
+                  Map<String, dynamic>.from(driverData['race']),
+                );
+              } else if (driverData['qualifying'] != null) {
+                setup = CarSetup.fromMap(
+                  Map<String, dynamic>.from(driverData['qualifying']),
                 );
               }
             }
-            // 2. Try single race setup
+
+            // Fallback to old paths for backward compatibility or defaults
             if (setup == null && team.weekStatus['raceSetup'] != null) {
               setup = CarSetup.fromMap(
                 Map<String, dynamic>.from(team.weekStatus['raceSetup']),
               );
             }
-            // 3. Try per-driver qualy setup
-            if (setup == null &&
-                team.weekStatus['driverQualysSetups'] != null) {
-              final setups = team.weekStatus['driverQualysSetups'] as Map;
-              if (setups.containsKey(driver.id)) {
-                setup = CarSetup.fromMap(
-                  Map<String, dynamic>.from(setups[driver.id]),
-                );
-              }
-            }
-            // 4. Try single qualy setup
             if (setup == null && team.weekStatus['qualifyingSetup'] != null) {
               setup = CarSetup.fromMap(
                 Map<String, dynamic>.from(team.weekStatus['qualifyingSetup']),
@@ -231,9 +234,13 @@ class _RaceLiveScreenState extends State<RaceLiveScreen> {
           TextButton(
             onPressed: () {
               Navigator.pop(context); // Close dialog
-              Navigator.pop(context); // Exit RaceLiveScreen
+              if (!widget.isEmbed) {
+                Navigator.pop(
+                  context,
+                ); // Exit RaceLiveScreen only if not embedded
+              }
             },
-            child: const Text("RETURN TO DASHBOARD"),
+            child: Text(widget.isEmbed ? "CONTINUE" : "RETURN TO DASHBOARD"),
           ),
         ],
       ),

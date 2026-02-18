@@ -30,8 +30,11 @@ class AuthWrapper extends StatelessWidget {
         }
 
         // Case 3: User Logged In -> Check Manager Profile
-        return FutureBuilder<bool>(
-          future: AuthService().hasManagerProfile(user.uid),
+        return FutureBuilder<DocumentSnapshot>(
+          future: FirebaseFirestore.instance
+              .collection('managers')
+              .doc(user.uid)
+              .get(),
           builder: (context, profileSnapshot) {
             // Loading Manager Profile
             if (profileSnapshot.connectionState == ConnectionState.waiting) {
@@ -50,12 +53,17 @@ class AuthWrapper extends StatelessWidget {
               );
             }
 
-            final hasProfile = profileSnapshot.data ?? false;
+            final profileDoc = profileSnapshot.data;
+            final hasProfile = profileDoc?.exists ?? false;
 
             if (!hasProfile) {
               // No Profile -> Create Manager
               return const CreateManagerScreen();
             }
+
+            final managerData = profileDoc!.data() as Map<String, dynamic>;
+            final nationality =
+                managerData['nationality'] as String? ?? 'Brazil';
 
             // Has Profile -> Check Team Assignment
             // We use a StreamBuilder here so if the team is assigned/created in the next step,
@@ -81,7 +89,7 @@ class AuthWrapper extends StatelessWidget {
                 }
 
                 // Has Profile but No Team -> Team Selection
-                return const TeamSelectionScreen();
+                return TeamSelectionScreen(nationality: nationality);
               },
             );
           },

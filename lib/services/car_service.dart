@@ -32,6 +32,7 @@ class CarService {
   Future<void> upgradePart({
     required String teamId,
     required String partKey,
+    required int carIndex,
     required int currentLevel,
     required int currentBudget,
   }) async {
@@ -56,25 +57,57 @@ class CarService {
 
       final data = teamDoc.data() as Map<String, dynamic>;
       final budget = data['budget'] as int;
-      final carStats = Map<String, int>.from(data['carStats'] ?? {});
+
+      // Check weekly upgrade limit
+      final weekStatus = Map<String, dynamic>.from(data['weekStatus'] ?? {});
+      if (weekStatus['hasUpgradedThisWeek'] == true) {
+        throw Exception("Only 1 upgrade allowed per race week.");
+      }
+
+      // Initialize carStats structure if missing or old
+      Map<String, dynamic> carStats = {};
+      final rawCarStats = data['carStats'];
+      if (rawCarStats is Map) {
+        if (rawCarStats.containsKey('0') || rawCarStats.containsKey('1')) {
+          carStats = Map<String, dynamic>.from(rawCarStats);
+        } else {
+          // Migrate old single stats to both cars
+          final oldStats = Map<String, int>.from(rawCarStats);
+          carStats = {'0': oldStats, '1': Map<String, int>.from(oldStats)};
+        }
+      } else {
+        final def = {'aero': 1, 'engine': 1, 'reliability': 1};
+        carStats = {'0': def, '1': Map<String, int>.from(def)};
+      }
+
+      final String carKey = carIndex.toString();
+      final Map<String, int> targetCarStats = Map<String, int>.from(
+        carStats[carKey] ?? {'aero': 1, 'engine': 1, 'reliability': 1},
+      );
 
       if (budget < cost) {
         throw Exception("Insufficient funds");
       }
 
-      final newLevel = (carStats[partKey] ?? 1) + 1;
-      carStats[partKey] = newLevel;
+      final newLevel = (targetCarStats[partKey] ?? 1) + 1;
+      targetCarStats[partKey] = newLevel;
+      carStats[carKey] = targetCarStats;
+
+      // Update week status
+      weekStatus['hasUpgradedThisWeek'] = true;
 
       transaction.update(teamRef, {
         'budget': budget - cost,
         'carStats': carStats,
+        'weekStatus': weekStatus,
       });
 
       // Record transaction
       final txRef = teamRef.collection('transactions').doc();
+      final carLabel = carIndex == 0 ? "Car A" : "Car B";
       transaction.set(txRef, {
         'id': txRef.id,
-        'description': "Upgrade $partKey to LVL $newLevel",
+        'description': "Upgrade $partKey to LVL $newLevel ($carLabel)",
         'amount': -cost,
         'date': DateTime.now().toIso8601String(),
         'type': 'UPGRADE',

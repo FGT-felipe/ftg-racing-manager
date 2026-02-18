@@ -4,6 +4,10 @@ import 'package:flutter/foundation.dart';
 import '../models/core_models.dart';
 
 import '../config/game_config.dart';
+import 'universe_service.dart';
+import 'team_assignment_service.dart';
+import 'driver_assignment_service.dart';
+import 'driver_portrait_service.dart';
 
 class DatabaseSeeder {
   static final FirebaseFirestore _db = FirebaseFirestore.instance;
@@ -74,6 +78,10 @@ class DatabaseSeeder {
     try {
       debugPrint("NUKE: Iniciando borrado total...");
 
+      // Borrar el universo primero para limpiar jerarquía
+      await UniverseService().deleteUniverse();
+      debugPrint("NUKE: Universo eliminado.");
+
       final driversSnapshot = await _db.collectionGroup('drivers').get();
       if (driversSnapshot.docs.isNotEmpty) {
         final batch = _db.batch();
@@ -122,6 +130,21 @@ class DatabaseSeeder {
     try {
       debugPrint("SEEDING: Iniciando...");
 
+      // PHASE 3: Inicializar universo jerárquico
+      debugPrint("SEEDING: Inicializando GameUniverse...");
+      await UniverseService().initializeIfNeeded();
+      debugPrint("SEEDING: GameUniverse inicializado.");
+
+      // PHASE 4: Poblar divisiones con equipos
+      debugPrint("SEEDING: Poblando divisiones con equipos...");
+      await TeamAssignmentService().populateAllDivisions();
+      debugPrint("SEEDING: Equipos asignados a divisiones.");
+
+      // PHASE 5: Asignar pilotos a equipos
+      debugPrint("SEEDING: Asignando pilotos a equipos...");
+      await DriverAssignmentService().populateAllTeams();
+      debugPrint("SEEDING: Pilotos asignados.");
+
       if (!force) {
         final leaguesSnapshot = await _db.collection('leagues').limit(1).get();
         if (leaguesSnapshot.docs.isNotEmpty) return;
@@ -141,22 +164,11 @@ class DatabaseSeeder {
       final List<RaceEvent> calendar = [
         RaceEvent(
           id: 'r1',
-          trackName: "GP Interlagos",
-          countryCode: "BR",
-          circuitId: 'interlagos',
-          date: now,
-          isCompleted: false,
-          totalLaps: 71,
-          weatherPractice: "Sunny",
-          weatherQualifying: "Cloudy",
-          weatherRace: "Rainy",
-        ),
-        RaceEvent(
-          id: 'r2',
-          trackName: "GP Hermanos Rodríguez",
+          trackName: "Autódromo Hermanos Rodríguez",
           countryCode: "MX",
-          circuitId: 'hermanos_rodriguez',
-          date: now.add(const Duration(days: 7)),
+          flagEmoji: "🇲🇽",
+          circuitId: 'mexico',
+          date: now,
           isCompleted: false,
           totalLaps: 71,
           weatherPractice: "Sunny",
@@ -164,49 +176,105 @@ class DatabaseSeeder {
           weatherRace: "Sunny",
         ),
         RaceEvent(
+          id: 'r2',
+          trackName: "Circuito Urbano de Las Vegas",
+          countryCode: "US",
+          flagEmoji: "🇺🇸",
+          circuitId: 'vegas',
+          date: now.add(const Duration(days: 7)),
+          isCompleted: false,
+          totalLaps: 50,
+          weatherPractice: "Sunny",
+          weatherQualifying: "Cloudy",
+          weatherRace: "Sunny",
+        ),
+        RaceEvent(
           id: 'r3',
-          trackName: "GP Termas de Río Hondo",
-          countryCode: "AR",
-          circuitId: 'termas',
+          trackName: "Autódromo José Carlos Pace",
+          countryCode: "BR",
+          flagEmoji: "🇧🇷",
+          circuitId: 'interlagos',
           date: now.add(const Duration(days: 14)),
           isCompleted: false,
-          totalLaps: 52,
+          totalLaps: 71,
+          weatherPractice: "Cloudy",
+          weatherQualifying: "Rainy",
+          weatherRace: "Rainy",
+        ),
+        RaceEvent(
+          id: 'r4',
+          trackName: "Autódromo Internacional de Miami",
+          countryCode: "US",
+          flagEmoji: "🇺🇸",
+          circuitId: 'miami',
+          date: now.add(const Duration(days: 21)),
+          isCompleted: false,
+          totalLaps: 57,
+          weatherPractice: "Sunny",
+          weatherQualifying: "Sunny",
+          weatherRace: "Sunny",
+        ),
+        RaceEvent(
+          id: 'r5',
+          trackName: "Circuito Callejero de San Pablo",
+          countryCode: "BR",
+          flagEmoji: "🇧🇷",
+          circuitId: 'san_pablo_street',
+          date: now.add(const Duration(days: 28)),
+          isCompleted: false,
+          totalLaps: 40,
+          weatherPractice: "Sunny",
+          weatherQualifying: "Sunny",
+          weatherRace: "Sunny",
+        ),
+        RaceEvent(
+          id: 'r6',
+          trackName: "Circuito de Indianápolis",
+          countryCode: "US",
+          flagEmoji: "🇺🇸",
+          circuitId: 'indianapolis',
+          date: now.add(const Duration(days: 35)),
+          isCompleted: false,
+          totalLaps: 73,
+          weatherPractice: "Sunny",
+          weatherQualifying: "Cloudy",
+          weatherRace: "Sunny",
+        ),
+        RaceEvent(
+          id: 'r7',
+          trackName: "Circuito Gilles Villeneuve",
+          countryCode: "CA",
+          flagEmoji: "🇨🇦",
+          circuitId: 'montreal',
+          date: now.add(const Duration(days: 42)),
+          isCompleted: false,
+          totalLaps: 70,
           weatherPractice: "Sunny",
           weatherQualifying: "Sunny",
           weatherRace: "Cloudy",
         ),
         RaceEvent(
-          id: 'r4',
-          trackName: "GP Tocancipá",
-          countryCode: "CO",
-          circuitId: 'tocancipa',
-          date: now.add(const Duration(days: 21)),
+          id: 'r8',
+          trackName: "Circuito de las Américas",
+          countryCode: "US",
+          flagEmoji: "🇺🇸",
+          circuitId: 'texas',
+          date: now.add(const Duration(days: 49)),
           isCompleted: false,
-          totalLaps: 40,
+          totalLaps: 56,
           weatherPractice: "Sunny",
-          weatherQualifying: "Rainy",
-          weatherRace: "Rainy",
-        ),
-        RaceEvent(
-          id: 'r5',
-          trackName: "GP El Pinar",
-          countryCode: "UY",
-          circuitId: 'el_pinar',
-          date: now.add(const Duration(days: 28)),
-          isCompleted: false,
-          totalLaps: 45,
-          weatherPractice: "Cloudy",
-          weatherQualifying: "Cloudy",
+          weatherQualifying: "Sunny",
           weatherRace: "Sunny",
         ),
         RaceEvent(
-          id: 'r6',
-          trackName: "GP Yahuarcocha",
-          countryCode: "EC",
-          circuitId: 'yahuarcocha',
-          date: now.add(const Duration(days: 35)),
+          id: 'r9',
+          trackName: "Autódromo Oscar y Juan Gálvez",
+          countryCode: "AR",
+          flagEmoji: "🇦🇷",
+          circuitId: 'buenos_aires',
+          date: now.add(const Duration(days: 56)),
           isCompleted: false,
-          totalLaps: 60,
+          totalLaps: 72,
           weatherPractice: "Sunny",
           weatherQualifying: "Sunny",
           weatherRace: "Sunny",
@@ -247,7 +315,10 @@ class DatabaseSeeder {
           wins: 0,
           podiums: 0,
           poles: 0,
-          carStats: {'aero': 1, 'engine': 1, 'reliability': 1},
+          carStats: {
+            '0': {'aero': 1, 'powertrain': 1, 'chassis': 1, 'reliability': 1},
+            '1': {'aero': 1, 'powertrain': 1, 'chassis': 1, 'reliability': 1},
+          },
           weekStatus: {
             'practiceCompleted': false,
             'strategySet': false,
@@ -262,25 +333,67 @@ class DatabaseSeeder {
               ? _femaleNames[random.nextInt(_femaleNames.length)]
               : _maleNames[random.nextInt(_maleNames.length)];
           final lastName = _lastNames[random.nextInt(_lastNames.length)];
-          final age = 18 + random.nextInt(18);
-          final speed = 40 + random.nextInt(51);
-          final cornering = 40 + random.nextInt(51);
+          final age = 29 + random.nextInt(12);
 
+          final gender = isFemale ? 'F' : 'M';
           final driverRef = teamRef.collection('drivers').doc();
+
+          // Generar stats con el nuevo modelo de 11 atributos
+          int r(int min, int max) => min + random.nextInt(max - min + 1);
+          final ageFitnessBonus = age > 35 ? -10 : 0;
+          final ageFeedbackBonus = age > 32 ? 8 : 0;
+
+          final stats = {
+            DriverStats.braking: r(40, 70),
+            DriverStats.cornering: r(40, 70),
+            DriverStats.smoothness: r(40, 70),
+            DriverStats.overtaking: r(40, 70),
+            DriverStats.consistency: r(40, 70),
+            DriverStats.adaptability: r(40, 70),
+            DriverStats.fitness: (r(40, 70) + ageFitnessBonus).clamp(0, 100),
+            DriverStats.feedback: (r(35, 65) + ageFeedbackBonus).clamp(0, 100),
+            DriverStats.focus: r(35, 65),
+            DriverStats.morale: r(60, 85),
+            DriverStats.marketability: r(25, 60),
+          };
+
+          // Potenciales por stat (techo de mejora)
+          final statPotentials = <String, int>{};
+          for (final key in DriverStats.all) {
+            final current = stats[key]!;
+            statPotentials[key] = (current + 5 + random.nextInt(16)).clamp(
+              0,
+              100,
+            );
+          }
+
           batch.set(
             driverRef,
             Driver(
               id: driverRef.id,
+              teamId: teamRef.id,
+              carIndex: i,
               name: "$firstName $lastName",
               age: age,
-              potential: 70 + random.nextInt(30),
+              potential: 2 + random.nextInt(3), // 2-4 estrellas
               points: 0,
-              gender: isFemale ? 'F' : 'M',
-              stats: {
-                'speed': speed,
-                'cornering': cornering,
-                'consistency': 40 + random.nextInt(41),
+              gender: gender,
+              stats: stats,
+              statPotentials: statPotentials,
+              countryCode: 'CO',
+              role: i == 0 ? 'Main Driver' : 'Secondary Driver',
+              salary: 500000,
+              contractYearsRemaining: 1,
+              weeklyGrowth: {
+                DriverStats.feedback: 0.2,
+                DriverStats.consistency: 0.1,
               },
+              portraitUrl: DriverPortraitService().getPortraitUrl(
+                driverId: driverRef.id,
+                countryCode: 'CO',
+                gender: gender,
+                age: age,
+              ),
             ).toMap(),
           );
         }

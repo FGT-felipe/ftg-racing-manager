@@ -62,5 +62,8 @@
   "winner": "Winner",
   "podium": "Podium",
   "financialReport": "Financial Report",
-  "earnings": "Earnings"
+  "earnings": "Earnings",
+  "noDriverAssigned": "No driver assigned",
+  "engineeringWelcome": "Welcome to the R&D Lab",
+  "engineeringDescription": "Improve your cars' performance by developing specific parts. Remember that you can only perform ONE upgrade per team each week. Use your resources wisely to stay ahead of the competition!"
 }

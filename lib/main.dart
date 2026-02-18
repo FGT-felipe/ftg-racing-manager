@@ -122,7 +122,9 @@ class ManagerProfileCheck extends StatelessWidget {
 
         if (profileExists) {
           // Profile exists, now check for Team
-          return TeamCheck(uid: uid);
+          final data = managerSnapshot.data!.data() as Map<String, dynamic>;
+          final nationality = data['nationality'] as String? ?? 'Brazil';
+          return TeamCheck(uid: uid, nationality: nationality);
         } else {
           // No profile -> Create Manager
           return const CreateManagerScreen();
@@ -134,7 +136,8 @@ class ManagerProfileCheck extends StatelessWidget {
 
 class TeamCheck extends StatelessWidget {
   final String uid;
-  const TeamCheck({super.key, required this.uid});
+  final String nationality;
+  const TeamCheck({super.key, required this.uid, required this.nationality});
 
   @override
   Widget build(BuildContext context) {
@@ -164,7 +167,7 @@ class TeamCheck extends StatelessWidget {
         }
 
         // No Team -> Team Selection
-        return const TeamSelectionScreen();
+        return TeamSelectionScreen(nationality: nationality);
       },
     );
   }

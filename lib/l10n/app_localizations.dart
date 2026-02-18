@@ -315,6 +315,24 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Earnings'**
   String get earnings;
+
+  /// No description provided for @noDriverAssigned.
+  ///
+  /// In en, this message translates to:
+  /// **'No driver assigned'**
+  String get noDriverAssigned;
+
+  /// No description provided for @engineeringWelcome.
+  ///
+  /// In en, this message translates to:
+  /// **'Welcome to the R&D Lab'**
+  String get engineeringWelcome;
+
+  /// No description provided for @engineeringDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'Improve your cars\' performance by developing specific parts. Remember that you can only perform ONE upgrade per team each week. Use your resources wisely to stay ahead of the competition!'**
+  String get engineeringDescription;
 }
 
 class _AppLocalizationsDelegate

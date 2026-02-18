@@ -75,8 +75,9 @@ class DashboardScreen extends StatelessWidget {
                         : null;
                     final circuitName =
                         currentRace?.event.trackName ?? "Grand Prix";
+                    final flagEmoji = currentRace?.event.flagEmoji ?? "🏁";
                     final countryCode = (currentRace?.event.countryCode ?? "—")
-                        .toLowerCase();
+                        .toUpperCase();
                     final circuitId = currentRace?.event.circuitId ?? 'generic';
                     final seasonId = season?.id;
 
@@ -101,7 +102,11 @@ class DashboardScreen extends StatelessWidget {
 
                     void onHeroAction() {
                       if (onNavigate != null) {
-                        onNavigate!(4); // Index 4 is Paddock/Padock
+                        if (currentStatus == RaceWeekStatus.race) {
+                          onNavigate!(5); // Index 5 is Race Day
+                        } else {
+                          onNavigate!(4); // Index 4 is Paddock/Padock
+                        }
                       } else {
                         // Fallback in case onNavigate is not provided
                         if (currentStatus == RaceWeekStatus.practice) {
@@ -170,6 +175,7 @@ class DashboardScreen extends StatelessWidget {
                               currentStatus: currentStatus,
                               circuitName: circuitName,
                               countryCode: countryCode,
+                              flagEmoji: flagEmoji,
                               targetDate: targetDate,
                               onActionPressed: onHeroAction,
                             ),
@@ -195,6 +201,7 @@ class DashboardScreen extends StatelessWidget {
 
                                 final cardCircuit = CircuitInfoCard(
                                   circuitName: circuitName,
+                                  flagEmoji: flagEmoji,
                                   totalLaps: currentRace?.event.totalLaps ?? 50,
                                   weatherPractice:
                                       currentRace?.event.weatherPractice ??
@@ -206,6 +213,10 @@ class DashboardScreen extends StatelessWidget {
                                       currentRace?.event.weatherRace ?? 'Sunny',
                                   characteristics:
                                       circuitProfile.characteristics,
+                                  aeroWeight: circuitProfile.aeroWeight,
+                                  chassisWeight: circuitProfile.chassisWeight,
+                                  powertrainWeight:
+                                      circuitProfile.powertrainWeight,
                                 );
 
                                 if (isDesktop) {
@@ -236,7 +247,7 @@ class DashboardScreen extends StatelessWidget {
                               budget: team.budget,
                               onTap: () {
                                 if (onNavigate != null) {
-                                  onNavigate!(6); // Index 6 is Finances
+                                  onNavigate!(7); // Index 7 is Finances
                                   return;
                                 }
                                 if (team.id.isEmpty) {

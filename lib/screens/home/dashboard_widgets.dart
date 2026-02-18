@@ -358,6 +358,7 @@ class RaceStatusHero extends StatefulWidget {
   final RaceWeekStatus currentStatus;
   final String circuitName;
   final String countryCode;
+  final String flagEmoji;
   final DateTime targetDate;
   final VoidCallback? onActionPressed;
 
@@ -366,6 +367,7 @@ class RaceStatusHero extends StatefulWidget {
     required this.currentStatus,
     required this.circuitName,
     required this.countryCode,
+    required this.flagEmoji,
     required this.targetDate,
     this.onActionPressed,
   });
@@ -504,7 +506,7 @@ class _RaceStatusHeroState extends State<RaceStatusHero> {
                   ),
                   const SizedBox(width: 4),
                   Text(
-                    widget.countryCode,
+                    "${widget.flagEmoji} ${widget.countryCode}",
                     style: TextStyle(
                       color: Theme.of(context).textTheme.bodyMedium?.color,
                       fontWeight: FontWeight.bold,
@@ -740,21 +742,29 @@ class PreparationChecklist extends StatelessWidget {
 
 class CircuitInfoCard extends StatelessWidget {
   final String circuitName;
+  final String flagEmoji;
   final int totalLaps;
   final String weatherPractice;
   final String weatherQualifying;
   final String weatherRace;
 
   final Map<String, String> characteristics;
+  final double aeroWeight;
+  final double chassisWeight;
+  final double powertrainWeight;
 
   const CircuitInfoCard({
     super.key,
     required this.circuitName,
+    required this.flagEmoji,
     required this.totalLaps,
     required this.weatherPractice,
     required this.weatherQualifying,
     required this.weatherRace,
     this.characteristics = const {},
+    this.aeroWeight = 0.33,
+    this.chassisWeight = 0.33,
+    this.powertrainWeight = 0.34,
   });
 
   IconData _getWeatherIcon(String status) {
@@ -805,7 +815,7 @@ class CircuitInfoCard extends StatelessWidget {
           ),
           const SizedBox(height: 16),
           Text(
-            circuitName.toUpperCase(),
+            "$flagEmoji ${circuitName.toUpperCase()}",
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
             style: const TextStyle(fontWeight: FontWeight.w900, fontSize: 18),
@@ -895,6 +905,60 @@ class CircuitInfoCard extends StatelessWidget {
               }).toList(),
             ),
           ],
+          const SizedBox(height: 16),
+          const Text(
+            "CAR PERFORMANCE FOCUS",
+            style: TextStyle(
+              fontSize: 10,
+              fontWeight: FontWeight.bold,
+              color: Colors.grey,
+            ),
+          ),
+          const SizedBox(height: 8),
+          Row(
+            children: [
+              _buildFocusTag(context, "AERO", aeroWeight, Colors.blue),
+              const SizedBox(width: 8),
+              _buildFocusTag(context, "CHASSIS", chassisWeight, Colors.orange),
+              const SizedBox(width: 8),
+              _buildFocusTag(context, "POWER", powertrainWeight, Colors.red),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildFocusTag(
+    BuildContext context,
+    String label,
+    double weight,
+    Color color,
+  ) {
+    return Expanded(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            label,
+            style: TextStyle(
+              fontSize: 9,
+              fontWeight: FontWeight.bold,
+              color: color,
+            ),
+          ),
+          const SizedBox(height: 4),
+          ClipRRect(
+            borderRadius: BorderRadius.circular(2),
+            child: LinearProgressIndicator(
+              value:
+                  weight *
+                  2, // Multiply by 2 for better visibility as weights are small
+              backgroundColor: color.withValues(alpha: 0.1),
+              valueColor: AlwaysStoppedAnimation<Color>(color),
+              minHeight: 4,
+            ),
+          ),
         ],
       ),
     );
