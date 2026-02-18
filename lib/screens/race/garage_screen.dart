@@ -642,8 +642,9 @@ class _GarageScreenState extends State<GarageScreen>
   // ─── QUALIFYING TAB ───
 
   Widget _buildQualifyingTab(ThemeData theme, bool isPaddockOpen) {
-    if (_selectedDriverId == null)
+    if (_selectedDriverId == null) {
       return const Center(child: Text("Select a driver"));
+    }
     final isSubmitted = _qualifyingSetupsSubmitted[_selectedDriverId] == true;
 
     return ListView(
@@ -759,8 +760,9 @@ class _GarageScreenState extends State<GarageScreen>
   // ─── RACE TAB ───
 
   Widget _buildRaceTab(ThemeData theme, bool isPaddockOpen) {
-    if (_selectedDriverId == null)
+    if (_selectedDriverId == null) {
       return const Center(child: Text("Select a driver"));
+    }
     final isSubmitted = _raceSetupsSubmitted[_selectedDriverId] == true;
 
     return ListView(

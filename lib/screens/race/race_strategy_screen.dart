@@ -317,8 +317,9 @@ class _RaceStrategyScreenState extends State<RaceStrategyScreen> {
                       label: Text(driver.name),
                       selected: isSelected,
                       onSelected: (selected) {
-                        if (selected)
+                        if (selected) {
                           setState(() => _selectedDriverId = driver.id);
+                        }
                       },
                       selectedColor: theme.colorScheme.secondary,
                       backgroundColor: theme.cardTheme.color,

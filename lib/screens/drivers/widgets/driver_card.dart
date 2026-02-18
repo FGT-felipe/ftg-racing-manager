@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../../../models/core_models.dart';
 import '../../../services/driver_portrait_service.dart';
+import '../../../services/driver_status_service.dart';
 
 class DriverCard extends StatelessWidget {
   final Driver driver;
@@ -45,64 +46,42 @@ class DriverCard extends StatelessWidget {
   }
 
   Widget _buildDesktopLayout(BuildContext context) {
-    return IntrinsicHeight(
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          // Column A: Profile & Contract
-          Expanded(flex: 2, child: _buildColumnA(context)),
-          const VerticalDivider(
-            width: 48,
-            thickness: 1,
-            indent: 10,
-            endIndent: 10,
-          ),
-          // Combined Grid for B and C
-          Expanded(
-            flex: 7,
-            child: Column(
-              children: [
-                // Row 1: Skills & Form
-                IntrinsicHeight(
-                  child: Row(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Expanded(flex: 3, child: _buildSkillsSection(context)),
-                      const VerticalDivider(
-                        width: 48,
-                        thickness: 1,
-                        indent: 10,
-                        endIndent: 10,
-                      ),
-                      Expanded(flex: 4, child: _buildChampionshipForm(context)),
-                    ],
-                  ),
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        // Column A: Profile & Contract
+        Expanded(flex: 2, child: _buildColumnA(context)),
+        const SizedBox(width: 48),
+        // Combined Grid for B and C
+        Expanded(
+          flex: 7,
+          child: Column(
+            children: [
+              // Row 1: Skills & Form
+              Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Expanded(flex: 3, child: _buildSkillsSection(context)),
+                  const SizedBox(width: 48),
+                  Expanded(flex: 4, child: _buildChampionshipForm(context)),
+                ],
+              ),
+              const SizedBox(height: 24),
+              // Row 2: Career Details (Symmetrically aligned)
+              IntrinsicHeight(
+                child: Row(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    Expanded(flex: 3, child: _buildCareerStatsSummary(context)),
+                    const SizedBox(width: 48),
+                    Expanded(flex: 4, child: _buildCareerHistory(context)),
+                  ],
                 ),
-                const SizedBox(height: 24),
-                // Row 2: Career Details (Symmetrically aligned)
-                IntrinsicHeight(
-                  child: Row(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Expanded(
-                        flex: 3,
-                        child: _buildCareerStatsSummary(context),
-                      ),
-                      const VerticalDivider(
-                        width: 48,
-                        thickness: 1,
-                        indent: 10,
-                        endIndent: 10,
-                      ),
-                      Expanded(flex: 4, child: _buildCareerHistory(context)),
-                    ],
-                  ),
-                ),
-              ],
-            ),
+              ),
+            ],
           ),
-        ],
-      ),
+        ),
+      ],
     );
   }
 
@@ -150,6 +129,9 @@ class DriverCard extends StatelessWidget {
                     ? NetworkImage(portraitUrl) as ImageProvider
                     : AssetImage(portraitUrl),
                 fit: BoxFit.cover,
+                onError: (exception, stackTrace) {
+                  debugPrint('Error loading avatar: $exception');
+                },
               ),
             ),
           ),
@@ -208,25 +190,68 @@ class DriverCard extends StatelessWidget {
           'Remaining',
           '${driver.contractYearsRemaining} Season(s)',
         ),
+        const SizedBox(height: 16),
+        Divider(
+          color: theme.colorScheme.onSurface.withValues(alpha: 0.1),
+          height: 1,
+        ),
+        const SizedBox(height: 16),
+        _buildContractRow(
+          'Morale',
+          '${(driver.stats[DriverStats.morale] ?? 0) ~/ 5}/20',
+        ),
+        _buildContractRow(
+          'Marketability',
+          '${(driver.stats[DriverStats.marketability] ?? 0) ~/ 5}/20',
+        ),
+        const SizedBox(height: 16),
+        Divider(
+          color: theme.colorScheme.onSurface.withValues(alpha: 0.1),
+          height: 1,
+        ),
         const SizedBox(height: 24),
         // Buttons
         Row(
           children: [
             Expanded(
-              child: OutlinedButton(
+              child: FilledButton(
                 onPressed: onFire,
-                style: OutlinedButton.styleFrom(
-                  foregroundColor: theme.colorScheme.error,
-                  side: BorderSide(color: theme.colorScheme.error),
+                style: FilledButton.styleFrom(
+                  backgroundColor: theme.colorScheme.error,
+                  foregroundColor: Colors.white,
+                  padding: const EdgeInsets.symmetric(horizontal: 4),
+                  textStyle: const TextStyle(
+                    fontSize: 10,
+                    fontWeight: FontWeight.bold,
+                  ),
+                  shape: const RoundedRectangleBorder(
+                    borderRadius: BorderRadius.zero,
+                  ),
                 ),
-                child: const Text('Fire'),
+                child: const FittedBox(
+                  fit: BoxFit.scaleDown,
+                  child: Text('FIRE'),
+                ),
               ),
             ),
-            const SizedBox(width: 8),
+            const SizedBox(width: 4),
             Expanded(
               child: FilledButton(
                 onPressed: onRenew,
-                child: const Text('Renew'),
+                style: FilledButton.styleFrom(
+                  padding: const EdgeInsets.symmetric(horizontal: 4),
+                  textStyle: const TextStyle(
+                    fontSize: 10,
+                    fontWeight: FontWeight.bold,
+                  ),
+                  shape: const RoundedRectangleBorder(
+                    borderRadius: BorderRadius.zero,
+                  ),
+                ),
+                child: const FittedBox(
+                  fit: BoxFit.scaleDown,
+                  child: Text('RENEW CONTRACT'),
+                ),
               ),
             ),
           ],
@@ -248,7 +273,12 @@ class DriverCard extends StatelessWidget {
 
   Widget _buildSkillsSection(BuildContext context) {
     final theme = Theme.of(context);
-    final allStats = driver.stats.entries.toList();
+    final allStats = driver.stats.entries
+        .where(
+          (e) =>
+              e.key != DriverStats.morale && e.key != DriverStats.marketability,
+        )
+        .toList();
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -265,12 +295,14 @@ class DriverCard extends StatelessWidget {
         LayoutBuilder(
           builder: (context, constraints) {
             final double itemWidth = (constraints.maxWidth - 32) / 3;
+            // Ensure proper calculation even if width implies small layout
+            final effectiveWidth = itemWidth < 50 ? 50.0 : itemWidth;
             return Wrap(
               spacing: 16,
               runSpacing: 20,
               children: allStats.map((entry) {
                 return SizedBox(
-                  width: itemWidth,
+                  width: effectiveWidth,
                   child: _buildStatBar(context, entry.key, entry.value),
                 );
               }).toList(),
@@ -322,6 +354,47 @@ class DriverCard extends StatelessWidget {
                 Icons.flag_rounded,
               ),
             ],
+          ),
+          const Spacer(),
+          // Status Title Badge
+          Center(
+            child: Tooltip(
+              message: DriverStatusService.getDescription(driver.statusTitle),
+              triggerMode: TooltipTriggerMode.tap,
+              child: Container(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 12,
+                  vertical: 6,
+                ),
+                decoration: BoxDecoration(
+                  color: theme.colorScheme.secondary.withValues(alpha: 0.15),
+                  borderRadius: BorderRadius.circular(4),
+                  border: Border.all(
+                    color: theme.colorScheme.secondary.withValues(alpha: 0.3),
+                    width: 0.5,
+                  ),
+                ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text(
+                      driver.statusTitle.toUpperCase(),
+                      style: theme.textTheme.labelSmall?.copyWith(
+                        color: theme.colorScheme.secondary,
+                        fontWeight: FontWeight.bold,
+                        letterSpacing: 1.1,
+                      ),
+                    ),
+                    const SizedBox(width: 6),
+                    Icon(
+                      Icons.help_outline_rounded,
+                      size: 12,
+                      color: theme.colorScheme.secondary.withValues(alpha: 0.7),
+                    ),
+                  ],
+                ),
+              ),
+            ),
           ),
         ],
       ),
@@ -781,10 +854,12 @@ class DriverCard extends StatelessWidget {
   }
 
   String _formatSkillName(String key) {
+    if (key.isEmpty) return key;
     return key[0].toUpperCase() + key.substring(1);
   }
 
-  String _getFlagEmoji(String countryCode) {
+  String _getFlagEmoji(String? countryCode) {
+    if (countryCode == null) return '🏳️';
     const flags = {
       'BR': '🇧🇷',
       'AR': '🇦🇷',
@@ -798,6 +873,6 @@ class DriverCard extends StatelessWidget {
       'ES': '🇪🇸',
       'FR': '🇫🇷',
     };
-    return flags[countryCode.toUpperCase()] ?? '🏳️';
+    return flags[countryCode] ?? '🏳️';
   }
 }

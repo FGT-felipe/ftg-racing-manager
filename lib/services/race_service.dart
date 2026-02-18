@@ -726,12 +726,15 @@ class RaceService {
 
       if (pointsEarned > 0 || !perf.isDNF) {
         Map<String, dynamic> driverUpdates = {'races': FieldValue.increment(1)};
-        if (pointsEarned > 0)
+        if (pointsEarned > 0) {
           driverUpdates['points'] = FieldValue.increment(pointsEarned);
-        if (i == 0 && !perf.isDNF)
+        }
+        if (i == 0 && !perf.isDNF) {
           driverUpdates['wins'] = FieldValue.increment(1);
-        if (i < 3 && !perf.isDNF)
+        }
+        if (i < 3 && !perf.isDNF) {
           driverUpdates['podiums'] = FieldValue.increment(1);
+        }
 
         // Aplicar XP post-carrera y declive por edad
         final xpUpdates = _calculatePostRaceStatChanges(
@@ -845,8 +848,9 @@ class RaceService {
 
     // Identify current race index based on UNCOMPLETED races
     final raceIndex = season.calendar.indexWhere((r) => !r.isCompleted);
-    if (raceIndex == -1)
+    if (raceIndex == -1) {
       throw Exception("No pending races to apply results to");
+    }
     final currentRace = season.calendar[raceIndex];
 
     final batch = _db.batch();
@@ -1122,8 +1126,9 @@ class RaceService {
         if (decline > 0 && current > 30) {
           // No cae por debajo de 30
           newStats[statKey] = (current - decline).clamp(30, 100);
-          if (newStats[statKey] != (currentStats[statKey] ?? 50))
+          if (newStats[statKey] != (currentStats[statKey] ?? 50)) {
             hasChanges = true;
+          }
         }
       }
     }
@@ -1139,8 +1144,9 @@ class RaceService {
       final gain = (experienceXp * facilitiesMultiplier).round();
       if (gain > 0) {
         newStats[statKey] = (current + gain).clamp(0, maxPotential);
-        if (newStats[statKey] != (currentStats[statKey] ?? 50))
+        if (newStats[statKey] != (currentStats[statKey] ?? 50)) {
           hasChanges = true;
+        }
       }
     }
 

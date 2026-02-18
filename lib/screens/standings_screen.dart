@@ -204,7 +204,7 @@ class _StandingsScreenState extends State<StandingsScreen> {
                             ),
                             child: DropdownButtonHideUnderline(
                               child: DropdownButton<String>(
-                                value: selectedDivision!.id,
+                                value: selectedDivision.id,
                                 dropdownColor: Theme.of(
                                   context,
                                 ).colorScheme.surface,
@@ -273,11 +273,11 @@ class _StandingsScreenState extends State<StandingsScreen> {
                               child: TabBarView(
                                 children: [
                                   _DriversStandingsTab(
-                                    division: selectedDivision!,
+                                    division: selectedDivision,
                                     highlightTeamId: userTeamId,
                                   ),
                                   _ConstructorsStandingsTab(
-                                    division: selectedDivision!,
+                                    division: selectedDivision,
                                     highlightTeamId: userTeamId,
                                   ),
                                   _LastRaceStandingsTab(
@@ -518,8 +518,9 @@ class _LastRaceStandingsTab extends StatelessWidget {
         return FutureBuilder<Season?>(
           future: SeasonService().getSeasonById(seasonId),
           builder: (context, snapshot) {
-            if (!snapshot.hasData)
+            if (!snapshot.hasData) {
               return const Center(child: CircularProgressIndicator());
+            }
             final season = snapshot.data!;
 
             // Find last completed race
@@ -544,8 +545,9 @@ class _LastRaceStandingsTab extends StatelessWidget {
             return FutureBuilder<DocumentSnapshot>(
               future: SeasonService().getRaceDocument(raceId),
               builder: (context, raceSnapshot) {
-                if (!raceSnapshot.hasData)
+                if (!raceSnapshot.hasData) {
                   return const Center(child: CircularProgressIndicator());
+                }
                 final raceData =
                     raceSnapshot.data!.data() as Map<String, dynamic>?;
                 if (raceData == null || raceData['qualifyingResults'] == null) {

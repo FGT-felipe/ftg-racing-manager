@@ -7,7 +7,7 @@ import '../models/user_models.dart';
 
 class AuthService {
   final FirebaseAuth _auth = FirebaseAuth.instance;
-  final GoogleSignIn _googleSignIn = GoogleSignIn();
+  static final GoogleSignIn _googleSignIn = GoogleSignIn();
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
 
   // Stream para detectar cambios de sesión
@@ -33,7 +33,17 @@ class AuthService {
   Future<User?> signInWithGoogle() async {
     try {
       // 1. Trigger del Popup Nativo
-      final GoogleSignInAccount? googleUser = await _googleSignIn.signIn();
+      GoogleSignInAccount? googleUser;
+
+      if (kIsWeb) {
+        try {
+          googleUser = await _googleSignIn.signInSilently();
+        } catch (e) {
+          debugPrint("Silent sign in failed, regular sign in required: $e");
+        }
+      }
+
+      googleUser ??= await _googleSignIn.signIn();
       if (googleUser == null) return null; // Usuario canceló
 
       final GoogleSignInAuthentication googleAuth =

@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
-import 'package:google_sign_in/google_sign_in.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:google_fonts/google_fonts.dart';
+import '../../services/auth_service.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -25,54 +25,15 @@ class _LoginScreenState extends State<LoginScreen> {
   // AUTH LOGIC: GOOGLE
   Future<void> _signInWithGoogle() async {
     setState(() => _isLoading = true);
-    final GoogleSignIn googleSignIn = GoogleSignIn(
-      clientId:
-          "822361821036-s5k1q9u89ks6tdu5cj0nef38dtcvlqqp.apps.googleusercontent.com",
-    );
     try {
-      // FORCE account picker to appear every time
-      await googleSignIn.disconnect();
-    } catch (e) {
-      // Disconnect might fail if never signed in, ignore
-    }
+      final user = await AuthService().signInWithGoogle();
 
-    try {
-      final GoogleSignInAccount? googleUser = await googleSignIn.signIn();
-      if (googleUser == null) {
+      if (user == null) {
         setState(() => _isLoading = false);
         return;
       }
 
-      final GoogleSignInAuthentication googleAuth =
-          await googleUser.authentication;
-      final AuthCredential credential = GoogleAuthProvider.credential(
-        accessToken: googleAuth.accessToken,
-        idToken: googleAuth.idToken,
-      );
-
-      final UserCredential userCredential = await FirebaseAuth.instance
-          .signInWithCredential(credential);
-      final User? user = userCredential.user;
-
-      if (user != null) {
-        // Check Firestore
-        final userDoc = await FirebaseFirestore.instance
-            .collection('users')
-            .doc(user.uid)
-            .get();
-        if (!userDoc.exists) {
-          await FirebaseFirestore.instance
-              .collection('users')
-              .doc(user.uid)
-              .set({
-                'uid': user.uid,
-                'email': user.email,
-                'firstName': user.displayName?.split(' ').first ?? 'Driver',
-                'lastName': user.displayName?.split(' ').last ?? '',
-                'registrationDate': DateTime.now().toIso8601String(),
-              });
-        }
-      }
+      // Note: Firestore entry is already handled inside AuthService.signInWithGoogle()
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(

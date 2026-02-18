@@ -787,6 +787,7 @@ class Driver {
   final int contractYearsRemaining;
   final Map<String, double> weeklyGrowth;
   final String? portraitUrl;
+  final String statusTitle;
 
   Driver({
     required this.id,
@@ -815,6 +816,7 @@ class Driver {
     this.contractYearsRemaining = 1,
     this.weeklyGrowth = const {},
     this.portraitUrl,
+    this.statusTitle = 'Unknown Status',
   });
 
   /// Retorna el potencial máximo de una estadística específica.
@@ -867,6 +869,7 @@ class Driver {
       'contractYearsRemaining': contractYearsRemaining,
       'weeklyGrowth': weeklyGrowth,
       'portraitUrl': portraitUrl,
+      'statusTitle': statusTitle,
     };
   }
 
@@ -913,6 +916,7 @@ class Driver {
         ),
       ),
       portraitUrl: map['portraitUrl'],
+      statusTitle: map['statusTitle'] ?? 'Unknown Status',
     );
   }
 
@@ -973,6 +977,7 @@ class Driver {
     int? contractYearsRemaining,
     Map<String, double>? weeklyGrowth,
     String? portraitUrl,
+    String? statusTitle,
   }) {
     return Driver(
       id: id ?? this.id,
@@ -997,6 +1002,7 @@ class Driver {
           contractYearsRemaining ?? this.contractYearsRemaining,
       weeklyGrowth: weeklyGrowth ?? this.weeklyGrowth,
       portraitUrl: portraitUrl ?? this.portraitUrl,
+      statusTitle: statusTitle ?? this.statusTitle,
     );
   }
 }

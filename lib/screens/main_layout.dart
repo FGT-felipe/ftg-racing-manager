@@ -491,9 +491,7 @@ class _Sidebar extends StatelessWidget {
               fontSize: fontSize,
               paddingLeft: paddingLeft,
             ),
-            ...node.children!
-                .map((child) => _buildNode(child, depth + 1))
-                .toList(),
+            ...node.children!.map((child) => _buildNode(child, depth + 1)),
           ],
         );
       } else {
@@ -603,8 +601,9 @@ class _SubNavbar extends StatelessWidget {
       (n) => n.id == activeParentId,
       orElse: () => navTree.first,
     );
-    if (parentNode.children == null || parentNode.children!.isEmpty)
+    if (parentNode.children == null || parentNode.children!.isEmpty) {
       return const SizedBox.shrink();
+    }
 
     final theme = Theme.of(context);
 

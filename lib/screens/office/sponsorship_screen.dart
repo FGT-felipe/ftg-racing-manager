@@ -429,13 +429,11 @@ class _CommonInstructionCard extends StatelessWidget {
   final IconData icon;
   final String title;
   final String description;
-  final Widget? extraContent;
 
   const _CommonInstructionCard({
     required this.icon,
     required this.title,
     required this.description,
-    this.extraContent,
   });
 
   @override
@@ -486,7 +484,6 @@ class _CommonInstructionCard extends StatelessWidget {
                 color: theme.colorScheme.onSurface.withValues(alpha: 0.8),
               ),
             ),
-            if (extraContent != null) extraContent!,
           ],
         ),
       ),

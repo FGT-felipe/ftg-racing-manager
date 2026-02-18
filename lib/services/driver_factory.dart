@@ -3,6 +3,7 @@ import '../models/core_models.dart';
 import '../models/domain/domain_models.dart';
 import 'driver_portrait_service.dart';
 import 'driver_name_service.dart';
+import 'driver_status_service.dart';
 
 /// Fábrica para generar pilotos experimentados de un país específico.
 ///
@@ -43,9 +44,10 @@ class DriverFactory {
     final potential = _generatePotentialStars(isElite);
     final priorStats = _generatePriorStats(isElite, age, potential);
 
-    return Driver(
+    // Initial Driver without title to calculate it
+    final baseDriver = Driver(
       id: id,
-      teamId: null, // Se asignará después
+      teamId: null,
       name: _generateName(gender),
       age: age,
       potential: potential,
@@ -66,6 +68,10 @@ class DriverFactory {
         age: age,
       ),
     );
+
+    final statusTitle = DriverStatusService.calculateTitle(baseDriver);
+
+    return baseDriver.copyWith(statusTitle: statusTitle);
   }
 
   /// Genera un ID único para el piloto
