@@ -118,48 +118,43 @@ class _SponsorshipScreenState extends State<SponsorshipScreen> {
     return SingleChildScrollView(
       padding: const EdgeInsets.all(20),
       child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          _buildCarVisualization(team, role, isDesktop: false),
-          const SizedBox(height: 40),
           _buildNegotiationLegend(),
+          const SizedBox(height: 32),
+          _buildCarVisualization(team, role, isDesktop: false),
         ],
       ),
     );
   }
 
-  // --- DESKTOP LAYOUT ---
   Widget _buildDesktopLayout(Team team, ManagerRole role) {
-    return Row(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        // Left Panel: Car Diagram (40%)
-        Expanded(
-          flex: 4,
-          child: SingleChildScrollView(
-            padding: const EdgeInsets.all(32),
-            child: Column(
-              children: [
-                _buildCarVisualization(team, role, isDesktop: true),
-                const SizedBox(height: 32),
-                _buildNegotiationLegend(),
-              ],
-            ),
+    return SingleChildScrollView(
+      padding: const EdgeInsets.all(32),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          _buildNegotiationLegend(),
+          const SizedBox(height: 32),
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // Left Side: Car Visualization (40%)
+              Expanded(
+                flex: 4,
+                child: Column(
+                  children: [
+                    _buildCarVisualization(team, role, isDesktop: true),
+                  ],
+                ),
+              ),
+              const SizedBox(width: 32),
+              // Right Side: Details / Offers (60%)
+              Expanded(flex: 6, child: _buildDesktopRightPanel(team)),
+            ],
           ),
-        ),
-        // Right Panel: Details / Offers (60%)
-        Expanded(
-          flex: 6,
-          child: Container(
-            margin: const EdgeInsets.all(20),
-            padding: const EdgeInsets.all(32),
-            decoration: BoxDecoration(
-              color: Theme.of(context).scaffoldBackgroundColor,
-              borderRadius: BorderRadius.circular(8),
-            ),
-            child: _buildDesktopRightPanel(team),
-          ),
-        ),
-      ],
+        ],
+      ),
     );
   }
 
@@ -421,42 +416,79 @@ class _SponsorshipScreenState extends State<SponsorshipScreen> {
   }
 
   Widget _buildNegotiationLegend() {
-    return Container(
-      padding: const EdgeInsets.all(24),
-      decoration: BoxDecoration(
-        color: Theme.of(context).cardTheme.color,
-        borderRadius: BorderRadius.circular(8),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            "NEGOTIATION RULES",
-            style: TextStyle(
-              color: Theme.of(context).primaryColor,
-              fontWeight: FontWeight.bold,
-            ),
+    return const _CommonInstructionCard(
+      icon: Icons.handshake_rounded,
+      title: "NEGOTIATION RULES",
+      description:
+          "Choose a strategy that matches the sponsor's personality. Remember you have 3 attempts total; if you fail, the sponsor will leave for 7 days.",
+    );
+  }
+}
+
+class _CommonInstructionCard extends StatelessWidget {
+  final IconData icon;
+  final String title;
+  final String description;
+  final Widget? extraContent;
+
+  const _CommonInstructionCard({
+    required this.icon,
+    required this.title,
+    required this.description,
+    this.extraContent,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    return Card(
+      color: theme.cardTheme.color,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+      elevation: 4,
+      child: Container(
+        width: double.infinity,
+        padding: const EdgeInsets.all(24),
+        decoration: BoxDecoration(
+          gradient: LinearGradient(
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+            colors: [
+              theme.colorScheme.primary.withValues(alpha: 0.15),
+              theme.colorScheme.surface,
+            ],
           ),
-          const SizedBox(height: 12),
-          Text(
-            "• Choose a strategy that matches the sponsor's personality.",
-            style: TextStyle(
-              color: Theme.of(
-                context,
-              ).colorScheme.onSurface.withValues(alpha: 0.7),
-              fontSize: 13,
-            ),
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(
+            color: theme.colorScheme.primary.withValues(alpha: 0.2),
           ),
-          Text(
-            "• You have 3 attempts total. Fail and they leave for 7 days.",
-            style: TextStyle(
-              color: Theme.of(
-                context,
-              ).colorScheme.onSurface.withValues(alpha: 0.7),
-              fontSize: 13,
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Icon(icon, color: theme.colorScheme.primary, size: 32),
+                const SizedBox(width: 12),
+                Text(
+                  title,
+                  style: theme.textTheme.titleLarge?.copyWith(
+                    fontWeight: FontWeight.bold,
+                    color: theme.colorScheme.primary.withValues(alpha: 0.9),
+                  ),
+                ),
+              ],
             ),
-          ),
-        ],
+            const SizedBox(height: 16),
+            Text(
+              description,
+              style: theme.textTheme.bodyMedium?.copyWith(
+                height: 1.5,
+                color: theme.colorScheme.onSurface.withValues(alpha: 0.8),
+              ),
+            ),
+            if (extraContent != null) extraContent!,
+          ],
+        ),
       ),
     );
   }

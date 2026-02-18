@@ -31,7 +31,7 @@ class YouthAcademyFactory {
 
     return YoungDriver(
       id: id,
-      name: _generateName(),
+      name: _generateName(gender),
       nationality: country,
       age: age,
       baseSkill: _generateBaseSkill(),
@@ -55,25 +55,30 @@ class YouthAcademyFactory {
 
   /// Genera un nombre simulado
   /// TODO: Implementar pools de nombres específicos por país en futuras fases
-  String _generateName() {
-    const firstNames = [
+  String _generateName(String gender) {
+    const maleFirstNames = [
       'Lucas',
-      'Sofia',
       'Mateo',
-      'Valentina',
       'Diego',
-      'Isabella',
       'Gabriel',
-      'Camila',
       'Santiago',
-      'Martina',
       'Alejandro',
-      'Victoria',
       'Sebastián',
-      'Elena',
       'Daniel',
+    ];
+
+    const femaleFirstNames = [
+      'Sofia',
+      'Valentina',
+      'Isabella',
+      'Camila',
+      'Martina',
+      'Victoria',
+      'Elena',
       'Ana',
     ];
+
+    final firstNames = gender == 'M' ? maleFirstNames : femaleFirstNames;
 
     const lastNames = [
       'Silva',

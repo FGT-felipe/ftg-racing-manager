@@ -9,10 +9,28 @@ import 'office/finances_screen.dart';
 import 'office/sponsorship_screen.dart';
 import 'calendar/calendar_screen.dart';
 import 'race/race_day_screen.dart';
+import 'hq/youth_academy_screen.dart';
+import 'management/personal_screen.dart';
 import '../widgets/common/app_logo.dart';
 import '../services/season_service.dart';
 import '../services/time_service.dart';
 import 'dart:async';
+
+class NavNode {
+  final String title;
+  final IconData icon;
+  final Widget? screen;
+  final List<NavNode>? children;
+  final String id;
+
+  NavNode({
+    required this.title,
+    required this.icon,
+    this.screen,
+    this.children,
+    required this.id,
+  });
+}
 
 class MainLayout extends StatefulWidget {
   final String teamId;
@@ -24,12 +42,14 @@ class MainLayout extends StatefulWidget {
 }
 
 class _MainLayoutState extends State<MainLayout> {
-  int _selectedIndex = 0;
+  String _selectedId = 'dashboard';
+  String _activeParentId = 'dashboard';
   bool _isCollapsed = false;
   bool _isRaceInProgress = false;
   Timer? _statusTimer;
 
-  late final List<Widget> _views;
+  late final List<NavNode> _navTree;
+  late final List<NavNode> _flatLeaves;
 
   @override
   void initState() {
@@ -38,21 +58,137 @@ class _MainLayoutState extends State<MainLayout> {
     _statusTimer = Timer.periodic(const Duration(minutes: 1), (timer) {
       _checkRaceStatus();
     });
-    _views = [
-      DashboardScreen(
-        teamId: widget.teamId,
-        onNavigate: (index) => _onItemTapped(index),
+
+    _navTree = [
+      NavNode(
+        id: 'dashboard',
+        title: 'Dashboard',
+        icon: Icons.dashboard_rounded,
+        screen: DashboardScreen(
+          teamId: widget.teamId,
+          onNavigate: (index) {
+            // Mapping index for compatibility if needed, but we use IDs now
+          },
+        ),
       ),
-      EngineeringScreen(teamId: widget.teamId), // Car
-      TeamScreen(teamId: widget.teamId),
-      DriversScreen(teamId: widget.teamId),
-      PaddockScreen(teamId: widget.teamId),
-      RaceDayScreen(teamId: widget.teamId),
-      const StandingsScreen(),
-      FinancesScreen(teamId: widget.teamId),
-      SponsorshipScreen(teamId: widget.teamId),
-      CalendarScreen(teamId: widget.teamId),
+      NavNode(
+        id: 'hq',
+        title: 'HQ',
+        icon: Icons.business_rounded,
+        children: [
+          NavNode(
+            id: 'hq_office',
+            title: 'Team office',
+            icon: Icons.corporate_fare_rounded,
+            screen: TeamScreen(teamId: widget.teamId),
+          ),
+          NavNode(
+            id: 'hq_garage',
+            title: 'Garage',
+            icon: Icons.directions_car_filled_rounded,
+            screen: EngineeringScreen(teamId: widget.teamId),
+          ),
+          NavNode(
+            id: 'hq_academy',
+            title: 'Youth Academy',
+            icon: Icons.school_rounded,
+            screen: YouthAcademyScreen(teamId: widget.teamId),
+          ),
+        ],
+      ),
+      NavNode(
+        id: 'racing',
+        title: 'Racing',
+        icon: Icons.sports_score_rounded,
+        children: [
+          NavNode(
+            id: 'racing_setup',
+            title: 'Weekend Setup',
+            icon: Icons.settings_suggest_rounded,
+            screen: PaddockScreen(teamId: widget.teamId),
+          ),
+          NavNode(
+            id: 'racing_day',
+            title: 'Race day',
+            icon: Icons.play_circle_fill_rounded,
+            screen: RaceDayScreen(teamId: widget.teamId),
+          ),
+        ],
+      ),
+      NavNode(
+        id: 'management',
+        title: 'Management',
+        icon: Icons.manage_accounts_rounded,
+        children: [
+          NavNode(
+            id: 'mgmt_personal',
+            title: 'Personal',
+            icon: Icons.person_pin_rounded,
+            screen: PersonalScreen(
+              teamId: widget.teamId,
+              onDriversTap: () {
+                final driversNode = _findNodeById('mgmt_drivers', _navTree);
+                if (driversNode != null) _onNodeSelected(driversNode);
+              },
+            ),
+            children: [
+              NavNode(
+                id: 'mgmt_drivers',
+                title: 'Drivers',
+                icon: Icons.people_alt_rounded,
+                screen: DriversScreen(teamId: widget.teamId),
+              ),
+            ],
+          ),
+          NavNode(
+            id: 'mgmt_finances',
+            title: 'Finances',
+            icon: Icons.monetization_on_rounded,
+            screen: FinancesScreen(teamId: widget.teamId),
+          ),
+          NavNode(
+            id: 'mgmt_sponsors',
+            title: 'Sponsors',
+            icon: Icons.handshake_rounded,
+            screen: SponsorshipScreen(teamId: widget.teamId),
+          ),
+        ],
+      ),
+      NavNode(
+        id: 'season',
+        title: 'Season',
+        icon: Icons.emoji_events_rounded,
+        children: [
+          NavNode(
+            id: 'season_standings',
+            title: 'Standings',
+            icon: Icons.leaderboard_rounded,
+            screen: const StandingsScreen(),
+          ),
+          NavNode(
+            id: 'season_calendar',
+            title: 'Calendar',
+            icon: Icons.calendar_month_rounded,
+            screen: CalendarScreen(teamId: widget.teamId),
+          ),
+        ],
+      ),
     ];
+
+    _flatLeaves = _getFlatLeaves(_navTree);
+  }
+
+  List<NavNode> _getFlatLeaves(List<NavNode> nodes) {
+    List<NavNode> leaves = [];
+    for (var node in nodes) {
+      if (node.screen != null) {
+        leaves.add(node);
+      }
+      if (node.children != null) {
+        leaves.addAll(_getFlatLeaves(node.children!));
+      }
+    }
+    return leaves;
   }
 
   @override
@@ -78,10 +214,43 @@ class _MainLayoutState extends State<MainLayout> {
     }
   }
 
-  void _onItemTapped(int index) {
+  void _onNodeSelected(NavNode node) {
     setState(() {
-      _selectedIndex = index;
+      if (node.screen != null) {
+        _selectedId = node.id;
+        // Find parent to keep it active
+        _activeParentId = _findParentId(node.id, _navTree) ?? node.id;
+      } else if (node.children != null && node.children!.isNotEmpty) {
+        // If it doesn't have a screen but has children, select the first child
+        _onNodeSelected(node.children!.first);
+      }
     });
+  }
+
+  NavNode? _findNodeById(String id, List<NavNode> nodes) {
+    for (var node in nodes) {
+      if (node.id == id) return node;
+      if (node.children != null) {
+        var found = _findNodeById(id, node.children!);
+        if (found != null) return found;
+      }
+    }
+    return null;
+  }
+
+  String? _findParentId(String childId, List<NavNode> nodes) {
+    for (var node in nodes) {
+      if (node.children != null) {
+        for (var child in node.children!) {
+          if (child.id == childId) return node.id;
+          if (child.children != null) {
+            String? grandParent = _findParentId(childId, [child]);
+            if (grandParent != null) return node.id;
+          }
+        }
+      }
+    }
+    return null;
   }
 
   void _toggleSidebar() {
@@ -93,266 +262,306 @@ class _MainLayoutState extends State<MainLayout> {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-
-    // Global Header with Logo
-    final globalAppBar = AppBar(
-      title: AppLogo(size: 28, isDark: theme.brightness == Brightness.light),
-      backgroundColor: theme.scaffoldBackgroundColor,
-      elevation: 0,
-      centerTitle: false,
-      actions: [
-        IconButton(
-          icon: const Icon(Icons.account_circle_outlined),
-          onPressed: () {
-            // Future: Account settings
-          },
-        ),
-        const SizedBox(width: 8),
-      ],
-      bottom: PreferredSize(
-        preferredSize: const Size.fromHeight(1.0),
-        child: Divider(
-          height: 1,
-          color: theme.dividerColor.withValues(alpha: 0.1),
-        ),
-      ),
-    );
-
-    // Navigation items configuration
-    final navDestinations = [
-      const NavigationRailDestination(
-        icon: Icon(Icons.dashboard_rounded),
-        selectedIcon: Icon(Icons.dashboard),
-        label: Text('Dashboard'),
-      ),
-      const NavigationRailDestination(
-        icon: Icon(Icons.directions_car_filled_outlined),
-        selectedIcon: Icon(Icons.directions_car_filled),
-        label: Text('Car'),
-      ),
-      const NavigationRailDestination(
-        icon: Icon(Icons.business_outlined),
-        selectedIcon: Icon(Icons.business),
-        label: Text('Team'),
-      ),
-      const NavigationRailDestination(
-        icon: Icon(Icons.person_outline),
-        selectedIcon: Icon(Icons.person),
-        label: Text('Drivers'),
-      ),
-      NavigationRailDestination(
-        icon: Transform.rotate(
-          angle: 0.5,
-          child: const Icon(Icons.sports_score_outlined),
-        ),
-        selectedIcon: Transform.rotate(
-          angle: 0.5,
-          child: const Icon(Icons.sports_score),
-        ),
-        label: const Text('Padock'),
-      ),
-      NavigationRailDestination(
-        icon: _BlinkingRaceIcon(
-          inProgress: _isRaceInProgress,
-          isSelected: false,
-        ),
-        selectedIcon: _BlinkingRaceIcon(
-          inProgress: _isRaceInProgress,
-          isSelected: true,
-        ),
-        label: const Text('Race Day'),
-      ),
-      const NavigationRailDestination(
-        icon: Icon(Icons.emoji_events_outlined),
-        selectedIcon: Icon(Icons.emoji_events),
-        label: Text('Standings'),
-      ),
-      const NavigationRailDestination(
-        icon: Icon(Icons.monetization_on_outlined),
-        selectedIcon: Icon(Icons.monetization_on),
-        label: Text('Finances'),
-      ),
-      const NavigationRailDestination(
-        icon: Icon(Icons.handshake_outlined),
-        selectedIcon: Icon(Icons.handshake),
-        label: Text('Sponsors'),
-      ),
-      const NavigationRailDestination(
-        icon: Icon(Icons.calendar_month_outlined),
-        selectedIcon: Icon(Icons.calendar_month),
-        label: Text('Calendar'),
-      ),
-    ];
-
-    final bottomNavItems = <BottomNavigationBarItem>[
-      BottomNavigationBarItem(
-        icon: Icon(Icons.dashboard_rounded),
-        label: 'Dashboard',
-      ),
-      BottomNavigationBarItem(
-        icon: Icon(Icons.directions_car_filled),
-        label: 'Car',
-      ),
-      BottomNavigationBarItem(icon: Icon(Icons.business), label: 'Team'),
-      BottomNavigationBarItem(icon: Icon(Icons.person), label: 'Drivers'),
-      BottomNavigationBarItem(icon: Icon(Icons.sports_score), label: 'Padock'),
-      BottomNavigationBarItem(
-        icon: _BlinkingRaceIcon(
-          inProgress: _isRaceInProgress,
-          isSelected: false,
-          isBottomNav: true,
-        ),
-        label: 'Race Day',
-      ),
-      BottomNavigationBarItem(
-        icon: Icon(Icons.emoji_events),
-        label: 'Standings',
-      ),
-      BottomNavigationBarItem(
-        icon: Icon(Icons.monetization_on),
-        label: 'Finances',
-      ),
-      BottomNavigationBarItem(icon: Icon(Icons.handshake), label: 'Sponsors'),
-      BottomNavigationBarItem(
-        icon: Icon(Icons.calendar_month),
-        label: 'Calendar',
-      ),
-    ];
+    final isMobile = MediaQuery.of(context).size.width <= 900;
 
     return Scaffold(
-      appBar: globalAppBar,
-      body: LayoutBuilder(
-        builder: (context, constraints) {
-          if (constraints.maxWidth > 900) {
-            // Desktop Layout
-            return Row(
+      appBar: AppBar(
+        title: AppLogo(size: 28, isDark: theme.brightness == Brightness.light),
+        backgroundColor: theme.scaffoldBackgroundColor,
+        elevation: 0,
+        centerTitle: false,
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.account_circle_outlined),
+            onPressed: () {},
+          ),
+          const SizedBox(width: 8),
+        ],
+        bottom: PreferredSize(
+          preferredSize: const Size.fromHeight(1.0),
+          child: Divider(
+            height: 1,
+            color: theme.dividerColor.withValues(alpha: 0.1),
+          ),
+        ),
+      ),
+      body: Row(
+        children: [
+          if (!isMobile)
+            _Sidebar(
+              navTree: _navTree,
+              selectedId: _selectedId,
+              isCollapsed: _isCollapsed,
+              onNodeSelected: _onNodeSelected,
+              onToggle: _toggleSidebar,
+              isRaceInProgress: _isRaceInProgress,
+            ),
+          if (!isMobile)
+            VerticalDivider(
+              width: 1,
+              thickness: 1,
+              color: theme.dividerColor.withValues(alpha: 0.1),
+            ),
+          Expanded(
+            child: Column(
               children: [
-                NavigationRail(
-                  selectedIndex: _selectedIndex,
-                  onDestinationSelected: _onItemTapped,
-                  extended: !_isCollapsed,
-                  destinations: navDestinations,
-                  backgroundColor: theme.scaffoldBackgroundColor,
-                  minExtendedWidth: 200,
-                  leading: IconButton(
-                    icon: Icon(_isCollapsed ? Icons.menu : Icons.menu_open),
-                    onPressed: _toggleSidebar,
+                if (isMobile)
+                  _SubNavbar(
+                    navTree: _navTree,
+                    activeParentId: _activeParentId,
+                    selectedId: _selectedId,
+                    onNodeSelected: _onNodeSelected,
                   ),
-                ),
-                VerticalDivider(
-                  width: 1,
-                  thickness: 1,
-                  color: theme.dividerColor.withValues(alpha: 0.1),
-                ),
                 Expanded(
-                  child: Container(
-                    color: theme.scaffoldBackgroundColor,
-                    child: Center(
-                      child: ConstrainedBox(
-                        constraints: const BoxConstraints(maxWidth: 1400),
-                        child: IndexedStack(
-                          index: _selectedIndex,
-                          children: _views,
+                  child: Center(
+                    child: ConstrainedBox(
+                      constraints: const BoxConstraints(maxWidth: 1400),
+                      child: IndexedStack(
+                        index: _flatLeaves.indexWhere(
+                          (n) => n.id == _selectedId,
                         ),
+                        children: _flatLeaves.map((n) => n.screen!).toList(),
                       ),
                     ),
                   ),
                 ),
               ],
-            );
-          } else {
-            // Mobile Layout
-            return IndexedStack(index: _selectedIndex, children: _views);
-          }
-        },
+            ),
+          ),
+        ],
       ),
-      bottomNavigationBar: MediaQuery.of(context).size.width <= 900
+      bottomNavigationBar: isMobile
           ? BottomNavigationBar(
-              items: bottomNavItems,
-              currentIndex: _selectedIndex,
-              onTap: _onItemTapped,
-              type: BottomNavigationBarType.fixed,
-              selectedFontSize: 10,
-              unselectedFontSize: 10,
+              items: _navTree.map((node) {
+                return BottomNavigationBarItem(
+                  icon: Icon(node.icon),
+                  label: node.title,
+                );
+              }).toList(),
+              currentIndex: _navTree.indexWhere((n) => n.id == _activeParentId),
+              onTap: (index) {
+                var node = _navTree[index];
+                _onNodeSelected(node);
+              },
             )
           : null,
     );
   }
 }
 
-class _BlinkingRaceIcon extends StatefulWidget {
-  final bool inProgress;
-  final bool isSelected;
-  final bool isBottomNav;
+class _Sidebar extends StatelessWidget {
+  final List<NavNode> navTree;
+  final String selectedId;
+  final bool isCollapsed;
+  final Function(NavNode) onNodeSelected;
+  final VoidCallback onToggle;
+  final bool isRaceInProgress;
 
-  const _BlinkingRaceIcon({
-    required this.inProgress,
-    required this.isSelected,
-    this.isBottomNav = false,
+  const _Sidebar({
+    required this.navTree,
+    required this.selectedId,
+    required this.isCollapsed,
+    required this.onNodeSelected,
+    required this.onToggle,
+    required this.isRaceInProgress,
   });
-
-  @override
-  State<_BlinkingRaceIcon> createState() => _BlinkingRaceIconState();
-}
-
-class _BlinkingRaceIconState extends State<_BlinkingRaceIcon>
-    with SingleTickerProviderStateMixin {
-  late AnimationController _controller;
-  late Animation<double> _animation;
-
-  @override
-  void initState() {
-    super.initState();
-    _controller = AnimationController(
-      duration: const Duration(milliseconds: 1000),
-      vsync: this,
-    );
-    _animation = Tween<double>(
-      begin: 0.4,
-      end: 1.0,
-    ).animate(CurvedAnimation(parent: _controller, curve: Curves.easeInOut));
-
-    if (widget.inProgress) {
-      _controller.repeat(reverse: true);
-    }
-  }
-
-  @override
-  void didUpdateWidget(_BlinkingRaceIcon oldWidget) {
-    super.didUpdateWidget(oldWidget);
-    if (widget.inProgress && !_controller.isAnimating) {
-      _controller.repeat(reverse: true);
-    } else if (!widget.inProgress && _controller.isAnimating) {
-      _controller.stop();
-      _controller.value = 1.0;
-    }
-  }
-
-  @override
-  void dispose() {
-    _controller.dispose();
-    super.dispose();
-  }
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final baseColor = widget.isSelected
-        ? (widget.isBottomNav ? theme.primaryColor : theme.primaryColor)
-        : (widget.isBottomNav
-              ? Colors.grey
-              : theme.iconTheme.color?.withValues(alpha: 0.5) ?? Colors.grey);
 
-    if (!widget.inProgress) {
-      return Icon(
-        Icons.play_circle_outline,
-        color: baseColor.withValues(alpha: 0.4),
+    return AnimatedContainer(
+      duration: const Duration(milliseconds: 200),
+      width: isCollapsed ? 70 : 250,
+      color: theme.scaffoldBackgroundColor,
+      child: Column(
+        children: [
+          const SizedBox(height: 8),
+          IconButton(
+            icon: Icon(isCollapsed ? Icons.menu : Icons.menu_open),
+            onPressed: onToggle,
+          ),
+          const Divider(),
+          Expanded(
+            child: ListView(
+              children: navTree.map((node) => _buildNode(node, 0)).toList(),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildNode(NavNode node, int depth) {
+    final bool isSelected = selectedId == node.id;
+    final bool hasChildren = node.children != null && node.children!.isNotEmpty;
+    final theme = ThemeData.dark(); // Or inherit if needed, but sidebar is dark
+
+    // Check if any child is selected for highlighting parent
+    bool isAnyChildSelected = false;
+    if (hasChildren) {
+      isAnyChildSelected = _isDescendantSelected(node, selectedId);
+    }
+
+    final double paddingLeft = 16.0 + (depth * 16.0);
+    final Color contentColor = (isSelected || isAnyChildSelected)
+        ? Colors.white
+        : Colors.white54;
+    final FontWeight fontWeight = (isSelected || isAnyChildSelected)
+        ? FontWeight.bold
+        : FontWeight.normal;
+    final double fontSize = depth > 0 ? 13 : 14;
+    final double iconSize = depth > 0 ? 20 : 24;
+
+    if (hasChildren && !isCollapsed) {
+      return Theme(
+        data: theme.copyWith(
+          dividerColor: Colors.transparent,
+          hoverColor: Colors.white.withValues(alpha: 0.05),
+        ),
+        child: ExpansionTile(
+          tilePadding: EdgeInsets.only(left: paddingLeft, right: 16.0),
+          initiallyExpanded: isAnyChildSelected,
+          leading: Icon(node.icon, color: contentColor, size: iconSize),
+          title: Text(
+            node.title,
+            style: TextStyle(
+              color: contentColor,
+              fontWeight: fontWeight,
+              fontSize: fontSize,
+            ),
+          ),
+          trailing: Icon(
+            Icons.keyboard_arrow_down_rounded,
+            color: contentColor,
+            size: 20,
+          ),
+          onExpansionChanged: (expanded) {
+            if (node.screen != null) onNodeSelected(node);
+          },
+          children: node.children!
+              .map((child) => _buildNode(child, depth + 1))
+              .toList(),
+        ),
       );
     }
 
-    return FadeTransition(
-      opacity: _animation,
-      child: Icon(Icons.play_circle_filled, color: Colors.greenAccent),
+    return ListTile(
+      contentPadding: EdgeInsets.only(left: paddingLeft, right: 16.0),
+      leading: isCollapsed && depth > 0
+          ? null
+          : Icon(node.icon, color: contentColor, size: iconSize),
+      title: isCollapsed
+          ? null
+          : Text(
+              node.title,
+              style: TextStyle(
+                color: contentColor,
+                fontWeight: fontWeight,
+                fontSize: fontSize,
+              ),
+            ),
+      selected: isSelected,
+      onTap: () => onNodeSelected(node),
     );
+  }
+
+  bool _isDescendantSelected(NavNode node, String selectedId) {
+    if (node.children == null) return false;
+    for (var child in node.children!) {
+      if (child.id == selectedId) return true;
+      if (_isDescendantSelected(child, selectedId)) return true;
+    }
+    return false;
+  }
+}
+
+class _SubNavbar extends StatelessWidget {
+  final List<NavNode> navTree;
+  final String activeParentId;
+  final String selectedId;
+  final Function(NavNode) onNodeSelected;
+
+  const _SubNavbar({
+    required this.navTree,
+    required this.activeParentId,
+    required this.selectedId,
+    required this.onNodeSelected,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final parentNode = navTree.firstWhere(
+      (n) => n.id == activeParentId,
+      orElse: () => navTree.first,
+    );
+    if (parentNode.children == null || parentNode.children!.isEmpty)
+      return const SizedBox.shrink();
+
+    final theme = Theme.of(context);
+
+    return Container(
+      height: 50,
+      decoration: BoxDecoration(
+        color: theme.scaffoldBackgroundColor,
+        border: Border(
+          bottom: BorderSide(color: theme.dividerColor.withValues(alpha: 0.1)),
+        ),
+      ),
+      child: ListView.builder(
+        scrollDirection: Axis.horizontal,
+        itemCount: parentNode.children!.length,
+        itemBuilder: (context, index) {
+          final child = parentNode.children![index];
+          final isSelected =
+              child.id == selectedId || _isChildSelected(child, selectedId);
+
+          return IntrinsicWidth(
+            child: InkWell(
+              onTap: () {
+                if (child.screen != null) {
+                  onNodeSelected(child);
+                } else if (child.children != null) {
+                  onNodeSelected(child.children!.first);
+                }
+              },
+              child: Container(
+                padding: const EdgeInsets.symmetric(horizontal: 20),
+                alignment: Alignment.center,
+                decoration: BoxDecoration(
+                  border: Border(
+                    bottom: BorderSide(
+                      color: isSelected
+                          ? theme.primaryColor
+                          : Colors.transparent,
+                      width: 2,
+                    ),
+                  ),
+                ),
+                child: Text(
+                  child.title,
+                  style: TextStyle(
+                    color: isSelected ? Colors.white : Colors.white54,
+                    fontWeight: isSelected
+                        ? FontWeight.bold
+                        : FontWeight.normal,
+                    fontSize: 13,
+                  ),
+                ),
+              ),
+            ),
+          );
+        },
+      ),
+    );
+  }
+
+  bool _isChildSelected(NavNode node, String selectedId) {
+    if (node.id == selectedId) return true;
+    if (node.children == null) return false;
+    for (var child in node.children!) {
+      if (_isChildSelected(child, selectedId)) return true;
+    }
+    return false;
   }
 }

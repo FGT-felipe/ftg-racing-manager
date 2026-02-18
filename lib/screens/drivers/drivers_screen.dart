@@ -12,15 +12,12 @@ class DriversScreen extends StatefulWidget {
   State<DriversScreen> createState() => _DriversScreenState();
 }
 
-class _DriversScreenState extends State<DriversScreen>
-    with SingleTickerProviderStateMixin {
-  late TabController _tabController;
+class _DriversScreenState extends State<DriversScreen> {
   late Future<List<Driver>> _driversFuture;
 
   @override
   void initState() {
     super.initState();
-    _tabController = TabController(length: 2, vsync: this);
     _refreshDrivers();
   }
 
@@ -33,28 +30,10 @@ class _DriversScreenState extends State<DriversScreen>
   }
 
   @override
-  void dispose() {
-    _tabController.dispose();
-    super.dispose();
-  }
-
-  @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Drivers Management'),
-        bottom: TabBar(
-          controller: _tabController,
-          tabs: const [
-            Tab(text: 'Current Drivers'),
-            Tab(text: 'Youth Academy'),
-          ],
-        ),
-      ),
-      body: TabBarView(
-        controller: _tabController,
-        children: [_buildCurrentDriversTab(), _buildYouthAcademyTab()],
-      ),
+      appBar: AppBar(title: const Text('Drivers Management')),
+      body: _buildCurrentDriversTab(),
     );
   }
 
@@ -102,27 +81,6 @@ class _DriversScreenState extends State<DriversScreen>
           },
         );
       },
-    );
-  }
-
-  Widget _buildYouthAcademyTab() {
-    return const Center(
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Icon(Icons.school, size: 64, color: Colors.grey),
-          SizedBox(height: 16),
-          Text(
-            'Youth Academy Coming Soon',
-            style: TextStyle(fontSize: 18, color: Colors.grey),
-          ),
-          SizedBox(height: 8),
-          Text(
-            'Train and promote the next generation of champions.',
-            style: TextStyle(fontSize: 14, color: Colors.grey),
-          ),
-        ],
-      ),
     );
   }
 }

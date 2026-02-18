@@ -98,19 +98,24 @@ class CalendarScreen extends StatelessWidget {
           horizontal: 20,
           vertical: 12,
         ),
-        leading: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Text(
-              "R$round",
-              style: TextStyle(
-                fontWeight: FontWeight.bold,
-                color: isCurrent ? theme.primaryColor : Colors.grey,
+        leading: SizedBox(
+          width: 40,
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text(
+                "R$round",
+                style: TextStyle(
+                  fontSize: 12,
+                  fontWeight: FontWeight.bold,
+                  color: isCurrent ? theme.primaryColor : Colors.grey,
+                ),
               ),
-            ),
-            const SizedBox(height: 4),
-            Text(event.flagEmoji, style: const TextStyle(fontSize: 24)),
-          ],
+              const SizedBox(height: 2),
+              Text(event.flagEmoji, style: const TextStyle(fontSize: 20)),
+            ],
+          ),
         ),
         title: Text(
           event.trackName.toUpperCase(),

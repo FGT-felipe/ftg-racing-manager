@@ -37,7 +37,7 @@ class DriverFactory {
     return Driver(
       id: id,
       teamId: null, // Se asignará después
-      name: _generateName(),
+      name: _generateName(gender),
       age: age,
       potential: _generatePotentialStars(isElite),
       points: 0,
@@ -68,8 +68,11 @@ class DriverFactory {
   }
 
   /// Genera un nombre completo del piloto
-  String _generateName() {
-    final firstNames = _firstNamesByCountry[country.code] ?? _defaultFirstNames;
+  String _generateName(String gender) {
+    final namesMap = gender == 'M'
+        ? _maleFirstNamesByCountry
+        : _femaleFirstNamesByCountry;
+    final firstNames = namesMap[country.code] ?? _defaultFirstNames;
     final lastNames = _lastNamesByCountry[country.code] ?? _defaultLastNames;
     final firstName = firstNames[_random.nextInt(firstNames.length)];
     final lastName = lastNames[_random.nextInt(lastNames.length)];
@@ -234,67 +237,22 @@ class DriverFactory {
 
   // ─── Nombres por país ──────────────────────────────────────────────────────
 
-  static const Map<String, List<String>> _firstNamesByCountry = {
-    'BR': [
-      'Lucas',
-      'Gabriel',
-      'Sofia',
-      'Maria',
-      'João',
-      'Ana',
-      'Miguel',
-      'Isabela',
-    ],
-    'AR': [
-      'Mateo',
-      'Santiago',
-      'Valentina',
-      'Emma',
-      'Diego',
-      'Lucía',
-      'Benjamín',
-      'Martina',
-    ],
-    'CO': [
-      'Matías',
-      'Samuel',
-      'Isabella',
-      'Catalina',
-      'Andrés',
-      'Camila',
-      'Sebastián',
-      'Valeria',
-    ],
-    'MX': [
-      'Miguel',
-      'Diego',
-      'Sofía',
-      'Valentina',
-      'Alejandro',
-      'Regina',
-      'Carlos',
-      'Fernanda',
-    ],
-    'UY': [
-      'Joaquín',
-      'Mateo',
-      'Martina',
-      'Sofía',
-      'Nicolás',
-      'Valentina',
-      'Felipe',
-      'Emma',
-    ],
-    'CL': [
-      'Matías',
-      'Benjamín',
-      'Sofía',
-      'Florencia',
-      'Vicente',
-      'Isidora',
-      'Agustín',
-      'Emilia',
-    ],
+  static const Map<String, List<String>> _maleFirstNamesByCountry = {
+    'BR': ['Lucas', 'Gabriel', 'João', 'Miguel'],
+    'AR': ['Mateo', 'Santiago', 'Diego', 'Benjamín'],
+    'CO': ['Matías', 'Samuel', 'Andrés', 'Sebastián'],
+    'MX': ['Miguel', 'Diego', 'Alejandro', 'Carlos'],
+    'UY': ['Joaquín', 'Mateo', 'Nicolás', 'Felipe'],
+    'CL': ['Matías', 'Benjamín', 'Vicente', 'Agustín'],
+  };
+
+  static const Map<String, List<String>> _femaleFirstNamesByCountry = {
+    'BR': ['Sofia', 'Maria', 'Ana', 'Isabela'],
+    'AR': ['Valentina', 'Emma', 'Lucía', 'Martina'],
+    'CO': ['Isabella', 'Catalina', 'Camila', 'Valeria'],
+    'MX': ['Sofía', 'Valentina', 'Regina', 'Fernanda'],
+    'UY': ['Martina', 'Sofía', 'Valentina', 'Emma'],
+    'CL': ['Sofía', 'Florencia', 'Isidora', 'Emilia'],
   };
 
   static const Map<String, List<String>> _lastNamesByCountry = {
