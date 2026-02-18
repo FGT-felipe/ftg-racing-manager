@@ -27,6 +27,19 @@ El sistema utiliza una paleta oscura moderna basada en un color de fondo profund
 | **Qualifying** | `#FFB800` | Sesión de clasificación, avisos o advertencias. |
 | **Race/Strategy** | `#FF5252` | Día de carrera, criticidad alta. |
 | **Neutral/Grey** | `#9E9E9E` | Deshabilitado, estados concluidos. |
+| **Driver Stats Scale** | *Ver abajo* | Representación visual del nivel de habilidad (0-20). |
+
+### Escala de Color para Driver Stats (0-20)
+Esta escala proporciona feedback inmediato sobre la calidad de una estadística específica de un piloto.
+
+| Rango | Color | Hexadecimal | Significado |
+| :--- | :--- | :--- | :--- |
+| **Crítico** | Rojo | `#EF5350` | Valor 0 (Inexistente/Grave) |
+| **Bajo** | Naranja | `#FF7043` | Valores 1-5 (Nivel muy bajo) |
+| **Medio-Bajo** | Amarillo | `#FFD54F` | Valores 6-9 (Nivel mejorable) |
+| **Competente** | Cyan | `#26C6DA` | Valores 10-13 (Nivel profesional estándar) |
+| **Alto/Elite** | Verde Claro | `#66BB6A` | Valores 14-17 (Potencial de podio) |
+| **Maestro** | Verde Oscuro | `#2E7D32` | Valores 18-20 (Nivel campeón mundial) |
 
 ---
 

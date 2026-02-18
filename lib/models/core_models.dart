@@ -372,6 +372,14 @@ class Team {
   final int wins;
   final int podiums;
   final int poles;
+
+  // Seasonal standings data
+  final int seasonPoints;
+  final int seasonRaces;
+  final int seasonWins;
+  final int seasonPodiums;
+  final int seasonPoles;
+
   final Map<String, Map<String, int>> carStats;
   final Map<String, dynamic> weekStatus;
   final Map<String, ActiveContract> sponsors;
@@ -387,6 +395,11 @@ class Team {
     this.wins = 0,
     this.podiums = 0,
     this.poles = 0,
+    this.seasonPoints = 0,
+    this.seasonRaces = 0,
+    this.seasonWins = 0,
+    this.seasonPodiums = 0,
+    this.seasonPoles = 0,
     required this.carStats,
     required this.weekStatus,
     this.sponsors = const {},
@@ -404,6 +417,11 @@ class Team {
       'wins': wins,
       'podiums': podiums,
       'poles': poles,
+      'seasonPoints': seasonPoints,
+      'seasonRaces': seasonRaces,
+      'seasonWins': seasonWins,
+      'seasonPodiums': seasonPodiums,
+      'seasonPoles': seasonPoles,
       'carStats': carStats,
       'weekStatus': weekStatus,
       'sponsors': sponsors.map((k, v) => MapEntry(k, v.toMap())),
@@ -463,6 +481,11 @@ class Team {
       wins: map['wins'] ?? 0,
       podiums: map['podiums'] ?? 0,
       poles: map['poles'] ?? 0,
+      seasonPoints: map['seasonPoints'] ?? 0,
+      seasonRaces: map['seasonRaces'] ?? 0,
+      seasonWins: map['seasonWins'] ?? 0,
+      seasonPodiums: map['seasonPodiums'] ?? 0,
+      seasonPoles: map['seasonPoles'] ?? 0,
       carStats: carStatsMap,
       weekStatus: Map<String, dynamic>.from(map['weekStatus'] ?? {}),
       sponsors: (map['sponsors'] as Map<String, dynamic>? ?? {}).map(
@@ -632,6 +655,13 @@ class Driver {
   final int podiums;
   final int poles;
 
+  // Seasonal standings data
+  final int seasonPoints;
+  final int seasonRaces;
+  final int seasonWins;
+  final int seasonPodiums;
+  final int seasonPoles;
+
   /// Estadísticas actuales del piloto (0-100 por stat).
   /// Claves definidas en [DriverStats].
   final Map<String, int> stats;
@@ -664,6 +694,11 @@ class Driver {
     this.wins = 0,
     this.podiums = 0,
     this.poles = 0,
+    this.seasonPoints = 0,
+    this.seasonRaces = 0,
+    this.seasonWins = 0,
+    this.seasonPodiums = 0,
+    this.seasonPoles = 0,
     required this.stats,
     this.statPotentials = const {},
     this.traits = const [],
@@ -711,6 +746,11 @@ class Driver {
       'wins': wins,
       'podiums': podiums,
       'poles': poles,
+      'seasonPoints': seasonPoints,
+      'seasonRaces': seasonRaces,
+      'seasonWins': seasonWins,
+      'seasonPodiums': seasonPodiums,
+      'seasonPoles': seasonPoles,
       'stats': stats,
       'statPotentials': statPotentials,
       'traits': traits.map((t) => t.name).toList(),
@@ -748,6 +788,11 @@ class Driver {
       wins: map['wins'] ?? 0,
       podiums: map['podiums'] ?? 0,
       poles: map['poles'] ?? 0,
+      seasonPoints: map['seasonPoints'] ?? 0,
+      seasonRaces: map['seasonRaces'] ?? 0,
+      seasonWins: map['seasonWins'] ?? 0,
+      seasonPodiums: map['seasonPodiums'] ?? 0,
+      seasonPoles: map['seasonPoles'] ?? 0,
       stats: migratedStats,
       statPotentials: Map<String, int>.from(map['statPotentials'] ?? {}),
       traits: parsedTraits,

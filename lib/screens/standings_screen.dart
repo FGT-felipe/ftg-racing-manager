@@ -353,7 +353,9 @@ class _DriversStandingsTab extends StatelessWidget {
             };
 
             drivers.sort((a, b) {
-              if (b.points != a.points) return b.points.compareTo(a.points);
+              if (b.seasonPoints != a.seasonPoints) {
+                return b.seasonPoints.compareTo(a.seasonPoints);
+              }
               return a.name.toLowerCase().compareTo(b.name.toLowerCase());
             });
 
@@ -386,11 +388,11 @@ class _DriversStandingsTab extends StatelessWidget {
                       "#${ranks[d.id] ?? '-'}",
                       d.name,
                       teamMap[d.teamId] ?? '—',
-                      "${d.races}",
-                      "${d.wins}",
-                      "${d.podiums}",
-                      "${d.poles}",
-                      "${d.points}",
+                      "${d.seasonRaces}",
+                      "${d.seasonWins}",
+                      "${d.seasonPodiums}",
+                      "${d.seasonPoles}",
+                      "${d.seasonPoints}",
                     ],
                   )
                   .toList(),
@@ -431,9 +433,11 @@ class _ConstructorsStandingsTab extends StatelessWidget {
             .map((d) => Team.fromMap(d.data() as Map<String, dynamic>))
             .toList();
 
-        // Sort by points DESC (primary) then Name ASC (secondary tie-breaker)
+        // Sort by seasonPoints DESC (primary) then Name ASC (secondary tie-breaker)
         teams.sort((a, b) {
-          if (b.points != a.points) return b.points.compareTo(a.points);
+          if (b.seasonPoints != a.seasonPoints) {
+            return b.seasonPoints.compareTo(a.seasonPoints);
+          }
           return a.name.toLowerCase().compareTo(b.name.toLowerCase());
         });
 
@@ -456,11 +460,11 @@ class _ConstructorsStandingsTab extends StatelessWidget {
                 (t) => <String>[
                   "#${ranks[t.id] ?? '-'}",
                   t.name,
-                  "${t.races}",
-                  "${t.wins}",
-                  "${t.podiums}",
-                  "${t.poles}",
-                  "${t.points}",
+                  "${t.seasonRaces}",
+                  "${t.seasonWins}",
+                  "${t.seasonPodiums}",
+                  "${t.seasonPoles}",
+                  "${t.seasonPoints}",
                 ],
               )
               .toList(),

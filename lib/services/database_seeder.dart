@@ -269,6 +269,11 @@ class DatabaseSeeder {
           wins: 0,
           podiums: 0,
           poles: 0,
+          seasonPoints: 0,
+          seasonRaces: 0,
+          seasonWins: 0,
+          seasonPodiums: 0,
+          seasonPoles: 0,
           carStats: {
             '0': {'aero': 1, 'powertrain': 1, 'chassis': 1, 'reliability': 1},
             '1': {'aero': 1, 'powertrain': 1, 'chassis': 1, 'reliability': 1},
@@ -331,6 +336,11 @@ class DatabaseSeeder {
               age: age,
               potential: 2 + random.nextInt(3), // 2-4 estrellas
               points: 0,
+              seasonPoints: 0,
+              seasonRaces: 0,
+              seasonWins: 0,
+              seasonPodiums: 0,
+              seasonPoles: 0,
               gender: gender,
               stats: stats,
               statPotentials: statPotentials,

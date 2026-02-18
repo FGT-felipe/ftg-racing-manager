@@ -779,6 +779,8 @@ class RaceService {
       Map<String, dynamic> teamUpdates = {
         'points': FieldValue.increment(pts),
         'races': FieldValue.increment(1),
+        'seasonPoints': FieldValue.increment(pts),
+        'seasonRaces': FieldValue.increment(1),
       };
 
       // Check if team had a winner or podiums in this simulated race
@@ -790,9 +792,14 @@ class RaceService {
           if (i < 3 && !performances[i].isDNF) teamPodiums++;
         }
       }
-      if (teamWon) teamUpdates['wins'] = FieldValue.increment(1);
-      if (teamPodiums > 0)
+      if (teamWon) {
+        teamUpdates['wins'] = FieldValue.increment(1);
+        teamUpdates['seasonWins'] = FieldValue.increment(1);
+      }
+      if (teamPodiums > 0) {
         teamUpdates['podiums'] = FieldValue.increment(teamPodiums);
+        teamUpdates['seasonPodiums'] = FieldValue.increment(teamPodiums);
+      }
 
       batch.update(teamRef, teamUpdates);
     }
@@ -920,10 +927,22 @@ class RaceService {
 
       // Update Driver Stats
       if (driverRefs.containsKey(driverId)) {
-        Map<String, dynamic> driverUpdates = {'races': FieldValue.increment(1)};
-        if (points > 0) driverUpdates['points'] = FieldValue.increment(points);
-        if (isWin) driverUpdates['wins'] = FieldValue.increment(1);
-        if (isPodium) driverUpdates['podiums'] = FieldValue.increment(1);
+        Map<String, dynamic> driverUpdates = {
+          'races': FieldValue.increment(1),
+          'seasonRaces': FieldValue.increment(1),
+        };
+        if (points > 0) {
+          driverUpdates['points'] = FieldValue.increment(points);
+          driverUpdates['seasonPoints'] = FieldValue.increment(points);
+        }
+        if (isWin) {
+          driverUpdates['wins'] = FieldValue.increment(1);
+          driverUpdates['seasonWins'] = FieldValue.increment(1);
+        }
+        if (isPodium) {
+          driverUpdates['podiums'] = FieldValue.increment(1);
+          driverUpdates['seasonPodiums'] = FieldValue.increment(1);
+        }
 
         batch.update(driverRefs[driverId]!, driverUpdates);
       }
@@ -958,6 +977,7 @@ class RaceService {
 
       if (earnedPoints > 0) {
         updates['points'] = FieldValue.increment(earnedPoints);
+        updates['seasonPoints'] = FieldValue.increment(earnedPoints);
       }
 
       // Determine if team got a win or podium in this race
@@ -969,9 +989,14 @@ class RaceService {
           if (i < 3) teamPodiums++;
         }
       }
-      if (teamWon) updates['wins'] = FieldValue.increment(1);
-      if (teamPodiums > 0)
+      if (teamWon) {
+        updates['wins'] = FieldValue.increment(1);
+        updates['seasonWins'] = FieldValue.increment(1);
+      }
+      if (teamPodiums > 0) {
         updates['podiums'] = FieldValue.increment(teamPodiums);
+        updates['seasonPodiums'] = FieldValue.increment(teamPodiums);
+      }
 
       // Reset week status
       updates['weekStatus'] = {
