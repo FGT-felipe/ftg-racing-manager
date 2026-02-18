@@ -55,22 +55,67 @@ El sistema tipográfico utiliza una combinación de dos fuentes para separar la 
 ## 3. Elementos de UI y Componentes
 
 ### Tarjetas y Contenedores
-- **Border Radius**: 8px (Estándar para tarjetas, botones y modales).
-- **Elevación**: Sutil (Elevation 2), utilizando sombras con opacidad `0.3` sobre el fondo `#15151E`.
+- **Border Radius**: 12px (Estándar actualizado para tarjetas premium), 8px para botones y modales pequeños.
+- **Elevación**: Sutil (Elevation 4), utilizando sombras con opacidad `0.3` sobre el fondo `#15151E`.
 - **Zebra Tables**: Las tablas de standings utilizan un fondo nulo para filas normales y un fondo `#secondary` con opacidad `0.15` para filas resaltadas.
 - **Highlighters**: Las filas seleccionadas o del jugador incluyen una **borde izquierdo de 4px** con el color `#secondary`.
 
-### Interactividad (Buttons & Selectors)
-- **Elevated Buttons**: Altura generosa (12-16px padding vertical), sin bordes redondeados excesivos (8px). Sin sombras de elevación plana para un look moderno de "Flat neumorphism".
-- **Selection Outline**: Los elementos seleccionables (como pilotos en el Paddock) utilizan un **borde de 1px** del color `#secondary` al estar activos.
-- **Sliders**: Tracks de color `#secondary` con fondos de carril muy sutiles (`alpha: 0.1`).
+### Componentes Premium (Nuevos)
+#### 1. Tarjetas de Instrucciones/Reglas (Instruction Cards)
+Utilizadas para guiar al usuario en secciones complejas (Garage, Sponsors).
+- **Fondo**: Gradiente lineal de `TopLeft` (Primary con 15% opacidad) a `BottomRight` (Surface).
+- **Borde**: Borde completo de 1px en color `Primary` con 20% de opacidad.
+- **Layout**: 
+  - Fila superior con ícono (32px) y título en `Outfit Bold` (Primary 90% opacidad).
+  - Cuerpo de texto descriptivo con altura de línea `1.5`.
+- **Ubicación**: Siempre en la parte superior de la vista, ocupando el 100% del ancho disponible.
 
-### Micro-animaciones y Visuales
-- **Gradients**: Se favorecen gradientes lineales sutiles de `TopLeft` a `BottomRight` mezclando el color de la tarjeta con el fondo de la pantalla para crear profundidad en "Hero sections".
-- **Iconografía**: Lineal (Outlined) para un look limpio, transicionando a relleno (Filled) solo para estados activos si es necesario.
+#### 2. Tarjetas de Categoría (Category Cards)
+Utilizadas en hubs de gestión (ej. Personal Screen).
+- **Interactividad**: Efecto `InkWell` para navegación.
+- **Estado Bloqueado**: Opacidad del 50% en el color de fondo e íconos en gris.
+- **Badge "Soon"**: Cintilla diagonal roja (`RedAccent`) en la esquina superior derecha rotada 45 grados para funcionalidades en desarrollo.
+
+### Interactividad (Buttons & Selectors)
+- **Elevated Buttons**: Altura generosa (12-16px padding vertical), 8px border radius. Look moderno de "Flat neumorphism".
+- **Selection Outline**: Relación de 1px con el color `#secondary` para indicar foco activo.
+- **Sliders**: Tracks de color `#secondary` con fondos de carril muy sutiles (`alpha: 0.1`).
 
 ---
 
-## 4. Layout
-- **Padding Lateral**: 20px (Dashboard) / 16px (Tabs/Resto).
+## 4. Navegación Jerárquica
+
+El sistema utiliza una arquitectura de información multinivel para organizar la complejidad del simulador.
+
+### Niveles de Jerarquía
+1. **Nivel 1 (Global)**: Dashboard, HQ, Racing, Management, Season.
+2. **Nivel 2 (Secciones)**: Ej. HQ -> Garage, Management -> Personal.
+3. **Nivel 3 (Detalle)**: Ej. Personal -> Drivers.
+
+### Comportamiento por Plataforma
+- **Desktop (Sidebar)**: 
+  - Sidebar colapsable (70px a 250px).
+  - Uso de `ExpansionTile` para categorías con hijos.
+  - Identación progresiva (16px por nivel) para mantener claridad visual.
+  - El estado se mantiene sincronizado: abrir una categoría selecciona automáticamente su primer submenú funcional.
+- **Mobile (Navbar Hub)**: 
+  - Nivel 1 en `BottomNavigationBar`.
+  - Nivel 2 en un `SubNavbar` horizontal scrollable justo debajo del AppBar.
+  - Navegación automática: Al tocar "Management", el sistema redirige al usuario directamente a "Personal" (primer hijo).
+
+---
+
+## 5. Patrones de Feedback y Badges
+
+- **Diagonal Ribbon ("SOON")**: Indica características planificadas. Color: Rojo vibrante, texto blanco, fuente pequeña (8px) y Bold.
+- **Status Indicator ("CURRENT")**: Fondo sólido `Primary`, texto negro `8-10px Bold`. Utilizado en el calendario para resaltar la carrera activa.
+- **Checkmark Completion**: Ícono `check_circle` en color `Success` para tareas o eventos finalizados.
+
+---
+
+## 6. Layout
+
+- **MaxWidth (Desktop Content)**: 1400px (Centrado con `ConstrainedBox` para evitar estiramiento excesivo en monitores ultra-wide).
+- **Padding Lateral**: 20px (Dashboard/Hubs) / 16px (Vistas de detalle).
 - **Spacing vertical**: Sistema de 8px (8, 16, 24, 32).
+- **Responsive Shell**: Uso de `LayoutBuilder` para alternar entre Sidebar (Desktop) y BottomNav (Mobile) basado en un breakpoint de `600px` (ancho de tablet pequeña).

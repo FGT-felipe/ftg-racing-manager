@@ -8,59 +8,13 @@ import 'universe_service.dart';
 import 'team_assignment_service.dart';
 import 'driver_assignment_service.dart';
 import 'driver_portrait_service.dart';
+import 'driver_name_service.dart';
 
 class DatabaseSeeder {
   static final FirebaseFirestore _db = FirebaseFirestore.instance;
 
-  static const List<String> _maleNames = [
-    "Juan",
-    "Carlos",
-    "Felipe",
-    "Matías",
-    "Diego",
-    "Santiago",
-    "Gabriel",
-    "Lucas",
-    "Mateo",
-    "Sebastián",
-    "Alejandro",
-    "Valentín",
-  ];
-  static const List<String> _femaleNames = [
-    "Sofía",
-    "Valentina",
-    "Camila",
-    "Isabella",
-    "Mariana",
-    "Gabriela",
-    "Daniela",
-    "Martina",
-    "Lucía",
-    "Paula",
-    "Elena",
-    "Ximena",
-  ];
-  static const List<String> _lastNames = [
-    "Rodríguez",
-    "González",
-    "Silva",
-    "García",
-    "López",
-    "Martínez",
-    "Pérez",
-    "Gómez",
-    "Sánchez",
-    "Díaz",
-    "Hernández",
-    "Torres",
-    "Ramírez",
-    "Montoya",
-    "Rossi",
-    "Piquet",
-    "Massa",
-    "Fittipaldi",
-    "Canapino",
-  ];
+  /// Servicio centralizado de nombres (con anti-repetición)
+  static final DriverNameService _nameService = DriverNameService();
   static const List<String> _teamNames = [
     "Escudería Los Andes",
     "Bogotá Racing",
@@ -329,13 +283,13 @@ class DatabaseSeeder {
 
         for (int i = 0; i < 2; i++) {
           final isFemale = random.nextBool();
-          final firstName = isFemale
-              ? _femaleNames[random.nextInt(_femaleNames.length)]
-              : _maleNames[random.nextInt(_maleNames.length)];
-          final lastName = _lastNames[random.nextInt(_lastNames.length)];
-          final age = 29 + random.nextInt(12);
-
           final gender = isFemale ? 'F' : 'M';
+          final age = 29 + random.nextInt(12);
+          final fullName = _nameService.generateName(
+            gender: gender,
+            countryCode: 'CO',
+          );
+
           final driverRef = teamRef.collection('drivers').doc();
 
           // Generar stats con el nuevo modelo de 11 atributos
@@ -373,7 +327,7 @@ class DatabaseSeeder {
               id: driverRef.id,
               teamId: teamRef.id,
               carIndex: i,
-              name: "$firstName $lastName",
+              name: fullName,
               age: age,
               potential: 2 + random.nextInt(3), // 2-4 estrellas
               points: 0,
