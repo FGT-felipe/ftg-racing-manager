@@ -48,20 +48,19 @@ Esta escala proporciona feedback inmediato sobre la calidad de una estadística 
 El sistema tipográfico utiliza una combinación de dos fuentes para separar la estructura de la narrativa.
 
 ### Estilos Principales
-- **Poppins Black (Google Fonts)**: Utilizada para **Headlines** y títulos de gran impacto.
+- **Poppins Black (Google Fonts)**: Utilizada para **Headlines**, títulos de gran impacto y **Navegación de Primer Nivel**.
   - Carácter: Moderno, agresivo, audaz.
   - Peso: `Black` (900).
-- **Raleway (Google Fonts)**: Utilizada para **Body text**, botones, datos y metadatos.
+- **Raleway (Google Fonts)**: Utilizada para **Body text**, botones, datos y **Navegación de Nivel 2+**.
   - Carácter: Elegante, alta legibilidad.
-  - Peso: `Regular` (400) para lectura, `Bold` (700) para énfasis/botones.
+  - Peso: `Regular` (400) para lectura, `Bold` (700) para énfasis/botones, `Black` (900) para sub-elementos jerárquicos.
 
 ### Escala de Texto (Provisional)
 - **H1 (AppBar/Title)**: 20px, Poppins Black (Uppercase, Letter Spacing 1.5).
 - **H2 (Section Header)**: 18px, Poppins Black.
+- **Nav Level 1**: 14px, Poppins Black (Uppercase, Letter Spacing 1.2).
+- **Nav Level 2**: 12px, Raleway Bold (Uppercase).
 - **Body Large**: 16px, Raleway Regular.
-- **Body Medium**: 14px, Raleway Regular.
-- **Table Data**: 12px, Raleway Medium.
-- **Labels/Overlines**: 10-11px, Raleway Bold (Uppercase, Letter Spacing 1.2+).
 
 ---
 
@@ -105,6 +104,19 @@ Diseñadas para mostrar progresión y costos operativos.
   - *Bloqueado/Soon*: Opacidad 50%, íconos grises, cinta "SOON".
   - *Activo*: Colores vibrantes, detalles visibles.
 
+#### 4. Migas de Pan (Breadcrumbs)
+Elemento de guía jerárquica para pantallas profundas.
+- **Tipografía**: `Raleway` (11-12px), color `Text Muted`.
+- **Separador**: Carácter `/` con opacidad reducida.
+- **Interactividad**: Los niveles superiores son interactivos (Hover: Highlight blanco).
+- **Estilo**: Siempre en Mayúsculas con letter-spacing 1.0 para un look moderno y racing.
+
+#### 5. Controlador de Sidebar (Sidebar Toggle)
+Botón minimalista posicionado en el borde derecho del sidebar.
+- **Forma**: Circular (24x24px).
+- **Color**: Fondo `#secondary` (Accent), Icono Negro.
+- **Comportamiento**: Flota en el borde para permitir el colapsado total (ancho 0px). Incluye una rotación animada de la flecha indicadora.
+
 ### Interactividad (Buttons & Selectors)
 - **Elevated Buttons**: Altura generosa (12-16px padding vertical), 8px border radius. Look moderno de "Flat neumorphism".
 - **Selection Outline**: Relación de 1px con el color `#secondary` para indicar foco activo.
@@ -114,21 +126,20 @@ Diseñadas para mostrar progresión y costos operativos.
 
 ## 4. Navegación Jerárquica
 
-El sistema utiliza una arquitectura de información multinivel para organizar la complejidad del simulador.
+El sistema utiliza una arquitectura de información sin íconos (Icon-less), centrada en la tipografía y el contraste.
 
 ### Niveles de Jerarquía
-1. **Nivel 1 (Global)**: Dashboard, HQ, Racing, Management, Season.
-2. **Nivel 2 (Secciones)**: Ej. HQ -> Garage, Management -> Personal.
-3. **Nivel 3 (Detalle)**: Ej. Personal -> Drivers.
+1. **Nivel 1 (Global)**: Dashboard, HQ, Racing, Management, Season. Estilo `Poppins Black`.
+2. **Nivel 2 (Secciones)**: Ej. HQ -> Garage. Siempre visibles en Desktop si el padre está expandido. Estilo `Raleway Bold`.
+3. **Nivel 3 (Detalle)**: Ej. Personal -> Drivers. Colapsables mediante chevrons laterales.
 
 ### Comportamiento por Plataforma
-- **Desktop (Sidebar)**: 
-  - Sidebar colapsable (70px a 250px).
-  - Uso de `ExpansionTile` para categorías con hijos.
-  - Identación progresiva (16px por nivel) para mantener claridad visual.
-  - El estado se mantiene sincronizado: abrir una categoría selecciona automáticamente su primer submenú funcional.
+- **Desktop (Sidebar Total Collapse)**: 
+  - Sidebar desaparece completamente al colapsar (ancho 0px).
+  - Solo el **Sidebar Toggle** permanece visible en el borde izquierdo de la pantalla.
+  - Los ítems de Nivel 1 actúan como headers fijos; sus hijos de Nivel 2 son persistentes (no colapsables).
 - **Mobile (Navbar Hub)**: 
-  - Nivel 1 en `BottomNavigationBar`.
+  - Nivel 1 en `BottomNavigationBar` (Solo Texto Uppercase).
   - Nivel 2 en un `SubNavbar` horizontal scrollable justo debajo del AppBar.
   - Navegación automática: Al tocar "Management", el sistema redirige al usuario directamente a "Personal" (primer hijo).
 

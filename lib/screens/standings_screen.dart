@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:google_fonts/google_fonts.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import '../models/core_models.dart';
@@ -123,13 +124,22 @@ class _StandingsScreenState extends State<StandingsScreen> {
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            const Text(
-                              "STANDINGS",
-                              style: TextStyle(
-                                fontSize: 24,
-                                fontWeight: FontWeight.w900,
-                                letterSpacing: -0.5,
+                            FutureBuilder<Season?>(
+                              future: SeasonService().getSeasonById(
+                                selectedLeague.currentSeasonId,
                               ),
+                              builder: (context, seasonSnapshot) {
+                                final seasonYear =
+                                    seasonSnapshot.data?.year ?? 2026;
+                                return Text(
+                                  "STANDINGS SEASON $seasonYear".toUpperCase(),
+                                  style: GoogleFonts.poppins(
+                                    fontSize: 24,
+                                    fontWeight: FontWeight.w900,
+                                    letterSpacing: 1.5,
+                                  ),
+                                );
+                              },
                             ),
                             // Current League/Division info if desired, or just title
                           ],

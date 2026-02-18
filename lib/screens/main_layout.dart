@@ -14,24 +14,18 @@ import 'hq/youth_academy_screen.dart';
 import 'management/personal_screen.dart';
 import 'hq_screen.dart';
 import '../widgets/common/app_logo.dart';
+import '../widgets/common/breadcrumbs.dart';
 import '../services/season_service.dart';
 import '../services/time_service.dart';
 import 'dart:async';
 
 class NavNode {
   final String title;
-  final IconData icon;
   final Widget? screen;
   final List<NavNode>? children;
   final String id;
 
-  NavNode({
-    required this.title,
-    required this.icon,
-    this.screen,
-    this.children,
-    required this.id,
-  });
+  NavNode({required this.title, this.screen, this.children, required this.id});
 }
 
 class MainLayout extends StatefulWidget {
@@ -65,7 +59,6 @@ class _MainLayoutState extends State<MainLayout> {
       NavNode(
         id: 'dashboard',
         title: 'Dashboard',
-        icon: Icons.dashboard_rounded,
         screen: DashboardScreen(
           teamId: widget.teamId,
           onNavigate: (index) {
@@ -76,25 +69,21 @@ class _MainLayoutState extends State<MainLayout> {
       NavNode(
         id: 'hq',
         title: 'HQ',
-        icon: Icons.business_rounded,
         screen: HQScreen(teamId: widget.teamId),
         children: [
           NavNode(
             id: 'hq_office',
             title: 'Team office',
-            icon: Icons.corporate_fare_rounded,
             screen: TeamScreen(teamId: widget.teamId),
           ),
           NavNode(
             id: 'hq_garage',
             title: 'Garage',
-            icon: Icons.directions_car_filled_rounded,
             screen: EngineeringScreen(teamId: widget.teamId),
           ),
           NavNode(
             id: 'hq_academy',
             title: 'Youth Academy',
-            icon: Icons.school_rounded,
             screen: YouthAcademyScreen(teamId: widget.teamId),
           ),
         ],
@@ -102,18 +91,15 @@ class _MainLayoutState extends State<MainLayout> {
       NavNode(
         id: 'racing',
         title: 'Racing',
-        icon: Icons.sports_score_rounded,
         children: [
           NavNode(
             id: 'racing_setup',
             title: 'Weekend Setup',
-            icon: Icons.settings_suggest_rounded,
             screen: PaddockScreen(teamId: widget.teamId),
           ),
           NavNode(
             id: 'racing_day',
             title: 'Race day',
-            icon: Icons.play_circle_fill_rounded,
             screen: RaceDayScreen(teamId: widget.teamId),
           ),
         ],
@@ -121,12 +107,10 @@ class _MainLayoutState extends State<MainLayout> {
       NavNode(
         id: 'management',
         title: 'Management',
-        icon: Icons.manage_accounts_rounded,
         children: [
           NavNode(
             id: 'mgmt_personal',
             title: 'Personal',
-            icon: Icons.person_pin_rounded,
             screen: PersonalScreen(
               teamId: widget.teamId,
               onDriversTap: () {
@@ -138,7 +122,6 @@ class _MainLayoutState extends State<MainLayout> {
               NavNode(
                 id: 'mgmt_drivers',
                 title: 'Drivers',
-                icon: Icons.people_alt_rounded,
                 screen: DriversScreen(teamId: widget.teamId),
               ),
             ],
@@ -146,13 +129,11 @@ class _MainLayoutState extends State<MainLayout> {
           NavNode(
             id: 'mgmt_finances',
             title: 'Finances',
-            icon: Icons.monetization_on_rounded,
             screen: FinancesScreen(teamId: widget.teamId),
           ),
           NavNode(
             id: 'mgmt_sponsors',
             title: 'Sponsors',
-            icon: Icons.handshake_rounded,
             screen: SponsorshipScreen(teamId: widget.teamId),
           ),
         ],
@@ -160,18 +141,15 @@ class _MainLayoutState extends State<MainLayout> {
       NavNode(
         id: 'season',
         title: 'Season',
-        icon: Icons.emoji_events_rounded,
         children: [
           NavNode(
             id: 'season_standings',
             title: 'Standings',
-            icon: Icons.leaderboard_rounded,
             screen: const StandingsScreen(),
           ),
           NavNode(
             id: 'season_calendar',
             title: 'Calendar',
-            icon: Icons.calendar_month_rounded,
             screen: CalendarScreen(teamId: widget.teamId),
           ),
         ],
@@ -256,6 +234,22 @@ class _MainLayoutState extends State<MainLayout> {
     return null;
   }
 
+  List<NavNode> _getPathToNode(
+    String id,
+    List<NavNode> nodes, [
+    List<NavNode>? currentPath,
+  ]) {
+    for (var node in nodes) {
+      final newPath = <NavNode>[...(currentPath ?? []), node];
+      if (node.id == id) return newPath;
+      if (node.children != null) {
+        final found = _getPathToNode(id, node.children!, newPath);
+        if (found.isNotEmpty) return found;
+      }
+    }
+    return [];
+  }
+
   void _toggleSidebar() {
     setState(() {
       _isCollapsed = !_isCollapsed;
@@ -288,57 +282,120 @@ class _MainLayoutState extends State<MainLayout> {
           ),
         ),
       ),
-      body: Row(
+      body: Stack(
+        clipBehavior: Clip.none,
         children: [
-          if (!isMobile)
-            _Sidebar(
-              navTree: _navTree,
-              selectedId: _selectedId,
-              isCollapsed: _isCollapsed,
-              onNodeSelected: _onNodeSelected,
-              onToggle: _toggleSidebar,
-              isRaceInProgress: _isRaceInProgress,
-            ),
-          if (!isMobile)
-            VerticalDivider(
-              width: 1,
-              thickness: 1,
-              color: theme.dividerColor.withValues(alpha: 0.1),
-            ),
-          Expanded(
-            child: Column(
-              children: [
-                if (isMobile)
-                  _SubNavbar(
-                    navTree: _navTree,
-                    activeParentId: _activeParentId,
-                    selectedId: _selectedId,
-                    onNodeSelected: _onNodeSelected,
-                  ),
-                Expanded(
-                  child: Center(
-                    child: ConstrainedBox(
-                      constraints: const BoxConstraints(maxWidth: 1400),
-                      child: IndexedStack(
-                        index: _flatLeaves.indexWhere(
-                          (n) => n.id == _selectedId,
+          Row(
+            children: [
+              if (!isMobile)
+                _Sidebar(
+                  navTree: _navTree,
+                  selectedId: _selectedId,
+                  isCollapsed: _isCollapsed,
+                  onNodeSelected: _onNodeSelected,
+                  isRaceInProgress: _isRaceInProgress,
+                ),
+              Expanded(
+                child: Column(
+                  children: [
+                    if (isMobile)
+                      _SubNavbar(
+                        navTree: _navTree,
+                        activeParentId: _activeParentId,
+                        selectedId: _selectedId,
+                        onNodeSelected: _onNodeSelected,
+                      ),
+                    Expanded(
+                      child: Center(
+                        child: ConstrainedBox(
+                          constraints: const BoxConstraints(maxWidth: 1400),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Padding(
+                                padding: const EdgeInsets.only(
+                                  left: 20,
+                                  right: 20,
+                                  top: 16,
+                                ),
+                                child: Breadcrumbs(
+                                  items: _getPathToNode(_selectedId, _navTree)
+                                      .map(
+                                        (node) => BreadcrumbItem(
+                                          label: node.title,
+                                          onTap: () => _onNodeSelected(node),
+                                        ),
+                                      )
+                                      .toList(),
+                                ),
+                              ),
+                              Expanded(
+                                child: IndexedStack(
+                                  index: _flatLeaves.indexWhere(
+                                    (n) => n.id == _selectedId,
+                                  ),
+                                  children: _flatLeaves
+                                      .map((n) => n.screen!)
+                                      .toList(),
+                                ),
+                              ),
+                            ],
+                          ),
                         ),
-                        children: _flatLeaves.map((n) => n.screen!).toList(),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+          // Floating Sidebar Toggle
+          if (!isMobile)
+            AnimatedPositioned(
+              duration: const Duration(milliseconds: 200),
+              left: _isCollapsed ? -12 : 250 - 12,
+              top: 48,
+              child: Container(
+                width: 24,
+                height: 24,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withValues(alpha: 0.4),
+                      blurRadius: 6,
+                      offset: const Offset(0, 2),
+                    ),
+                  ],
+                ),
+                child: Material(
+                  color: theme.colorScheme.secondary,
+                  type: MaterialType.circle,
+                  child: InkWell(
+                    onTap: _toggleSidebar,
+                    child: Center(
+                      child: AnimatedRotation(
+                        duration: const Duration(milliseconds: 200),
+                        turns: _isCollapsed ? 0.5 : 0,
+                        child: const Icon(
+                          Icons.keyboard_double_arrow_left_rounded,
+                          size: 16,
+                          color: Colors.black,
+                        ),
                       ),
                     ),
                   ),
                 ),
-              ],
+              ),
             ),
-          ),
         ],
       ),
       bottomNavigationBar: isMobile
           ? BottomNavigationBar(
               items: _navTree.map((node) {
                 return BottomNavigationBarItem(
-                  icon: Icon(node.icon),
-                  label: node.title,
+                  icon: const SizedBox.shrink(), // No icons
+                  label: node.title.toUpperCase(),
                 );
               }).toList(),
               currentIndex: _navTree.indexWhere((n) => n.id == _activeParentId),
@@ -357,7 +414,6 @@ class _Sidebar extends StatelessWidget {
   final String selectedId;
   final bool isCollapsed;
   final Function(NavNode) onNodeSelected;
-  final VoidCallback onToggle;
   final bool isRaceInProgress;
 
   const _Sidebar({
@@ -365,7 +421,6 @@ class _Sidebar extends StatelessWidget {
     required this.selectedId,
     required this.isCollapsed,
     required this.onNodeSelected,
-    required this.onToggle,
     required this.isRaceInProgress,
   });
 
@@ -375,18 +430,22 @@ class _Sidebar extends StatelessWidget {
 
     return AnimatedContainer(
       duration: const Duration(milliseconds: 200),
-      width: isCollapsed ? 70 : 250,
-      color: theme.scaffoldBackgroundColor,
+      width: isCollapsed ? 0 : 250,
+      decoration: BoxDecoration(
+        color: theme.scaffoldBackgroundColor,
+        border: Border(
+          right: BorderSide(
+            color: theme.dividerColor.withValues(alpha: 0.1),
+            width: 1,
+          ),
+        ),
+      ),
       child: Column(
         children: [
-          const SizedBox(height: 8),
-          IconButton(
-            icon: Icon(isCollapsed ? Icons.menu : Icons.menu_open),
-            onPressed: onToggle,
-          ),
-          const Divider(),
+          const SizedBox(height: 16),
           Expanded(
             child: ListView(
+              padding: EdgeInsets.zero,
               children: navTree.map((node) => _buildNode(node, 0)).toList(),
             ),
           ),
@@ -408,61 +467,107 @@ class _Sidebar extends StatelessWidget {
 
     final double paddingLeft = 16.0 + (depth * 16.0);
     final Color contentColor = (isSelected || isAnyChildSelected)
-        ? Colors.white
+        ? (depth == 0 ? theme.colorScheme.secondary : Colors.white)
         : Colors.white54;
     final FontWeight fontWeight = (isSelected || isAnyChildSelected)
-        ? FontWeight.bold
+        ? FontWeight
+              .w900 // Use Poppins Black style logic for main items
         : FontWeight.normal;
-    final double fontSize = depth > 0 ? 13 : 14;
-    final double iconSize = depth > 0 ? 20 : 24;
+    final double fontSize = depth > 0 ? 12 : 14;
 
-    if (hasChildren && !isCollapsed) {
-      return Theme(
-        data: theme.copyWith(
-          dividerColor: Colors.transparent,
-          hoverColor: Colors.white.withValues(alpha: 0.05),
-        ),
-        child: ExpansionTile(
-          tilePadding: EdgeInsets.only(left: paddingLeft, right: 16.0),
-          initiallyExpanded: isAnyChildSelected,
-          leading: Icon(node.icon, color: contentColor, size: iconSize),
-          title: Text(
-            node.title,
-            style: GoogleFonts.raleway(
-              color: contentColor,
+    if (!isCollapsed && hasChildren) {
+      if (depth == 0) {
+        // Level 1 items always show their children and have no chevron
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            _buildTile(
+              node: node,
+              depth: depth,
+              isSelected: isSelected,
+              contentColor: contentColor,
               fontWeight: fontWeight,
               fontSize: fontSize,
+              paddingLeft: paddingLeft,
             ),
+            ...node.children!
+                .map((child) => _buildNode(child, depth + 1))
+                .toList(),
+          ],
+        );
+      } else {
+        // Level 2+ items use ExpansionTile for their submenus
+        return Theme(
+          data: theme.copyWith(
+            dividerColor: Colors.transparent,
+            hoverColor: Colors.white.withValues(alpha: 0.05),
           ),
-          trailing: Icon(
-            Icons.keyboard_arrow_down_rounded,
-            color: contentColor,
-            size: 20,
+          child: ExpansionTile(
+            tilePadding: EdgeInsets.only(left: paddingLeft, right: 16.0),
+            initiallyExpanded: isAnyChildSelected,
+            title: Text(
+              node.title.toUpperCase(),
+              style: GoogleFonts.raleway(
+                color: contentColor,
+                fontWeight: FontWeight.bold,
+                fontSize: fontSize,
+              ),
+            ),
+            trailing: Icon(
+              Icons.keyboard_arrow_down_rounded,
+              color: contentColor,
+              size: 20,
+            ),
+            onExpansionChanged: (expanded) {
+              if (node.screen != null) onNodeSelected(node);
+            },
+            children: node.children!
+                .map((child) => _buildNode(child, depth + 1))
+                .toList(),
           ),
-          onExpansionChanged: (expanded) {
-            if (node.screen != null) onNodeSelected(node);
-          },
-          children: node.children!
-              .map((child) => _buildNode(child, depth + 1))
-              .toList(),
-        ),
-      );
+        );
+      }
     }
 
+    return _buildTile(
+      node: node,
+      depth: depth,
+      isSelected: isSelected,
+      contentColor: contentColor,
+      fontWeight: fontWeight,
+      fontSize: fontSize,
+      paddingLeft: paddingLeft,
+    );
+  }
+
+  Widget _buildTile({
+    required NavNode node,
+    required int depth,
+    required bool isSelected,
+    required Color contentColor,
+    required FontWeight fontWeight,
+    required double fontSize,
+    required double paddingLeft,
+  }) {
     return ListTile(
       contentPadding: EdgeInsets.only(left: paddingLeft, right: 16.0),
-      leading: isCollapsed && depth > 0
-          ? null
-          : Icon(node.icon, color: contentColor, size: iconSize),
       title: isCollapsed
           ? null
           : Text(
-              node.title,
-              style: GoogleFonts.raleway(
-                color: contentColor,
-                fontWeight: fontWeight,
-                fontSize: fontSize,
-              ),
+              node.title.toUpperCase(),
+              style: depth == 0
+                  ? GoogleFonts.poppins(
+                      color: contentColor,
+                      fontWeight: FontWeight.w900,
+                      fontSize: fontSize,
+                      letterSpacing: 1.2,
+                    )
+                  : GoogleFonts.raleway(
+                      color: contentColor,
+                      fontWeight: fontWeight,
+                      fontSize: fontSize,
+                    ),
             ),
       selected: isSelected,
       onTap: () => onNodeSelected(node),

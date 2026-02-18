@@ -6,7 +6,6 @@ import '../models/core_models.dart';
 import '../services/facility_service.dart';
 import '../services/finance_service.dart';
 import '../widgets/common/instruction_card.dart';
-import 'standings_screen.dart';
 
 class HQScreen extends StatefulWidget {
   final String teamId;
@@ -33,25 +32,10 @@ class _HQScreenState extends State<HQScreen> {
     return Scaffold(
       backgroundColor: theme.scaffoldBackgroundColor,
       appBar: AppBar(
-        title: Text(
-          l10n.hqTitle.toUpperCase(),
-          style: GoogleFonts.poppins(
-            fontWeight: FontWeight.w900,
-            letterSpacing: 1.5,
-          ),
-        ),
         centerTitle: true,
         backgroundColor: theme.scaffoldBackgroundColor,
         elevation: 0,
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.emoji_events, color: Colors.orangeAccent),
-            onPressed: () => Navigator.push(
-              context,
-              MaterialPageRoute(builder: (context) => const StandingsScreen()),
-            ),
-          ),
-        ],
+        toolbarHeight: 0, // Minimal height as info is in the body
       ),
       body: StreamBuilder<DocumentSnapshot>(
         stream: FirebaseFirestore.instance

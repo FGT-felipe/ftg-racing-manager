@@ -45,28 +45,64 @@ class DriverCard extends StatelessWidget {
   }
 
   Widget _buildDesktopLayout(BuildContext context) {
-    return Row(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        // Column A: Profile & Contract
-        Expanded(flex: 2, child: _buildColumnA(context)),
-        const VerticalDivider(
-          width: 48,
-          thickness: 1,
-          indent: 10,
-          endIndent: 10,
-        ),
-        // Column B: Stats
-        Expanded(flex: 3, child: _buildColumnB(context)),
-        const VerticalDivider(
-          width: 48,
-          thickness: 1,
-          indent: 10,
-          endIndent: 10,
-        ),
-        // Column C: Performance & History
-        Expanded(flex: 4, child: _buildColumnC(context)),
-      ],
+    return IntrinsicHeight(
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // Column A: Profile & Contract
+          Expanded(flex: 2, child: _buildColumnA(context)),
+          const VerticalDivider(
+            width: 48,
+            thickness: 1,
+            indent: 10,
+            endIndent: 10,
+          ),
+          // Combined Grid for B and C
+          Expanded(
+            flex: 7,
+            child: Column(
+              children: [
+                // Row 1: Skills & Form
+                IntrinsicHeight(
+                  child: Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Expanded(flex: 3, child: _buildSkillsSection(context)),
+                      const VerticalDivider(
+                        width: 48,
+                        thickness: 1,
+                        indent: 10,
+                        endIndent: 10,
+                      ),
+                      Expanded(flex: 4, child: _buildChampionshipForm(context)),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 24),
+                // Row 2: Career Details (Symmetrically aligned)
+                IntrinsicHeight(
+                  child: Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Expanded(
+                        flex: 3,
+                        child: _buildCareerStatsSummary(context),
+                      ),
+                      const VerticalDivider(
+                        width: 48,
+                        thickness: 1,
+                        indent: 10,
+                        endIndent: 10,
+                      ),
+                      Expanded(flex: 4, child: _buildCareerHistory(context)),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
     );
   }
 
@@ -200,6 +236,17 @@ class DriverCard extends StatelessWidget {
   }
 
   Widget _buildColumnB(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        _buildSkillsSection(context),
+        const SizedBox(height: 32),
+        _buildCareerStatsSummary(context),
+      ],
+    );
+  }
+
+  Widget _buildSkillsSection(BuildContext context) {
     final theme = Theme.of(context);
     final allStats = driver.stats.entries.toList();
 
@@ -231,6 +278,98 @@ class DriverCard extends StatelessWidget {
           },
         ),
       ],
+    );
+  }
+
+  Widget _buildCareerStatsSummary(BuildContext context) {
+    final theme = Theme.of(context);
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: theme.colorScheme.surfaceContainerHighest.withValues(alpha: 0.3),
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            'CAREER STATS',
+            style: theme.textTheme.labelMedium?.copyWith(
+              fontWeight: FontWeight.bold,
+              color: theme.colorScheme.secondary,
+            ),
+          ),
+          const SizedBox(height: 20),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              _buildCareerStatCircle(
+                context,
+                'WINS',
+                '${driver.wins}',
+                Icons.emoji_events_rounded,
+              ),
+              _buildCareerStatCircle(
+                context,
+                'PODIUMS',
+                '${driver.podiums}',
+                Icons.star_rounded,
+              ),
+              _buildCareerStatCircle(
+                context,
+                'RACES',
+                '${driver.races}',
+                Icons.flag_rounded,
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildCareerStatCircle(
+    BuildContext context,
+    String label,
+    String value,
+    IconData icon,
+  ) {
+    final theme = Theme.of(context);
+    return Expanded(
+      child: Column(
+        children: [
+          Text(
+            value,
+            style: const TextStyle(
+              fontSize: 18,
+              fontWeight: FontWeight.w900,
+              letterSpacing: -0.5,
+            ),
+          ),
+          const SizedBox(height: 8),
+          Container(
+            padding: const EdgeInsets.all(12),
+            decoration: BoxDecoration(
+              color: const Color(0xFF15151E), // App Background
+              shape: BoxShape.circle,
+              border: Border.all(
+                color: theme.colorScheme.secondary.withValues(alpha: 0.1),
+                width: 1,
+              ),
+            ),
+            child: Icon(icon, color: theme.colorScheme.secondary, size: 20),
+          ),
+          const SizedBox(height: 8),
+          Text(
+            label,
+            style: theme.textTheme.labelSmall?.copyWith(
+              color: Colors.white54,
+              fontWeight: FontWeight.bold,
+              letterSpacing: 0.5,
+            ),
+          ),
+        ],
+      ),
     );
   }
 
