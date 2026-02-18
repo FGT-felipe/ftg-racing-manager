@@ -39,6 +39,8 @@ dependencies:
   firebase_auth: ^5.4.1
   flutter_localizations:
     sdk: flutter
+  flutter_web_plugins:
+    sdk: flutter
   intl: any
   google_fonts: ^8.0.0
   google_sign_in: 6.2.1

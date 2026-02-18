@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:google_fonts/google_fonts.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import '../models/core_models.dart';
@@ -123,13 +124,22 @@ class _StandingsScreenState extends State<StandingsScreen> {
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            const Text(
-                              "STANDINGS",
-                              style: TextStyle(
-                                fontSize: 24,
-                                fontWeight: FontWeight.w900,
-                                letterSpacing: -0.5,
+                            FutureBuilder<Season?>(
+                              future: SeasonService().getSeasonById(
+                                selectedLeague.currentSeasonId,
                               ),
+                              builder: (context, seasonSnapshot) {
+                                final seasonYear =
+                                    seasonSnapshot.data?.year ?? 2026;
+                                return Text(
+                                  "STANDINGS SEASON $seasonYear".toUpperCase(),
+                                  style: GoogleFonts.poppins(
+                                    fontSize: 24,
+                                    fontWeight: FontWeight.w900,
+                                    letterSpacing: 1.5,
+                                  ),
+                                );
+                              },
                             ),
                             // Current League/Division info if desired, or just title
                           ],
@@ -194,7 +204,7 @@ class _StandingsScreenState extends State<StandingsScreen> {
                             ),
                             child: DropdownButtonHideUnderline(
                               child: DropdownButton<String>(
-                                value: selectedDivision!.id,
+                                value: selectedDivision.id,
                                 dropdownColor: Theme.of(
                                   context,
                                 ).colorScheme.surface,
@@ -263,11 +273,11 @@ class _StandingsScreenState extends State<StandingsScreen> {
                               child: TabBarView(
                                 children: [
                                   _DriversStandingsTab(
-                                    division: selectedDivision!,
+                                    division: selectedDivision,
                                     highlightTeamId: userTeamId,
                                   ),
                                   _ConstructorsStandingsTab(
-                                    division: selectedDivision!,
+                                    division: selectedDivision,
                                     highlightTeamId: userTeamId,
                                   ),
                                   _LastRaceStandingsTab(
@@ -353,7 +363,9 @@ class _DriversStandingsTab extends StatelessWidget {
             };
 
             drivers.sort((a, b) {
-              if (b.points != a.points) return b.points.compareTo(a.points);
+              if (b.seasonPoints != a.seasonPoints) {
+                return b.seasonPoints.compareTo(a.seasonPoints);
+              }
               return a.name.toLowerCase().compareTo(b.name.toLowerCase());
             });
 
@@ -386,11 +398,11 @@ class _DriversStandingsTab extends StatelessWidget {
                       "#${ranks[d.id] ?? '-'}",
                       d.name,
                       teamMap[d.teamId] ?? '—',
-                      "${d.races}",
-                      "${d.wins}",
-                      "${d.podiums}",
-                      "${d.poles}",
-                      "${d.points}",
+                      "${d.seasonRaces}",
+                      "${d.seasonWins}",
+                      "${d.seasonPodiums}",
+                      "${d.seasonPoles}",
+                      "${d.seasonPoints}",
                     ],
                   )
                   .toList(),
@@ -431,9 +443,11 @@ class _ConstructorsStandingsTab extends StatelessWidget {
             .map((d) => Team.fromMap(d.data() as Map<String, dynamic>))
             .toList();
 
-        // Sort by points DESC (primary) then Name ASC (secondary tie-breaker)
+        // Sort by seasonPoints DESC (primary) then Name ASC (secondary tie-breaker)
         teams.sort((a, b) {
-          if (b.points != a.points) return b.points.compareTo(a.points);
+          if (b.seasonPoints != a.seasonPoints) {
+            return b.seasonPoints.compareTo(a.seasonPoints);
+          }
           return a.name.toLowerCase().compareTo(b.name.toLowerCase());
         });
 
@@ -456,11 +470,11 @@ class _ConstructorsStandingsTab extends StatelessWidget {
                 (t) => <String>[
                   "#${ranks[t.id] ?? '-'}",
                   t.name,
-                  "${t.races}",
-                  "${t.wins}",
-                  "${t.podiums}",
-                  "${t.poles}",
-                  "${t.points}",
+                  "${t.seasonRaces}",
+                  "${t.seasonWins}",
+                  "${t.seasonPodiums}",
+                  "${t.seasonPoles}",
+                  "${t.seasonPoints}",
                 ],
               )
               .toList(),
@@ -504,8 +518,9 @@ class _LastRaceStandingsTab extends StatelessWidget {
         return FutureBuilder<Season?>(
           future: SeasonService().getSeasonById(seasonId),
           builder: (context, snapshot) {
-            if (!snapshot.hasData)
+            if (!snapshot.hasData) {
               return const Center(child: CircularProgressIndicator());
+            }
             final season = snapshot.data!;
 
             // Find last completed race
@@ -530,8 +545,9 @@ class _LastRaceStandingsTab extends StatelessWidget {
             return FutureBuilder<DocumentSnapshot>(
               future: SeasonService().getRaceDocument(raceId),
               builder: (context, raceSnapshot) {
-                if (!raceSnapshot.hasData)
+                if (!raceSnapshot.hasData) {
                   return const Center(child: CircularProgressIndicator());
+                }
                 final raceData =
                     raceSnapshot.data!.data() as Map<String, dynamic>?;
                 if (raceData == null || raceData['qualifyingResults'] == null) {

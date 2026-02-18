@@ -31,24 +31,24 @@ class AppTheme {
       ),
 
       textTheme: TextTheme(
-        headlineMedium: GoogleFonts.outfit(
+        headlineMedium: GoogleFonts.poppins(
           color: textNormal,
-          fontWeight: FontWeight.bold,
+          fontWeight: FontWeight.w900, // Black weight
         ),
-        headlineSmall: GoogleFonts.outfit(
+        headlineSmall: GoogleFonts.poppins(
           color: textNormal,
-          fontWeight: FontWeight.bold, // Always bold as requested
+          fontWeight: FontWeight.w900,
         ),
-        titleLarge: GoogleFonts.outfit(
+        titleLarge: GoogleFonts.poppins(
           color: textNormal,
-          fontWeight: FontWeight.bold,
+          fontWeight: FontWeight.w900,
         ),
-        bodyLarge: GoogleFonts.inter(color: textNormal, fontSize: 16),
-        bodyMedium: GoogleFonts.inter(
+        bodyLarge: GoogleFonts.raleway(color: textNormal, fontSize: 16),
+        bodyMedium: GoogleFonts.raleway(
           color: textNormal.withValues(alpha: 0.8),
           fontSize: 14,
         ),
-        labelLarge: GoogleFonts.inter(
+        labelLarge: GoogleFonts.raleway(
           color: textNormal,
           fontWeight: FontWeight.bold,
         ),
@@ -67,11 +67,11 @@ class AppTheme {
         elevation: 0,
         centerTitle: true,
         iconTheme: const IconThemeData(color: textNormal),
-        titleTextStyle: GoogleFonts.outfit(
+        titleTextStyle: GoogleFonts.poppins(
           color: textNormal,
           fontSize: 20,
-          fontWeight: FontWeight.bold,
-          letterSpacing: 1.0,
+          fontWeight: FontWeight.w900,
+          letterSpacing: 1.5,
         ),
       ),
 
@@ -84,7 +84,7 @@ class AppTheme {
           foregroundColor: WidgetStateProperty.all(textNormal),
           elevation: WidgetStateProperty.all(0),
           textStyle: WidgetStateProperty.all(
-            GoogleFonts.inter(fontWeight: FontWeight.bold),
+            GoogleFonts.raleway(fontWeight: FontWeight.bold),
           ),
           shape: WidgetStateProperty.all(
             RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
@@ -104,7 +104,7 @@ class AppTheme {
                 color: textNormal.withValues(alpha: 0.1),
                 width: 1,
               ),
-              textStyle: GoogleFonts.inter(fontWeight: FontWeight.bold),
+              textStyle: GoogleFonts.raleway(fontWeight: FontWeight.bold),
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(8),
               ),
@@ -123,11 +123,11 @@ class AppTheme {
         unselectedItemColor: textNormal.withValues(alpha: 0.5),
         elevation: 8,
         type: BottomNavigationBarType.fixed,
-        selectedLabelStyle: GoogleFonts.inter(
+        selectedLabelStyle: GoogleFonts.raleway(
           fontWeight: FontWeight.bold,
           fontSize: 12,
         ),
-        unselectedLabelStyle: GoogleFonts.inter(fontSize: 12),
+        unselectedLabelStyle: GoogleFonts.raleway(fontSize: 12),
       ),
     );
   }

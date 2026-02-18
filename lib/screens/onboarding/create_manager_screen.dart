@@ -222,7 +222,7 @@ class _CreateManagerScreenState extends State<CreateManagerScreen> {
                                 Expanded(
                                   child: DropdownButtonFormField<String>(
                                     isExpanded: true,
-                                    value: _selectedCountry,
+                                    initialValue: _selectedCountry,
                                     hint: const Text(
                                       "Country",
                                       style: TextStyle(
@@ -274,7 +274,7 @@ class _CreateManagerScreenState extends State<CreateManagerScreen> {
                                 Expanded(
                                   child: DropdownButtonFormField<String>(
                                     isExpanded: true,
-                                    value: _selectedGender,
+                                    initialValue: _selectedGender,
                                     hint: const Text(
                                       "Gender",
                                       style: TextStyle(

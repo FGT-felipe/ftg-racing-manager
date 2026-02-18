@@ -29,7 +29,7 @@ class CarSchematicWidget extends StatelessWidget {
       width: width,
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: Theme.of(context).cardTheme.color?.withOpacity(0.5),
+        color: Theme.of(context).cardTheme.color?.withValues(alpha: 0.5),
         borderRadius: BorderRadius.circular(12),
         border: Border.all(color: Colors.white10),
       ),
@@ -91,8 +91,8 @@ class CarSchematicWidget extends StatelessWidget {
             value:
                 double.parse(value.replaceAll('%', '').replaceAll('+', '')) /
                 100,
-            backgroundColor: Colors.white.withOpacity(0.05),
-            color: color.withOpacity(0.8),
+            backgroundColor: Colors.white.withValues(alpha: 0.05),
+            color: color.withValues(alpha: 0.8),
             minHeight: 2,
           ),
         ),

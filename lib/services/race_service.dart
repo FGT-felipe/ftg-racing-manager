@@ -726,12 +726,15 @@ class RaceService {
 
       if (pointsEarned > 0 || !perf.isDNF) {
         Map<String, dynamic> driverUpdates = {'races': FieldValue.increment(1)};
-        if (pointsEarned > 0)
+        if (pointsEarned > 0) {
           driverUpdates['points'] = FieldValue.increment(pointsEarned);
-        if (i == 0 && !perf.isDNF)
+        }
+        if (i == 0 && !perf.isDNF) {
           driverUpdates['wins'] = FieldValue.increment(1);
-        if (i < 3 && !perf.isDNF)
+        }
+        if (i < 3 && !perf.isDNF) {
           driverUpdates['podiums'] = FieldValue.increment(1);
+        }
 
         // Aplicar XP post-carrera y declive por edad
         final xpUpdates = _calculatePostRaceStatChanges(
@@ -779,6 +782,8 @@ class RaceService {
       Map<String, dynamic> teamUpdates = {
         'points': FieldValue.increment(pts),
         'races': FieldValue.increment(1),
+        'seasonPoints': FieldValue.increment(pts),
+        'seasonRaces': FieldValue.increment(1),
       };
 
       // Check if team had a winner or podiums in this simulated race
@@ -790,9 +795,14 @@ class RaceService {
           if (i < 3 && !performances[i].isDNF) teamPodiums++;
         }
       }
-      if (teamWon) teamUpdates['wins'] = FieldValue.increment(1);
-      if (teamPodiums > 0)
+      if (teamWon) {
+        teamUpdates['wins'] = FieldValue.increment(1);
+        teamUpdates['seasonWins'] = FieldValue.increment(1);
+      }
+      if (teamPodiums > 0) {
         teamUpdates['podiums'] = FieldValue.increment(teamPodiums);
+        teamUpdates['seasonPodiums'] = FieldValue.increment(teamPodiums);
+      }
 
       batch.update(teamRef, teamUpdates);
     }
@@ -838,8 +848,9 @@ class RaceService {
 
     // Identify current race index based on UNCOMPLETED races
     final raceIndex = season.calendar.indexWhere((r) => !r.isCompleted);
-    if (raceIndex == -1)
+    if (raceIndex == -1) {
       throw Exception("No pending races to apply results to");
+    }
     final currentRace = season.calendar[raceIndex];
 
     final batch = _db.batch();
@@ -920,10 +931,22 @@ class RaceService {
 
       // Update Driver Stats
       if (driverRefs.containsKey(driverId)) {
-        Map<String, dynamic> driverUpdates = {'races': FieldValue.increment(1)};
-        if (points > 0) driverUpdates['points'] = FieldValue.increment(points);
-        if (isWin) driverUpdates['wins'] = FieldValue.increment(1);
-        if (isPodium) driverUpdates['podiums'] = FieldValue.increment(1);
+        Map<String, dynamic> driverUpdates = {
+          'races': FieldValue.increment(1),
+          'seasonRaces': FieldValue.increment(1),
+        };
+        if (points > 0) {
+          driverUpdates['points'] = FieldValue.increment(points);
+          driverUpdates['seasonPoints'] = FieldValue.increment(points);
+        }
+        if (isWin) {
+          driverUpdates['wins'] = FieldValue.increment(1);
+          driverUpdates['seasonWins'] = FieldValue.increment(1);
+        }
+        if (isPodium) {
+          driverUpdates['podiums'] = FieldValue.increment(1);
+          driverUpdates['seasonPodiums'] = FieldValue.increment(1);
+        }
 
         batch.update(driverRefs[driverId]!, driverUpdates);
       }
@@ -958,6 +981,7 @@ class RaceService {
 
       if (earnedPoints > 0) {
         updates['points'] = FieldValue.increment(earnedPoints);
+        updates['seasonPoints'] = FieldValue.increment(earnedPoints);
       }
 
       // Determine if team got a win or podium in this race
@@ -969,9 +993,14 @@ class RaceService {
           if (i < 3) teamPodiums++;
         }
       }
-      if (teamWon) updates['wins'] = FieldValue.increment(1);
-      if (teamPodiums > 0)
+      if (teamWon) {
+        updates['wins'] = FieldValue.increment(1);
+        updates['seasonWins'] = FieldValue.increment(1);
+      }
+      if (teamPodiums > 0) {
         updates['podiums'] = FieldValue.increment(teamPodiums);
+        updates['seasonPodiums'] = FieldValue.increment(teamPodiums);
+      }
 
       // Reset week status
       updates['weekStatus'] = {
@@ -1097,8 +1126,9 @@ class RaceService {
         if (decline > 0 && current > 30) {
           // No cae por debajo de 30
           newStats[statKey] = (current - decline).clamp(30, 100);
-          if (newStats[statKey] != (currentStats[statKey] ?? 50))
+          if (newStats[statKey] != (currentStats[statKey] ?? 50)) {
             hasChanges = true;
+          }
         }
       }
     }
@@ -1114,8 +1144,9 @@ class RaceService {
       final gain = (experienceXp * facilitiesMultiplier).round();
       if (gain > 0) {
         newStats[statKey] = (current + gain).clamp(0, maxPotential);
-        if (newStats[statKey] != (currentStats[statKey] ?? 50))
+        if (newStats[statKey] != (currentStats[statKey] ?? 50)) {
           hasChanges = true;
+        }
       }
     }
 

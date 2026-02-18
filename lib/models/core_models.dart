@@ -372,9 +372,18 @@ class Team {
   final int wins;
   final int podiums;
   final int poles;
+
+  // Seasonal standings data
+  final int seasonPoints;
+  final int seasonRaces;
+  final int seasonWins;
+  final int seasonPodiums;
+  final int seasonPoles;
+
   final Map<String, Map<String, int>> carStats;
   final Map<String, dynamic> weekStatus;
   final Map<String, ActiveContract> sponsors;
+  final Map<String, Facility> facilities;
 
   Team({
     required this.id,
@@ -387,9 +396,15 @@ class Team {
     this.wins = 0,
     this.podiums = 0,
     this.poles = 0,
+    this.seasonPoints = 0,
+    this.seasonRaces = 0,
+    this.seasonWins = 0,
+    this.seasonPodiums = 0,
+    this.seasonPoles = 0,
     required this.carStats,
     required this.weekStatus,
     this.sponsors = const {},
+    this.facilities = const {},
   });
 
   Map<String, dynamic> toMap() {
@@ -404,9 +419,15 @@ class Team {
       'wins': wins,
       'podiums': podiums,
       'poles': poles,
+      'seasonPoints': seasonPoints,
+      'seasonRaces': seasonRaces,
+      'seasonWins': seasonWins,
+      'seasonPodiums': seasonPodiums,
+      'seasonPoles': seasonPoles,
       'carStats': carStats,
       'weekStatus': weekStatus,
       'sponsors': sponsors.map((k, v) => MapEntry(k, v.toMap())),
+      'facilities': facilities.map((k, v) => MapEntry(k, v.toMap())),
     };
   }
 
@@ -463,12 +484,121 @@ class Team {
       wins: map['wins'] ?? 0,
       podiums: map['podiums'] ?? 0,
       poles: map['poles'] ?? 0,
+      seasonPoints: map['seasonPoints'] ?? 0,
+      seasonRaces: map['seasonRaces'] ?? 0,
+      seasonWins: map['seasonWins'] ?? 0,
+      seasonPodiums: map['seasonPodiums'] ?? 0,
+      seasonPoles: map['seasonPoles'] ?? 0,
       carStats: carStatsMap,
       weekStatus: Map<String, dynamic>.from(map['weekStatus'] ?? {}),
       sponsors: (map['sponsors'] as Map<String, dynamic>? ?? {}).map(
         (k, v) =>
             MapEntry(k, ActiveContract.fromMap(Map<String, dynamic>.from(v))),
       ),
+      facilities: (map['facilities'] as Map<String, dynamic>? ?? {}).map(
+        (k, v) => MapEntry(k, Facility.fromMap(Map<String, dynamic>.from(v))),
+      ),
+    );
+  }
+}
+
+enum FacilityType {
+  teamOffice,
+  garage,
+  youthAcademy,
+  pressRoom,
+  scoutingOffice,
+  racingSimulator,
+  gym,
+  rdOffice,
+}
+
+class Facility {
+  final FacilityType type;
+  final int level;
+  final bool isLocked;
+
+  Facility({required this.type, this.level = 0, this.isLocked = false});
+
+  String get name {
+    switch (type) {
+      case FacilityType.teamOffice:
+        return "Team Office";
+      case FacilityType.garage:
+        return "Garage";
+      case FacilityType.youthAcademy:
+        return "Youth Academy";
+      case FacilityType.pressRoom:
+        return "Press Room";
+      case FacilityType.scoutingOffice:
+        return "Scouting Office";
+      case FacilityType.racingSimulator:
+        return "Racing Simulator";
+      case FacilityType.gym:
+        return "Gym";
+      case FacilityType.rdOffice:
+        return "R&D Office";
+    }
+  }
+
+  bool get isSoon {
+    return type == FacilityType.pressRoom ||
+        type == FacilityType.scoutingOffice ||
+        type == FacilityType.racingSimulator ||
+        type == FacilityType.gym ||
+        type == FacilityType.rdOffice;
+  }
+
+  int get upgradePrice {
+    if (level >= 5) return 0;
+    // Base prices
+    int basePrice = 100000;
+    // level 0 (to buy): 100k
+    // level 1: 200k
+    // level 2: 300k
+    return basePrice * (level + 1);
+  }
+
+  int get maintenanceCost {
+    if (level == 0) return 0;
+    // 10% of the next upgrade price or fixed based on current level
+    return level * 15000;
+  }
+
+  String get bonusDescription {
+    if (level == 0) return "Not purchased";
+    switch (type) {
+      case FacilityType.teamOffice:
+        return "Budget +${level * 5}%";
+      case FacilityType.garage:
+        return "Repair +${level * 2}%";
+      case FacilityType.youthAcademy:
+        return "Scouting +${level * 10}";
+      default:
+        return "TBD";
+    }
+  }
+
+  Map<String, dynamic> toMap() {
+    return {'type': type.name, 'level': level, 'isLocked': isLocked};
+  }
+
+  factory Facility.fromMap(Map<String, dynamic> map) {
+    return Facility(
+      type: FacilityType.values.firstWhere(
+        (e) => e.name == map['type'],
+        orElse: () => FacilityType.teamOffice,
+      ),
+      level: map['level'] ?? 0,
+      isLocked: map['isLocked'] ?? false,
+    );
+  }
+
+  Facility copyWith({int? level, bool? isLocked}) {
+    return Facility(
+      type: type,
+      level: level ?? this.level,
+      isLocked: isLocked ?? this.isLocked,
     );
   }
 }
@@ -632,6 +762,13 @@ class Driver {
   final int podiums;
   final int poles;
 
+  // Seasonal standings data
+  final int seasonPoints;
+  final int seasonRaces;
+  final int seasonWins;
+  final int seasonPodiums;
+  final int seasonPoles;
+
   /// Estadísticas actuales del piloto (0-100 por stat).
   /// Claves definidas en [DriverStats].
   final Map<String, int> stats;
@@ -650,6 +787,7 @@ class Driver {
   final int contractYearsRemaining;
   final Map<String, double> weeklyGrowth;
   final String? portraitUrl;
+  final String statusTitle;
 
   Driver({
     required this.id,
@@ -664,6 +802,11 @@ class Driver {
     this.wins = 0,
     this.podiums = 0,
     this.poles = 0,
+    this.seasonPoints = 0,
+    this.seasonRaces = 0,
+    this.seasonWins = 0,
+    this.seasonPodiums = 0,
+    this.seasonPoles = 0,
     required this.stats,
     this.statPotentials = const {},
     this.traits = const [],
@@ -673,6 +816,7 @@ class Driver {
     this.contractYearsRemaining = 1,
     this.weeklyGrowth = const {},
     this.portraitUrl,
+    this.statusTitle = 'Unknown Status',
   });
 
   /// Retorna el potencial máximo de una estadística específica.
@@ -711,6 +855,11 @@ class Driver {
       'wins': wins,
       'podiums': podiums,
       'poles': poles,
+      'seasonPoints': seasonPoints,
+      'seasonRaces': seasonRaces,
+      'seasonWins': seasonWins,
+      'seasonPodiums': seasonPodiums,
+      'seasonPoles': seasonPoles,
       'stats': stats,
       'statPotentials': statPotentials,
       'traits': traits.map((t) => t.name).toList(),
@@ -720,6 +869,7 @@ class Driver {
       'contractYearsRemaining': contractYearsRemaining,
       'weeklyGrowth': weeklyGrowth,
       'portraitUrl': portraitUrl,
+      'statusTitle': statusTitle,
     };
   }
 
@@ -748,6 +898,11 @@ class Driver {
       wins: map['wins'] ?? 0,
       podiums: map['podiums'] ?? 0,
       poles: map['poles'] ?? 0,
+      seasonPoints: map['seasonPoints'] ?? 0,
+      seasonRaces: map['seasonRaces'] ?? 0,
+      seasonWins: map['seasonWins'] ?? 0,
+      seasonPodiums: map['seasonPodiums'] ?? 0,
+      seasonPoles: map['seasonPoles'] ?? 0,
       stats: migratedStats,
       statPotentials: Map<String, int>.from(map['statPotentials'] ?? {}),
       traits: parsedTraits,
@@ -761,6 +916,7 @@ class Driver {
         ),
       ),
       portraitUrl: map['portraitUrl'],
+      statusTitle: map['statusTitle'] ?? 'Unknown Status',
     );
   }
 
@@ -821,6 +977,7 @@ class Driver {
     int? contractYearsRemaining,
     Map<String, double>? weeklyGrowth,
     String? portraitUrl,
+    String? statusTitle,
   }) {
     return Driver(
       id: id ?? this.id,
@@ -845,6 +1002,7 @@ class Driver {
           contractYearsRemaining ?? this.contractYearsRemaining,
       weeklyGrowth: weeklyGrowth ?? this.weeklyGrowth,
       portraitUrl: portraitUrl ?? this.portraitUrl,
+      statusTitle: statusTitle ?? this.statusTitle,
     );
   }
 }

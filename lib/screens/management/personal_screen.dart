@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:google_fonts/google_fonts.dart';
 
 class PersonalScreen extends StatelessWidget {
   final String teamId;
@@ -107,7 +108,7 @@ class _PersonalCard extends StatelessWidget {
                   Text(
                     title,
                     textAlign: TextAlign.center,
-                    style: TextStyle(
+                    style: GoogleFonts.raleway(
                       fontWeight: FontWeight.bold,
                       fontSize: 14,
                       color: isEnabled ? Colors.white : Colors.grey,

@@ -1,6 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import '../../models/core_models.dart';
 import '../../services/driver_assignment_service.dart';
+import '../../services/universe_service.dart';
+import '../../services/season_service.dart';
 import 'widgets/driver_card.dart';
 
 class DriversScreen extends StatefulWidget {
@@ -14,6 +17,9 @@ class DriversScreen extends StatefulWidget {
 
 class _DriversScreenState extends State<DriversScreen> {
   late Future<List<Driver>> _driversFuture;
+  String? _teamName;
+  String? _divisionName;
+  int? _currentYear;
 
   @override
   void initState() {
@@ -21,12 +27,55 @@ class _DriversScreenState extends State<DriversScreen> {
     _refreshDrivers();
   }
 
-  void _refreshDrivers() {
+  void _refreshDrivers() async {
     setState(() {
       _driversFuture = DriverAssignmentService().getDriversByTeam(
         widget.teamId,
       );
     });
+
+    // Fetch Team Name and Division Name
+    try {
+      final teamDoc = await FirebaseFirestore.instance
+          .collection('teams')
+          .doc(widget.teamId)
+          .get();
+
+      if (teamDoc.exists) {
+        final teamData = teamDoc.data();
+        if (mounted) {
+          setState(() {
+            _teamName = teamData?['name'];
+          });
+        }
+      }
+
+      final universe = await UniverseService().getUniverse();
+      if (universe != null && mounted) {
+        String? foundDivision;
+        for (var league in universe.getAllLeagues()) {
+          for (var division in league.divisions) {
+            if (division.teamIds.contains(widget.teamId)) {
+              foundDivision = division.name;
+              break;
+            }
+          }
+          if (foundDivision != null) break;
+        }
+        setState(() {
+          _divisionName = foundDivision;
+        });
+      }
+
+      final activeSeason = await SeasonService().getActiveSeason();
+      if (activeSeason != null && mounted) {
+        setState(() {
+          _currentYear = activeSeason.year;
+        });
+      }
+    } catch (e) {
+      debugPrint('Error fetching context names: $e');
+    }
   }
 
   @override
@@ -61,6 +110,9 @@ class _DriversScreenState extends State<DriversScreen> {
             final driver = drivers[index];
             return DriverCard(
               driver: driver,
+              teamName: _teamName,
+              divisionName: _divisionName,
+              currentYear: _currentYear,
               onRenew: () {
                 ScaffoldMessenger.of(context).showSnackBar(
                   SnackBar(

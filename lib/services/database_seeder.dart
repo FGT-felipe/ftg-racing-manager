@@ -9,6 +9,7 @@ import 'team_assignment_service.dart';
 import 'driver_assignment_service.dart';
 import 'driver_portrait_service.dart';
 import 'driver_name_service.dart';
+import 'driver_status_service.dart';
 
 class DatabaseSeeder {
   static final FirebaseFirestore _db = FirebaseFirestore.instance;
@@ -52,7 +53,8 @@ class DatabaseSeeder {
         'seasons',
         'divisions',
         'races',
-      ]; // Added races
+        'driver_titles',
+      ]; // Added races and driver_titles
       for (var collection in collectionsToClear) {
         final snapshot = await _db.collection(collection).get();
         if (snapshot.docs.isNotEmpty) {
@@ -111,6 +113,17 @@ class DatabaseSeeder {
       final leagueRef = _db.collection('leagues').doc();
       final league = League(id: leagueRef.id, name: "Copa Suramericana");
       batch.set(leagueRef, league.toMap());
+
+      // 1.5 SEED TITLES
+      final titles = DriverStatusService.getAllTitles();
+      for (final entry in titles.entries) {
+        final titleRef = _db.collection('driver_titles').doc(entry.key);
+        batch.set(titleRef, {
+          'title': entry.key,
+          'description': entry.value,
+          'updatedAt': FieldValue.serverTimestamp(),
+        });
+      }
 
       // 2. CALENDARIO
       final now = startDate ?? DateTime.now();
@@ -269,6 +282,11 @@ class DatabaseSeeder {
           wins: 0,
           podiums: 0,
           poles: 0,
+          seasonPoints: 0,
+          seasonRaces: 0,
+          seasonWins: 0,
+          seasonPodiums: 0,
+          seasonPoles: 0,
           carStats: {
             '0': {'aero': 1, 'powertrain': 1, 'chassis': 1, 'reliability': 1},
             '1': {'aero': 1, 'powertrain': 1, 'chassis': 1, 'reliability': 1},
@@ -321,34 +339,45 @@ class DatabaseSeeder {
             );
           }
 
+          final baseDriver = Driver(
+            id: driverRef.id,
+            teamId: teamRef.id,
+            carIndex: i,
+            name: fullName,
+            age: age,
+            potential: 2 + random.nextInt(3), // 2-4 estrellas
+            points: 0,
+            seasonPoints: 0,
+            seasonRaces: 0,
+            seasonWins: 0,
+            seasonPodiums: 0,
+            seasonPoles: 0,
+            gender: gender,
+            stats: stats,
+            statPotentials: statPotentials,
+            countryCode: 'CO',
+            role: i == 0 ? 'Main Driver' : 'Secondary Driver',
+            salary: 500000,
+            contractYearsRemaining: 1,
+            weeklyGrowth: {
+              DriverStats.feedback: 0.2,
+              DriverStats.consistency: 0.1,
+            },
+            portraitUrl: DriverPortraitService().getPortraitUrl(
+              driverId: driverRef.id,
+              countryCode: 'CO',
+              gender: gender,
+              age: age,
+            ),
+          );
+
           batch.set(
             driverRef,
-            Driver(
-              id: driverRef.id,
-              teamId: teamRef.id,
-              carIndex: i,
-              name: fullName,
-              age: age,
-              potential: 2 + random.nextInt(3), // 2-4 estrellas
-              points: 0,
-              gender: gender,
-              stats: stats,
-              statPotentials: statPotentials,
-              countryCode: 'CO',
-              role: i == 0 ? 'Main Driver' : 'Secondary Driver',
-              salary: 500000,
-              contractYearsRemaining: 1,
-              weeklyGrowth: {
-                DriverStats.feedback: 0.2,
-                DriverStats.consistency: 0.1,
-              },
-              portraitUrl: DriverPortraitService().getPortraitUrl(
-                driverId: driverRef.id,
-                countryCode: 'CO',
-                gender: gender,
-                age: age,
-              ),
-            ).toMap(),
+            baseDriver
+                .copyWith(
+                  statusTitle: DriverStatusService.calculateTitle(baseDriver),
+                )
+                .toMap(),
           );
         }
       }

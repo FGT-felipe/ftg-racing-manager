@@ -28,8 +28,8 @@ class _RaceLiveScreenState extends State<RaceLiveScreen> {
   Timer? _raceTimer;
 
   // Cache for display
-  Map<String, Driver> _driversMap = {};
-  Map<String, Team> _teamsMap = {};
+  final Map<String, Driver> _driversMap = {};
+  final Map<String, Team> _teamsMap = {};
 
   @override
   void initState() {
@@ -62,8 +62,9 @@ class _RaceLiveScreenState extends State<RaceLiveScreen> {
           .collection('races')
           .doc(raceId)
           .get();
-      if (!raceDoc.exists)
+      if (!raceDoc.exists) {
         throw Exception("Race not found. Run Qualifying first.");
+      }
       final raceData = raceDoc.data()!;
       if (raceData['grid'] == null) throw Exception("Grid not found.");
 

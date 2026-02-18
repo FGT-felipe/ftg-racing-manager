@@ -3,6 +3,7 @@ import '../models/core_models.dart';
 import '../models/domain/domain_models.dart';
 import 'driver_portrait_service.dart';
 import 'driver_name_service.dart';
+import 'driver_status_service.dart';
 
 /// Fábrica para generar pilotos experimentados de un país específico.
 ///
@@ -40,18 +41,22 @@ class DriverFactory {
     final statPotentials = _generateStatPotentials(isElite, stats);
     final traits = _generateTraits(age);
 
-    return Driver(
+    final potential = _generatePotentialStars(isElite);
+    final priorStats = _generatePriorStats(isElite, age, potential);
+
+    // Initial Driver without title to calculate it
+    final baseDriver = Driver(
       id: id,
-      teamId: null, // Se asignará después
+      teamId: null,
       name: _generateName(gender),
       age: age,
-      potential: _generatePotentialStars(isElite),
+      potential: potential,
       points: 0,
       gender: gender,
-      races: _generatePriorRaces(isElite),
-      wins: 0,
-      podiums: 0,
-      poles: 0,
+      races: priorStats['races']!,
+      wins: priorStats['wins']!,
+      podiums: priorStats['podiums']!,
+      poles: priorStats['poles']!,
       stats: stats,
       statPotentials: statPotentials,
       traits: traits,
@@ -63,6 +68,10 @@ class DriverFactory {
         age: age,
       ),
     );
+
+    final statusTitle = DriverStatusService.calculateTitle(baseDriver);
+
+    return baseDriver.copyWith(statusTitle: statusTitle);
   }
 
   /// Genera un ID único para el piloto
@@ -101,13 +110,32 @@ class DriverFactory {
     return _random.nextBool() ? 'M' : 'F';
   }
 
-  /// Genera carreras previas basado en división
-  int _generatePriorRaces(bool isElite) {
-    if (isElite) {
-      return 10 + _random.nextInt(41); // 10 to 50
-    } else {
-      return _random.nextInt(21); // 0 to 20
+  /// Genera estadísticas históricas coherentes (Races, Wins, Podiums)
+  /// Basado en edad, potencial y división.
+  Map<String, int> _generatePriorStats(bool isElite, int age, int potential) {
+    // Años de carrera profesional (máximo 6 para el histórico visible)
+    final yearsPro = (age - 20).clamp(0, 6);
+    if (yearsPro == 0) {
+      return {'races': 0, 'wins': 0, 'podiums': 0, 'poles': 0};
     }
+
+    // Temporadas de 9 carreras
+    final totalPossibleRaces = yearsPro * 9;
+    final races =
+        (totalPossibleRaces * 0.8).floor() +
+        _random.nextInt((totalPossibleRaces * 0.2).floor() + 1);
+
+    // Ratios de éxito basados en potencial (estrellas 1-5)
+    // 5 estrellas -> ~15% win rate, ~30% podium rate
+    // 1 estrella -> ~1% win rate, ~5% podium rate
+    final winRatio = (potential * 0.03) + (_random.nextDouble() * 0.02);
+    final podiumRatio = (potential * 0.07) + (_random.nextDouble() * 0.05);
+
+    final wins = (races * winRatio).floor();
+    final podiums = (races * podiumRatio).floor().clamp(wins, races);
+    final poles = (wins * 1.2).floor(); // Generalmente similar a wins
+
+    return {'races': races, 'wins': wins, 'podiums': podiums, 'poles': poles};
   }
 
   /// Genera todos los stats del piloto con los nuevos 11 atributos.

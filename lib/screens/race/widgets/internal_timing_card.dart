@@ -260,7 +260,7 @@ class InternalTimingCard extends StatelessWidget {
                           ],
                         ),
                       );
-                    }).toList(),
+                    }),
                   ],
                 );
               },
