@@ -19,6 +19,7 @@ class RaceEvent {
   final String id;
   final String trackName;
   final String countryCode;
+  final String flagEmoji;
 
   /// Circuit identifier for CircuitService (e.g. 'interlagos', 'monza').
   /// Used to get ideal setup and lap time. If null/empty, generic circuit is used.
@@ -34,6 +35,7 @@ class RaceEvent {
     required this.id,
     required this.trackName,
     required this.countryCode,
+    this.flagEmoji = '🏁',
     this.circuitId = 'generic',
     required this.date,
     required this.isCompleted,
@@ -48,6 +50,7 @@ class RaceEvent {
       'id': id,
       'trackName': trackName,
       'countryCode': countryCode,
+      'flagEmoji': flagEmoji,
       'circuitId': circuitId,
       'date': Timestamp.fromDate(date),
       'isCompleted': isCompleted,
@@ -73,6 +76,7 @@ class RaceEvent {
       id: map['id'] ?? '',
       trackName: map['trackName'] ?? '',
       countryCode: map['countryCode'] ?? '',
+      flagEmoji: map['flagEmoji'] ?? '🏁',
       circuitId: map['circuitId'] ?? 'generic',
       date: date,
       isCompleted: map['isCompleted'] ?? false,

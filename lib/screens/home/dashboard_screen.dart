@@ -75,8 +75,9 @@ class DashboardScreen extends StatelessWidget {
                         : null;
                     final circuitName =
                         currentRace?.event.trackName ?? "Grand Prix";
+                    final flagEmoji = currentRace?.event.flagEmoji ?? "🏁";
                     final countryCode = (currentRace?.event.countryCode ?? "—")
-                        .toLowerCase();
+                        .toUpperCase();
                     final circuitId = currentRace?.event.circuitId ?? 'generic';
                     final seasonId = season?.id;
 
@@ -174,6 +175,7 @@ class DashboardScreen extends StatelessWidget {
                               currentStatus: currentStatus,
                               circuitName: circuitName,
                               countryCode: countryCode,
+                              flagEmoji: flagEmoji,
                               targetDate: targetDate,
                               onActionPressed: onHeroAction,
                             ),
@@ -199,6 +201,7 @@ class DashboardScreen extends StatelessWidget {
 
                                 final cardCircuit = CircuitInfoCard(
                                   circuitName: circuitName,
+                                  flagEmoji: flagEmoji,
                                   totalLaps: currentRace?.event.totalLaps ?? 50,
                                   weatherPractice:
                                       currentRace?.event.weatherPractice ??
@@ -210,6 +213,10 @@ class DashboardScreen extends StatelessWidget {
                                       currentRace?.event.weatherRace ?? 'Sunny',
                                   characteristics:
                                       circuitProfile.characteristics,
+                                  aeroWeight: circuitProfile.aeroWeight,
+                                  chassisWeight: circuitProfile.chassisWeight,
+                                  powertrainWeight:
+                                      circuitProfile.powertrainWeight,
                                 );
 
                                 if (isDesktop) {

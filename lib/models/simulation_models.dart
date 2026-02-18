@@ -64,8 +64,18 @@ class CarSetup {
 class CircuitProfile {
   final String id;
   final String name;
+  final String flagEmoji;
   final CarSetup idealSetup;
   final double baseLapTime; // in seconds
+  final int laps;
+  final double tyreWearMultiplier;
+  final double fuelConsumptionMultiplier;
+
+  // Weights for car performance (should sum to 1.0 ideally)
+  final double aeroWeight;
+  final double chassisWeight;
+  final double powertrainWeight;
+
   final double difficulty; // 0.0 to 1.0 (affects driver error chance)
   final double overtakingDifficulty; // 0.0 to 1.0
   final Map<String, String> characteristics;
@@ -73,8 +83,15 @@ class CircuitProfile {
   CircuitProfile({
     required this.id,
     required this.name,
+    required this.flagEmoji,
     required this.idealSetup,
     required this.baseLapTime,
+    required this.laps,
+    this.tyreWearMultiplier = 1.0,
+    this.fuelConsumptionMultiplier = 1.0,
+    this.aeroWeight = 0.33,
+    this.chassisWeight = 0.33,
+    this.powertrainWeight = 0.34,
     this.difficulty = 0.5,
     this.overtakingDifficulty = 0.5,
     this.characteristics = const {},

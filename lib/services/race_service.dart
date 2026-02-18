@@ -233,10 +233,15 @@ class RaceService {
     double powerVal = (stats['powertrain'] ?? 1).toDouble().clamp(1, 20);
     double chassisVal = (stats['chassis'] ?? 1).toDouble().clamp(1, 20);
 
-    // Performance factor logic: (Aero + Power + Chassis) / 60.0
-    // Max level 20 each. Factor impact is 25% (0.25).
-    double carPerformanceFactor =
-        1.0 - (((aeroVal + powerVal + chassisVal) / 60.0) * 0.25);
+    // Performance factor logic using circuit weights
+    double weightedStat =
+        (aeroVal * circuit.aeroWeight) +
+        (powerVal * circuit.powertrainWeight) +
+        (chassisVal * circuit.chassisWeight);
+
+    // Weighted stat max is 20 if all stats are 20 and weights sum to 1.0.
+    // Factor impact is 25% (0.25)
+    double carPerformanceFactor = 1.0 - ((weightedStat / 20.0) * 0.25);
 
     // Driver Score
     double driverFactor =
@@ -306,11 +311,7 @@ class RaceService {
 
     // --- TYRE WEAR LOGIC ---
     // User Request: Add circuit wear conditions.
-    // Base wear factors:
-    String wearLevel = circuit.characteristics['Tyre Wear'] ?? 'Medium';
-    double circuitWearFactor = 1.0;
-    if (wearLevel == 'Low') circuitWearFactor = 0.8;
-    if (wearLevel == 'High') circuitWearFactor = 1.6;
+    double circuitWearFactor = circuit.tyreWearMultiplier;
 
     // Compound wear factors (Relative)
     double compoundWearMod = 1.0;
@@ -432,7 +433,7 @@ class RaceService {
     required Map<String, CarSetup> setupsMap, // driverId -> Setup
   }) async {
     final random = Random();
-    int totalLaps = 50;
+    int totalLaps = circuit.laps;
 
     // Initial State
     List<String> currentOrder = grid
@@ -471,7 +472,8 @@ class RaceService {
         lapTime += pow(wear / 100.0, 2) * 5.0; // Exponential penalty
 
         // Fuel Effect (Car gets lighter)
-        lapTime -= (lap * 0.05);
+        // Fuel consumption affects how much time is gained as fuel is burned
+        lapTime -= (lap * 0.05 * circuit.fuelConsumptionMultiplier);
 
         // Pit Stop Logic
         if (wear > 70) {
@@ -486,8 +488,9 @@ class RaceService {
             ),
           );
         } else {
-          // Add Wear
-          tyreWear[driverId] = wear + 3.0 + random.nextDouble();
+          // Add Wear based on circuit factor
+          tyreWear[driverId] =
+              wear + (3.0 * circuit.tyreWearMultiplier) + random.nextDouble();
         }
 
         currentLapTimes[driverId] = lapTime;
