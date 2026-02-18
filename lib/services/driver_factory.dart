@@ -2,6 +2,7 @@ import 'dart:math';
 import '../models/core_models.dart';
 import '../models/domain/domain_models.dart';
 import 'driver_portrait_service.dart';
+import 'driver_name_service.dart';
 
 /// Fábrica para generar pilotos experimentados de un país específico.
 ///
@@ -14,10 +15,15 @@ class DriverFactory {
   /// Generador de números aleatorios
   final Random _random;
 
+  /// Servicio de nombres de pilotos
+  final DriverNameService _nameService;
+
   /// Contador para IDs únicos por país
   static final Map<String, int> _countryCounters = {};
 
-  DriverFactory(this.country) : _random = Random() {
+  DriverFactory(this.country)
+    : _random = Random(),
+      _nameService = DriverNameService() {
     _countryCounters.putIfAbsent(country.code, () => 0);
   }
 
@@ -67,16 +73,9 @@ class DriverFactory {
     return 'driver_${countryCode}_$counter';
   }
 
-  /// Genera un nombre completo del piloto
+  /// Genera un nombre completo del piloto usando el servicio centralizado
   String _generateName(String gender) {
-    final namesMap = gender == 'M'
-        ? _maleFirstNamesByCountry
-        : _femaleFirstNamesByCountry;
-    final firstNames = namesMap[country.code] ?? _defaultFirstNames;
-    final lastNames = _lastNamesByCountry[country.code] ?? _defaultLastNames;
-    final firstName = firstNames[_random.nextInt(firstNames.length)];
-    final lastName = lastNames[_random.nextInt(lastNames.length)];
-    return '$firstName $lastName';
+    return _nameService.generateName(gender: gender, countryCode: country.code);
   }
 
   /// Genera edad basada en división.
@@ -234,105 +233,4 @@ class DriverFactory {
 
     return traits;
   }
-
-  // ─── Nombres por país ──────────────────────────────────────────────────────
-
-  static const Map<String, List<String>> _maleFirstNamesByCountry = {
-    'BR': ['Lucas', 'Gabriel', 'João', 'Miguel'],
-    'AR': ['Mateo', 'Santiago', 'Diego', 'Benjamín'],
-    'CO': ['Matías', 'Samuel', 'Andrés', 'Sebastián'],
-    'MX': ['Miguel', 'Diego', 'Alejandro', 'Carlos'],
-    'UY': ['Joaquín', 'Mateo', 'Nicolás', 'Felipe'],
-    'CL': ['Matías', 'Benjamín', 'Vicente', 'Agustín'],
-  };
-
-  static const Map<String, List<String>> _femaleFirstNamesByCountry = {
-    'BR': ['Sofia', 'Maria', 'Ana', 'Isabela'],
-    'AR': ['Valentina', 'Emma', 'Lucía', 'Martina'],
-    'CO': ['Isabella', 'Catalina', 'Camila', 'Valeria'],
-    'MX': ['Sofía', 'Valentina', 'Regina', 'Fernanda'],
-    'UY': ['Martina', 'Sofía', 'Valentina', 'Emma'],
-    'CL': ['Sofía', 'Florencia', 'Isidora', 'Emilia'],
-  };
-
-  static const Map<String, List<String>> _lastNamesByCountry = {
-    'BR': [
-      'Silva',
-      'Santos',
-      'Oliveira',
-      'Souza',
-      'Costa',
-      'Ferreira',
-      'Rodrigues',
-      'Almeida',
-    ],
-    'AR': [
-      'González',
-      'Rodríguez',
-      'Fernández',
-      'López',
-      'Martínez',
-      'García',
-      'Pérez',
-      'Sánchez',
-    ],
-    'CO': [
-      'García',
-      'Rodríguez',
-      'González',
-      'Hernández',
-      'López',
-      'Martínez',
-      'Torres',
-      'Ramírez',
-    ],
-    'MX': [
-      'García',
-      'Hernández',
-      'López',
-      'González',
-      'Martínez',
-      'Rodríguez',
-      'Pérez',
-      'Sánchez',
-    ],
-    'UY': [
-      'González',
-      'Rodríguez',
-      'Fernández',
-      'García',
-      'López',
-      'Martínez',
-      'Pérez',
-      'Sánchez',
-    ],
-    'CL': [
-      'González',
-      'Muñoz',
-      'Rojas',
-      'Díaz',
-      'Pérez',
-      'Soto',
-      'Contreras',
-      'Silva',
-    ],
-  };
-
-  static const List<String> _defaultFirstNames = [
-    'Alex',
-    'Jordan',
-    'Taylor',
-    'Morgan',
-    'Casey',
-    'Riley',
-  ];
-
-  static const List<String> _defaultLastNames = [
-    'Smith',
-    'Johnson',
-    'Williams',
-    'Brown',
-    'Jones',
-    'Garcia',
-  ];
 }

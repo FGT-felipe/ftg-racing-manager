@@ -2,6 +2,7 @@ import 'dart:math';
 import 'country_model.dart';
 import 'young_driver_model.dart';
 import '../../services/driver_portrait_service.dart';
+import '../../services/driver_name_service.dart';
 
 /// Fábrica para generar pilotos jóvenes prometedores de un país específico.
 ///
@@ -14,7 +15,12 @@ class YouthAcademyFactory {
   /// Generador de números aleatorios
   final Random _random;
 
-  YouthAcademyFactory(this.country) : _random = Random();
+  /// Servicio centralizado de nombres de pilotos
+  final DriverNameService _nameService;
+
+  YouthAcademyFactory(this.country)
+    : _random = Random(),
+      _nameService = DriverNameService();
 
   /// Genera un piloto joven prometedor de este país
   ///
@@ -53,56 +59,9 @@ class YouthAcademyFactory {
     return 'young_${country.code}_${timestamp}_$randomSuffix';
   }
 
-  /// Genera un nombre simulado
-  /// TODO: Implementar pools de nombres específicos por país en futuras fases
+  /// Genera un nombre simulado usando el servicio centralizado
   String _generateName(String gender) {
-    const maleFirstNames = [
-      'Lucas',
-      'Mateo',
-      'Diego',
-      'Gabriel',
-      'Santiago',
-      'Alejandro',
-      'Sebastián',
-      'Daniel',
-    ];
-
-    const femaleFirstNames = [
-      'Sofia',
-      'Valentina',
-      'Isabella',
-      'Camila',
-      'Martina',
-      'Victoria',
-      'Elena',
-      'Ana',
-    ];
-
-    final firstNames = gender == 'M' ? maleFirstNames : femaleFirstNames;
-
-    const lastNames = [
-      'Silva',
-      'García',
-      'Rodríguez',
-      'López',
-      'Martínez',
-      'González',
-      'Pérez',
-      'Sánchez',
-      'Ramírez',
-      'Torres',
-      'Flores',
-      'Rivera',
-      'Gómez',
-      'Díaz',
-      'Cruz',
-      'Morales',
-    ];
-
-    final firstName = firstNames[_random.nextInt(firstNames.length)];
-    final lastName = lastNames[_random.nextInt(lastNames.length)];
-
-    return '$firstName $lastName';
+    return _nameService.generateName(gender: gender, countryCode: country.code);
   }
 
   /// Genera edad para piloto joven (16-19 años)
