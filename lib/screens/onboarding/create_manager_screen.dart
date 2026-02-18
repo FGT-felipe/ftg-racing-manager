@@ -19,8 +19,8 @@ class _CreateManagerScreenState extends State<CreateManagerScreen> {
   final _monthCtrl = TextEditingController();
   final _yearCtrl = TextEditingController();
 
-  String _selectedCountry = 'Brazil';
-  String _selectedGender = 'Male';
+  String? _selectedCountry;
+  String? _selectedGender;
   int _selectedRoleIndex = 0;
   bool _isLoading = false;
 
@@ -126,8 +126,8 @@ class _CreateManagerScreenState extends State<CreateManagerScreen> {
             'uid': user.uid,
             'firstName': _nameCtrl.text.trim(),
             'lastName': _surnameCtrl.text.trim(),
-            'nationality': _selectedCountry,
-            'gender': _selectedGender,
+            'nationality': _selectedCountry ?? 'Brazil',
+            'gender': _selectedGender ?? 'Male',
             'birthDate': birthDate,
             'backgroundId': _roles[_selectedRoleIndex]['id'],
             'reputation': 50,
@@ -137,7 +137,10 @@ class _CreateManagerScreenState extends State<CreateManagerScreen> {
 
       if (!mounted) return;
       Navigator.of(context).pushReplacement(
-        MaterialPageRoute(builder: (context) => const TeamSelectionScreen()),
+        MaterialPageRoute(
+          builder: (context) =>
+              TeamSelectionScreen(nationality: _selectedCountry ?? 'Brazil'),
+        ),
       );
     } catch (e) {
       if (!mounted) return;
@@ -218,49 +221,98 @@ class _CreateManagerScreenState extends State<CreateManagerScreen> {
                               children: [
                                 Expanded(
                                   child: DropdownButtonFormField<String>(
-                                    initialValue: _selectedCountry,
-                                    decoration: _inputDeco("Country"),
+                                    isExpanded: true,
+                                    value: _selectedCountry,
+                                    hint: const Text(
+                                      "Country",
+                                      style: TextStyle(
+                                        color: Colors.black54,
+                                        fontWeight: FontWeight.w600,
+                                      ),
+                                    ),
+                                    decoration: _inputDeco(null),
                                     dropdownColor: Colors.white,
-                                    items:
-                                        [
-                                              'Brazil',
-                                              'Argentina',
-                                              'Colombia',
-                                              'Mexico',
-                                              'USA',
-                                              'UK',
-                                              'Spain',
-                                              'Italy',
-                                              'Germany',
-                                              'Overseas',
-                                            ]
-                                            .map(
-                                              (c) => DropdownMenuItem(
-                                                value: c,
-                                                child: Text(c),
-                                              ),
-                                            )
-                                            .toList(),
+                                    items: [
+                                      const DropdownMenuItem<String>(
+                                        value: null,
+                                        enabled: false,
+                                        child: Text(
+                                          "Country",
+                                          style: TextStyle(
+                                            color: Colors.grey,
+                                            fontWeight: FontWeight.w400,
+                                          ),
+                                        ),
+                                      ),
+                                      ...[
+                                        'Brazil',
+                                        'Argentina',
+                                        'Colombia',
+                                        'Mexico',
+                                        'Uruguay',
+                                        'Chile',
+                                      ].map(
+                                        (c) => DropdownMenuItem(
+                                          value: c,
+                                          child: Text(
+                                            c,
+                                            style: const TextStyle(
+                                              color: Colors.black87,
+                                              fontWeight: FontWeight.w600,
+                                            ),
+                                          ),
+                                        ),
+                                      ),
+                                    ],
                                     onChanged: (v) =>
-                                        setState(() => _selectedCountry = v!),
+                                        setState(() => _selectedCountry = v),
+                                    validator: (v) =>
+                                        v == null ? "Select Country" : null,
                                   ),
                                 ),
                                 const SizedBox(width: 16),
                                 Expanded(
                                   child: DropdownButtonFormField<String>(
-                                    initialValue: _selectedGender,
-                                    decoration: _inputDeco("Gender"),
+                                    isExpanded: true,
+                                    value: _selectedGender,
+                                    hint: const Text(
+                                      "Gender",
+                                      style: TextStyle(
+                                        color: Colors.black54,
+                                        fontWeight: FontWeight.w600,
+                                      ),
+                                    ),
+                                    decoration: _inputDeco(null),
                                     dropdownColor: Colors.white,
-                                    items: ['Male', 'Female', 'Non-binary']
-                                        .map(
-                                          (g) => DropdownMenuItem(
-                                            value: g,
-                                            child: Text(g),
+                                    items: [
+                                      const DropdownMenuItem<String>(
+                                        value: null,
+                                        enabled: false,
+                                        child: Text(
+                                          "Gender",
+                                          style: TextStyle(
+                                            color: Colors.grey,
+                                            fontWeight: FontWeight.w400,
                                           ),
-                                        )
-                                        .toList(),
+                                        ),
+                                      ),
+                                      ...['Male', 'Female', 'Non-binary'].map(
+                                        (g) => DropdownMenuItem(
+                                          value: g,
+                                          child: Text(
+                                            g,
+                                            style: const TextStyle(
+                                              color: Colors.black87,
+                                              fontWeight: FontWeight.w600,
+                                            ),
+                                          ),
+                                        ),
+                                      ),
+                                    ],
                                     onChanged: (v) =>
-                                        setState(() => _selectedGender = v!),
+                                        setState(() => _selectedGender = v),
+                                    validator: (v) =>
+                                        v == null ? "Select Gender" : null,
                                   ),
                                 ),
                               ],
@@ -367,19 +419,37 @@ class _CreateManagerScreenState extends State<CreateManagerScreen> {
     return TextFormField(
       controller: controller,
       keyboardType: keyboardType,
-      style: const TextStyle(fontWeight: FontWeight.w600),
+      style: const TextStyle(
+        fontWeight: FontWeight.w600,
+        color: Colors.black87,
+      ),
       decoration: _inputDeco(label),
       validator: (v) => v == null || v.isEmpty ? "Required" : null,
     );
   }
 
-  InputDecoration _inputDeco(String label) {
+  InputDecoration _inputDeco(String? label) {
     return InputDecoration(
-      labelText: label,
+      label: label != null
+          ? Container(
+              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(4),
+              ),
+              child: Text(label),
+            )
+          : null,
       labelStyle: TextStyle(
         color: Colors.grey.shade600,
         fontWeight: FontWeight.w500,
       ),
+      floatingLabelStyle: TextStyle(
+        color: Theme.of(context).colorScheme.secondary,
+        fontWeight: FontWeight.bold,
+      ),
+      floatingLabelBehavior: FloatingLabelBehavior.auto,
+      contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 20),
       filled: true,
       fillColor: Colors.white,
       border: OutlineInputBorder(

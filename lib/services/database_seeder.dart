@@ -4,6 +4,9 @@ import 'package:flutter/foundation.dart';
 import '../models/core_models.dart';
 
 import '../config/game_config.dart';
+import 'universe_service.dart';
+import 'team_assignment_service.dart';
+import 'driver_assignment_service.dart';
 
 class DatabaseSeeder {
   static final FirebaseFirestore _db = FirebaseFirestore.instance;
@@ -74,6 +77,10 @@ class DatabaseSeeder {
     try {
       debugPrint("NUKE: Iniciando borrado total...");
 
+      // Borrar el universo primero para limpiar jerarquía
+      await UniverseService().deleteUniverse();
+      debugPrint("NUKE: Universo eliminado.");
+
       final driversSnapshot = await _db.collectionGroup('drivers').get();
       if (driversSnapshot.docs.isNotEmpty) {
         final batch = _db.batch();
@@ -121,6 +128,21 @@ class DatabaseSeeder {
   }) async {
     try {
       debugPrint("SEEDING: Iniciando...");
+
+      // PHASE 3: Inicializar universo jerárquico
+      debugPrint("SEEDING: Inicializando GameUniverse...");
+      await UniverseService().initializeIfNeeded();
+      debugPrint("SEEDING: GameUniverse inicializado.");
+
+      // PHASE 4: Poblar divisiones con equipos
+      debugPrint("SEEDING: Poblando divisiones con equipos...");
+      await TeamAssignmentService().populateAllDivisions();
+      debugPrint("SEEDING: Equipos asignados a divisiones.");
+
+      // PHASE 5: Asignar pilotos a equipos
+      debugPrint("SEEDING: Asignando pilotos a equipos...");
+      await DriverAssignmentService().populateAllTeams();
+      debugPrint("SEEDING: Pilotos asignados.");
 
       if (!force) {
         final leaguesSnapshot = await _db.collection('leagues').limit(1).get();

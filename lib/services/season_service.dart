@@ -35,6 +35,15 @@ class SeasonService {
     return Season.fromMap(data);
   }
 
+  /// Get specific season by ID
+  Future<Season?> getSeasonById(String seasonId) async {
+    final doc = await _db.collection('seasons').doc(seasonId).get();
+    if (!doc.exists) return null;
+    final data = doc.data()!;
+    data['id'] = doc.id;
+    return Season.fromMap(data);
+  }
+
   /// Index of the next uncompleted race in the calendar (-1 if all completed).
   int getCurrentRaceIndex(Season season) {
     return season.calendar.indexWhere((r) => !r.isCompleted);
