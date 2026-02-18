@@ -1,6 +1,7 @@
 import 'dart:math';
 import '../models/core_models.dart';
 import '../models/domain/domain_models.dart';
+import 'driver_portrait_service.dart';
 
 /// Fábrica para generar pilotos experimentados de un país específico.
 ///
@@ -26,20 +27,30 @@ class DriverFactory {
   /// tier 2 (Profesional): stats 40-65, edad 20-38, menos experiencia
   Driver generateDriver({required int divisionTier}) {
     final isElite = divisionTier == 1;
+    final id = _generateId();
+    final gender = _generateGender();
+    final age = _generateAge(isElite);
 
     return Driver(
-      id: _generateId(),
+      id: id,
       teamId: null, // Se asignará después
       name: _generateName(),
-      age: _generateAge(isElite),
+      age: age,
       potential: _generatePotential(isElite),
       points: 0,
-      gender: _generateGender(),
+      gender: gender,
       races: _generatePriorRaces(isElite),
       wins: 0, // Sin victorias iniciales
       podiums: 0,
       poles: 0,
       stats: _generateStats(isElite),
+      countryCode: country.code,
+      portraitUrl: DriverPortraitService().getPortraitUrl(
+        driverId: id,
+        countryCode: country.code,
+        gender: gender,
+        age: age,
+      ),
     );
   }
 
@@ -67,11 +78,17 @@ class DriverFactory {
   /// Élite: 22-35 años (pilotos en su prime)
   /// Profesional: 20-38 años (más variedad, incluye jóvenes y veteranos)
   int _generateAge(bool isElite) {
-    if (isElite) {
-      return 22 + _random.nextInt(14); // 22 to 35
-    } else {
-      return 20 + _random.nextInt(19); // 20 to 38
-    }
+    // OLD Logic:
+    // if (isElite) {
+    //   return 22 + _random.nextInt(14); // 22 to 35
+    // } else {
+    //   return 20 + _random.nextInt(19); // 20 to 38
+    // }
+
+    // NEW Logic:
+    // Todos los equipos empiezan con pilotos entre 29 y 40 años
+    // para motivar el uso de la academia.
+    return 29 + _random.nextInt(12); // 29 to 40
   }
 
   /// Genera potencial basado en división

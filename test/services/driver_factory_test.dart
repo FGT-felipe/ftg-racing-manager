@@ -49,29 +49,29 @@ void main() {
       expect(driver.name.contains(' '), isTrue); // Nombre + Apellido
     });
 
-    test('elite drivers have better age range (22-35)', () {
+    test('elite drivers now have older age range (29-40)', () {
       final factory = DriverFactory(brasil);
 
       for (int i = 0; i < 30; i++) {
         final driver = factory.generateDriver(divisionTier: 1);
-        expect(driver.age, greaterThanOrEqualTo(22));
-        expect(driver.age, lessThanOrEqualTo(35));
+        expect(driver.age, greaterThanOrEqualTo(29));
+        expect(driver.age, lessThanOrEqualTo(40));
       }
     });
 
-    test('professional drivers have wider age range (20-38)', () {
+    test('professional drivers now have older age range (29-40)', () {
       final factory = DriverFactory(argentina);
 
       final ages = <int>[];
       for (int i = 0; i < 50; i++) {
         final driver = factory.generateDriver(divisionTier: 2);
         ages.add(driver.age);
-        expect(driver.age, greaterThanOrEqualTo(20));
-        expect(driver.age, lessThanOrEqualTo(38));
+        expect(driver.age, greaterThanOrEqualTo(29));
+        expect(driver.age, lessThanOrEqualTo(40));
       }
 
       // Debe tener variedad en el rango
-      expect(ages.toSet().length, greaterThan(10));
+      expect(ages.toSet().length, greaterThan(5));
     });
 
     test('elite drivers have higher potential (70-95)', () {

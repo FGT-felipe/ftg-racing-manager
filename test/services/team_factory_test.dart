@@ -67,14 +67,14 @@ void main() {
       for (int i = 0; i < 20; i++) {
         final team = factory.generateBotTeam();
 
-        expect(team.carStats['aero'], greaterThanOrEqualTo(1));
-        expect(team.carStats['aero'], lessThanOrEqualTo(20));
+        expect(team.carStats['0']!['aero'], greaterThanOrEqualTo(1));
+        expect(team.carStats['0']!['aero'], lessThanOrEqualTo(20));
 
-        expect(team.carStats['engine'], greaterThanOrEqualTo(1));
-        expect(team.carStats['engine'], lessThanOrEqualTo(20));
+        expect(team.carStats['0']!['engine'], greaterThanOrEqualTo(1));
+        expect(team.carStats['0']!['engine'], lessThanOrEqualTo(20));
 
-        expect(team.carStats['reliability'], greaterThanOrEqualTo(1));
-        expect(team.carStats['reliability'], lessThanOrEqualTo(20));
+        expect(team.carStats['0']!['reliability'], greaterThanOrEqualTo(1));
+        expect(team.carStats['0']!['reliability'], lessThanOrEqualTo(20));
       }
     });
 
@@ -82,10 +82,10 @@ void main() {
       final factory = TeamFactory(brasil);
       final team = factory.generateBotTeam();
 
-      expect(team.carStats.containsKey('aero'), isTrue);
-      expect(team.carStats.containsKey('engine'), isTrue);
-      expect(team.carStats.containsKey('reliability'), isTrue);
-      expect(team.carStats.length, 3);
+      expect(team.carStats['0']!.containsKey('aero'), isTrue);
+      expect(team.carStats['0']!.containsKey('engine'), isTrue);
+      expect(team.carStats['0']!.containsKey('reliability'), isTrue);
+      expect(team.carStats.length, 2); // 2 cars
     });
 
     test('generates teams with valid week status', () {
@@ -153,9 +153,12 @@ void main() {
       expect(restored.wins, team.wins);
       expect(restored.podiums, team.podiums);
       expect(restored.poles, team.poles);
-      expect(restored.carStats['aero'], team.carStats['aero']);
-      expect(restored.carStats['engine'], team.carStats['engine']);
-      expect(restored.carStats['reliability'], team.carStats['reliability']);
+      expect(restored.carStats['0']!['aero'], team.carStats['0']!['aero']);
+      expect(restored.carStats['0']!['engine'], team.carStats['0']!['engine']);
+      expect(
+        restored.carStats['0']!['reliability'],
+        team.carStats['0']!['reliability'],
+      );
     });
 
     test('generates teams with thematic names for Brasil', () {
@@ -206,7 +209,8 @@ void main() {
       final avgBudget =
           teams.map((t) => t.budget).reduce((a, b) => a + b) / 100;
       final avgAero =
-          teams.map((t) => t.carStats['aero']!).reduce((a, b) => a + b) / 100;
+          teams.map((t) => t.carStats['0']!['aero']!).reduce((a, b) => a + b) /
+          100;
 
       // Budget debe estar cerca del punto medio (10M)
       expect(avgBudget, greaterThan(8000000));
@@ -227,9 +231,9 @@ void main() {
         expect(team.name, isNotEmpty);
         expect(team.isBot, isTrue);
         expect(team.budget, greaterThan(0));
-        expect(team.carStats['aero'], greaterThan(0));
-        expect(team.carStats['engine'], greaterThan(0));
-        expect(team.carStats['reliability'], greaterThan(0));
+        expect(team.carStats['0']!['aero'], greaterThan(0));
+        expect(team.carStats['0']!['engine'], greaterThan(0));
+        expect(team.carStats['0']!['reliability'], greaterThan(0));
       }
     });
 

@@ -91,7 +91,7 @@ class CircuitService {
       overtakingDifficulty: 0.5,
       characteristics: {
         'Cornering': 'High Speed',
-        'Tyre Wear': 'High',
+        'Tyre Wear': 'High', // Silverstone is abrasive
         'Power': 'Important',
         'Weather': 'Unpredictable',
       },
@@ -114,6 +114,7 @@ class CircuitService {
         'Altitude': 'Very High',
         'Cooling': 'Difficult',
         'Top Speed': 'High',
+        'Tyre Wear': 'Medium',
       },
     ),
     // GP Termas de Río Hondo - Argentina (Fluido, rápido)
@@ -146,7 +147,11 @@ class CircuitService {
       ),
       difficulty: 0.55,
       overtakingDifficulty: 0.7,
-      characteristics: {'Layout': 'Tight', 'Altitude': 'High'},
+      characteristics: {
+        'Layout': 'Tight',
+        'Altitude': 'High',
+        'Tyre Wear': 'High', // Tight corners increase wear
+      },
     ),
     // GP El Pinar - Uruguay (Técnico)
     'el_pinar': CircuitProfile(
@@ -162,6 +167,7 @@ class CircuitService {
       ),
       difficulty: 0.5,
       overtakingDifficulty: 0.6,
+      characteristics: {'Tyre Wear': 'Medium'},
     ),
     // GP Yahuarcocha - Ecuador (Escénico, media velocidad)
     'yahuarcocha': CircuitProfile(
@@ -177,6 +183,7 @@ class CircuitService {
       ),
       difficulty: 0.45,
       overtakingDifficulty: 0.4,
+      characteristics: {'Tyre Wear': 'Low'}, // Smooth surface
     ),
   };
 

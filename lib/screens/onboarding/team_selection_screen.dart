@@ -302,9 +302,14 @@ class _TeamSelectionCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     // Calculate stats average for display
+    final stats =
+        team.carStats['0'] ?? {'aero': 1, 'engine': 1, 'reliability': 1};
     final avgStats =
-        (team.carStats.values.reduce((a, b) => a + b) / team.carStats.length)
-            .toStringAsFixed(1);
+        ((stats['aero'] ?? 1) +
+            (stats['engine'] ?? 1) +
+            (stats['reliability'] ?? 1)) /
+        3.0;
+    final avgStatsStr = avgStats.toStringAsFixed(1);
 
     return Card(
       color: Theme.of(context).cardTheme.color,
@@ -342,7 +347,7 @@ class _TeamSelectionCard extends StatelessWidget {
                     Icon(Icons.speed, size: 14, color: Colors.grey),
                     const SizedBox(width: 4),
                     Text(
-                      "Rating: $avgStats",
+                      "Rating: $avgStatsStr",
                       style: const TextStyle(color: Colors.grey, fontSize: 13),
                     ),
                   ],

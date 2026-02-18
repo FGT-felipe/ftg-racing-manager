@@ -124,4 +124,14 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get earnings => 'Earnings';
+
+  @override
+  String get noDriverAssigned => 'No driver assigned';
+
+  @override
+  String get engineeringWelcome => 'Welcome to the R&D Lab';
+
+  @override
+  String get engineeringDescription =>
+      'Improve your cars\' performance by developing specific parts. Remember that you can only perform ONE upgrade per team each week. Use your resources wisely to stay ahead of the competition!';
 }

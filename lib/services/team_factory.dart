@@ -74,12 +74,9 @@ class TeamFactory {
   }
 
   /// Genera stats iniciales del auto (1-20 en cada categoría)
-  Map<String, int> _generateCarStats() {
-    return {
-      'aero': 1 + _random.nextInt(20), // 1 to 20
-      'engine': 1 + _random.nextInt(20),
-      'reliability': 1 + _random.nextInt(20),
-    };
+  Map<String, Map<String, int>> _generateCarStats() {
+    final stats = {'aero': 1, 'powertrain': 1, 'chassis': 1, 'reliability': 1};
+    return {'0': stats, '1': Map<String, int>.from(stats)};
   }
 
   /// Genera el estado semanal inicial del equipo

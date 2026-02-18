@@ -27,6 +27,9 @@ class YoungDriver {
   /// Potencial máximo que puede alcanzar (70-99)
   final int potential;
 
+  /// Imagen de perfil del piloto
+  final String? portraitUrl;
+
   YoungDriver({
     required this.id,
     required this.name,
@@ -35,6 +38,7 @@ class YoungDriver {
     required this.baseSkill,
     required this.gender,
     required this.potential,
+    this.portraitUrl,
   });
 
   /// Serializa el piloto joven a un mapa para Firestore
@@ -47,6 +51,7 @@ class YoungDriver {
       'baseSkill': baseSkill,
       'gender': gender,
       'potential': potential,
+      'portraitUrl': portraitUrl,
     };
   }
 
@@ -62,6 +67,7 @@ class YoungDriver {
       baseSkill: map['baseSkill'] ?? 40,
       gender: map['gender'] ?? 'M',
       potential: map['potential'] ?? 75,
+      portraitUrl: map['portraitUrl'],
     );
   }
 

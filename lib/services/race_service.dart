@@ -17,10 +17,14 @@ class RaceService {
     final random = Random();
     final ideal = circuit.idealSetup;
 
-    // Competencia de la IA basada en stats del coche (Aero + Engine)
-    // 100 stats = 0 desviación. 50 stats = +/- 10 desviación.
+    // Competencia de la IA basada en stats del coche (Aero + Powertrain + Chassis)
+    final stats =
+        team.carStats['0'] ?? {'aero': 50, 'powertrain': 50, 'chassis': 50};
     double avgStat =
-        ((team.carStats['aero'] ?? 50) + (team.carStats['engine'] ?? 50)) / 2.0;
+        ((stats['aero'] ?? 50) +
+            (stats['powertrain'] ?? 50) +
+            (stats['chassis'] ?? 50)) /
+        3.0;
     int maxDeviation = ((100 - avgStat) / 4).round().clamp(2, 25);
 
     int dev() => random.nextInt(maxDeviation * 2 + 1) - maxDeviation;
@@ -56,35 +60,39 @@ class RaceService {
 
     for (var teamDoc in teamsSnapshot.docs) {
       final team = Team.fromMap(teamDoc.data());
-      CarSetup teamSetup;
-
-      // 2. Determinar Setup
-      if (team.isBot) {
-        teamSetup = _generateAISetup(circuit, team);
-      } else {
-        // Player Team: Recuperar setup guardado o usar default
-        if (team.weekStatus['currentSetup'] != null) {
-          teamSetup = CarSetup.fromMap(
-            Map<String, dynamic>.from(team.weekStatus['currentSetup']),
-          );
-        } else {
-          teamSetup = CarSetup(); // Default 50-50-50...
-        }
-      }
-
       // 3. Simular Vueltas para cada piloto
-      final driversSnapshot = await teamDoc.reference
+      final driversSnapshot = await _db
           .collection('drivers')
+          .where('teamId', isEqualTo: team.id)
           .get();
-      for (var driverDoc in driversSnapshot.docs) {
-        final driver = Driver.fromMap(driverDoc.data());
+      for (var i = 0; i < driversSnapshot.docs.length; i++) {
+        final driverDoc = driversSnapshot.docs[i];
+        final driver = Driver.fromMap({...driverDoc.data(), 'carIndex': i});
+
+        CarSetup driverSetup;
+        if (team.isBot) {
+          driverSetup = _generateAISetup(circuit, team);
+        } else {
+          // Player Team: Recuperar setup per-driver o usar default
+          final driverData = team.weekStatus['driverSetups'] != null
+              ? team.weekStatus['driverSetups'][driver.id]
+              : null;
+
+          if (driverData != null && driverData['qualifying'] != null) {
+            driverSetup = CarSetup.fromMap(
+              Map<String, dynamic>.from(driverData['qualifying']),
+            );
+          } else {
+            driverSetup = CarSetup();
+          }
+        }
 
         // Simular vuelta
         final result = simulatePracticeRun(
           circuit: circuit,
           team: team,
           driver: driver,
-          setup: teamSetup,
+          setup: driverSetup,
         );
 
         qualyResults.add({
@@ -120,10 +128,7 @@ class RaceService {
       // But we can find which team is it from qualyResults or just run a query.
       final teams = await _db.collection('teams').get();
       for (var tDoc in teams.docs) {
-        final dDoc = await tDoc.reference
-            .collection('drivers')
-            .doc(poleDriverId)
-            .get();
+        final dDoc = await _db.collection('drivers').doc(poleDriverId).get();
         if (dDoc.exists) {
           await dDoc.reference.update({'poles': FieldValue.increment(1)});
           await tDoc.reference.update({'poles': FieldValue.increment(1)});
@@ -146,12 +151,22 @@ class RaceService {
     final ideal = circuit.idealSetup;
 
     // 1. Calcular la desviación del setup (Penalty)
+    // Penalties are reduced by the quality of the corresponding macro-part.
+    // Level 20 reduces setup penalty impact by 50%.
+    final stats =
+        team.carStats[driver.carIndex.toString()] ??
+        {'aero': 1, 'powertrain': 1, 'chassis': 1};
+
+    double aeroBonus = 1.0 - ((stats['aero'] ?? 1).clamp(1, 20) / 40.0);
+    double powerBonus = 1.0 - ((stats['powertrain'] ?? 1).clamp(1, 20) / 40.0);
+    double chassisBonus = 1.0 - ((stats['chassis'] ?? 1).clamp(1, 20) / 40.0);
+
     double setupPenalty = 0.0;
     List<String> feedback = [];
 
     // Aero Front
     int gapFront = setup.frontWing - ideal.frontWing;
-    setupPenalty += gapFront.abs() * 0.04; // Slightly reduced from 0.05
+    setupPenalty += gapFront.abs() * 0.04 * aeroBonus;
     if (gapFront > 15) {
       feedback.add(
         "The front end is way too sharp, I'm fighting oversteer in every corner.",
@@ -162,7 +177,7 @@ class RaceService {
 
     // Aero Rear
     int gapRear = setup.rearWing - ideal.rearWing;
-    setupPenalty += gapRear.abs() * 0.04;
+    setupPenalty += gapRear.abs() * 0.04 * aeroBonus;
     if (gapRear > 15) {
       feedback.add(
         "We're slow on the straights, feels like we have a parachute attached.",
@@ -175,7 +190,7 @@ class RaceService {
 
     // Suspension
     int gapSusp = setup.suspension - ideal.suspension;
-    setupPenalty += gapSusp.abs() * 0.025;
+    setupPenalty += gapSusp.abs() * 0.025 * chassisBonus;
     if (gapSusp > 15) {
       feedback.add(
         "The car is too stiff, it's bouncing like crazy over the kerbs.",
@@ -188,7 +203,7 @@ class RaceService {
 
     // Gear Ratio
     int gapGear = setup.gearRatio - ideal.gearRatio;
-    setupPenalty += gapGear.abs() * 0.035;
+    setupPenalty += gapGear.abs() * 0.035 * powerBonus;
     if (gapGear > 15) {
       feedback.add(
         "The gears are too short, I'm hitting the limiter way before the end of the straight.",
@@ -201,7 +216,7 @@ class RaceService {
 
     // Tyre Pressure
     int gapTyre = setup.tyrePressure - ideal.tyrePressure;
-    setupPenalty += gapTyre.abs() * 0.02;
+    setupPenalty += gapTyre.abs() * 0.02 * chassisBonus;
     if (gapTyre > 10) {
       feedback.add(
         "Tyre pressures are too high, they're overheating and losing grip after three corners.",
@@ -214,12 +229,14 @@ class RaceService {
 
     // 2. Calcular Base Lap Time ajustado por el coche y conductor
     // Car Score: Quality levels 1-20.
-    double aeroVal = (team.carStats['aero'] ?? 1).toDouble().clamp(1, 20);
-    double engineVal = (team.carStats['engine'] ?? 1).toDouble().clamp(1, 20);
+    double aeroVal = (stats['aero'] ?? 1).toDouble().clamp(1, 20);
+    double powerVal = (stats['powertrain'] ?? 1).toDouble().clamp(1, 20);
+    double chassisVal = (stats['chassis'] ?? 1).toDouble().clamp(1, 20);
 
-    // Performance factor impact increased to 20% (0.20) to make car quality much more significant.
-    // Level 20 = 0.80 factor, Level 1 = 0.99 factor approx.
-    double carPerformanceFactor = 1.0 - (((aeroVal + engineVal) / 40.0) * 0.20);
+    // Performance factor logic: (Aero + Power + Chassis) / 60.0
+    // Max level 20 each. Factor impact is 25% (0.25).
+    double carPerformanceFactor =
+        1.0 - (((aeroVal + powerVal + chassisVal) / 60.0) * 0.25);
 
     // Driver Score
     double driverFactor =
@@ -230,6 +247,106 @@ class RaceService {
 
     double actualLapTime =
         circuit.baseLapTime * carPerformanceFactor * driverFactor;
+
+    // --- TYRE LOGIC ---
+    // User Request:
+    // Soft: +5 speed (approx -0.5s on lap time)
+    // Medium: +3 speed (approx -0.3s)
+    // Hard: +1 speed (approx -0.1s)
+    // Wet: +3 speed in wet (approx -0.3s in wet), but huge penalty in dry.
+
+    // For now assuming DRY conditions unless circuit says otherwise.
+    bool formIsWet =
+        circuit.characteristics.containsKey('Weather') &&
+        circuit.characteristics['Weather']!.contains('Rain');
+
+    double tyreDelta = 0.0;
+
+    if (formIsWet) {
+      // WET CONDITIONS
+      switch (setup.tyreCompound) {
+        case TyreCompound.wet:
+          tyreDelta = -0.3; // Proper tyre for conditions
+          feedback.add("The wet tyres are working well in this rain.");
+          break;
+        default:
+          // Dry tyres in wet -> DISASTER
+          tyreDelta = 8.0;
+          feedback.add("I have zero grip! We need wet tyres immediately!");
+          setupPenalty += 5.0; // Extra penalty to setup confidence
+          break;
+      }
+    } else {
+      // DRY CONDITIONS (Default)
+      switch (setup.tyreCompound) {
+        case TyreCompound.soft:
+          tyreDelta = -0.5;
+          feedback.add("Softs feel grippy and fast.");
+          break;
+        case TyreCompound.medium:
+          tyreDelta = -0.3;
+          feedback.add("Mediums are a good balance.");
+          break;
+        case TyreCompound.hard:
+          tyreDelta = -0.1;
+          feedback.add("Hards are a bit slow but durable.");
+          break;
+        case TyreCompound.wet:
+          // Wet tyres in dry -> DISASTER penalty
+          tyreDelta = 3.0;
+          feedback.add(
+            "Why are we on wets? The track is dry! I'm burning these up!",
+          );
+          setupPenalty += 2.0;
+          break;
+      }
+    }
+
+    actualLapTime += tyreDelta;
+
+    // --- TYRE WEAR LOGIC ---
+    // User Request: Add circuit wear conditions.
+    // Base wear factors:
+    String wearLevel = circuit.characteristics['Tyre Wear'] ?? 'Medium';
+    double circuitWearFactor = 1.0;
+    if (wearLevel == 'Low') circuitWearFactor = 0.8;
+    if (wearLevel == 'High') circuitWearFactor = 1.6;
+
+    // Compound wear factors (Relative)
+    double compoundWearMod = 1.0;
+    switch (setup.tyreCompound) {
+      case TyreCompound.soft:
+        compoundWearMod = 1.5; // High wear
+        break;
+      case TyreCompound.medium:
+        compoundWearMod = 1.0; // Normal wear
+        break;
+      case TyreCompound.hard:
+        compoundWearMod = 0.7; // Low wear
+        break;
+      case TyreCompound.wet:
+        compoundWearMod = formIsWet ? 0.8 : 4.0; // Destroyed in dry
+        break;
+    }
+
+    // Simulated wear for this run (just a logic check for feedback)
+    double wearIntensity = circuitWearFactor * compoundWearMod;
+
+    if (wearIntensity > 1.8) {
+      if (!formIsWet) {
+        feedback.add(
+          "I'm struggling with high degradation. These tyres won't last long here.",
+        );
+      }
+      // Slight time penalty for high wear during the run
+      actualLapTime += 0.2;
+    } else if (wearIntensity < 0.8) {
+      if (!formIsWet) {
+        feedback.add(
+          "Tyre wear is non-existent. We could probably push harder or use softer compounds.",
+        );
+      }
+    }
 
     // Add Setup Penalty
     actualLapTime += setupPenalty;
@@ -462,31 +579,40 @@ class RaceService {
       // Upgrade AI teams (40% chance for aero and engine)
       if (team.isBot) {
         bool upgraded = false;
-        final newStats = Map<String, int>.from(team.carStats);
-
-        if (random.nextInt(100) < 40) {
-          newStats['aero'] = (newStats['aero'] ?? 50) + 1;
-          upgraded = true;
+        final newStats = Map<String, Map<String, int>>.from(team.carStats);
+        for (var carKey in ['0', '1']) {
+          final stats = Map<String, int>.from(newStats[carKey] ?? {});
+          if (random.nextInt(100) < 30) {
+            stats['aero'] = (stats['aero'] ?? 1) + 1;
+            upgraded = true;
+          }
+          if (random.nextInt(100) < 30) {
+            stats['powertrain'] = (stats['powertrain'] ?? 1) + 1;
+            upgraded = true;
+          }
+          if (random.nextInt(100) < 30) {
+            stats['chassis'] = (stats['chassis'] ?? 1) + 1;
+            upgraded = true;
+          }
+          newStats[carKey] = stats;
         }
-        if (random.nextInt(100) < 40) {
-          newStats['engine'] = (newStats['engine'] ?? 50) + 1;
-          upgraded = true;
-        }
-
         if (upgraded) {
           batch.update(teamDoc.reference, {'carStats': newStats});
         }
       }
 
-      final driversSnapshot = await teamDoc.reference
+      final driversSnapshot = await _db
           .collection('drivers')
+          .where('teamId', isEqualTo: team.id)
           .get();
 
       for (var driverDoc in driversSnapshot.docs) {
         final driver = Driver.fromMap(driverDoc.data());
 
         // 3. Reliability Check (DNF) - Smoothed formula
-        final reliability = (team.carStats['reliability'] ?? 50).toDouble();
+        final stats =
+            team.carStats[driver.carIndex.toString()] ?? {'reliability': 50};
+        final reliability = (stats['reliability'] ?? 50).toDouble();
         final double failureChance = (100.0 - reliability) * 0.25;
         final double roll = random.nextDouble() * 100;
 
@@ -498,11 +624,15 @@ class RaceService {
           score = 0;
         } else {
           // 4. Calculate Performance
+          final carS =
+              team.carStats[driver.carIndex.toString()] ??
+              {'aero': 1, 'powertrain': 1, 'chassis': 1};
           score =
               (driver.stats['speed'] ?? 0).toDouble() +
               (driver.stats['cornering'] ?? 0).toDouble() +
-              ((team.carStats['aero'] ?? 0) * 2).toDouble() +
-              ((team.carStats['engine'] ?? 0) * 2).toDouble() +
+              ((carS['aero'] ?? 1) * 3).toDouble() +
+              ((carS['powertrain'] ?? 1) * 3).toDouble() +
+              ((carS['chassis'] ?? 1) * 3).toDouble() +
               random.nextInt(26).toDouble();
         }
 
@@ -657,22 +787,31 @@ class RaceService {
       // AI Upgrades (Logic from simulateNextRace)
       if (team.isBot) {
         bool upgraded = false;
-        final newStats = Map<String, int>.from(team.carStats);
-        if (random.nextInt(100) < 40) {
-          newStats['aero'] = (newStats['aero'] ?? 50) + 1;
-          upgraded = true;
-        }
-        if (random.nextInt(100) < 40) {
-          newStats['engine'] = (newStats['engine'] ?? 50) + 1;
-          upgraded = true;
+        final newStats = Map<String, Map<String, int>>.from(team.carStats);
+        for (var carKey in ['0', '1']) {
+          final stats = Map<String, int>.from(newStats[carKey] ?? {});
+          if (random.nextInt(100) < 30) {
+            stats['aero'] = (stats['aero'] ?? 1) + 1;
+            upgraded = true;
+          }
+          if (random.nextInt(100) < 30) {
+            stats['powertrain'] = (stats['powertrain'] ?? 1) + 1;
+            upgraded = true;
+          }
+          if (random.nextInt(100) < 30) {
+            stats['chassis'] = (stats['chassis'] ?? 1) + 1;
+            upgraded = true;
+          }
+          newStats[carKey] = stats;
         }
         if (upgraded) {
           batch.update(teamDoc.reference, {'carStats': newStats});
         }
       }
 
-      final driversSnapshot = await teamDoc.reference
+      final driversSnapshot = await _db
           .collection('drivers')
+          .where('teamId', isEqualTo: team.id)
           .get();
       for (var dDoc in driversSnapshot.docs) {
         driverRefs[dDoc.id] = dDoc.reference;
@@ -765,6 +904,7 @@ class RaceService {
         'practiceCompleted': false,
         'strategySet': false,
         'sponsorReviewed': false,
+        'hasUpgradedThisWeek': false,
         // Preserve structure if needed, but clearing flags is key
       };
 

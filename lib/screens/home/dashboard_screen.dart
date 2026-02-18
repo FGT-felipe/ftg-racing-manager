@@ -101,7 +101,11 @@ class DashboardScreen extends StatelessWidget {
 
                     void onHeroAction() {
                       if (onNavigate != null) {
-                        onNavigate!(4); // Index 4 is Paddock/Padock
+                        if (currentStatus == RaceWeekStatus.race) {
+                          onNavigate!(5); // Index 5 is Race Day
+                        } else {
+                          onNavigate!(4); // Index 4 is Paddock/Padock
+                        }
                       } else {
                         // Fallback in case onNavigate is not provided
                         if (currentStatus == RaceWeekStatus.practice) {
@@ -236,7 +240,7 @@ class DashboardScreen extends StatelessWidget {
                               budget: team.budget,
                               onTap: () {
                                 if (onNavigate != null) {
-                                  onNavigate!(6); // Index 6 is Finances
+                                  onNavigate!(7); // Index 7 is Finances
                                   return;
                                 }
                                 if (team.id.isEmpty) {

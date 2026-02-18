@@ -1,6 +1,7 @@
 import 'dart:math';
 import 'country_model.dart';
 import 'young_driver_model.dart';
+import '../../services/driver_portrait_service.dart';
 
 /// Fábrica para generar pilotos jóvenes prometedores de un país específico.
 ///
@@ -24,14 +25,24 @@ class YouthAcademyFactory {
   /// - Potential entre 70-95
   /// - Nombre simulado basado en el país
   YoungDriver generatePromisingDriver() {
+    final id = _generateId();
+    final gender = _generateGender();
+    final age = _generateAge();
+
     return YoungDriver(
-      id: _generateId(),
+      id: id,
       name: _generateName(),
       nationality: country,
-      age: _generateAge(),
+      age: age,
       baseSkill: _generateBaseSkill(),
-      gender: _generateGender(),
+      gender: gender,
       potential: _generatePotential(),
+      portraitUrl: DriverPortraitService().getPortraitUrl(
+        driverId: id,
+        countryCode: country.code,
+        gender: gender,
+        age: age,
+      ),
     );
   }
 

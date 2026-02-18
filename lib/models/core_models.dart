@@ -368,7 +368,7 @@ class Team {
   final int wins;
   final int podiums;
   final int poles;
-  final Map<String, int> carStats;
+  final Map<String, Map<String, int>> carStats;
   final Map<String, dynamic> weekStatus;
   final Map<String, ActiveContract> sponsors;
 
@@ -407,6 +407,47 @@ class Team {
   }
 
   factory Team.fromMap(Map<String, dynamic> map) {
+    // Migration logic for carStats
+    Map<String, Map<String, int>> carStatsMap = {};
+    final rawCarStats = map['carStats'];
+
+    if (rawCarStats is Map) {
+      if (rawCarStats.containsKey('0') || rawCarStats.containsKey('1')) {
+        // New structure
+        carStatsMap = {
+          '0': Map<String, int>.from(
+            rawCarStats['0'] ??
+                {'aero': 1, 'powertrain': 1, 'chassis': 1, 'reliability': 1},
+          ),
+          '1': Map<String, int>.from(
+            rawCarStats['1'] ??
+                {'aero': 1, 'powertrain': 1, 'chassis': 1, 'reliability': 1},
+          ),
+        };
+      } else {
+        // Old structure: migrate single car stats to both cars
+        final stats = Map<String, int>.from(rawCarStats);
+        // Rename engine to powertrain if it exists
+        if (stats.containsKey('engine')) {
+          stats['powertrain'] = stats.remove('engine')!;
+        }
+        stats.putIfAbsent('chassis', () => 1);
+        carStatsMap = {'0': stats, '1': Map<String, int>.from(stats)};
+      }
+    } else {
+      // Default
+      final defaultStats = {
+        'aero': 1,
+        'powertrain': 1,
+        'chassis': 1,
+        'reliability': 1,
+      };
+      carStatsMap = {
+        '0': defaultStats,
+        '1': Map<String, int>.from(defaultStats),
+      };
+    }
+
     return Team(
       id: map['id'] ?? '',
       name: map['name'] ?? '',
@@ -418,9 +459,7 @@ class Team {
       wins: map['wins'] ?? 0,
       podiums: map['podiums'] ?? 0,
       poles: map['poles'] ?? 0,
-      carStats: Map<String, int>.from(
-        map['carStats'] ?? {'aero': 50, 'engine': 50, 'reliability': 50},
-      ),
+      carStats: carStatsMap,
       weekStatus: Map<String, dynamic>.from(map['weekStatus'] ?? {}),
       sponsors: (map['sponsors'] as Map<String, dynamic>? ?? {}).map(
         (k, v) =>
@@ -433,6 +472,7 @@ class Team {
 class Driver {
   final String id;
   final String? teamId;
+  final int carIndex; // 0 for Car A, 1 for Car B
   final String name;
   final int age;
   final int potential;
@@ -444,9 +484,17 @@ class Driver {
   final int poles;
   final Map<String, int> stats;
 
+  final String countryCode;
+  final String role; // 'Main', 'Second', 'Equal', 'Reserve'
+  final int salary;
+  final int contractYearsRemaining;
+  final Map<String, double> weeklyGrowth;
+  final String? portraitUrl;
+
   Driver({
     required this.id,
     this.teamId,
+    this.carIndex = 0,
     required this.name,
     required this.age,
     required this.potential,
@@ -457,12 +505,19 @@ class Driver {
     this.podiums = 0,
     this.poles = 0,
     required this.stats,
+    this.countryCode = 'BR', // Default fallback
+    this.role = 'Equal Status',
+    this.salary = 500000,
+    this.contractYearsRemaining = 1,
+    this.weeklyGrowth = const {},
+    this.portraitUrl,
   });
 
   Map<String, dynamic> toMap() {
     return {
       'id': id,
       'teamId': teamId,
+      'carIndex': carIndex,
       'name': name,
       'age': age,
       'potential': potential,
@@ -473,6 +528,12 @@ class Driver {
       'podiums': podiums,
       'poles': poles,
       'stats': stats,
+      'countryCode': countryCode,
+      'role': role,
+      'salary': salary,
+      'contractYearsRemaining': contractYearsRemaining,
+      'weeklyGrowth': weeklyGrowth,
+      'portraitUrl': portraitUrl,
     };
   }
 
@@ -480,6 +541,7 @@ class Driver {
     return Driver(
       id: map['id'] ?? '',
       teamId: map['teamId'],
+      carIndex: map['carIndex'] ?? 0,
       name: map['name'] ?? 'Unknown Driver',
       age: map['age'] ?? 21,
       potential: map['potential'] ?? 50,
@@ -492,6 +554,61 @@ class Driver {
       stats: Map<String, int>.from(
         map['stats'] ?? {'speed': 50, 'cornering': 50, 'consistency': 50},
       ),
+      countryCode: map['countryCode'] ?? 'BR',
+      role: map['role'] ?? 'Equal Status',
+      salary: map['salary'] ?? 500000,
+      contractYearsRemaining: map['contractYearsRemaining'] ?? 1,
+      weeklyGrowth: Map<String, double>.from(
+        (map['weeklyGrowth'] ?? {}).map(
+          (k, v) => MapEntry(k, (v as num).toDouble()),
+        ),
+      ),
+      portraitUrl: map['portraitUrl'],
+    );
+  }
+
+  Driver copyWith({
+    String? id,
+    String? teamId,
+    int? carIndex,
+    String? name,
+    int? age,
+    int? potential,
+    int? points,
+    String? gender,
+    int? races,
+    int? wins,
+    int? podiums,
+    int? poles,
+    Map<String, int>? stats,
+    String? countryCode,
+    String? role,
+    int? salary,
+    int? contractYearsRemaining,
+    Map<String, double>? weeklyGrowth,
+    String? portraitUrl,
+  }) {
+    return Driver(
+      id: id ?? this.id,
+      teamId: teamId ?? this.teamId,
+      carIndex: carIndex ?? this.carIndex,
+      name: name ?? this.name,
+      age: age ?? this.age,
+      potential: potential ?? this.potential,
+      points: points ?? this.points,
+      gender: gender ?? this.gender,
+      races: races ?? this.races,
+      wins: wins ?? this.wins,
+      podiums: podiums ?? this.podiums,
+      poles: poles ?? this.poles,
+      stats: stats ?? this.stats,
+      countryCode: countryCode ?? this.countryCode,
+      role: role ?? this.role,
+      salary: salary ?? this.salary,
+      contractYearsRemaining:
+          contractYearsRemaining ?? this.contractYearsRemaining,
+      weeklyGrowth: weeklyGrowth ?? this.weeklyGrowth,
+      portraitUrl: portraitUrl ?? this.portraitUrl,
     );
   }
 }

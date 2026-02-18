@@ -85,20 +85,22 @@ class DriverAssignmentService {
       for (int i = 0; i < 2; i++) {
         final driver = factory.generateDriver(divisionTier: division.tier);
 
+        // Assign role based on index
+        final role = i == 0 ? 'Main Driver' : 'Secondary Driver';
+
+        // Mock weekly growth for visual demonstration
+        final mockGrowth = {
+          'speed': (0.1 + (i * 0.1)) * (driver.age > 35 ? -1 : 1),
+          'consistency': 0.2,
+          'racecraft': 0.1,
+        };
+
         // Crear driver con teamId asignado
-        final assignedDriver = Driver(
-          id: driver.id,
+        final assignedDriver = driver.copyWith(
           teamId: team.id, // Vincular con equipo
-          name: driver.name,
-          age: driver.age,
-          potential: driver.potential,
-          points: driver.points,
-          gender: driver.gender,
-          races: driver.races,
-          wins: driver.wins,
-          podiums: driver.podiums,
-          poles: driver.poles,
-          stats: driver.stats,
+          carIndex: i, // 0 for Car A, 1 for Car B
+          role: role,
+          weeklyGrowth: mockGrowth,
         );
 
         drivers.add(assignedDriver);

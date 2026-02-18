@@ -1,9 +1,12 @@
+enum TyreCompound { soft, medium, hard, wet }
+
 class CarSetup {
   int frontWing;
   int rearWing;
   int suspension;
   int gearRatio;
   int tyrePressure;
+  TyreCompound tyreCompound;
 
   CarSetup({
     this.frontWing = 50,
@@ -11,15 +14,17 @@ class CarSetup {
     this.suspension = 50,
     this.gearRatio = 50,
     this.tyrePressure = 50,
+    this.tyreCompound = TyreCompound.medium,
   });
 
-  Map<String, int> toMap() {
+  Map<String, dynamic> toMap() {
     return {
       'frontWing': frontWing,
       'rearWing': rearWing,
       'suspension': suspension,
       'gearRatio': gearRatio,
       'tyrePressure': tyrePressure,
+      'tyreCompound': tyreCompound.name,
     };
   }
 
@@ -30,6 +35,10 @@ class CarSetup {
       suspension: map['suspension'] ?? 50,
       gearRatio: map['gearRatio'] ?? 50,
       tyrePressure: map['tyrePressure'] ?? 50,
+      tyreCompound: TyreCompound.values.firstWhere(
+        (e) => e.name == (map['tyreCompound'] ?? 'medium'),
+        orElse: () => TyreCompound.medium,
+      ),
     );
   }
 
@@ -39,6 +48,7 @@ class CarSetup {
     int? suspension,
     int? gearRatio,
     int? tyrePressure,
+    TyreCompound? tyreCompound,
   }) {
     return CarSetup(
       frontWing: frontWing ?? this.frontWing,
@@ -46,6 +56,7 @@ class CarSetup {
       suspension: suspension ?? this.suspension,
       gearRatio: gearRatio ?? this.gearRatio,
       tyrePressure: tyrePressure ?? this.tyrePressure,
+      tyreCompound: tyreCompound ?? this.tyreCompound,
     );
   }
 }

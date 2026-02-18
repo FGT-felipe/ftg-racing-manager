@@ -7,6 +7,7 @@ import '../config/game_config.dart';
 import 'universe_service.dart';
 import 'team_assignment_service.dart';
 import 'driver_assignment_service.dart';
+import 'driver_portrait_service.dart';
 
 class DatabaseSeeder {
   static final FirebaseFirestore _db = FirebaseFirestore.instance;
@@ -269,7 +270,10 @@ class DatabaseSeeder {
           wins: 0,
           podiums: 0,
           poles: 0,
-          carStats: {'aero': 1, 'engine': 1, 'reliability': 1},
+          carStats: {
+            '0': {'aero': 1, 'powertrain': 1, 'chassis': 1, 'reliability': 1},
+            '1': {'aero': 1, 'powertrain': 1, 'chassis': 1, 'reliability': 1},
+          },
           weekStatus: {
             'practiceCompleted': false,
             'strategySet': false,
@@ -284,25 +288,39 @@ class DatabaseSeeder {
               ? _femaleNames[random.nextInt(_femaleNames.length)]
               : _maleNames[random.nextInt(_maleNames.length)];
           final lastName = _lastNames[random.nextInt(_lastNames.length)];
-          final age = 18 + random.nextInt(18);
+          final age = 29 + random.nextInt(12);
           final speed = 40 + random.nextInt(51);
           final cornering = 40 + random.nextInt(51);
 
+          final gender = isFemale ? 'F' : 'M';
           final driverRef = teamRef.collection('drivers').doc();
           batch.set(
             driverRef,
             Driver(
               id: driverRef.id,
+              teamId: teamRef.id,
+              carIndex: i, // 0 for Car A, 1 for Car B
               name: "$firstName $lastName",
               age: age,
               potential: 70 + random.nextInt(30),
               points: 0,
-              gender: isFemale ? 'F' : 'M',
+              gender: gender,
               stats: {
                 'speed': speed,
                 'cornering': cornering,
                 'consistency': 40 + random.nextInt(41),
               },
+              countryCode: 'CO', // Manual seeding fallback
+              role: i == 0 ? 'Main Driver' : 'Secondary Driver',
+              salary: 500000,
+              contractYearsRemaining: 1,
+              weeklyGrowth: {'speed': 0.2, 'consistency': 0.1},
+              portraitUrl: DriverPortraitService().getPortraitUrl(
+                driverId: driverRef.id,
+                countryCode: 'CO',
+                gender: gender,
+                age: age,
+              ),
             ).toMap(),
           );
         }
