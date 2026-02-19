@@ -27,10 +27,9 @@ class CircuitService {
       difficulty: 0.6,
       overtakingDifficulty: 0.4,
       characteristics: {
-        'Altitude': 'Very High',
-        'Cooling': 'Difficult',
         'Top Speed': 'High',
         'Tyre Wear': 'Medium',
+        'Fuel Consumption': 'Normal',
       },
     ),
     'vegas': CircuitProfile(
@@ -54,8 +53,9 @@ class CircuitService {
       overtakingDifficulty: 0.3,
       characteristics: {
         'Night Race': 'Yes',
-        'Top Speed': 'Extreme',
+        'Top Speed': 'Very High',
         'Tyre Wear': 'Low',
+        'Fuel Consumption': 'High',
       },
     ),
     'interlagos': CircuitProfile(
@@ -81,6 +81,8 @@ class CircuitService {
         'Elevation': 'Significant',
         'Weather': 'Unpredictable',
         'Tyre Wear': 'High',
+        'Top Speed': 'Medium',
+        'Fuel Consumption': 'High',
       },
     ),
     'miami': CircuitProfile(
@@ -102,7 +104,13 @@ class CircuitService {
       ),
       difficulty: 0.5,
       overtakingDifficulty: 0.5,
-      characteristics: {'Environment': 'Complex', 'Surface': 'Smooth'},
+      characteristics: {
+        'Environment': 'Complex',
+        'Surface': 'Smooth',
+        'Top Speed': 'High',
+        'Tyre Wear': 'Normal',
+        'Fuel Consumption': 'Normal',
+      },
     ),
     'san_pablo_street': CircuitProfile(
       id: 'san_pablo_street',
@@ -123,7 +131,13 @@ class CircuitService {
       ),
       difficulty: 0.8,
       overtakingDifficulty: 0.7,
-      characteristics: {'Type': 'Street', 'Bumpy': 'Yes', 'Tyre Wear': 'High'},
+      characteristics: {
+        'Type': 'Street',
+        'Bumpy': 'Yes',
+        'Tyre Wear': 'High',
+        'Top Speed': 'Low',
+        'Fuel Consumption': 'Very High',
+      },
     ),
     'indianapolis': CircuitProfile(
       id: 'indianapolis',
@@ -144,7 +158,12 @@ class CircuitService {
       ),
       difficulty: 0.5,
       overtakingDifficulty: 0.4,
-      characteristics: {'Oval Section': 'Partial', 'Power': 'Long Straights'},
+      characteristics: {
+        'Oval Section': 'Partial',
+        'Top Speed': 'Very High',
+        'Tyre Wear': 'Medium',
+        'Fuel Consumption': 'High',
+      },
     ),
     'montreal': CircuitProfile(
       id: 'montreal',
@@ -169,6 +188,8 @@ class CircuitService {
         'Braking': 'Heavy',
         'Kerbs': 'Aggressive',
         'Fuel Consumption': 'High',
+        'Top Speed': 'High',
+        'Tyre Wear': 'Low',
       },
     ),
     'texas': CircuitProfile(
@@ -194,6 +215,8 @@ class CircuitService {
         'S-Curves': 'Technical',
         'Elevation': 'Extreme Turn 1',
         'Tyre Wear': 'Very High',
+        'Top Speed': 'Normal',
+        'Fuel Consumption': 'High',
       },
     ),
     'buenos_aires': CircuitProfile(
@@ -215,7 +238,12 @@ class CircuitService {
       ),
       difficulty: 0.6,
       overtakingDifficulty: 0.6,
-      characteristics: {'Technical': 'Very', 'History': 'Classic'},
+      characteristics: {
+        'Technical': 'Very',
+        'Top Speed': 'Medium',
+        'Tyre Wear': 'Medium',
+        'Fuel Consumption': 'Normal',
+      },
     ),
   };
 

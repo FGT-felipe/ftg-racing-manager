@@ -139,9 +139,43 @@ class RaceService {
     return qualyResults;
   }
 
-  Future<void> chargeCrashPenalty(String teamId) async {
-    // -$500k repairs, -$200k medical
-    final totalPenalty = 700000;
+  Future<void> chargeActionCost(
+    String teamId,
+    String description,
+    int amount,
+    String type,
+  ) async {
+    await _db.collection('teams').doc(teamId).update({
+      'budget': FieldValue.increment(-amount),
+    });
+
+    final transactionId = _db
+        .collection('teams')
+        .doc(teamId)
+        .collection('transactions')
+        .doc()
+        .id;
+
+    await _db
+        .collection('teams')
+        .doc(teamId)
+        .collection('transactions')
+        .doc(transactionId)
+        .set({
+          'id': transactionId,
+          'description': description,
+          'amount': -amount,
+          'date': DateTime.now().toIso8601String(),
+          'type': type,
+        });
+  }
+
+  Future<void> chargeCrashPenalty(String teamId, String driverId) async {
+    // -$500k repairs, -$200k medical as per user request
+    const int repairCost = 500000;
+    const int medicalCost = 200000;
+    const int totalPenalty = repairCost + medicalCost;
+
     await _db.collection('teams').doc(teamId).update({
       'budget': FieldValue.increment(-totalPenalty),
     });
@@ -160,11 +194,22 @@ class RaceService {
         .doc(transactionId)
         .set({
           'id': transactionId,
-          'description': 'Crash Penalties (Repairs & Medical)',
+          'description':
+              'Crash Penalties ($repairCost Repair + $medicalCost Medical)',
           'amount': -totalPenalty,
           'date': DateTime.now().toIso8601String(),
           'type': 'REPAIR',
         });
+
+    // Apply strong fitness penalty (-40 points)
+    final driverDoc = await _db.collection('drivers').doc(driverId).get();
+    if (driverDoc.exists) {
+      final stats = Map<String, int>.from(driverDoc.data()?['stats'] ?? {});
+      final currentFitness =
+          stats[DriverStats.fitness] ?? stats['fitness'] ?? 100;
+      stats['fitness'] = (currentFitness - 40).clamp(0, 100);
+      await driverDoc.reference.update({'stats': stats});
+    }
   }
 
   /// Simula una vuelta de práctica para un conductor específico con un setup dado
@@ -295,12 +340,17 @@ class RaceService {
     double accidentBaseRisk = 0.03; // 3% Normal
 
     switch (setup.qualifyingStyle) {
+      case DriverStyle.defensive:
+        styleBonus = -0.01;
+        fitnessCost = 0.5;
+        accidentBaseRisk = 0.01;
+        break;
       case DriverStyle.mostRisky:
         styleBonus = 0.04; // Big bonus
         fitnessCost = 5.0;
         accidentBaseRisk = 0.20;
         break;
-      case DriverStyle.aggressive:
+      case DriverStyle.offensive:
         styleBonus = 0.02;
         fitnessCost = 3.0;
         accidentBaseRisk = 0.10;
