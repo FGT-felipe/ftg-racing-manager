@@ -139,6 +139,34 @@ class RaceService {
     return qualyResults;
   }
 
+  Future<void> chargeCrashPenalty(String teamId) async {
+    // -$500k repairs, -$200k medical
+    final totalPenalty = 700000;
+    await _db.collection('teams').doc(teamId).update({
+      'budget': FieldValue.increment(-totalPenalty),
+    });
+
+    // Log the transaction
+    final transactionId = _db
+        .collection('teams')
+        .doc(teamId)
+        .collection('transactions')
+        .doc()
+        .id;
+    await _db
+        .collection('teams')
+        .doc(teamId)
+        .collection('transactions')
+        .doc(transactionId)
+        .set({
+          'id': transactionId,
+          'description': 'Crash Penalties (Repairs & Medical)',
+          'amount': -totalPenalty,
+          'date': DateTime.now().toIso8601String(),
+          'type': 'REPAIR',
+        });
+  }
+
   /// Simula una vuelta de práctica para un conductor específico con un setup dado
   PracticeRunResult simulatePracticeRun({
     required CircuitProfile circuit,
@@ -245,19 +273,75 @@ class RaceService {
     final braking = (driver.stats[DriverStats.braking] ?? 50) / 100.0;
     final cornering = (driver.stats[DriverStats.cornering] ?? 50) / 100.0;
     final adaptability = (driver.stats[DriverStats.adaptability] ?? 50) / 100.0;
-    final focus = (driver.stats[DriverStats.focus] ?? 50) / 100.0;
+    final focusVal = (driver.stats[DriverStats.focus] ?? 50) / 100.0;
     final morale = (driver.stats[DriverStats.morale] ?? 70) / 100.0;
+    final consistency = (driver.stats[DriverStats.consistency] ?? 50) / 100.0;
 
     double driverFactor =
         1.0 -
         (braking * 0.02 +
             cornering * 0.025 +
             adaptability * 0.015 +
-            focus * 0.01 +
+            focusVal * 0.01 +
             (morale - 0.5) * 0.01);
 
     if (formIsWet && driver.hasTrait(DriverTrait.rainMaster)) {
       driverFactor -= 0.01;
+    }
+
+    // --- DRIVER STYLE LOGIC ---
+    double styleBonus = 0.0;
+    double fitnessCost = 1.0;
+    double accidentBaseRisk = 0.03; // 3% Normal
+
+    switch (setup.qualifyingStyle) {
+      case DriverStyle.mostRisky:
+        styleBonus = 0.04; // Big bonus
+        fitnessCost = 5.0;
+        accidentBaseRisk = 0.20;
+        break;
+      case DriverStyle.aggressive:
+        styleBonus = 0.02;
+        fitnessCost = 3.0;
+        accidentBaseRisk = 0.10;
+        break;
+      case DriverStyle.normal:
+        styleBonus = 0.0;
+        fitnessCost = 1.0;
+        accidentBaseRisk = 0.03;
+        break;
+    }
+
+    // Impact of stats on accident risk
+    // Low focus/consistency/fitness increases risk
+    double driverRiskFactor =
+        (1.0 - focusVal) * 0.5 +
+        (1.0 - consistency) * 0.3 +
+        (1.0 - morale) * 0.2;
+    double totalAccidentProb = accidentBaseRisk + (driverRiskFactor * 0.1);
+
+    // If fitness is already low, risk spikes
+    final currentFitness = driver.stats[DriverStats.fitness] ?? 100;
+    if (currentFitness < 40) {
+      totalAccidentProb *= 1.5;
+    }
+
+    bool hasCrashed = false;
+    // We only simulate crashes if it's NOT a practice run (optional, but let's apply it)
+    if (random.nextDouble() < totalAccidentProb) {
+      hasCrashed = true;
+    }
+
+    driverFactor -= styleBonus;
+
+    // Apply fitness cost
+    if (fitnessCost > 0) {
+      final currentFullFitness = driver.stats[DriverStats.fitness] ?? 100;
+      final newFitness = (currentFullFitness - fitnessCost.round()).clamp(
+        0,
+        100,
+      );
+      driver.stats[DriverStats.fitness] = newFitness;
     }
 
     double actualLapTime =
@@ -343,8 +427,6 @@ class RaceService {
 
     actualLapTime += setupPenalty;
 
-    double consistency = (driver.stats[DriverStats.consistency] ?? 50) / 100.0;
-    double focusVal = (driver.stats[DriverStats.focus] ?? 50) / 100.0;
     double stabilityFactor = (consistency * 0.7 + focusVal * 0.3);
     double randomVariation =
         (random.nextDouble() - 0.5) * 1.2 * (1.0 - stabilityFactor);
@@ -439,12 +521,20 @@ class RaceService {
       }
     }
 
+    if (hasCrashed) {
+      nuancedFeedback.clear();
+      nuancedFeedback.add(
+        "I've lost the car! I'm in the wall... sorry guys, session is over.",
+      );
+    }
+
     return PracticeRunResult(
-      lapTime: actualLapTime,
+      lapTime: hasCrashed ? 999.0 : actualLapTime,
       driverFeedback: nuancedFeedback,
       tyreFeedback: tyreFeedback,
       setupConfidence: confidence,
       setupUsed: setup,
+      isCrashed: hasCrashed,
     );
   }
 

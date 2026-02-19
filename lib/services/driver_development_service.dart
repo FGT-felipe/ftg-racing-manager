@@ -144,6 +144,15 @@ class DriverDevelopmentService {
     return msg;
   }
 
+  /// Persists driver stats and growth to Firestore after a qualifying session.
+  /// Used primarily to save fitness changes affected by Driver Style.
+  Future<void> applyQualifyingPersistence({required Driver driver}) async {
+    await _db.collection('drivers').doc(driver.id).update({
+      'stats': driver.stats,
+      'weeklyGrowth': driver.weeklyGrowth,
+    });
+  }
+
   double currentFeedbackFeedback(
     double current,
     double gain,

@@ -27,6 +27,10 @@ El sistema utiliza una paleta oscura moderna basada en un color de fondo profund
 | **Qualifying** | `#FFB800` | Sesión de clasificación, avisos o advertencias. |
 | **Race/Strategy** | `#FF5252` | Día de carrera, criticidad alta. |
 | **Neutral/Grey** | `#9E9E9E` | Deshabilitado, estados concluidos. |
+| **Onyx Background** | `#121212` | Fondo de paneles de telemetría y Pit Boards. |
+| **Onyx Gradient (Start)**| `#1E1E1E` | Inicio del degradado premium. |
+| **Onyx Gradient (End)** | `#0A0A0A` | Fin del degradado premium. |
+| **Telemetry Value** | `#FFD700` | Color dorado para tiempos y datos competitivos. |
 | **Driver Stats Scale** | *Ver abajo* | Representación visual del nivel de habilidad (0-20). |
 
 ### Escala de Color para Driver Stats (0-20)
@@ -121,6 +125,30 @@ Botón minimalista posicionado en el borde derecho del sidebar.
 - **Elevated Buttons**: Altura generosa (12-16px padding vertical), 8px border radius. Look moderno de "Flat neumorphism".
 - **Selection Outline**: Relación de 1px con el color `#secondary` para indicar foco activo.
 - **Sliders**: Tracks de color `#secondary` con fondos de carril muy sutiles (`alpha: 0.1`).
+
+#### 6. Paneles de Telemetría 'Onyx' (Pit Board & Results)
+Diseñados para representar datos críticos de carrera con un look de alta tecnología.
+- **Estética "Onyx Deep"**: Contenedores con degradado lineal (`TopLeft` a `BottomRight`) y bordes refinados de 1px con 10% de opacidad.
+- **Estandarización de Altura**: Uso mandatorio de `IntrinsicHeight` en filas de datos para asegurar que todos los "cajones" de telemetría tengan la misma altura visual.
+- **Pit Board Fields (Cajones de Datos)**:
+  - **Etiqueta**: Mayúsculas, 9px, `letterSpacing: 0.8`, opacidad 40%.
+  - **Valor**: `fontFamily: 'monospace'`, 15px+, `fontWeight: 900`, color `#FFD700` (Gold).
+  - **Padding**: Estándar de `8px vertical, 10px horizontal`.
+- **Tablas de Resultados y Práctica**:
+  - **Cabeceras**: Fondo sutil de `white.withOpacity(0.03)` y bordes inferiores de 1px.
+  - **Iconografía**: Uso de iconos específicos por sesión (Copa para Qualifying, Reloj para Practice).
+  - **Filas de Datos**: Altura optimizada para visualización densa, con `InkWell` para mostrar detalles del setup.
+  - **Resaltado (PB)**: Uso de colores de acento (Verde para PB, Purpura para Global Best) tanto en texto como en fondo de fila (opacidad 8%).
+
+#### 7. Tarjetas de Piloto 'Onyx' (Weekend Setup)
+Componente híbrido que combina identidad visual con telemetría de preparación.
+- **Estructura 35/65**: 
+  - **35% Izquierda**: Avatar a sangre (Portrait) con un degradado de transición hacia la zona de datos.
+  - **65% Derecha**: Contenedor de información con padding de 12px.
+- **Formato de Nombre**: Regla de visualización `[Inicial]. [Apellido]` (ej. "F. ALONSO").
+  - Estilo: Mayúsculas, `fontSize: 12-13px`, `fontWeight: 900`.
+- **Indicadores de Progreso**: Integración de la barra de fitness y contador de vueltas con iconos de telemetría.
+- **Interactividad**: Elevación y sombra dinámica en estado seleccionado, con un borde de 2px en el color primario del equipo.
 
 ---
 

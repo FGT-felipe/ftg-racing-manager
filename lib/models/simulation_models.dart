@@ -1,5 +1,7 @@
 enum TyreCompound { soft, medium, hard, wet }
 
+enum DriverStyle { normal, aggressive, mostRisky }
+
 class CarSetup {
   int frontWing;
   int rearWing;
@@ -15,7 +17,10 @@ class CarSetup {
     this.gearRatio = 50,
     this.tyreCompound = TyreCompound.medium,
     this.pitStops = const [TyreCompound.hard], // Default 1 stop
+    this.qualifyingStyle = DriverStyle.normal,
   });
+
+  DriverStyle qualifyingStyle;
 
   Map<String, dynamic> toMap() {
     return {
@@ -25,6 +30,7 @@ class CarSetup {
       'gearRatio': gearRatio,
       'tyreCompound': tyreCompound.name,
       'pitStops': pitStops.map((e) => e.name).toList(),
+      'qualifyingStyle': qualifyingStyle.name,
     };
   }
 
@@ -46,6 +52,10 @@ class CarSetup {
             ),
           )
           .toList(),
+      qualifyingStyle: DriverStyle.values.firstWhere(
+        (e) => e.name == (map['qualifyingStyle'] ?? 'normal'),
+        orElse: () => DriverStyle.normal,
+      ),
     );
   }
 
@@ -56,6 +66,7 @@ class CarSetup {
     int? gearRatio,
     TyreCompound? tyreCompound,
     List<TyreCompound>? pitStops,
+    DriverStyle? qualifyingStyle,
   }) {
     return CarSetup(
       frontWing: frontWing ?? this.frontWing,
@@ -64,6 +75,7 @@ class CarSetup {
       gearRatio: gearRatio ?? this.gearRatio,
       tyreCompound: tyreCompound ?? this.tyreCompound,
       pitStops: pitStops ?? this.pitStops,
+      qualifyingStyle: qualifyingStyle ?? this.qualifyingStyle,
     );
   }
 }
@@ -112,6 +124,7 @@ class PracticeRunResult {
   final List<String> tyreFeedback;
   final double setupConfidence; // 0.0 to 1.0
   final CarSetup setupUsed;
+  final bool isCrashed;
 
   PracticeRunResult({
     required this.lapTime,
@@ -120,7 +133,28 @@ class PracticeRunResult {
     this.tyreFeedback = const [],
     required this.setupConfidence,
     required this.setupUsed,
+    this.isCrashed = false,
   });
+
+  PracticeRunResult copyWith({
+    double? lapTime,
+    double? gapToBest,
+    List<String>? driverFeedback,
+    List<String>? tyreFeedback,
+    double? setupConfidence,
+    CarSetup? setupUsed,
+    bool? isCrashed,
+  }) {
+    return PracticeRunResult(
+      lapTime: lapTime ?? this.lapTime,
+      gapToBest: gapToBest ?? this.gapToBest,
+      driverFeedback: driverFeedback ?? this.driverFeedback,
+      tyreFeedback: tyreFeedback ?? this.tyreFeedback,
+      setupConfidence: setupConfidence ?? this.setupConfidence,
+      setupUsed: setupUsed ?? this.setupUsed,
+      isCrashed: isCrashed ?? this.isCrashed,
+    );
+  }
 }
 
 class RaceEventLog {

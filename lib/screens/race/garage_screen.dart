@@ -34,7 +34,7 @@ class GarageScreen extends StatefulWidget {
 }
 
 class _GarageScreenState extends State<GarageScreen>
-    with SingleTickerProviderStateMixin {
+    with TickerProviderStateMixin {
   // State
   bool _isLoading = false;
   CircuitProfile? _circuit;
@@ -73,6 +73,8 @@ class _GarageScreenState extends State<GarageScreen>
   final Map<String, int> _qualifyingLaps = {};
   // Per-driver best qualifying compound: driverId -> compound
   final Map<String, TyreCompound> _qualifyingBestCompounds = {};
+  // Per-driver last qualifying lap time
+  final Map<String, double> _qualifyingLastLaps = {};
   // Whether the driver has started qualifying (Parc Fermé triggers after first attempt)
   final Map<String, bool> _qualifyingParcFerme = {};
   // Full qualifying results table: [{driverId, driverName, teamName, teamId, bestTime, laps}]
@@ -83,17 +85,23 @@ class _GarageScreenState extends State<GarageScreen>
 
   // Setup tab: 0=Practice, 1=Qualifying, 2=Race
   late TabController _tabController;
+  AnimationController? _blinkingController;
 
   @override
   void initState() {
     super.initState();
     _tabController = TabController(length: 3, vsync: this);
+    _blinkingController = AnimationController(
+      duration: const Duration(milliseconds: 1000),
+      vsync: this,
+    )..repeat(reverse: true);
     _loadInitialData();
   }
 
   @override
   void dispose() {
     _tabController.dispose();
+    _blinkingController?.dispose();
     super.dispose();
   }
 
@@ -398,6 +406,7 @@ class _GarageScreenState extends State<GarageScreen>
 
         // Simulate lap time delay
         await Future.delayed(const Duration(milliseconds: 1200));
+        if (!mounted) return;
 
         lastLapResult = result;
 
@@ -600,10 +609,12 @@ class _GarageScreenState extends State<GarageScreen>
               'read': false,
             });
 
-        setState(() {
-          _drivers = updatedDrivers; // Real-time update
-          _lastResult = lastLapResult;
-        });
+        if (mounted) {
+          setState(() {
+            _drivers = updatedDrivers; // Real-time update
+            _lastResult = lastLapResult;
+          });
+        }
 
         // --- Pit Board Animation END ---
         setState(
@@ -872,7 +883,12 @@ class _GarageScreenState extends State<GarageScreen>
         _qualifyingBestCompounds[driverId] = setup.tyreCompound;
       }
       final bestTime = _qualifyingBestTimes[driverId]!;
-      final bestCompound = _qualifyingBestCompounds[driverId]!;
+      // Use current compound as fallback if previous best compound wasn't recorded
+      final bestCompound =
+          _qualifyingBestCompounds[driverId] ?? setup.tyreCompound;
+      // Ensure we have it stored for next time
+      _qualifyingBestCompounds[driverId] = bestCompound;
+      _qualifyingLastLaps[driverId] = result.lapTime;
 
       // Update qualifying results table for this driver
       final tableIdx = _qualifyingResultsTable.indexWhere(
@@ -901,7 +917,22 @@ class _GarageScreenState extends State<GarageScreen>
             'weekStatus.driverSetups.$driverId.qualifyingParcFerme': true,
           });
 
-      setState(() => _pitBoardMessage = null);
+      // --- PERSIST DRIVER STATS (Fitness, etc.) ---
+      await DriverDevelopmentService().applyQualifyingPersistence(
+        driver: driver,
+      );
+
+      // RE-FETCH DRIVERS to show REAL-TIME stat changes (fitness drop) in the UI
+      final updatedDrivers = await DriverAssignmentService().getDriversByTeam(
+        widget.teamId,
+      );
+
+      if (mounted) {
+        setState(() {
+          _drivers = updatedDrivers;
+          _pitBoardMessage = null;
+        });
+      }
 
       if (mounted) {
         final isImproved = result.lapTime <= bestTime;
@@ -1117,6 +1148,13 @@ class _GarageScreenState extends State<GarageScreen>
                   });
                 },
                 null,
+                onStyleChanged: (style) {
+                  setState(() {
+                    final s = _currentDriverPracticeSetup;
+                    s.qualifyingStyle = style;
+                    _updateCurrentDriverSetup(s, tabIndex: 0);
+                  });
+                },
               ),
               const SizedBox(height: 12),
 
@@ -1422,8 +1460,14 @@ class _GarageScreenState extends State<GarageScreen>
 
     final driverId = _selectedDriverId!;
     final bestTime = _qualifyingBestTimes[driverId] ?? 0.0;
+    final lastTime = _qualifyingLastLaps[driverId] ?? 0.0;
     final laps = _qualifyingLaps[driverId] ?? 0;
     final compound = _currentDriverQualifyingSetup.tyreCompound;
+
+    final status = TimeService().currentStatus;
+    final isSessionOpen =
+        status == RaceWeekStatus.practice ||
+        status == RaceWeekStatus.qualifying;
 
     // Find position and gap
     int pos = 0;
@@ -1445,61 +1489,117 @@ class _GarageScreenState extends State<GarageScreen>
 
     return Container(
       margin: const EdgeInsets.only(left: 12, right: 12, top: 12),
-      padding: const EdgeInsets.all(12),
+      padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: const Color(0xFF1A1A1A),
-        borderRadius: BorderRadius.circular(8),
-        border: Border.all(color: const Color(0xFF333333), width: 2),
+        color: const Color(0xFF121212),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(
+          color: Colors.white.withValues(alpha: 0.1),
+          width: 1,
+        ),
+        gradient: LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [const Color(0xFF1E1E1E), const Color(0xFF0A0A0A)],
+        ),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.5),
-            blurRadius: 10,
-            offset: const Offset(0, 4),
+            color: Colors.black.withValues(alpha: 0.6),
+            blurRadius: 15,
+            offset: const Offset(0, 8),
           ),
         ],
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
+          // Titulo de sesión
+          Center(
+            child: isSessionOpen && _blinkingController != null
+                ? AnimatedBuilder(
+                    animation: _blinkingController!,
+                    builder: (context, child) {
+                      return Opacity(
+                        opacity: _blinkingController!.value,
+                        child: child,
+                      );
+                    },
+                    child: Text(
+                      "QUALIFYING SESSION OPEN",
+                      style: TextStyle(
+                        color: const Color(0xFF00E676),
+                        fontSize: 12,
+                        fontWeight: FontWeight.w900,
+                        letterSpacing: 2.5,
+                      ),
+                    ),
+                  )
+                : Text(
+                    isSessionOpen
+                        ? "QUALIFYING SESSION OPEN"
+                        : "QUALIFYING SESSION CLOSED",
+                    style: TextStyle(
+                      color: isSessionOpen
+                          ? const Color(0xFF00E676)
+                          : const Color(0xFFFF5252),
+                      fontSize: 12,
+                      fontWeight: FontWeight.w900,
+                      letterSpacing: 2.5,
+                    ),
+                  ),
+          ),
+          const SizedBox(height: 16),
           // Pit Board Top Row (Status & Laps)
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               Container(
-                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 10,
+                  vertical: 6,
+                ),
                 decoration: BoxDecoration(
                   color: _isLoading
-                      ? Colors.redAccent
-                      : const Color(0xFF333333),
-                  borderRadius: BorderRadius.circular(4),
+                      ? const Color(0xFFFF5252).withValues(alpha: 0.2)
+                      : Colors.white.withValues(alpha: 0.05),
+                  borderRadius: BorderRadius.circular(6),
+                  border: Border.all(
+                    color: _isLoading
+                        ? const Color(0xFFFF5252)
+                        : Colors.white.withValues(alpha: 0.1),
+                  ),
                 ),
                 child: Text(
                   displayStatus.toUpperCase(),
-                  style: const TextStyle(
-                    color: Colors.white,
+                  style: TextStyle(
+                    color: _isLoading
+                        ? const Color(0xFFFF5252)
+                        : Colors.white70,
                     fontFamily: 'monospace',
                     fontWeight: FontWeight.w900,
-                    fontSize: 12,
+                    fontSize: 11,
+                    letterSpacing: 1.0,
                   ),
                 ),
               ),
               Row(
                 children: [
-                  const Text(
+                  Text(
                     "LAPS ",
                     style: TextStyle(
-                      color: Colors.white38,
+                      color: Colors.white.withValues(alpha: 0.4),
                       fontSize: 10,
-                      fontWeight: FontWeight.bold,
+                      fontWeight: FontWeight.w900,
+                      letterSpacing: 1.0,
                     ),
                   ),
                   Text(
                     laps.toString().padLeft(3, '0'),
                     style: const TextStyle(
-                      color: Color(0xFFFFB800),
+                      color: Color(0xFFFFD700),
                       fontFamily: 'monospace',
                       fontWeight: FontWeight.w900,
-                      fontSize: 14,
+                      fontSize: 16,
                     ),
                   ),
                 ],
@@ -1508,70 +1608,92 @@ class _GarageScreenState extends State<GarageScreen>
           ),
           const SizedBox(height: 12),
           // Pit Board Main Info
-          Row(
-            children: [
-              // Position
-              Expanded(
-                child: _buildPitBoardField(
-                  "P",
-                  pos > 0 ? pos.toString().padLeft(2, '0') : "--",
+          IntrinsicHeight(
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                // Position
+                Expanded(
+                  child: _buildPitBoardField(
+                    "POS",
+                    pos > 0 ? pos.toString().padLeft(2, '0') : "--",
+                  ),
                 ),
-              ),
-              const SizedBox(width: 8),
-              // Gap
-              Expanded(
-                child: _buildPitBoardField(
-                  "G",
-                  pos > 1
-                      ? "+${gap.toStringAsFixed(3)}"
-                      : (pos == 1 ? "P1" : "---"),
+                const SizedBox(width: 8),
+                // Gap
+                Expanded(
+                  child: _buildPitBoardField(
+                    "GAP",
+                    pos > 1
+                        ? "+${gap.toStringAsFixed(3)}"
+                        : (pos == 1 ? "P1" : "---"),
+                  ),
                 ),
-              ),
-              const SizedBox(width: 8),
-              // Compound
-              _buildPitBoardCompound(compound),
-            ],
+                const SizedBox(width: 8),
+                // Compound
+                _buildPitBoardCompound(compound),
+              ],
+            ),
           ),
           const SizedBox(height: 8),
-          // Best Time
-          _buildPitBoardField(
-            "T",
-            bestTime > 0 ? _formatLapTime(bestTime) : "--:---.---",
-            large: true,
+          // Times Row
+          IntrinsicHeight(
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                // Last Lap
+                Expanded(
+                  child: _buildPitBoardField(
+                    "LAST LAP",
+                    lastTime > 0 ? _formatLapTime(lastTime) : "--:---.---",
+                  ),
+                ),
+                const SizedBox(width: 8),
+                // Best Time
+                Expanded(
+                  child: _buildPitBoardField(
+                    "BEST LAP",
+                    bestTime > 0 ? _formatLapTime(bestTime) : "--:---.---",
+                  ),
+                ),
+              ],
+            ),
           ),
         ],
       ),
     );
   }
 
-  Widget _buildPitBoardField(String label, String value, {bool large = false}) {
+  Widget _buildPitBoardField(String label, String value) {
     return Container(
-      padding: const EdgeInsets.symmetric(vertical: 6, horizontal: 8),
+      padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 10),
       decoration: BoxDecoration(
-        color: Colors.black,
-        border: Border.all(color: const Color(0xFF444444)),
-        borderRadius: BorderRadius.circular(4),
+        color: Colors.white.withValues(alpha: 0.03),
+        border: Border.all(color: Colors.white.withValues(alpha: 0.1)),
+        borderRadius: BorderRadius.circular(8),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
-        mainAxisSize: MainAxisSize.min,
+        mainAxisAlignment: MainAxisAlignment.center,
         children: [
           Text(
-            label,
-            style: const TextStyle(
-              color: Colors.white38,
-              fontSize: 10,
-              fontWeight: FontWeight.bold,
+            label.toUpperCase(),
+            style: TextStyle(
+              color: Colors.white.withValues(alpha: 0.4),
+              fontSize: 9,
+              fontWeight: FontWeight.w900,
+              letterSpacing: 0.8,
             ),
           ),
+          const SizedBox(height: 4),
           Center(
             child: Text(
               value,
-              style: TextStyle(
-                color: const Color(0xFFFFB800),
+              style: const TextStyle(
+                color: Color(0xFFFFD700),
                 fontFamily: 'monospace',
                 fontWeight: FontWeight.w900,
-                fontSize: large ? 18 : 14,
+                fontSize: 15,
               ),
             ),
           ),
@@ -1598,12 +1720,11 @@ class _GarageScreenState extends State<GarageScreen>
     }
 
     return Container(
-      width: 40,
-      height: 44,
+      width: 44,
       decoration: BoxDecoration(
-        color: Colors.black,
-        border: Border.all(color: const Color(0xFF444444)),
-        borderRadius: BorderRadius.circular(4),
+        color: Colors.white.withValues(alpha: 0.03),
+        border: Border.all(color: Colors.white.withValues(alpha: 0.1)),
+        borderRadius: BorderRadius.circular(8),
       ),
       child: Center(
         child: Container(
@@ -1663,6 +1784,12 @@ class _GarageScreenState extends State<GarageScreen>
       parcFermeFields: isParcFerme
           ? {'rearWing', 'suspension', 'gearRatio'}
           : null,
+      onStyleChanged: (style) {
+        setState(() {
+          setup.qualifyingStyle = style;
+          _updateCurrentDriverSetup(setup, tabIndex: 1);
+        });
+      },
     );
   }
 
@@ -2058,9 +2185,10 @@ class _GarageScreenState extends State<GarageScreen>
 
   Widget _buildDriverSelector(ThemeData theme) {
     return SizedBox(
-      height: 100, // Increased height for fitness bar
+      height: 110,
       child: ListView.builder(
         scrollDirection: Axis.horizontal,
+        padding: const EdgeInsets.only(left: 12, bottom: 8),
         itemCount: _drivers.length,
         itemBuilder: (context, index) {
           final driver = _drivers[index];
@@ -2080,83 +2208,135 @@ class _GarageScreenState extends State<GarageScreen>
           return GestureDetector(
             onTap: () => _onDriverChanged(driver.id),
             child: AnimatedContainer(
-              duration: const Duration(milliseconds: 200),
+              duration: const Duration(milliseconds: 250),
+              width: 220,
               margin: const EdgeInsets.only(right: 12),
-              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
               decoration: BoxDecoration(
-                color: isSelected
-                    ? theme.colorScheme.secondary.withOpacity(0.1)
-                    : theme.cardTheme.color,
-                borderRadius: BorderRadius.circular(8),
+                color: const Color(0xFF121212),
+                borderRadius: BorderRadius.circular(12),
                 border: Border.all(
                   color: isSelected
-                      ? theme.colorScheme.secondary
-                      : Colors.transparent,
-                  width: 1,
+                      ? theme.primaryColor
+                      : Colors.white.withValues(alpha: 0.08),
+                  width: isSelected ? 2 : 1,
                 ),
+                gradient: LinearGradient(
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                  colors: isSelected
+                      ? [const Color(0xFF2A2A2A), const Color(0xFF121212)]
+                      : [const Color(0xFF1E1E1E), const Color(0xFF0A0A0A)],
+                ),
+                boxShadow: isSelected
+                    ? [
+                        BoxShadow(
+                          color: theme.primaryColor.withValues(alpha: 0.3),
+                          blurRadius: 10,
+                          offset: const Offset(0, 4),
+                        ),
+                      ]
+                    : [
+                        BoxShadow(
+                          color: Colors.black.withValues(alpha: 0.4),
+                          blurRadius: 4,
+                          offset: const Offset(0, 2),
+                        ),
+                      ],
               ),
-              child: Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Container(
-                    width: 36,
-                    height: 36,
-                    decoration: BoxDecoration(
-                      shape: BoxShape.circle,
-                      color: _driverColor(driver.name),
-                      image: DecorationImage(
-                        image: portraitUrl.startsWith('http')
-                            ? NetworkImage(portraitUrl) as ImageProvider
-                            : AssetImage(portraitUrl),
-                        fit: BoxFit.cover,
-                      ),
-                      border: isSelected
-                          ? Border.all(
-                              color: theme.colorScheme.secondary,
-                              width: 1.5,
-                            )
-                          : null,
-                    ),
-                  ),
-                  const SizedBox(width: 10),
-                  Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Builder(
-                        builder: (context) {
-                          final parts = driver.name.split(' ');
-                          final displayName = parts.length > 1
-                              ? "${parts[0][0]}. ${parts.last}"
-                              : driver.name;
-                          return Text(
-                            displayName.toUpperCase(),
-                            style: TextStyle(
-                              fontSize: 11,
-                              fontWeight: FontWeight.w900,
-                              color: isSelected
-                                  ? theme.colorScheme.secondary
-                                  : theme.colorScheme.onSurface,
+              child: ClipRRect(
+                borderRadius: BorderRadius.circular(10),
+                child: Row(
+                  children: [
+                    // 35% Portrait Area
+                    Expanded(
+                      flex: 35,
+                      child: Container(
+                        height: double.infinity,
+                        decoration: BoxDecoration(
+                          image: DecorationImage(
+                            image: portraitUrl.startsWith('http')
+                                ? NetworkImage(portraitUrl) as ImageProvider
+                                : AssetImage(portraitUrl),
+                            fit: BoxFit.cover,
+                            alignment: Alignment.topCenter,
+                          ),
+                        ),
+                        child: Container(
+                          decoration: BoxDecoration(
+                            gradient: LinearGradient(
+                              begin: Alignment.centerRight,
+                              end: Alignment.centerLeft,
+                              colors: [
+                                Colors.black.withValues(alpha: 0.4),
+                                Colors.transparent,
+                              ],
                             ),
-                            overflow: TextOverflow.ellipsis,
-                          );
-                        },
-                      ),
-                      const SizedBox(height: 6),
-                      _buildFitnessBar(theme, driver),
-                      const SizedBox(height: 6),
-                      Text(
-                        "$laps/$kMaxPracticeLapsPerDriver LAPS",
-                        style: TextStyle(
-                          fontSize: 9,
-                          fontWeight: FontWeight.w900,
-                          letterSpacing: 0.5,
-                          color: maxed ? Colors.orange : Colors.white54,
+                          ),
                         ),
                       ),
-                    ],
-                  ),
-                ],
+                    ),
+                    // 65% Info Area
+                    Expanded(
+                      flex: 65,
+                      child: Padding(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 12,
+                          vertical: 10,
+                        ),
+                        child: Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Builder(
+                              builder: (context) {
+                                final parts = driver.name.split(' ');
+                                final displayName = parts.length > 1
+                                    ? "${parts[0][0]}. ${parts.last}"
+                                    : driver.name;
+                                return Text(
+                                  displayName.toUpperCase(),
+                                  style: TextStyle(
+                                    fontSize: 12,
+                                    fontWeight: FontWeight.w900,
+                                    color: isSelected
+                                        ? Colors.white
+                                        : Colors.white.withValues(alpha: 0.7),
+                                    letterSpacing: 0.5,
+                                  ),
+                                  overflow: TextOverflow.ellipsis,
+                                );
+                              },
+                            ),
+                            const SizedBox(height: 8),
+                            _buildFitnessBar(theme, driver),
+                            const SizedBox(height: 8),
+                            Row(
+                              children: [
+                                Icon(
+                                  Icons.speed,
+                                  size: 10,
+                                  color: maxed ? Colors.orange : Colors.white38,
+                                ),
+                                const SizedBox(width: 4),
+                                Text(
+                                  "$laps / $kMaxPracticeLapsPerDriver LAPS",
+                                  style: TextStyle(
+                                    fontSize: 9,
+                                    fontWeight: FontWeight.w900,
+                                    letterSpacing: 0.5,
+                                    color: maxed
+                                        ? Colors.orange
+                                        : Colors.white38,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
               ),
             ),
           );
@@ -2319,6 +2499,7 @@ class _GarageScreenState extends State<GarageScreen>
     ValueChanged<TyreCompound>? onCompoundChanged,
     void Function(List<TyreCompound> stops)? onPitStopsChanged, {
     Set<String>? parcFermeFields,
+    ValueChanged<DriverStyle>? onStyleChanged,
   }) {
     Widget buildSlider(String label, int value, String fieldId) {
       final isLocked = parcFermeFields?.contains(fieldId) ?? false;
@@ -2375,6 +2556,84 @@ class _GarageScreenState extends State<GarageScreen>
                 buildSlider("Suspension", setup.suspension, 'suspension'),
                 buildSlider("Gear Ratio", setup.gearRatio, 'gearRatio'),
                 const SizedBox(height: 12),
+                if (onStyleChanged != null) ...[
+                  const Text(
+                    "Driver Style",
+                    style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold),
+                  ),
+                  const SizedBox(height: 8),
+                  Row(
+                    children: DriverStyle.values.map((style) {
+                      final isSelected = setup.qualifyingStyle == style;
+                      Color styleColor;
+                      String styleLabel;
+                      IconData icon;
+
+                      switch (style) {
+                        case DriverStyle.normal:
+                          styleColor = Colors.green;
+                          styleLabel = "NORMAL";
+                          icon = Icons.directions_car;
+                          break;
+                        case DriverStyle.aggressive:
+                          styleColor = Colors.orange;
+                          styleLabel = "AGGRESSIVE";
+                          icon = Icons.flash_on;
+                          break;
+                        case DriverStyle.mostRisky:
+                          styleColor = Colors.red;
+                          styleLabel = "RISKY";
+                          icon = Icons.warning;
+                          break;
+                      }
+
+                      return Expanded(
+                        child: GestureDetector(
+                          onTap: () => onStyleChanged(style),
+                          child: Container(
+                            margin: const EdgeInsets.only(right: 6),
+                            padding: const EdgeInsets.symmetric(vertical: 8),
+                            decoration: BoxDecoration(
+                              color: isSelected
+                                  ? styleColor.withOpacity(0.15)
+                                  : Colors.white.withOpacity(0.03),
+                              border: Border.all(
+                                color: isSelected
+                                    ? styleColor
+                                    : Colors.white.withOpacity(0.1),
+                                width: 1.5,
+                              ),
+                              borderRadius: BorderRadius.circular(8),
+                            ),
+                            child: Column(
+                              children: [
+                                Icon(
+                                  icon,
+                                  size: 14,
+                                  color: isSelected
+                                      ? styleColor
+                                      : Colors.white38,
+                                ),
+                                const SizedBox(height: 4),
+                                Text(
+                                  styleLabel,
+                                  style: TextStyle(
+                                    fontSize: 8,
+                                    fontWeight: FontWeight.w900,
+                                    color: isSelected
+                                        ? styleColor
+                                        : Colors.white24,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ),
+                      );
+                    }).toList(),
+                  ),
+                  const SizedBox(height: 16),
+                ],
                 const Text(
                   "Tyre Compound",
                   style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold),
@@ -2656,69 +2915,75 @@ class _GarageScreenState extends State<GarageScreen>
     final isGlobal =
         lastTime != null && globalBest != null && lastTime <= globalBest;
 
-    return Card(
-      margin: const EdgeInsets.fromLTRB(0, 12, 12, 0),
-      color: theme.cardTheme.color,
-      elevation: 0,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-      child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-        child: IntrinsicHeight(
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              // 1. Last Lap
-              _buildStatColumn(
-                theme,
-                "LAST LAP",
-                lastTime != null ? _formatLapTime(lastTime) : "-:---.---",
-                isGlobal
-                    ? const Color(0xFFE040FB)
-                    : (isPB
-                          ? const Color(0xFF00C853)
-                          : theme.colorScheme.onSurface),
-                CrossAxisAlignment.start,
-              ),
-              _buildDivider(theme),
-              // 2. Best Personal (PB)
-              _buildStatColumn(
-                theme,
-                "BEST PB",
-                personalBest != null
-                    ? _formatLapTime(personalBest)
-                    : "-:---.---",
-                const Color(0xFF00C853),
-                CrossAxisAlignment.start,
-              ),
-              _buildDivider(theme),
-              // 3. Fastest Lap (Overall)
-              _buildStatColumn(
-                theme,
-                "FASTEST",
-                globalBest != null ? _formatLapTime(globalBest) : "-:---.---",
-                const Color(0xFFE040FB),
-                CrossAxisAlignment.start,
-                subValue: _fastestGlobalDriverId != null
-                    ? _formatDriverInitialName(
-                        _drivers
-                            .firstWhere((d) => d.id == _fastestGlobalDriverId)
-                            .name,
-                      )
-                    : null,
-              ),
-              _buildDivider(theme),
-              // 4. Confidence
-              _buildStatColumn(
-                theme,
-                "CONFIDENCE",
-                _lastResult != null
-                    ? "${(_lastResult!.setupConfidence * 100).toStringAsFixed(0)}%"
-                    : "--%",
-                _getConfidenceColor(_lastResult?.setupConfidence ?? 0),
-                CrossAxisAlignment.end,
-              ),
-            ],
-          ),
+    return Container(
+      margin: const EdgeInsets.fromLTRB(0, 12, 12, 4),
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: const Color(0xFF121212),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(
+          color: Colors.white.withValues(alpha: 0.1),
+          width: 1,
+        ),
+        gradient: LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [const Color(0xFF1E1E1E), const Color(0xFF0A0A0A)],
+        ),
+      ),
+      child: IntrinsicHeight(
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            // 1. Last Lap
+            _buildStatColumn(
+              theme,
+              "LAST LAP",
+              lastTime != null ? _formatLapTime(lastTime) : "-:---.---",
+              isGlobal
+                  ? const Color(0xFFE040FB)
+                  : (isPB
+                        ? const Color(0xFF00C853)
+                        : theme.colorScheme.onSurface),
+              CrossAxisAlignment.start,
+            ),
+            _buildDivider(theme),
+            // 2. Best Personal (PB)
+            _buildStatColumn(
+              theme,
+              "BEST PB",
+              personalBest != null ? _formatLapTime(personalBest) : "-:---.---",
+              const Color(0xFF00C853),
+              CrossAxisAlignment.start,
+            ),
+            _buildDivider(theme),
+            // 3. Fastest Lap (Overall)
+            _buildStatColumn(
+              theme,
+              "FASTEST",
+              globalBest != null ? _formatLapTime(globalBest) : "-:---.---",
+              const Color(0xFFE040FB),
+              CrossAxisAlignment.start,
+              subValue: _fastestGlobalDriverId != null
+                  ? _formatDriverInitialName(
+                      _drivers
+                          .firstWhere((d) => d.id == _fastestGlobalDriverId)
+                          .name,
+                    )
+                  : null,
+            ),
+            _buildDivider(theme),
+            // 4. Confidence
+            _buildStatColumn(
+              theme,
+              "CONFIDENCE",
+              _lastResult != null
+                  ? "${(_lastResult!.setupConfidence * 100).toStringAsFixed(0)}%"
+                  : "--%",
+              _getConfidenceColor(_lastResult?.setupConfidence ?? 0),
+              CrossAxisAlignment.end,
+            ),
+          ],
         ),
       ),
     );
@@ -2784,383 +3049,439 @@ class _GarageScreenState extends State<GarageScreen>
         .where((d) => d.id == _selectedDriverId)
         .firstOrNull;
 
-    return Card(
-      margin: const EdgeInsets.fromLTRB(0, 4, 12, 0),
-      color: theme.cardTheme.color,
-      elevation: 0,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-      child: Padding(
-        padding: const EdgeInsets.all(12),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Row(
+    return Container(
+      margin: const EdgeInsets.fromLTRB(0, 4, 12, 4),
+      decoration: BoxDecoration(
+        color: const Color(0xFF0A0A0A),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: Colors.white.withValues(alpha: 0.08)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          // Header
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+            decoration: BoxDecoration(
+              color: theme.primaryColor.withValues(alpha: 0.1),
+              borderRadius: const BorderRadius.vertical(
+                top: Radius.circular(12),
+              ),
+            ),
+            child: Row(
               children: [
-                Icon(Icons.timer, color: theme.colorScheme.secondary, size: 16),
-                const SizedBox(width: 6),
+                Icon(Icons.timer, color: theme.primaryColor, size: 16),
+                const SizedBox(width: 8),
                 Text(
                   "LAP TIMES — ${selectedDriver?.name.split(' ').last.toUpperCase() ?? ''}",
                   style: TextStyle(
                     fontSize: 11,
-                    fontWeight: FontWeight.bold,
-                    letterSpacing: 1.2,
-                    color: theme.colorScheme.onSurface,
+                    fontWeight: FontWeight.w900,
+                    letterSpacing: 1.5,
+                    color: theme.primaryColor,
                   ),
                 ),
               ],
             ),
-            const SizedBox(height: 8),
-            if (laps.isEmpty)
-              Text(
-                "No laps recorded yet",
-                style: TextStyle(
-                  color: theme.colorScheme.onSurface.withOpacity(0.4),
-                  fontStyle: FontStyle.italic,
-                  fontSize: 12,
-                ),
-              )
-            else ...[
-              // Header
-              Row(
-                children: [
-                  SizedBox(
-                    width: 30,
+          ),
+          Padding(
+            padding: const EdgeInsets.all(12),
+            child: Column(
+              children: [
+                if (laps.isEmpty)
+                  Padding(
+                    padding: const EdgeInsets.symmetric(vertical: 24),
                     child: Text(
-                      "#",
+                      "No laps recorded yet",
                       style: TextStyle(
-                        fontSize: 10,
-                        fontWeight: FontWeight.bold,
-                        color: theme.colorScheme.onSurface.withOpacity(0.5),
+                        color: Colors.white.withValues(alpha: 0.2),
+                        fontStyle: FontStyle.italic,
+                        fontSize: 12,
                       ),
                     ),
-                  ),
-                  Expanded(
-                    child: Text(
-                      "LAP TIME",
-                      style: TextStyle(
-                        fontSize: 10,
-                        fontWeight: FontWeight.bold,
-                        color: theme.colorScheme.onSurface.withOpacity(0.5),
-                      ),
-                      textAlign: TextAlign.right,
+                  )
+                else ...[
+                  // Header Row
+                  Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 8,
+                      vertical: 6,
+                    ),
+                    color: Colors.white.withValues(alpha: 0.03),
+                    child: Row(
+                      children: [
+                        SizedBox(
+                          width: 30,
+                          child: Text(
+                            "#",
+                            style: TextStyle(
+                              fontSize: 10,
+                              fontWeight: FontWeight.w900,
+                              color: Colors.white.withValues(alpha: 0.3),
+                            ),
+                          ),
+                        ),
+                        Expanded(
+                          child: Text(
+                            "LAP TIME",
+                            style: TextStyle(
+                              fontSize: 10,
+                              fontWeight: FontWeight.w900,
+                              color: Colors.white.withValues(alpha: 0.3),
+                            ),
+                            textAlign: TextAlign.right,
+                          ),
+                        ),
+                        const SizedBox(width: 12),
+                        SizedBox(
+                          width: 50,
+                          child: Text(
+                            "CONF",
+                            style: TextStyle(
+                              fontSize: 10,
+                              fontWeight: FontWeight.w900,
+                              color: Colors.white.withValues(alpha: 0.3),
+                            ),
+                            textAlign: TextAlign.right,
+                          ),
+                        ),
+                      ],
                     ),
                   ),
-                  const SizedBox(width: 12),
+                  const SizedBox(height: 4),
+                  // SCROLLABLE LIST OF LAPS with fixed height
                   SizedBox(
-                    width: 50,
-                    child: Text(
-                      "CONF",
-                      style: TextStyle(
-                        fontSize: 10,
-                        fontWeight: FontWeight.bold,
-                        color: theme.colorScheme.onSurface.withOpacity(0.5),
-                      ),
-                      textAlign: TextAlign.right,
+                    height: 180, // Fixed height for lap history
+                    child: ListView.builder(
+                      shrinkWrap: true,
+                      itemCount: laps.length,
+                      itemBuilder: (context, index) {
+                        // Show newest on top (laps list already has newest at index 0 from _runPracticeSeries)
+                        final lap = laps[index];
+                        final lapTime = (lap['lapTime'] as num).toDouble();
+                        final conf =
+                            ((lap['confidence'] as num?)?.toDouble() ?? 0);
+                        final bestTime = laps
+                            .map((l) => (l['lapTime'] as num).toDouble())
+                            .reduce((a, b) => a < b ? a : b);
+                        final isBest = lapTime == bestTime;
+
+                        // The chronological number of the lap
+                        final lapNumber = laps.length - index;
+
+                        return InkWell(
+                          onTap: () => _showLapSetupDialog(lap),
+                          borderRadius: BorderRadius.circular(8),
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(
+                              vertical: 6,
+                              horizontal: 8,
+                            ),
+                            decoration: BoxDecoration(
+                              color: isBest
+                                  ? theme.primaryColor.withValues(alpha: 0.08)
+                                  : Colors.transparent,
+                              borderRadius: BorderRadius.circular(8),
+                            ),
+                            child: Row(
+                              children: [
+                                SizedBox(
+                                  width: 30,
+                                  child: Text(
+                                    "$lapNumber",
+                                    style: TextStyle(
+                                      fontSize: 11,
+                                      fontFamily: 'monospace',
+                                      fontWeight: FontWeight.bold,
+                                      color: isBest
+                                          ? theme.primaryColor
+                                          : Colors.white38,
+                                    ),
+                                  ),
+                                ),
+                                Expanded(
+                                  child: Text(
+                                    _formatLapTime(lapTime),
+                                    style: TextStyle(
+                                      fontSize: 12,
+                                      fontFamily: 'monospace',
+                                      fontWeight: FontWeight.w900,
+                                      color: isBest
+                                          ? theme.primaryColor
+                                          : Colors.white,
+                                    ),
+                                    textAlign: TextAlign.right,
+                                  ),
+                                ),
+                                const SizedBox(width: 12),
+                                SizedBox(
+                                  width: 50,
+                                  child: Text(
+                                    "${(conf * 100).toStringAsFixed(0)}%",
+                                    style: TextStyle(
+                                      fontSize: 11,
+                                      fontWeight: FontWeight.bold,
+                                      color: _getConfidenceColor(conf),
+                                    ),
+                                    textAlign: TextAlign.right,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        );
+                      },
                     ),
                   ),
                 ],
-              ),
-              const SizedBox(height: 4),
-              // SCROLLABLE LIST OF LAPS with fixed height
-              SizedBox(
-                height: 180, // Fixed height for lap history
-                child: ListView.builder(
-                  shrinkWrap: true,
-                  itemCount: laps.length,
-                  itemBuilder: (context, index) {
-                    // Show newest on top (laps list already has newest at index 0 from _runPracticeSeries)
-                    final lap = laps[index];
-                    final lapTime = (lap['lapTime'] as num).toDouble();
-                    final conf = ((lap['confidence'] as num?)?.toDouble() ?? 0);
-                    final bestTime = laps
-                        .map((l) => (l['lapTime'] as num).toDouble())
-                        .reduce((a, b) => a < b ? a : b);
-                    final isBest = lapTime == bestTime;
-
-                    // The chronological number of the lap
-                    final lapNumber = laps.length - index;
-
-                    return InkWell(
-                      onTap: () => _showLapSetupDialog(lap),
-                      borderRadius: BorderRadius.circular(8),
-                      child: Container(
-                        padding: const EdgeInsets.symmetric(
-                          vertical: 4,
-                          horizontal: 4,
-                        ),
-                        decoration: BoxDecoration(
-                          color: isBest
-                              ? theme.colorScheme.secondary.withOpacity(0.08)
-                              : Colors.transparent,
-                          borderRadius: BorderRadius.circular(8),
-                        ),
-                        child: Row(
-                          children: [
-                            SizedBox(
-                              width: 30,
-                              child: Text(
-                                "$lapNumber",
-                                style: TextStyle(
-                                  fontSize: 12,
-                                  fontFamily: 'monospace',
-                                  fontWeight: FontWeight.bold,
-                                  color: isBest
-                                      ? theme.primaryColor
-                                      : theme.colorScheme.onSurface,
-                                ),
-                              ),
-                            ),
-                            Expanded(
-                              child: Text(
-                                _formatLapTime(lapTime),
-                                style: TextStyle(
-                                  fontSize: 13,
-                                  fontFamily: 'monospace',
-                                  fontWeight: isBest
-                                      ? FontWeight.bold
-                                      : FontWeight.normal,
-                                  color: isBest
-                                      ? theme.colorScheme.secondary
-                                      : theme.colorScheme.onSurface,
-                                ),
-                                textAlign: TextAlign.right,
-                              ),
-                            ),
-                            const SizedBox(width: 12),
-                            SizedBox(
-                              width: 50,
-                              child: Text(
-                                "${(conf * 100).toStringAsFixed(0)}%",
-                                style: TextStyle(
-                                  fontSize: 12,
-                                  fontFamily: 'monospace',
-                                  color: _getConfidenceColor(conf),
-                                ),
-                                textAlign: TextAlign.right,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                    );
-                  },
-                ),
-              ),
-            ],
-          ],
-        ),
+              ],
+            ),
+          ),
+        ],
       ),
     );
   }
 
   Widget _buildPitBoard(ThemeData theme) {
-    final l10n = AppLocalizations.of(context);
-    return Card(
+    if (_selectedDriverId == null) return const SizedBox.shrink();
+
+    final totalLaps = _driverLaps[_selectedDriverId] ?? 0;
+
+    return Container(
       margin: const EdgeInsets.fromLTRB(0, 4, 12, 4),
-      color: Colors.black87,
-      elevation: 4,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(8),
-        side: BorderSide(color: theme.primaryColor.withOpacity(0.3)),
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: const Color(0xFF121212),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: Colors.white.withOpacity(0.1), width: 1),
+        gradient: const LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [Color(0xFF1E1E1E), Color(0xFF0A0A0A)],
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.6),
+            blurRadius: 15,
+            offset: const Offset(0, 8),
+          ),
+        ],
       ),
-      child: Container(
-        height: 50,
-        padding: const EdgeInsets.symmetric(horizontal: 16),
-        alignment: Alignment.centerLeft,
-        child: Row(
-          children: [
-            Icon(Icons.developer_board, color: theme.primaryColor, size: 20),
-            const SizedBox(width: 12),
-            Expanded(
-              child: AnimatedSwitcher(
-                duration: const Duration(milliseconds: 500),
-                transitionBuilder: (Widget child, Animation<double> animation) {
-                  return FadeTransition(
-                    opacity: animation,
-                    child: SlideTransition(
-                      position: Tween<Offset>(
-                        begin: const Offset(0, 0.5),
-                        end: Offset.zero,
-                      ).animate(animation),
-                      child: child,
-                    ),
-                  );
-                },
-                child: _pitBoardMessage != null
-                    ? Text(
-                        _pitBoardMessage!,
-                        key: ValueKey(_pitBoardMessage),
-                        style: TextStyle(
-                          color: theme.primaryColor,
-                          fontFamily: 'monospace',
-                          fontWeight: FontWeight.bold,
-                          fontSize: 14,
-                          letterSpacing: 1.1,
-                        ),
-                      )
-                    : Text(
-                        l10n.pitBoardTitle,
-                        style: TextStyle(
-                          color: Colors.white24,
-                          fontFamily: 'monospace',
-                          fontWeight: FontWeight.w900,
-                          fontSize: 12,
-                        ),
-                      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Row(
+            children: [
+              Icon(Icons.developer_board, color: theme.primaryColor, size: 16),
+              const SizedBox(width: 8),
+              Text(
+                "PIT BOARD",
+                style: TextStyle(
+                  color: theme.primaryColor,
+                  fontSize: 11,
+                  fontWeight: FontWeight.w900,
+                  letterSpacing: 2.0,
+                ),
+              ),
+              const Spacer(),
+              Text(
+                "LAPS: $totalLaps",
+                style: TextStyle(
+                  color: Colors.white.withOpacity(0.4),
+                  fontSize: 10,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 12),
+          AnimatedSwitcher(
+            duration: const Duration(milliseconds: 500),
+            transitionBuilder: (Widget child, Animation<double> animation) {
+              return FadeTransition(opacity: animation, child: child);
+            },
+            child: Container(
+              key: ValueKey(_pitBoardMessage),
+              padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 12),
+              decoration: BoxDecoration(
+                color: Colors.black,
+                borderRadius: BorderRadius.circular(8),
+                border: Border.all(color: Colors.white.withOpacity(0.1)),
+              ),
+              child: Center(
+                child: Text(
+                  _pitBoardMessage ?? "READY",
+                  style: TextStyle(
+                    color: _pitBoardMessage != null
+                        ? theme.primaryColor
+                        : Colors.white24,
+                    fontFamily: 'monospace',
+                    fontWeight: FontWeight.w900,
+                    fontSize: 14,
+                    letterSpacing: 1.5,
+                  ),
+                ),
               ),
             ),
-          ],
-        ),
+          ),
+        ],
       ),
     );
   }
 
   Widget _buildFeedbackCard(ThemeData theme) {
-    return Card(
+    return Container(
       margin: const EdgeInsets.fromLTRB(0, 4, 12, 12),
-      color: theme.cardTheme.color,
-      elevation: 0,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-      child: Padding(
-        padding: const EdgeInsets.all(12),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
+      decoration: BoxDecoration(
+        color: const Color(0xFF0A0A0A),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: Colors.white.withOpacity(0.08)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          // Header
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+            decoration: BoxDecoration(
+              color: Colors.white.withOpacity(0.03),
+              borderRadius: const BorderRadius.vertical(
+                top: Radius.circular(12),
+              ),
+            ),
+            child: Row(
               children: [
                 Icon(
                   Icons.chat_bubble_outline,
                   size: 16,
-                  color: theme.colorScheme.onSurface.withOpacity(0.5),
+                  color: Colors.white.withOpacity(0.4),
                 ),
-                const SizedBox(width: 6),
+                const SizedBox(width: 8),
                 Text(
                   "DRIVER FEEDBACK",
                   style: TextStyle(
-                    color: theme.colorScheme.onSurface,
+                    color: Colors.white.withOpacity(0.6),
                     fontSize: 11,
-                    fontWeight: FontWeight.bold,
-                    letterSpacing: 1.2,
+                    fontWeight: FontWeight.w900,
+                    letterSpacing: 1.5,
                   ),
                 ),
               ],
             ),
-            const SizedBox(height: 8),
-            if (_feedbackHistory.isNotEmpty)
-              Expanded(
-                child: ListView(
-                  children: _groupFeedbackBySession().map((session) {
-                    final driverName = session['driverName'] as String;
-                    final messages =
-                        session['messages'] as List<Map<String, dynamic>>;
-                    final bestLap = session['bestLapInSeries'] as double?;
+          ),
+          if (_feedbackHistory.isNotEmpty)
+            Expanded(
+              child: ListView(
+                padding: const EdgeInsets.all(12),
+                children: _groupFeedbackBySession().map((session) {
+                  final driverName = session['driverName'] as String;
+                  final messages =
+                      session['messages'] as List<Map<String, dynamic>>;
+                  final bestLap = session['bestLapInSeries'] as double?;
 
-                    return Container(
-                      margin: const EdgeInsets.only(bottom: 12),
-                      padding: const EdgeInsets.all(10),
-                      decoration: BoxDecoration(
-                        color: theme.colorScheme.surfaceContainerHighest
-                            .withOpacity(0.3),
-                        borderRadius: BorderRadius.circular(12),
-                        border: Border.all(
-                          color: theme.colorScheme.onSurface.withOpacity(0.05),
-                        ),
-                      ),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Row(
-                            children: [
-                              CircleAvatar(
-                                radius: 10,
-                                backgroundColor: _driverColor(driverName),
-                                child: Text(
-                                  driverName.substring(0, 1),
-                                  style: const TextStyle(
-                                    color: Colors.white,
-                                    fontSize: 9,
-                                    fontWeight: FontWeight.bold,
-                                  ),
-                                ),
-                              ),
-                              const SizedBox(width: 6),
-                              Text(
-                                driverName,
-                                style: TextStyle(
-                                  fontSize: 11,
+                  return Container(
+                    margin: const EdgeInsets.only(bottom: 12),
+                    padding: const EdgeInsets.all(12),
+                    decoration: BoxDecoration(
+                      color: Colors.white.withOpacity(0.02),
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(color: Colors.white.withOpacity(0.05)),
+                    ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Row(
+                          children: [
+                            CircleAvatar(
+                              radius: 10,
+                              backgroundColor: _driverColor(driverName),
+                              child: Text(
+                                driverName.substring(0, 1),
+                                style: const TextStyle(
+                                  color: Colors.white,
+                                  fontSize: 9,
                                   fontWeight: FontWeight.bold,
-                                  color: theme.colorScheme.onSurface,
                                 ),
                               ),
-                              const Spacer(),
-                              if (bestLap != null)
-                                Text(
-                                  "BEST: ${_formatLapTime(bestLap)}",
-                                  style: TextStyle(
-                                    fontSize: 10,
-                                    fontWeight: FontWeight.w900,
-                                    color: theme.colorScheme.primary
-                                        .withOpacity(0.7),
-                                    fontFamily: 'monospace',
-                                  ),
+                            ),
+                            const SizedBox(width: 8),
+                            Text(
+                              driverName.toUpperCase(),
+                              style: const TextStyle(
+                                fontSize: 11,
+                                fontWeight: FontWeight.w900,
+                                color: Colors.white70,
+                                letterSpacing: 1.0,
+                              ),
+                            ),
+                            const Spacer(),
+                            if (bestLap != null)
+                              Text(
+                                "BEST: ${_formatLapTime(bestLap)}",
+                                style: TextStyle(
+                                  fontSize: 10,
+                                  fontWeight: FontWeight.w900,
+                                  color: theme.primaryColor.withOpacity(0.7),
+                                  fontFamily: 'monospace',
                                 ),
-                            ],
+                              ),
+                          ],
+                        ),
+                        const Padding(
+                          padding: EdgeInsets.symmetric(vertical: 8),
+                          child: Divider(
+                            height: 1,
+                            thickness: 0.5,
+                            color: Colors.white10,
                           ),
-                          const Divider(height: 12, thickness: 0.5),
-                          ...messages.map((m) {
-                            final color = m['color'] as Color;
-                            return Padding(
-                              padding: const EdgeInsets.symmetric(vertical: 2),
-                              child: Row(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  const Text(
-                                    "• ",
-                                    style: TextStyle(color: Colors.white24),
-                                  ),
-                                  Expanded(
-                                    child: Text(
-                                      m['message'] ?? '',
-                                      style: TextStyle(
-                                        fontSize: 12,
-                                        color: color,
-                                        fontWeight:
-                                            color == const Color(0xFF00C853)
-                                            ? FontWeight.w900
-                                            : FontWeight.w500,
-                                        fontStyle:
-                                            color == const Color(0xFF00C853)
-                                            ? FontStyle.italic
-                                            : FontStyle.normal,
-                                      ),
+                        ),
+                        ...messages.map((m) {
+                          final color = m['color'] as Color;
+                          return Padding(
+                            padding: const EdgeInsets.symmetric(vertical: 3),
+                            child: Row(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Icon(
+                                  Icons.keyboard_arrow_right,
+                                  size: 14,
+                                  color: color.withOpacity(0.5),
+                                ),
+                                const SizedBox(width: 4),
+                                Expanded(
+                                  child: Text(
+                                    m['message'] ?? '',
+                                    style: TextStyle(
+                                      fontSize: 12,
+                                      color: color.withOpacity(0.9),
+                                      fontWeight: FontWeight.w500,
                                     ),
                                   ),
-                                ],
-                              ),
-                            );
-                          }),
-                        ],
-                      ),
-                    );
-                  }).toList(),
-                ),
-              )
-            else
-              Expanded(
-                child: Center(
-                  child: Text(
-                    "Run a practice lap to get feedback.",
-                    textAlign: TextAlign.center,
-                    style: TextStyle(
-                      color: theme.colorScheme.onSurface.withOpacity(0.4),
-                      fontSize: 12,
+                                ),
+                              ],
+                            ),
+                          );
+                        }).toList(),
+                      ],
                     ),
+                  );
+                }).toList(),
+              ),
+            )
+          else
+            Expanded(
+              child: Center(
+                child: Text(
+                  "No feedback gathered yet",
+                  style: TextStyle(
+                    color: Colors.white.withOpacity(0.1),
+                    fontStyle: FontStyle.italic,
                   ),
                 ),
               ),
-          ],
-        ),
+            ),
+        ],
       ),
     );
   }
