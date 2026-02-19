@@ -222,56 +222,64 @@ class DashboardScreen extends StatelessWidget {
                               powertrainWeight: circuitProfile.powertrainWeight,
                             ),
 
+                            const SizedBox(height: 32),
+                            Text(
+                              "QUICK VIEW",
+                              style: Theme.of(context).textTheme.labelLarge
+                                  ?.copyWith(
+                                    letterSpacing: 1.5,
+                                    color: Colors.grey,
+                                  ),
+                            ),
                             const SizedBox(height: 16),
                             LayoutBuilder(
                               builder: (context, constraints) {
-                                final isDesktop = constraints.maxWidth > 800;
+                                final isWide = constraints.maxWidth > 600;
 
-                                final cardChecklist = PreparationChecklist(
+                                final budgetCard = FinanceCard(
+                                  budget: team.budget,
+                                  onTap: () {
+                                    if (onNavigate != null) {
+                                      onNavigate!('mgmt_finances');
+                                      return;
+                                    }
+                                    if (team.id.isEmpty) return;
+                                    Navigator.push(
+                                      context,
+                                      MaterialPageRoute(
+                                        builder: (context) =>
+                                            FinancesScreen(teamId: team.id),
+                                      ),
+                                    );
+                                  },
+                                );
+
+                                final checklistCard = PreparationChecklist(
                                   setupSubmitted: isQualySetupReady,
                                   strategySubmitted: isRaceStrategyReady,
                                   completedLaps: totalPracticeLaps,
                                   totalLaps: kMaxPracticeLapsPerDriver * 2,
                                 );
 
-                                if (isDesktop) {
+                                if (isWide) {
                                   return Row(
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
                                     children: [
-                                      Expanded(child: cardChecklist),
-                                      const Spacer(),
+                                      Expanded(child: budgetCard),
+                                      const SizedBox(width: 16),
+                                      Expanded(child: checklistCard),
                                     ],
                                   );
                                 } else {
-                                  return cardChecklist;
-                                }
-                              },
-                            ),
-                            const SizedBox(height: 24),
-                            FinanceCard(
-                              budget: team.budget,
-                              onTap: () {
-                                if (onNavigate != null) {
-                                  onNavigate!('mgmt_finances');
-                                  return;
-                                }
-                                if (team.id.isEmpty) {
-                                  ScaffoldMessenger.of(context).showSnackBar(
-                                    const SnackBar(
-                                      content: Text(
-                                        "Error: Team ID is invalid",
-                                      ),
-                                      backgroundColor: Colors.red,
-                                    ),
+                                  return Column(
+                                    children: [
+                                      budgetCard,
+                                      const SizedBox(height: 16),
+                                      checklistCard,
+                                    ],
                                   );
-                                  return;
                                 }
-                                Navigator.push(
-                                  context,
-                                  MaterialPageRoute(
-                                    builder: (context) =>
-                                        FinancesScreen(teamId: team.id),
-                                  ),
-                                );
                               },
                             ),
                             const SizedBox(height: 32),

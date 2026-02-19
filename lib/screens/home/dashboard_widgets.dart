@@ -141,24 +141,28 @@ class FinanceCard extends StatelessWidget {
     final isNegative = budget < 0;
     final budgetMillions = (budget / 1000000).toStringAsFixed(1);
     final color = isNegative
-        ? Theme.of(context).colorScheme.error
-        : Theme.of(context).colorScheme.secondary;
+        ? const Color(0xFFEF5350) // Red Error
+        : const Color(0xFF00C853); // Green Success
 
     return InkWell(
       onTap: onTap,
-      borderRadius: BorderRadius.circular(16),
+      borderRadius: BorderRadius.circular(12),
       child: Container(
         padding: const EdgeInsets.all(20),
         decoration: BoxDecoration(
-          color: Theme.of(context).cardTheme.color,
-          borderRadius: BorderRadius.circular(8),
+          color: const Color(0xFF121212),
+          borderRadius: BorderRadius.circular(12),
+          gradient: const LinearGradient(
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+            colors: [Color(0xFF1E1E1E), Color(0xFF0A0A0A)],
+          ),
+          border: Border.all(color: Colors.white.withValues(alpha: 0.1)),
           boxShadow: [
             BoxShadow(
-              color: Theme.of(
-                context,
-              ).colorScheme.onSurface.withValues(alpha: 0.05),
-              blurRadius: 10,
-              offset: const Offset(0, 4),
+              color: Colors.black.withValues(alpha: 0.3),
+              blurRadius: 15,
+              offset: const Offset(0, 8),
             ),
           ],
         ),
@@ -169,8 +173,9 @@ class FinanceCard extends StatelessWidget {
               decoration: BoxDecoration(
                 color: color.withValues(alpha: 0.1),
                 borderRadius: BorderRadius.circular(12),
+                border: Border.all(color: color.withValues(alpha: 0.3)),
               ),
-              child: Icon(Icons.account_balance_wallet, color: color),
+              child: Icon(Icons.account_balance_wallet, color: color, size: 20),
             ),
             const SizedBox(width: 16),
             Column(
@@ -178,14 +183,21 @@ class FinanceCard extends StatelessWidget {
               children: [
                 Text(
                   "TEAM BUDGET",
-                  style: Theme.of(
-                    context,
-                  ).textTheme.bodySmall?.copyWith(fontWeight: FontWeight.bold),
+                  style: TextStyle(
+                    fontSize: 9,
+                    fontWeight: FontWeight.bold,
+                    letterSpacing: 1.2,
+                    color: Colors.white.withValues(alpha: 0.4),
+                  ),
                 ),
+                const SizedBox(height: 4),
                 Text(
                   "\$$budgetMillions M",
-                  style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                    fontWeight: FontWeight.bold,
+                  style: const TextStyle(
+                    fontFamily: 'monospace',
+                    fontSize: 18,
+                    fontWeight: FontWeight.w900,
+                    color: Color(0xFFFFD700), // Gold
                   ),
                 ),
               ],
@@ -198,13 +210,19 @@ class FinanceCard extends StatelessWidget {
                   isNegative ? "DEFICIT" : "SURPLUS",
                   style: TextStyle(
                     color: color,
+                    fontSize: 9,
+                    fontWeight: FontWeight.w900,
+                    letterSpacing: 1.0,
+                  ),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  "EST. +\$1.2M",
+                  style: TextStyle(
+                    color: Colors.white.withValues(alpha: 0.5),
                     fontSize: 10,
                     fontWeight: FontWeight.bold,
                   ),
-                ),
-                Text(
-                  "Estimated +\$1.2M",
-                  style: Theme.of(context).textTheme.bodySmall,
                 ),
               ],
             ),
@@ -961,10 +979,23 @@ class PreparationChecklist extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.all(24),
+      padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
-        color: Theme.of(context).cardTheme.color,
-        borderRadius: BorderRadius.circular(8),
+        color: const Color(0xFF121212),
+        borderRadius: BorderRadius.circular(12),
+        gradient: const LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [Color(0xFF1E1E1E), Color(0xFF0A0A0A)],
+        ),
+        border: Border.all(color: Colors.white.withValues(alpha: 0.1)),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.3),
+            blurRadius: 15,
+            offset: const Offset(0, 8),
+          ),
+        ],
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -972,8 +1003,8 @@ class PreparationChecklist extends StatelessWidget {
           Text(
             "PRE-RACE CHECKLIST",
             style: TextStyle(
-              color: Theme.of(context).textTheme.bodyMedium?.color,
-              fontSize: 12,
+              color: Colors.white.withValues(alpha: 0.4),
+              fontSize: 9,
               fontWeight: FontWeight.bold,
               letterSpacing: 1.5,
             ),
@@ -985,20 +1016,14 @@ class PreparationChecklist extends StatelessWidget {
             "$completedLaps/$totalLaps LAPS",
             completedLaps >= totalLaps,
           ),
-          Divider(
-            color: Theme.of(context).dividerColor.withValues(alpha: 0.2),
-            height: 24,
-          ),
+          Divider(color: Colors.white.withValues(alpha: 0.05), height: 20),
           _buildItem(
             context,
             "Qualifying Setup",
             setupSubmitted ? "READY" : "PENDING",
             setupSubmitted,
           ),
-          Divider(
-            color: Theme.of(context).dividerColor.withValues(alpha: 0.2),
-            height: 24,
-          ),
+          Divider(color: Colors.white.withValues(alpha: 0.05), height: 20),
           _buildItem(
             context,
             "Race Strategy",
@@ -1023,33 +1048,35 @@ class PreparationChecklist extends StatelessWidget {
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
         Text(
-          label,
-          style: TextStyle(
-            fontSize: 16,
-            fontWeight: FontWeight.w600,
-            color: Theme.of(context).colorScheme.onSurface,
+          label.toUpperCase(),
+          style: const TextStyle(
+            fontSize: 11,
+            fontWeight: FontWeight.w900,
+            color: Colors.white,
+            letterSpacing: 0.5,
           ),
         ),
         Container(
-          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
           decoration: BoxDecoration(
             color: color.withValues(alpha: 0.1),
-            borderRadius: BorderRadius.circular(20),
+            borderRadius: BorderRadius.circular(4),
             border: Border.all(color: color.withValues(alpha: 0.5)),
           ),
           child: Row(
             children: [
               Icon(
                 isComplete ? Icons.check : Icons.priority_high,
-                size: 12,
+                size: 10,
                 color: color,
               ),
-              const SizedBox(width: 6),
+              const SizedBox(width: 4),
               Text(
                 status,
                 style: TextStyle(
-                  fontSize: 12,
-                  fontWeight: FontWeight.bold,
+                  fontFamily: 'monospace',
+                  fontSize: 10,
+                  fontWeight: FontWeight.w900,
                   color: color,
                 ),
               ),
