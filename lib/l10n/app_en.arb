@@ -65,5 +65,14 @@
   "earnings": "Earnings",
   "noDriverAssigned": "No driver assigned",
   "engineeringWelcome": "Welcome to the R&D Lab",
-  "engineeringDescription": "Improve your cars' performance by developing specific parts. Remember that you can only perform ONE upgrade per team each week. Use your resources wisely to stay ahead of the competition!"
+  "engineeringDescription": "Improve your cars' performance by developing specific parts. Remember that you can only perform ONE upgrade each week. Use your resources wisely to stay ahead of the competition!",
+  "circuitMexico": "Autodromo Hermanos Rodriguez",
+  "circuitVegas": "Las Vegas Strip Circuit",
+  "circuitInterlagos": "Autódromo José Carlos Pace",
+  "circuitMiami": "Miami International Autodrome",
+  "circuitSanPabloStreet": "Sao Paulo Street Circuit",
+  "circuitIndianapolis": "Indianapolis Motor Speedway",
+  "circuitMontreal": "Circuit Gilles Villeneuve",
+  "circuitTexas": "Circuit of the Americas",
+  "circuitBuenosAires": "Autódromo Oscar y Juan Gálvez"
 }

@@ -133,5 +133,32 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get engineeringDescription =>
-      'Improve your cars\' performance by developing specific parts. Remember that you can only perform ONE upgrade per team each week. Use your resources wisely to stay ahead of the competition!';
+      'Improve your cars\' performance by developing specific parts. Remember that you can only perform ONE upgrade each week. Use your resources wisely to stay ahead of the competition!';
+
+  @override
+  String get circuitMexico => 'Autodromo Hermanos Rodriguez';
+
+  @override
+  String get circuitVegas => 'Las Vegas Strip Circuit';
+
+  @override
+  String get circuitInterlagos => 'Autódromo José Carlos Pace';
+
+  @override
+  String get circuitMiami => 'Miami International Autodrome';
+
+  @override
+  String get circuitSanPabloStreet => 'Sao Paulo Street Circuit';
+
+  @override
+  String get circuitIndianapolis => 'Indianapolis Motor Speedway';
+
+  @override
+  String get circuitMontreal => 'Circuit Gilles Villeneuve';
+
+  @override
+  String get circuitTexas => 'Circuit of the Americas';
+
+  @override
+  String get circuitBuenosAires => 'Autódromo Oscar y Juan Gálvez';
 }

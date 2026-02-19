@@ -1,6 +1,8 @@
 import 'dart:math';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/foundation.dart';
+import 'package:flutter/widgets.dart'; // Add widgets for Locale
+import '../l10n/app_localizations.dart'; // Import AppLocalizations
 import '../models/core_models.dart';
 
 import '../config/game_config.dart';
@@ -128,10 +130,12 @@ class DatabaseSeeder {
       // 2. CALENDARIO
       final now = startDate ?? DateTime.now();
 
+      final l10n = await lookupAppLocalizations(const Locale('en'));
+
       final List<RaceEvent> calendar = [
         RaceEvent(
           id: 'r1',
-          trackName: "Autódromo Hermanos Rodríguez",
+          trackName: l10n.circuitMexico,
           countryCode: "MX",
           flagEmoji: "🇲🇽",
           circuitId: 'mexico',
@@ -144,7 +148,7 @@ class DatabaseSeeder {
         ),
         RaceEvent(
           id: 'r2',
-          trackName: "Circuito Urbano de Las Vegas",
+          trackName: l10n.circuitVegas,
           countryCode: "US",
           flagEmoji: "🇺🇸",
           circuitId: 'vegas',
@@ -157,7 +161,7 @@ class DatabaseSeeder {
         ),
         RaceEvent(
           id: 'r3',
-          trackName: "Autódromo José Carlos Pace",
+          trackName: l10n.circuitInterlagos,
           countryCode: "BR",
           flagEmoji: "🇧🇷",
           circuitId: 'interlagos',
@@ -170,7 +174,7 @@ class DatabaseSeeder {
         ),
         RaceEvent(
           id: 'r4',
-          trackName: "Autódromo Internacional de Miami",
+          trackName: l10n.circuitMiami,
           countryCode: "US",
           flagEmoji: "🇺🇸",
           circuitId: 'miami',
@@ -183,7 +187,7 @@ class DatabaseSeeder {
         ),
         RaceEvent(
           id: 'r5',
-          trackName: "Circuito Callejero de San Pablo",
+          trackName: l10n.circuitSanPabloStreet,
           countryCode: "BR",
           flagEmoji: "🇧🇷",
           circuitId: 'san_pablo_street',
@@ -196,7 +200,7 @@ class DatabaseSeeder {
         ),
         RaceEvent(
           id: 'r6',
-          trackName: "Circuito de Indianápolis",
+          trackName: l10n.circuitIndianapolis,
           countryCode: "US",
           flagEmoji: "🇺🇸",
           circuitId: 'indianapolis',
@@ -209,7 +213,7 @@ class DatabaseSeeder {
         ),
         RaceEvent(
           id: 'r7',
-          trackName: "Circuito Gilles Villeneuve",
+          trackName: l10n.circuitMontreal,
           countryCode: "CA",
           flagEmoji: "🇨🇦",
           circuitId: 'montreal',
@@ -222,7 +226,7 @@ class DatabaseSeeder {
         ),
         RaceEvent(
           id: 'r8',
-          trackName: "Circuito de las Américas",
+          trackName: l10n.circuitTexas,
           countryCode: "US",
           flagEmoji: "🇺🇸",
           circuitId: 'texas',
@@ -235,7 +239,7 @@ class DatabaseSeeder {
         ),
         RaceEvent(
           id: 'r9',
-          trackName: "Autódromo Oscar y Juan Gálvez",
+          trackName: l10n.circuitBuenosAires,
           countryCode: "AR",
           flagEmoji: "🇦🇷",
           circuitId: 'buenos_aires',
