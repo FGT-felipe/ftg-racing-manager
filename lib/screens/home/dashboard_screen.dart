@@ -14,12 +14,14 @@ import '../race/race_live_screen.dart';
 import '../race/race_strategy_screen.dart';
 import '../../services/circuit_service.dart';
 import '../../services/notification_service.dart';
+import '../../services/league_notification_service.dart';
 import '../../widgets/notification_card.dart';
+import '../../widgets/press_news_card.dart';
 import '../../utils/app_constants.dart';
 
 class DashboardScreen extends StatelessWidget {
   final String teamId;
-  final Function(int)? onNavigate;
+  final Function(String)? onNavigate;
 
   const DashboardScreen({super.key, required this.teamId, this.onNavigate});
 
@@ -127,9 +129,9 @@ class DashboardScreen extends StatelessWidget {
                     void onHeroAction() {
                       if (onNavigate != null) {
                         if (currentStatus == RaceWeekStatus.race) {
-                          onNavigate!(5); // Index 5 is Race Day
+                          onNavigate!('racing_day');
                         } else {
-                          onNavigate!(4); // Index 4 is Paddock/Padock
+                          onNavigate!('racing_setup');
                         }
                       } else {
                         // Fallback in case onNavigate is not provided
@@ -181,6 +183,10 @@ class DashboardScreen extends StatelessWidget {
                       }
                     }
 
+                    final circuitProfile = CircuitService().getCircuitProfile(
+                      circuitId,
+                    );
+
                     return SafeArea(
                       child: SingleChildScrollView(
                         padding: const EdgeInsets.symmetric(
@@ -202,202 +208,287 @@ class DashboardScreen extends StatelessWidget {
                               flagEmoji: flagEmoji,
                               targetDate: targetDate,
                               onActionPressed: onHeroAction,
+                              totalLaps: currentRace?.event.totalLaps ?? 50,
+                              weatherPractice:
+                                  currentRace?.event.weatherPractice ?? 'Sunny',
+                              weatherQualifying:
+                                  currentRace?.event.weatherQualifying ??
+                                  'Cloudy',
+                              weatherRace:
+                                  currentRace?.event.weatherRace ?? 'Sunny',
+                              characteristics: circuitProfile.characteristics,
+                              aeroWeight: circuitProfile.aeroWeight,
+                              chassisWeight: circuitProfile.chassisWeight,
+                              powertrainWeight: circuitProfile.powertrainWeight,
                             ),
 
+                            const SizedBox(height: 32),
+                            Text(
+                              "QUICK VIEW",
+                              style: Theme.of(context).textTheme.labelLarge
+                                  ?.copyWith(
+                                    letterSpacing: 1.5,
+                                    color: Colors.grey,
+                                  ),
+                            ),
                             const SizedBox(height: 16),
                             LayoutBuilder(
                               builder: (context, constraints) {
-                                final isDesktop = constraints.maxWidth > 800;
+                                final isWide = constraints.maxWidth > 600;
 
-                                final cardChecklist = PreparationChecklist(
+                                final budgetCard = FinanceCard(
+                                  budget: team.budget,
+                                  onTap: () {
+                                    if (onNavigate != null) {
+                                      onNavigate!('mgmt_finances');
+                                      return;
+                                    }
+                                    if (team.id.isEmpty) return;
+                                    Navigator.push(
+                                      context,
+                                      MaterialPageRoute(
+                                        builder: (context) =>
+                                            FinancesScreen(teamId: team.id),
+                                      ),
+                                    );
+                                  },
+                                );
+
+                                final checklistCard = PreparationChecklist(
                                   setupSubmitted: isQualySetupReady,
                                   strategySubmitted: isRaceStrategyReady,
                                   completedLaps: totalPracticeLaps,
                                   totalLaps: kMaxPracticeLapsPerDriver * 2,
                                 );
 
-                                final circuitProfile = CircuitService()
-                                    .getCircuitProfile(circuitId);
-
-                                final cardCircuit = CircuitInfoCard(
-                                  circuitName: circuitName,
-                                  flagEmoji: flagEmoji,
-                                  totalLaps: currentRace?.event.totalLaps ?? 50,
-                                  weatherPractice:
-                                      currentRace?.event.weatherPractice ??
-                                      'Sunny',
-                                  weatherQualifying:
-                                      currentRace?.event.weatherQualifying ??
-                                      'Cloudy',
-                                  weatherRace:
-                                      currentRace?.event.weatherRace ?? 'Sunny',
-                                  characteristics:
-                                      circuitProfile.characteristics,
-                                  aeroWeight: circuitProfile.aeroWeight,
-                                  chassisWeight: circuitProfile.chassisWeight,
-                                  powertrainWeight:
-                                      circuitProfile.powertrainWeight,
-                                );
-
-                                if (isDesktop) {
-                                  return IntrinsicHeight(
-                                    child: Row(
-                                      crossAxisAlignment:
-                                          CrossAxisAlignment.stretch,
-                                      children: [
-                                        Expanded(child: cardChecklist),
-                                        const SizedBox(width: 16),
-                                        Expanded(child: cardCircuit),
-                                      ],
-                                    ),
+                                if (isWide) {
+                                  return Row(
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
+                                    children: [
+                                      Expanded(child: budgetCard),
+                                      const SizedBox(width: 16),
+                                      Expanded(child: checklistCard),
+                                    ],
                                   );
                                 } else {
                                   return Column(
                                     children: [
-                                      cardChecklist,
+                                      budgetCard,
                                       const SizedBox(height: 16),
-                                      cardCircuit,
+                                      checklistCard,
                                     ],
                                   );
                                 }
                               },
                             ),
-                            const SizedBox(height: 24),
-                            FinanceCard(
-                              budget: team.budget,
-                              onTap: () {
-                                if (onNavigate != null) {
-                                  onNavigate!(7); // Index 7 is Finances
-                                  return;
-                                }
-                                if (team.id.isEmpty) {
-                                  ScaffoldMessenger.of(context).showSnackBar(
-                                    const SnackBar(
-                                      content: Text(
-                                        "Error: Team ID is invalid",
-                                      ),
-                                      backgroundColor: Colors.red,
-                                    ),
-                                  );
-                                  return;
-                                }
-                                Navigator.push(
-                                  context,
-                                  MaterialPageRoute(
-                                    builder: (context) =>
-                                        FinancesScreen(teamId: team.id),
-                                  ),
-                                );
-                              },
-                            ),
                             const SizedBox(height: 32),
-                            Text(
-                              "LATEST UPDATES",
-                              style: Theme.of(context).textTheme.labelLarge
-                                  ?.copyWith(
-                                    letterSpacing: 1.5,
-                                    color: Colors.grey,
-                                  ),
-                            ),
-                            const SizedBox(height: 16),
+                            const SizedBox(height: 32),
+                            LayoutBuilder(
+                              builder: (context, constraints) {
+                                final isDesktop = constraints.maxWidth > 800;
 
-                            StreamBuilder<List<AppNotification>>(
-                              stream: NotificationService()
-                                  .getTeamNotifications(teamId),
-                              builder: (context, notifSnapshot) {
-                                if (notifSnapshot.hasError) {
-                                  debugPrint(
-                                    "Notification stream error: ${notifSnapshot.error}",
-                                  );
-                                  return Text(
-                                    "Notifications unavailable",
-                                    style: TextStyle(
-                                      color: Colors.grey[600],
-                                      fontSize: 12,
-                                    ),
-                                  );
-                                }
-
-                                final notifications = notifSnapshot.data ?? [];
-                                debugPrint(
-                                  "Dashboard loaded ${notifications.length} notifications",
-                                );
-
-                                if (notifications.isEmpty) {
-                                  return Container(
-                                    padding: const EdgeInsets.all(24),
-                                    decoration: BoxDecoration(
-                                      color: Theme.of(
-                                        context,
-                                      ).cardTheme.color?.withOpacity(0.5),
-                                      borderRadius: BorderRadius.circular(12),
-                                      border: Border.all(
-                                        color: Colors.white.withOpacity(0.05),
-                                      ),
-                                    ),
-                                    child: Row(
-                                      children: [
-                                        Icon(
-                                          Icons.notifications_none_rounded,
-                                          color: Colors.grey[600],
-                                        ),
-                                        const SizedBox(width: 16),
-                                        Text(
-                                          "No new notifications",
-                                          style: TextStyle(
-                                            color: Colors.grey[600],
-                                            fontStyle: FontStyle.italic,
+                                final Widget pressNewsColumn = Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text(
+                                      "PRESS NEWS",
+                                      style: Theme.of(context)
+                                          .textTheme
+                                          .labelLarge
+                                          ?.copyWith(
+                                            letterSpacing: 1.5,
+                                            color: Colors.grey,
                                           ),
-                                        ),
-                                      ],
                                     ),
+                                    const SizedBox(height: 16),
+                                    if (season != null)
+                                      StreamBuilder<List<LeagueNotification>>(
+                                        stream: LeagueNotificationService()
+                                            .getLeagueNotifications(
+                                              season.leagueId,
+                                            ),
+                                        builder: (context, snapshot) {
+                                          if (snapshot.hasError) {
+                                            debugPrint(
+                                              "Press News error: ${snapshot.error}",
+                                            );
+                                            return const Text(
+                                              "Error loading news",
+                                            );
+                                          }
+                                          final news = snapshot.data ?? [];
+                                          if (news.isEmpty) {
+                                            return _buildEmptyNews(context);
+                                          }
+
+                                          return LayoutBuilder(
+                                            builder: (context, constraints) {
+                                              final bool isWide =
+                                                  constraints.maxWidth > 600;
+
+                                              // If desktop, show up to 3 rows (6 cards).
+                                              // If more than 6, it should scroll.
+                                              // We limit the height to 3 rows * 130 approx = 400
+                                              return SizedBox(
+                                                height: isWide
+                                                    ? (news.length > 2
+                                                          ? 400
+                                                          : 130)
+                                                    : null,
+                                                child: Scrollbar(
+                                                  thumbVisibility: true,
+                                                  child: GridView.builder(
+                                                    shrinkWrap: !isWide,
+                                                    physics: isWide
+                                                        ? const AlwaysScrollableScrollPhysics()
+                                                        : const NeverScrollableScrollPhysics(),
+                                                    gridDelegate:
+                                                        SliverGridDelegateWithFixedCrossAxisCount(
+                                                          crossAxisCount: isWide
+                                                              ? 2
+                                                              : 1,
+                                                          crossAxisSpacing: 16,
+                                                          mainAxisSpacing: 12,
+                                                          mainAxisExtent: 120,
+                                                        ),
+                                                    itemCount: news.length,
+                                                    itemBuilder:
+                                                        (context, index) =>
+                                                            PressNewsCard(
+                                                              notification:
+                                                                  news[index],
+                                                            ),
+                                                  ),
+                                                ),
+                                              );
+                                            },
+                                          );
+                                        },
+                                      )
+                                    else
+                                      const Center(
+                                        child: CircularProgressIndicator(),
+                                      ),
+                                  ],
+                                );
+
+                                final Widget officeNewsColumn = Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text(
+                                      "OFFICE NEWS",
+                                      style: Theme.of(context)
+                                          .textTheme
+                                          .labelLarge
+                                          ?.copyWith(
+                                            letterSpacing: 1.5,
+                                            color: Colors.grey,
+                                          ),
+                                    ),
+                                    const SizedBox(height: 16),
+                                    StreamBuilder<List<AppNotification>>(
+                                      stream: NotificationService()
+                                          .getTeamNotifications(teamId),
+                                      builder: (context, notifSnapshot) {
+                                        if (notifSnapshot.hasError) {
+                                          debugPrint(
+                                            "Notification stream error: ${notifSnapshot.error}",
+                                          );
+                                          return Text(
+                                            "Notifications unavailable",
+                                            style: TextStyle(
+                                              color: Colors.grey[600],
+                                              fontSize: 12,
+                                            ),
+                                          );
+                                        }
+
+                                        final notifications =
+                                            notifSnapshot.data ?? [];
+                                        if (notifications.isEmpty) {
+                                          return Container(
+                                            padding: const EdgeInsets.all(24),
+                                            decoration: BoxDecoration(
+                                              color: Theme.of(context)
+                                                  .cardTheme
+                                                  .color
+                                                  ?.withOpacity(0.5),
+                                              borderRadius:
+                                                  BorderRadius.circular(12),
+                                              border: Border.all(
+                                                color: Colors.white.withOpacity(
+                                                  0.05,
+                                                ),
+                                              ),
+                                            ),
+                                            child: Row(
+                                              children: [
+                                                Icon(
+                                                  Icons
+                                                      .notifications_none_rounded,
+                                                  color: Colors.grey[600],
+                                                ),
+                                                const SizedBox(width: 16),
+                                                Text(
+                                                  "No new notifications",
+                                                  style: TextStyle(
+                                                    color: Colors.grey[600],
+                                                    fontStyle: FontStyle.italic,
+                                                  ),
+                                                ),
+                                              ],
+                                            ),
+                                          );
+                                        }
+
+                                        return Column(
+                                          children: notifications
+                                              .take(3)
+                                              .map(
+                                                (n) => NotificationCard(
+                                                  notification: n,
+                                                  onTap: () =>
+                                                      NotificationService()
+                                                          .markAsRead(
+                                                            teamId,
+                                                            n.id,
+                                                          ),
+                                                  onDismiss: () =>
+                                                      NotificationService()
+                                                          .deleteNotification(
+                                                            teamId,
+                                                            n.id,
+                                                          ),
+                                                ),
+                                              )
+                                              .toList(),
+                                        );
+                                      },
+                                    ),
+                                  ],
+                                );
+
+                                if (isDesktop) {
+                                  return Row(
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
+                                    children: [
+                                      Expanded(child: pressNewsColumn),
+                                      const SizedBox(width: 24),
+                                      Expanded(child: officeNewsColumn),
+                                    ],
+                                  );
+                                } else {
+                                  return Column(
+                                    children: [
+                                      pressNewsColumn,
+                                      const SizedBox(height: 32),
+                                      officeNewsColumn,
+                                    ],
                                   );
                                 }
-
-                                return Column(
-                                  children: notifications
-                                      .take(3)
-                                      .map(
-                                        (n) => NotificationCard(
-                                          notification: n,
-                                          onTap: () => NotificationService()
-                                              .markAsRead(teamId, n.id),
-                                          onDismiss: () => NotificationService()
-                                              .deleteNotification(teamId, n.id),
-                                        ),
-                                      )
-                                      .toList(),
-                                );
                               },
-                            ),
-
-                            const SizedBox(height: 32),
-                            Text(
-                              "PADDOCK RUMORS",
-                              style: Theme.of(context).textTheme.labelLarge
-                                  ?.copyWith(
-                                    letterSpacing: 1.5,
-                                    color: Colors.grey,
-                                  ),
-                            ),
-                            const SizedBox(height: 16),
-                            SizedBox(
-                              height: 120,
-                              child: ListView(
-                                scrollDirection: Axis.horizontal,
-                                children: const [
-                                  NewsItemCard(
-                                    headline:
-                                        "New technical regulations might favor engine power in 2027.",
-                                    source: "Racing Daily",
-                                  ),
-                                  NewsItemCard(
-                                    headline:
-                                        "Rumors of a new street circuit in Buenos Aires growing stronger.",
-                                    source: "Paddock Pass",
-                                  ),
-                                ],
-                              ),
                             ),
                             const SizedBox(height: 32),
                           ],
@@ -424,6 +515,27 @@ class DashboardScreen extends StatelessWidget {
           Text(
             message,
             style: const TextStyle(fontSize: 18, color: Colors.grey),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildEmptyNews(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.all(24),
+      decoration: BoxDecoration(
+        color: Theme.of(context).cardTheme.color?.withOpacity(0.5),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: Colors.white.withOpacity(0.05)),
+      ),
+      child: const Row(
+        children: [
+          Icon(Icons.newspaper, color: Colors.grey),
+          const SizedBox(width: 16),
+          Text(
+            "No news from the paddock yet.",
+            style: TextStyle(color: Colors.grey, fontStyle: FontStyle.italic),
           ),
         ],
       ),

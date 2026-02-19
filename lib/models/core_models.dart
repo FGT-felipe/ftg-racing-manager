@@ -1066,3 +1066,70 @@ class AppNotification {
     );
   }
 }
+
+class LeagueNotification {
+  final String id;
+  final String title;
+  final String message;
+  final String type; // 'MANAGER_JOIN', 'CRASH', 'WINNER'
+  final DateTime timestamp;
+  final String leagueId;
+  final String? eventType; // 'Practice', 'Qualifying', 'Race'
+  final String? pilotName;
+  final String? managerName;
+  final String? teamName;
+  final bool isArchived;
+
+  LeagueNotification({
+    required this.id,
+    required this.title,
+    required this.message,
+    required this.type,
+    required this.timestamp,
+    required this.leagueId,
+    this.eventType,
+    this.pilotName,
+    this.managerName,
+    this.teamName,
+    this.isArchived = false,
+  });
+
+  Map<String, dynamic> toMap() {
+    return {
+      'id': id,
+      'title': title,
+      'message': message,
+      'type': type,
+      'timestamp': Timestamp.fromDate(timestamp),
+      'leagueId': leagueId,
+      'eventType': eventType,
+      'pilotName': pilotName,
+      'managerName': managerName,
+      'teamName': teamName,
+      'isArchived': isArchived,
+    };
+  }
+
+  factory LeagueNotification.fromMap(Map<String, dynamic> map) {
+    DateTime parseTs(dynamic ts) {
+      if (ts == null) return DateTime.now();
+      if (ts is Timestamp) return ts.toDate();
+      if (ts is String) return DateTime.tryParse(ts) ?? DateTime.now();
+      return DateTime.now();
+    }
+
+    return LeagueNotification(
+      id: map['id'] ?? '',
+      title: map['title'] ?? '',
+      message: map['message'] ?? '',
+      type: map['type'] ?? 'NEWS',
+      timestamp: parseTs(map['timestamp']),
+      leagueId: map['leagueId'] ?? '',
+      eventType: map['eventType'],
+      pilotName: map['pilotName'],
+      managerName: map['managerName'],
+      teamName: map['teamName'],
+      isArchived: map['isArchived'] ?? false,
+    );
+  }
+}

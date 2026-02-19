@@ -69,8 +69,9 @@ class _MainLayoutState extends State<MainLayout> {
         title: 'Dashboard',
         screen: DashboardScreen(
           teamId: widget.teamId,
-          onNavigate: (index) {
-            // Mapping index for compatibility if needed, but we use IDs now
+          onNavigate: (id) {
+            final node = _findNodeById(id, _navTree);
+            if (node != null) _onNodeSelected(node);
           },
         ),
       ),

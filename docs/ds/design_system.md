@@ -191,6 +191,35 @@ Evolución del sistema de información para aumentar el desafío estratégico.
 
 ---
 
+#### 11. Botones 'Onyx' (Action Buttons)
+Utilizado para acciones de alta importancia donde se requiere un look industrial y tecnológico.
+- **Fondo**: Contenedor con gradiente lineal (`TopLeft` a `BottomRight`) de `#2A2A2A` a `#000000`.
+- **Borde**: 1px sólido con el color de acento (Normalmente `#00C853` para éxito/acción) con opacidad del 30%.
+- **Sombra**: `blurRadius: 8`, `offset: (0, 4)` con 30% de opacidad negra.
+- **Contenido**: 
+  - Ícono y Texto en el color de acento (`#00C853`).
+  - Tipografía: `Raleway ExtraBold` o `Poppins Black`, `fontSize: 13px`, `letterSpacing: 1.2`.
+- **Interactividad**: Efecto de elevación suave y feedback táctil estándar.
+
+#### 12. Tarjetas de Resumen 'Onyx' (Dashboard Cards)
+Versión compacta de los paneles de telemetría para el dashboard principal.
+- **Dimensiones**: Altura fija u optimizada para grids de 2 columnas.
+- **Estilo**: Fondo Onyx Deep con borde blanco al 10% de opacidad.
+- **Jerarquía de Datos**:
+  - **Etiqueta (Header)**: Mayúsculas, `fontSize: 9px`, `color: white.withOpacity(0.4)`, `letterSpacing: 1.5`.
+  - **Valor Principal**: `fontFamily: 'monospace'`, `fontSize: 18px`, `fontWeight: 900`, color `#FFD700` (Gold).
+  - **Metadato/Estado**: Alineado a la derecha o inferior, utilizando colores de éxito (`#00C853`) o advertencia (`#FFAB00`).
+
+#### 13. Layout de Dashboard (Quick View)
+Patrón de organización para pantallas de inicio.
+- **Sección Quick View**: Posicionada inmediatamente debajo del Hero principal.
+- **Organización**:
+  - **Desktop/Tablet**: Row con `flex: 1` para cada tarjeta (Finanzas y Checklist).
+  - **Mobile**: Columna simple con espaciado de `16px`.
+- **Consistencia**: Todas las tarjetas en esta sección deben compartir el mismo lenguaje visual 'Onyx' para coherencia estética.
+
+---
+
 ## 4. Navegación Jerárquica
 
 El sistema utiliza una arquitectura de información sin íconos (Icon-less), centrada en la tipografía y el contraste.

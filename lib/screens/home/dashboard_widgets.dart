@@ -141,24 +141,28 @@ class FinanceCard extends StatelessWidget {
     final isNegative = budget < 0;
     final budgetMillions = (budget / 1000000).toStringAsFixed(1);
     final color = isNegative
-        ? Theme.of(context).colorScheme.error
-        : Theme.of(context).colorScheme.secondary;
+        ? const Color(0xFFEF5350) // Red Error
+        : const Color(0xFF00C853); // Green Success
 
     return InkWell(
       onTap: onTap,
-      borderRadius: BorderRadius.circular(16),
+      borderRadius: BorderRadius.circular(12),
       child: Container(
         padding: const EdgeInsets.all(20),
         decoration: BoxDecoration(
-          color: Theme.of(context).cardTheme.color,
-          borderRadius: BorderRadius.circular(8),
+          color: const Color(0xFF121212),
+          borderRadius: BorderRadius.circular(12),
+          gradient: const LinearGradient(
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+            colors: [Color(0xFF1E1E1E), Color(0xFF0A0A0A)],
+          ),
+          border: Border.all(color: Colors.white.withValues(alpha: 0.1)),
           boxShadow: [
             BoxShadow(
-              color: Theme.of(
-                context,
-              ).colorScheme.onSurface.withValues(alpha: 0.05),
-              blurRadius: 10,
-              offset: const Offset(0, 4),
+              color: Colors.black.withValues(alpha: 0.3),
+              blurRadius: 15,
+              offset: const Offset(0, 8),
             ),
           ],
         ),
@@ -169,8 +173,9 @@ class FinanceCard extends StatelessWidget {
               decoration: BoxDecoration(
                 color: color.withValues(alpha: 0.1),
                 borderRadius: BorderRadius.circular(12),
+                border: Border.all(color: color.withValues(alpha: 0.3)),
               ),
-              child: Icon(Icons.account_balance_wallet, color: color),
+              child: Icon(Icons.account_balance_wallet, color: color, size: 20),
             ),
             const SizedBox(width: 16),
             Column(
@@ -178,14 +183,21 @@ class FinanceCard extends StatelessWidget {
               children: [
                 Text(
                   "TEAM BUDGET",
-                  style: Theme.of(
-                    context,
-                  ).textTheme.bodySmall?.copyWith(fontWeight: FontWeight.bold),
+                  style: TextStyle(
+                    fontSize: 9,
+                    fontWeight: FontWeight.bold,
+                    letterSpacing: 1.2,
+                    color: Colors.white.withValues(alpha: 0.4),
+                  ),
                 ),
+                const SizedBox(height: 4),
                 Text(
                   "\$$budgetMillions M",
-                  style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                    fontWeight: FontWeight.bold,
+                  style: const TextStyle(
+                    fontFamily: 'monospace',
+                    fontSize: 18,
+                    fontWeight: FontWeight.w900,
+                    color: Color(0xFFFFD700), // Gold
                   ),
                 ),
               ],
@@ -198,13 +210,19 @@ class FinanceCard extends StatelessWidget {
                   isNegative ? "DEFICIT" : "SURPLUS",
                   style: TextStyle(
                     color: color,
+                    fontSize: 9,
+                    fontWeight: FontWeight.w900,
+                    letterSpacing: 1.0,
+                  ),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  "EST. +\$1.2M",
+                  style: TextStyle(
+                    color: Colors.white.withValues(alpha: 0.5),
                     fontSize: 10,
                     fontWeight: FontWeight.bold,
                   ),
-                ),
-                Text(
-                  "Estimated +\$1.2M",
-                  style: Theme.of(context).textTheme.bodySmall,
                 ),
               ],
             ),
@@ -362,6 +380,15 @@ class RaceStatusHero extends StatefulWidget {
   final DateTime targetDate;
   final VoidCallback? onActionPressed;
 
+  final int totalLaps;
+  final String weatherPractice;
+  final String weatherQualifying;
+  final String weatherRace;
+  final Map<String, String> characteristics;
+  final double aeroWeight;
+  final double chassisWeight;
+  final double powertrainWeight;
+
   const RaceStatusHero({
     super.key,
     required this.currentStatus,
@@ -370,15 +397,25 @@ class RaceStatusHero extends StatefulWidget {
     required this.flagEmoji,
     required this.targetDate,
     this.onActionPressed,
+    this.totalLaps = 50,
+    this.weatherPractice = 'Sunny',
+    this.weatherQualifying = 'Cloudy',
+    this.weatherRace = 'Sunny',
+    this.characteristics = const {},
+    this.aeroWeight = 0.33,
+    this.chassisWeight = 0.33,
+    this.powertrainWeight = 0.34,
   });
 
   @override
   State<RaceStatusHero> createState() => _RaceStatusHeroState();
 }
 
-class _RaceStatusHeroState extends State<RaceStatusHero> {
+class _RaceStatusHeroState extends State<RaceStatusHero>
+    with SingleTickerProviderStateMixin {
   late Timer _timer;
   Duration _timeLeft = Duration.zero;
+  late AnimationController _blinkingController;
 
   @override
   void initState() {
@@ -387,6 +424,11 @@ class _RaceStatusHeroState extends State<RaceStatusHero> {
     _timer = Timer.periodic(const Duration(seconds: 1), (_) {
       _updateTimeLeft();
     });
+
+    _blinkingController = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 1000),
+    )..repeat(reverse: true);
   }
 
   void _updateTimeLeft() {
@@ -408,6 +450,7 @@ class _RaceStatusHeroState extends State<RaceStatusHero> {
   @override
   void dispose() {
     _timer.cancel();
+    _blinkingController.dispose();
     super.dispose();
   }
 
@@ -427,8 +470,8 @@ class _RaceStatusHeroState extends State<RaceStatusHero> {
       case RaceWeekStatus.practice:
         statusText = "PADDOCK OPEN";
         statusColor = const Color(0xFF00C853);
-        buttonLabel = "ENTER PADDOCK";
-        buttonIcon = Icons.speed;
+        buttonLabel = "WEEKEND SETUP";
+        buttonIcon = Icons.settings;
         break;
       case RaceWeekStatus.qualifying:
         statusText = "QUALIFYING";
@@ -458,114 +501,412 @@ class _RaceStatusHeroState extends State<RaceStatusHero> {
 
     return Container(
       width: double.infinity,
-      padding: const EdgeInsets.all(24),
       decoration: BoxDecoration(
-        color: Theme.of(context).cardTheme.color,
-        borderRadius: BorderRadius.circular(8),
-        gradient: LinearGradient(
+        color: const Color(0xFF121212),
+        borderRadius: BorderRadius.circular(12),
+        gradient: const LinearGradient(
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
-          colors: [
-            Theme.of(context).cardTheme.color!,
-            Theme.of(context).scaffoldBackgroundColor,
-          ],
+          colors: [Color(0xFF1E1E1E), Color(0xFF0A0A0A)],
         ),
+        border: Border.all(color: Colors.white.withValues(alpha: 0.1)),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.5),
+            blurRadius: 20,
+            offset: const Offset(0, 10),
+          ),
+        ],
       ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Container(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 12,
-                  vertical: 6,
-                ),
-                decoration: BoxDecoration(
-                  color: statusColor.withValues(alpha: 0.1),
-                  borderRadius: BorderRadius.circular(8),
-                  border: Border.all(color: statusColor),
-                ),
-                child: Text(
-                  statusText,
-                  style: TextStyle(
-                    color: statusColor,
-                    fontWeight: FontWeight.bold,
-                    letterSpacing: 1.5,
-                    fontSize: 12,
-                  ),
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(12),
+        child: Stack(
+          children: [
+            // Background Climate Icon
+            Positioned(
+              right: -20,
+              top: -20,
+              child: Opacity(
+                opacity: 0.05,
+                child: Icon(
+                  _getWeatherIcon(widget.weatherRace),
+                  size: 200,
+                  color: _getWeatherColor(widget.weatherRace),
                 ),
               ),
-              Row(
+            ),
+
+            Padding(
+              padding: const EdgeInsets.all(24),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Icon(
-                    Icons.location_on,
-                    color: Theme.of(context).textTheme.bodyMedium?.color,
-                    size: 16,
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 12,
+                          vertical: 6,
+                        ),
+                        decoration: BoxDecoration(
+                          color: statusColor.withValues(alpha: 0.1),
+                          borderRadius: BorderRadius.circular(8),
+                          border: Border.all(color: statusColor),
+                        ),
+                        child: Text(
+                          statusText,
+                          style: TextStyle(
+                            color: statusColor,
+                            fontWeight: FontWeight.bold,
+                            letterSpacing: 1.5,
+                            fontSize: 12,
+                          ),
+                        ),
+                      ),
+                      Row(
+                        children: [
+                          Icon(
+                            Icons.location_on,
+                            color: Colors.white.withValues(alpha: 0.5),
+                            size: 16,
+                          ),
+                          const SizedBox(width: 4),
+                          Text(
+                            "${widget.flagEmoji} ${widget.countryCode}",
+                            style: TextStyle(
+                              color: Colors.white.withValues(alpha: 0.7),
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ],
                   ),
-                  const SizedBox(width: 4),
-                  Text(
-                    "${widget.flagEmoji} ${widget.countryCode}",
-                    style: TextStyle(
-                      color: Theme.of(context).textTheme.bodyMedium?.color,
-                      fontWeight: FontWeight.bold,
-                    ),
+                  const SizedBox(height: 24),
+                  LayoutBuilder(
+                    builder: (context, constraints) {
+                      final bool isWide = constraints.maxWidth > 500;
+                      return Row(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          // Left Section: Circuit & Countdown
+                          Expanded(
+                            flex: 3,
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  widget.circuitName.toUpperCase(),
+                                  style: const TextStyle(
+                                    fontSize: 24,
+                                    fontWeight: FontWeight.w900,
+                                    color: Colors.white,
+                                    letterSpacing: 1.0,
+                                  ),
+                                ),
+                                const SizedBox(height: 12),
+                                Wrap(
+                                  spacing: 4,
+                                  runSpacing: 4,
+                                  children: [
+                                    _buildTimeBlock(
+                                      context,
+                                      days.toString().padLeft(2, '0'),
+                                      "DAYS",
+                                    ),
+                                    _buildTimeSeparator(context),
+                                    _buildTimeBlock(
+                                      context,
+                                      hours.toString().padLeft(2, '0'),
+                                      "HRS",
+                                    ),
+                                    _buildTimeSeparator(context),
+                                    _buildTimeBlock(
+                                      context,
+                                      minutes.toString().padLeft(2, '0'),
+                                      "MIN",
+                                    ),
+                                    if (isWide) ...[
+                                      _buildTimeSeparator(context),
+                                      _buildTimeBlock(
+                                        context,
+                                        seconds.toString().padLeft(2, '0'),
+                                        "SEC",
+                                      ),
+                                    ],
+                                  ],
+                                ),
+                              ],
+                            ),
+                          ),
+
+                          const SizedBox(width: 24),
+
+                          // Right Section: Circuit Intel
+                          Expanded(
+                            flex: 2,
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.end,
+                              children: [
+                                _buildIntelHeader("CIRCUIT INTEL"),
+                                const SizedBox(height: 8),
+                                _buildIntelRow(
+                                  "LAPS",
+                                  "${widget.totalLaps}",
+                                  Colors.white,
+                                ),
+                                const SizedBox(height: 4),
+                                Row(
+                                  mainAxisAlignment: MainAxisAlignment.end,
+                                  children: [
+                                    _buildCompactWeatherDay(
+                                      "P",
+                                      widget.weatherPractice,
+                                    ),
+                                    const SizedBox(width: 8),
+                                    _buildCompactWeatherDay(
+                                      "Q",
+                                      widget.weatherQualifying,
+                                    ),
+                                    const SizedBox(width: 8),
+                                    _buildCompactWeatherDay(
+                                      "R",
+                                      widget.weatherRace,
+                                    ),
+                                  ],
+                                ),
+                                const SizedBox(height: 12),
+                                Wrap(
+                                  alignment: WrapAlignment.end,
+                                  spacing: 4,
+                                  runSpacing: 4,
+                                  children: [
+                                    if (widget.aeroWeight >= 0.4)
+                                      _buildCompactChip("AERO", "HIGH"),
+                                    if (widget.powertrainWeight >= 0.4)
+                                      _buildCompactChip("POWER", "HIGH"),
+                                    if (widget.characteristics.containsKey(
+                                      'Top Speed',
+                                    ))
+                                      _buildCompactChip(
+                                        "SPEED",
+                                        widget.characteristics['Top Speed']!,
+                                      ),
+                                    if (widget.characteristics.containsKey(
+                                      'Tyre Wear',
+                                    ))
+                                      _buildCompactChip(
+                                        "TYRE",
+                                        widget.characteristics['Tyre Wear']!,
+                                      ),
+                                  ],
+                                ),
+                              ],
+                            ),
+                          ),
+                        ],
+                      );
+                    },
+                  ),
+                  const SizedBox(height: 24),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      _buildLiveIndicator(),
+                      Container(
+                        decoration: BoxDecoration(
+                          borderRadius: BorderRadius.circular(8),
+                          gradient: const LinearGradient(
+                            begin: Alignment.topLeft,
+                            end: Alignment.bottomRight,
+                            colors: [Color(0xFF2A2A2A), Color(0xFF000000)],
+                          ),
+                          border: Border.all(
+                            color: const Color(
+                              0xFF00C853,
+                            ).withValues(alpha: 0.3),
+                          ),
+                          boxShadow: [
+                            BoxShadow(
+                              color: Colors.black.withValues(alpha: 0.3),
+                              blurRadius: 8,
+                              offset: const Offset(0, 4),
+                            ),
+                          ],
+                        ),
+                        child: ElevatedButton.icon(
+                          onPressed: widget.onActionPressed,
+                          icon: Icon(
+                            buttonIcon,
+                            color: const Color(0xFF00C853),
+                            size: 18,
+                          ),
+                          label: Text(buttonLabel),
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: Colors.transparent,
+                            foregroundColor: const Color(0xFF00C853),
+                            shadowColor: Colors.transparent,
+                            padding: const EdgeInsets.symmetric(
+                              vertical: 16,
+                              horizontal: 24,
+                            ),
+                            elevation: 0,
+                            textStyle: const TextStyle(
+                              fontWeight: FontWeight.w900,
+                              letterSpacing: 1.2,
+                              fontSize: 13,
+                            ),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(8),
+                            ),
+                          ),
+                        ),
+                      ),
+                    ],
                   ),
                 ],
               ),
-            ],
-          ),
-          const SizedBox(height: 24),
-          Text(
-            widget.circuitName.toUpperCase(),
-            style: TextStyle(
-              fontSize: 28,
-              fontWeight: FontWeight.w900,
-              color: Theme.of(context).textTheme.headlineMedium?.color,
-              letterSpacing: 1.0,
             ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildIntelHeader(String label) {
+    return Text(
+      label,
+      style: TextStyle(
+        fontSize: 9,
+        fontWeight: FontWeight.bold,
+        letterSpacing: 0.8,
+        color: Colors.white.withValues(alpha: 0.4),
+      ),
+    );
+  }
+
+  Widget _buildIntelRow(String label, String value, Color valueColor) {
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.end,
+      children: [
+        Text(
+          "$label: ",
+          style: TextStyle(
+            fontSize: 9,
+            fontWeight: FontWeight.bold,
+            color: Colors.white.withValues(alpha: 0.3),
           ),
-          const SizedBox(height: 12),
-          // Live countdown with individual digit boxes
-          Row(
-            children: [
-              _buildTimeBlock(context, days.toString().padLeft(2, '0'), "DAYS"),
-              _buildTimeSeparator(context),
-              _buildTimeBlock(context, hours.toString().padLeft(2, '0'), "HRS"),
-              _buildTimeSeparator(context),
-              _buildTimeBlock(
-                context,
-                minutes.toString().padLeft(2, '0'),
-                "MIN",
-              ),
-              _buildTimeSeparator(context),
-              _buildTimeBlock(
-                context,
-                seconds.toString().padLeft(2, '0'),
-                "SEC",
-              ),
-            ],
+        ),
+        Text(
+          value.toUpperCase(),
+          style: TextStyle(
+            fontFamily: 'monospace',
+            fontSize: 14,
+            fontWeight: FontWeight.w900,
+            color: const Color(0xFFFFD700), // Gold
           ),
-          const SizedBox(height: 24),
-          SizedBox(
-            width: double.infinity,
-            child: ElevatedButton.icon(
-              onPressed: widget.onActionPressed,
-              icon: Icon(buttonIcon, color: Colors.black),
-              label: Text(buttonLabel),
-              style: ElevatedButton.styleFrom(
-                backgroundColor: statusColor,
-                foregroundColor: Colors.black,
-                padding: const EdgeInsets.symmetric(vertical: 18),
-                textStyle: const TextStyle(
-                  fontWeight: FontWeight.w900,
-                  letterSpacing: 1.2,
-                ),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(8),
-                ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildCompactChip(String label, String value) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+      decoration: BoxDecoration(
+        color: Colors.white.withValues(alpha: 0.05),
+        borderRadius: BorderRadius.circular(4),
+        border: Border.all(color: Colors.white.withValues(alpha: 0.1)),
+      ),
+      child: Text(
+        "$label: ${value.toUpperCase()}",
+        style: const TextStyle(
+          fontSize: 8,
+          fontWeight: FontWeight.bold,
+          color: Colors.white70,
+        ),
+      ),
+    );
+  }
+
+  Widget _buildCompactWeatherDay(String label, String weather) {
+    final color = _getWeatherColor(weather);
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Text(
+          label,
+          style: TextStyle(
+            fontSize: 9,
+            fontWeight: FontWeight.bold,
+            color: Colors.white.withValues(alpha: 0.3),
+          ),
+        ),
+        const SizedBox(width: 2),
+        Icon(_getWeatherIcon(weather), color: color, size: 14),
+      ],
+    );
+  }
+
+  IconData _getWeatherIcon(String status) {
+    status = status.toLowerCase();
+    if (status.contains('rain')) return Icons.umbrella;
+    if (status.contains('cloud')) return Icons.cloud;
+    if (status.contains('storm')) return Icons.thunderstorm;
+    return Icons.wb_sunny;
+  }
+
+  Color _getWeatherColor(String status) {
+    status = status.toLowerCase();
+    if (status.contains('rain')) return Colors.blue;
+    if (status.contains('cloud')) return Colors.blueGrey;
+    if (status.contains('storm')) return Colors.deepPurple;
+    return Colors.orange;
+  }
+
+  Widget _buildLiveIndicator() {
+    final bool isLive = widget.currentStatus == RaceWeekStatus.race;
+
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+      decoration: BoxDecoration(
+        color: Colors.white.withValues(alpha: 0.03),
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(
+          color: isLive
+              ? const Color(0xFFFF5252).withValues(alpha: 0.2)
+              : Colors.white.withValues(alpha: 0.05),
+        ),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          if (isLive)
+            FadeTransition(
+              opacity: _blinkingController,
+              child: const Icon(
+                Icons.fiber_manual_record,
+                color: Color(0xFFFF5252),
+                size: 12,
               ),
+            )
+          else
+            Icon(
+              Icons.do_not_disturb_on_total_silence,
+              color: Colors.white.withValues(alpha: 0.2),
+              size: 12,
+            ),
+          const SizedBox(width: 8),
+          Text(
+            isLive ? "ON LIVE" : "OFF LIVE",
+            style: TextStyle(
+              fontSize: 10,
+              fontWeight: FontWeight.w900,
+              letterSpacing: 1.0,
+              color: isLive
+                  ? const Color(0xFFFF5252)
+                  : Colors.white.withValues(alpha: 0.3),
             ),
           ),
         ],
@@ -579,18 +920,16 @@ class _RaceStatusHeroState extends State<RaceStatusHero> {
         Container(
           padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
           decoration: BoxDecoration(
-            color: Theme.of(
-              context,
-            ).colorScheme.onSurface.withValues(alpha: 0.05),
+            color: Colors.white.withValues(alpha: 0.05),
             borderRadius: BorderRadius.circular(8),
           ),
           child: Text(
             value,
-            style: TextStyle(
+            style: const TextStyle(
               fontFamily: 'monospace',
               fontSize: 28,
               fontWeight: FontWeight.w900,
-              color: Theme.of(context).colorScheme.onSurface,
+              color: Colors.white,
             ),
           ),
         ),
@@ -640,10 +979,23 @@ class PreparationChecklist extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.all(24),
+      padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
-        color: Theme.of(context).cardTheme.color,
-        borderRadius: BorderRadius.circular(8),
+        color: const Color(0xFF121212),
+        borderRadius: BorderRadius.circular(12),
+        gradient: const LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [Color(0xFF1E1E1E), Color(0xFF0A0A0A)],
+        ),
+        border: Border.all(color: Colors.white.withValues(alpha: 0.1)),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.3),
+            blurRadius: 15,
+            offset: const Offset(0, 8),
+          ),
+        ],
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -651,8 +1003,8 @@ class PreparationChecklist extends StatelessWidget {
           Text(
             "PRE-RACE CHECKLIST",
             style: TextStyle(
-              color: Theme.of(context).textTheme.bodyMedium?.color,
-              fontSize: 12,
+              color: Colors.white.withValues(alpha: 0.4),
+              fontSize: 9,
               fontWeight: FontWeight.bold,
               letterSpacing: 1.5,
             ),
@@ -664,20 +1016,14 @@ class PreparationChecklist extends StatelessWidget {
             "$completedLaps/$totalLaps LAPS",
             completedLaps >= totalLaps,
           ),
-          Divider(
-            color: Theme.of(context).dividerColor.withValues(alpha: 0.2),
-            height: 24,
-          ),
+          Divider(color: Colors.white.withValues(alpha: 0.05), height: 20),
           _buildItem(
             context,
             "Qualifying Setup",
             setupSubmitted ? "READY" : "PENDING",
             setupSubmitted,
           ),
-          Divider(
-            color: Theme.of(context).dividerColor.withValues(alpha: 0.2),
-            height: 24,
-          ),
+          Divider(color: Colors.white.withValues(alpha: 0.05), height: 20),
           _buildItem(
             context,
             "Race Strategy",
@@ -702,264 +1048,41 @@ class PreparationChecklist extends StatelessWidget {
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
         Text(
-          label,
-          style: TextStyle(
-            fontSize: 16,
-            fontWeight: FontWeight.w600,
-            color: Theme.of(context).colorScheme.onSurface,
+          label.toUpperCase(),
+          style: const TextStyle(
+            fontSize: 11,
+            fontWeight: FontWeight.w900,
+            color: Colors.white,
+            letterSpacing: 0.5,
           ),
         ),
         Container(
-          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
           decoration: BoxDecoration(
             color: color.withValues(alpha: 0.1),
-            borderRadius: BorderRadius.circular(20),
+            borderRadius: BorderRadius.circular(4),
             border: Border.all(color: color.withValues(alpha: 0.5)),
           ),
           child: Row(
             children: [
               Icon(
                 isComplete ? Icons.check : Icons.priority_high,
-                size: 12,
+                size: 10,
                 color: color,
               ),
-              const SizedBox(width: 6),
+              const SizedBox(width: 4),
               Text(
                 status,
                 style: TextStyle(
-                  fontSize: 12,
-                  fontWeight: FontWeight.bold,
+                  fontFamily: 'monospace',
+                  fontSize: 10,
+                  fontWeight: FontWeight.w900,
                   color: color,
                 ),
               ),
             ],
           ),
         ),
-      ],
-    );
-  }
-}
-
-class CircuitInfoCard extends StatelessWidget {
-  final String circuitName;
-  final String flagEmoji;
-  final int totalLaps;
-  final String weatherPractice;
-  final String weatherQualifying;
-  final String weatherRace;
-
-  final Map<String, String> characteristics;
-  final double aeroWeight;
-  final double chassisWeight;
-  final double powertrainWeight;
-
-  const CircuitInfoCard({
-    super.key,
-    required this.circuitName,
-    required this.flagEmoji,
-    required this.totalLaps,
-    required this.weatherPractice,
-    required this.weatherQualifying,
-    required this.weatherRace,
-    this.characteristics = const {},
-    this.aeroWeight = 0.33,
-    this.chassisWeight = 0.33,
-    this.powertrainWeight = 0.34,
-  });
-
-  IconData _getWeatherIcon(String status) {
-    status = status.toLowerCase();
-    if (status.contains('rain')) return Icons.umbrella;
-    if (status.contains('cloud')) return Icons.cloud;
-    if (status.contains('storm')) return Icons.thunderstorm;
-    return Icons.wb_sunny;
-  }
-
-  Color _getWeatherColor(String status) {
-    status = status.toLowerCase();
-    if (status.contains('rain')) return Colors.blue;
-    if (status.contains('cloud')) return Colors.blueGrey;
-    if (status.contains('storm')) return Colors.deepPurple;
-    return Colors.orange;
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.all(20),
-      decoration: BoxDecoration(
-        color: Theme.of(context).cardTheme.color,
-        borderRadius: BorderRadius.circular(8),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              Icon(
-                Icons.calendar_today,
-                size: 14,
-                color: Theme.of(context).colorScheme.secondary,
-              ),
-              const SizedBox(width: 8),
-              Text(
-                "CIRCUIT INFO",
-                style: TextStyle(
-                  color: Theme.of(context).textTheme.bodyMedium?.color,
-                  fontSize: 12,
-                  fontWeight: FontWeight.bold,
-                  letterSpacing: 1.5,
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 16),
-          Text(
-            "$flagEmoji ${circuitName.toUpperCase()}",
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
-            style: const TextStyle(fontWeight: FontWeight.w900, fontSize: 18),
-          ),
-          const SizedBox(height: 8),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Row(
-                children: [
-                  const Icon(Icons.loop, size: 16, color: Colors.grey),
-                  const SizedBox(width: 4),
-                  Text(
-                    "$totalLaps LAPS",
-                    style: const TextStyle(
-                      color: Colors.grey,
-                      fontWeight: FontWeight.bold,
-                      fontSize: 14,
-                    ),
-                  ),
-                ],
-              ),
-              Row(
-                children: [
-                  _buildCompactWeatherDay("P", weatherPractice),
-                  const SizedBox(width: 12),
-                  _buildCompactWeatherDay("Q", weatherQualifying),
-                  const SizedBox(width: 12),
-                  _buildCompactWeatherDay("R", weatherRace),
-                ],
-              ),
-            ],
-          ),
-          const SizedBox(height: 16),
-
-          // Row 1: Laps & Weather (already exists as a structured row above, but let's conform)
-          // Actually, let's keep the existing Laps + P/Q/R row as Row 1.
-          const Text(
-            "CIRCUIT INTEL",
-            style: TextStyle(
-              fontSize: 10,
-              fontWeight: FontWeight.bold,
-              color: Colors.grey,
-            ),
-          ),
-          const SizedBox(height: 12),
-          Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              // Row 2: Aero, Powertrain, Top Speed
-              Row(
-                children: [
-                  if (aeroWeight >= 0.4) ...[
-                    _buildCompactChip(context, "AERO", "High Focus"),
-                    const SizedBox(width: 8),
-                  ],
-                  if (powertrainWeight >= 0.4) ...[
-                    _buildCompactChip(context, "POWER", "High Focus"),
-                    const SizedBox(width: 8),
-                  ],
-                  if (characteristics.containsKey('Top Speed'))
-                    _buildCompactChip(
-                      context,
-                      "TOP SPEED",
-                      characteristics['Top Speed']!,
-                    ),
-                ],
-              ),
-              const SizedBox(height: 8),
-              // Row 3: Tyre Wear, Fuel Consumption
-              Row(
-                children: [
-                  if (characteristics.containsKey('Tyre Wear')) ...[
-                    _buildCompactChip(
-                      context,
-                      "TYRE WEAR",
-                      characteristics['Tyre Wear']!,
-                    ),
-                    const SizedBox(width: 8),
-                  ],
-                  if (characteristics.containsKey('Fuel Consumption'))
-                    _buildCompactChip(
-                      context,
-                      "FUEL",
-                      characteristics['Fuel Consumption']!,
-                    ),
-                ],
-              ),
-            ],
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildCompactChip(BuildContext context, String label, String value) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-      decoration: BoxDecoration(
-        color: Theme.of(context).colorScheme.secondary.withValues(alpha: 0.1),
-        borderRadius: BorderRadius.circular(8),
-        border: Border.all(
-          color: Theme.of(context).colorScheme.secondary.withValues(alpha: 0.2),
-        ),
-      ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Text(
-            "$label: ",
-            style: TextStyle(
-              fontSize: 10,
-              fontWeight: FontWeight.bold,
-              color: Theme.of(context).colorScheme.secondary,
-            ),
-          ),
-          Text(
-            value.toUpperCase(),
-            style: TextStyle(
-              fontSize: 10,
-              fontWeight: FontWeight.w600,
-              color: Theme.of(context).textTheme.bodyMedium?.color,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildCompactWeatherDay(String label, String weather) {
-    final color = _getWeatherColor(weather);
-    return Row(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        Text(
-          label,
-          style: const TextStyle(
-            fontSize: 10,
-            fontWeight: FontWeight.bold,
-            color: Colors.grey,
-          ),
-        ),
-        const SizedBox(width: 4),
-        Icon(_getWeatherIcon(weather), color: color, size: 16),
       ],
     );
   }
