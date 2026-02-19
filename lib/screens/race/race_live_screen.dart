@@ -142,6 +142,7 @@ class _RaceLiveScreenState extends State<RaceLiveScreen> {
       // 3. Run Simulation (Calculate all laps)
       _fullResult = await RaceService().simulateRaceSession(
         raceId: raceId,
+        leagueId: season.leagueId,
         circuit: circuit,
         grid: grid,
         teamsMap: _teamsMap,

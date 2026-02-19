@@ -1,9 +1,12 @@
 import 'dart:math';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:flutter/foundation.dart';
 import '../models/core_models.dart';
 import '../models/simulation_models.dart';
 import '../services/circuit_service.dart';
 import '../services/season_service.dart';
+import '../services/league_notification_service.dart';
+import '../services/auth_service.dart';
 
 class RaceService {
   static final RaceService _instance = RaceService._internal();
@@ -97,6 +100,23 @@ class RaceService {
           driver: driver,
           setup: driverSetup,
         );
+
+        if (result.isCrashed) {
+          try {
+            await LeagueNotificationService().addLeagueNotification(
+              leagueId: season.leagueId,
+              title: "QUALIFYING ACCIDENT",
+              message:
+                  "Drama in qualifying! ${driver.name} from ${team.name} has suffered a heavy accident at ${circuit.name}.",
+              type: "CRASH",
+              eventType: "Qualifying",
+              pilotName: driver.name,
+              teamName: team.name,
+            );
+          } catch (e) {
+            debugPrint("Error sending crash notification: $e");
+          }
+        }
 
         qualyResults.add({
           'driverId': driver.id,
@@ -626,6 +646,7 @@ class RaceService {
   /// Simula una carrera completa vuelta a vuelta
   Future<RaceSessionResult> simulateRaceSession({
     required String raceId,
+    required String leagueId,
     required CircuitProfile circuit,
     required List<Map<String, dynamic>> grid, // [ {driverId, team, setup...} ]
     required Map<String, Team> teamsMap, // id -> Team
@@ -701,6 +722,22 @@ class RaceService {
               type: "DNF",
             ),
           );
+
+          try {
+            await LeagueNotificationService().addLeagueNotification(
+              leagueId: leagueId,
+              title: "RACE INCIDENT: LAP $lap",
+              message:
+                  "Huge crash for ${driver.name}! The ${team.name} driver is out of the race at ${circuit.name}.",
+              type: "CRASH",
+              eventType: "Race",
+              pilotName: driver.name,
+              teamName: team.name,
+            );
+          } catch (e) {
+            debugPrint("Error sending race crash notification: $e");
+          }
+
           continue;
         }
 
@@ -1056,6 +1093,38 @@ class RaceService {
     // 5. Sort and Award Points
     performances.sort((a, b) => b.score.compareTo(a.score));
 
+    // Trigger Winner Notification for this league
+    if (performances.isNotEmpty && !performances[0].isDNF) {
+      try {
+        final winner = performances[0].driver;
+        final team = performances[0].team;
+        final managerId = team.managerId;
+        String managerName = "The AI Controller";
+        if (managerId != null) {
+          final managerProfile = await AuthService().getManagerProfile(
+            managerId,
+          );
+          if (managerProfile != null) {
+            managerName = "${managerProfile.name} ${managerProfile.surname}";
+          }
+        }
+
+        await LeagueNotificationService().addLeagueNotification(
+          leagueId: season.leagueId,
+          title: "RACE WINNER: ${currentRace.trackName.toUpperCase()}",
+          message:
+              "FINISHED! ${winner.name} and ${team.name} dominate at ${currentRace.trackName}! Led by $managerName.",
+          type: "WINNER",
+          eventType: "Race",
+          pilotName: winner.name,
+          teamName: team.name,
+          managerName: managerName,
+        );
+      } catch (e) {
+        debugPrint("Error sending winner notification in simulateNextRace: $e");
+      }
+    }
+
     final pointSystem = [25, 18, 15, 12, 10, 8, 6, 4, 2, 1];
     Map<DocumentReference, int> teamPointUpdates = {};
 
@@ -1371,6 +1440,45 @@ class RaceService {
       circuitId: currentRace.circuitId, // Preserve circuitId
       isCompleted: true,
     );
+
+    // 4.5. Trigger Winner Notification
+    if (sortedDriverIds.isNotEmpty) {
+      final winnerId = sortedDriverIds[0];
+      // We already have teamsMap and driverTeamIds
+      final winnerTeamId = driverTeamIds[winnerId];
+      final winnerTeam = winnerTeamId != null ? teamsMap[winnerTeamId] : null;
+
+      try {
+        final winnerDoc = await _db.collection('drivers').doc(winnerId).get();
+        if (winnerDoc.exists && winnerTeam != null) {
+          final winnerName = winnerDoc.data()?['name'] ?? "Unknown";
+          final managerId = winnerTeam.managerId;
+          String managerName = "The AI Controller";
+          if (managerId != null) {
+            final managerProfile = await AuthService().getManagerProfile(
+              managerId,
+            );
+            if (managerProfile != null) {
+              managerName = "${managerProfile.name} ${managerProfile.surname}";
+            }
+          }
+
+          await LeagueNotificationService().addLeagueNotification(
+            leagueId: season.leagueId,
+            title: "RACE WINNER: ${currentRace.trackName.toUpperCase()}",
+            message:
+                "VICTORY! $winnerName and ${winnerTeam.name} take the checkered flag at ${currentRace.trackName}! Managed by $managerName.",
+            type: "WINNER",
+            eventType: "Race",
+            pilotName: winnerName,
+            teamName: winnerTeam.name,
+            managerName: managerName,
+          );
+        }
+      } catch (e) {
+        debugPrint("Error sending winner notification: $e");
+      }
+    }
 
     batch.update(seasonDoc.reference, {
       'calendar': updatedCalendar.map((e) => e.toMap()).toList(),

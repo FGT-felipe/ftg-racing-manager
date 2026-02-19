@@ -6,6 +6,7 @@ import '../../models/domain/domain_models.dart';
 import '../../services/auth_service.dart';
 import '../../services/team_service.dart';
 import '../../services/universe_service.dart';
+import '../../services/league_notification_service.dart';
 import '../main_layout.dart';
 
 class TeamSelectionScreen extends StatefulWidget {
@@ -137,6 +138,24 @@ class _TeamSelectionScreenState extends State<TeamSelectionScreen> {
 
       // Claim the team for this manager
       await TeamService().claimTeam(teamRef, user.uid);
+
+      // Trigger Press News notification
+      try {
+        final manager = await AuthService().getManagerProfile(user.uid);
+        if (manager != null && _league != null) {
+          await LeagueNotificationService().addLeagueNotification(
+            leagueId: _league!.id,
+            title: "NEW MANAGER ARRIVES",
+            message:
+                "${manager.name} ${manager.surname} has signed with ${team.name} to lead them in the ${_league!.name}!",
+            type: "MANAGER_JOIN",
+            managerName: "${manager.name} ${manager.surname}",
+            teamName: team.name,
+          );
+        }
+      } catch (e) {
+        debugPrint("Error sending press news notification: $e");
+      }
 
       if (mounted) {
         Navigator.pop(context); // Close loading
