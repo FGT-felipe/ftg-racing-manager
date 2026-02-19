@@ -13,6 +13,7 @@ class CarSetup {
   List<double> pitStopFuel;
   DriverStyle qualifyingStyle;
   DriverStyle raceStyle;
+  List<DriverStyle> pitStopStyles;
 
   CarSetup({
     this.frontWing = 50,
@@ -25,6 +26,7 @@ class CarSetup {
     this.pitStopFuel = const [50.0],
     this.qualifyingStyle = DriverStyle.normal,
     this.raceStyle = DriverStyle.normal,
+    this.pitStopStyles = const [DriverStyle.normal],
   });
 
   Map<String, dynamic> toMap() {
@@ -39,6 +41,7 @@ class CarSetup {
       'pitStopFuel': pitStopFuel,
       'qualifyingStyle': qualifyingStyle.name,
       'raceStyle': raceStyle.name,
+      'pitStopStyles': pitStopStyles.map((e) => e.name).toList(),
     };
   }
 
@@ -76,6 +79,16 @@ class CarSetup {
         (e) => e.name == (map['raceStyle'] ?? 'normal'),
         orElse: () => DriverStyle.normal,
       ),
+      pitStopStyles:
+          (map['pitStopStyles'] as List?)
+              ?.map(
+                (e) => DriverStyle.values.firstWhere(
+                  (ds) => ds.name == e,
+                  orElse: () => DriverStyle.normal,
+                ),
+              )
+              .toList() ??
+          List.filled(pitStopsList.length, DriverStyle.normal),
     );
   }
 
@@ -90,6 +103,7 @@ class CarSetup {
     List<double>? pitStopFuel,
     DriverStyle? qualifyingStyle,
     DriverStyle? raceStyle,
+    List<DriverStyle>? pitStopStyles,
   }) {
     return CarSetup(
       frontWing: frontWing ?? this.frontWing,
@@ -102,6 +116,7 @@ class CarSetup {
       pitStopFuel: pitStopFuel ?? this.pitStopFuel,
       qualifyingStyle: qualifyingStyle ?? this.qualifyingStyle,
       raceStyle: raceStyle ?? this.raceStyle,
+      pitStopStyles: pitStopStyles ?? this.pitStopStyles,
     );
   }
 }

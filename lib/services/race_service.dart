@@ -66,7 +66,11 @@ class RaceService {
           .get();
       for (var i = 0; i < driversSnapshot.docs.length; i++) {
         final driverDoc = driversSnapshot.docs[i];
-        final driver = Driver.fromMap({...driverDoc.data(), 'carIndex': i});
+        final driver = Driver.fromMap({
+          ...driverDoc.data(),
+          'id': driverDoc.id,
+          'carIndex': i,
+        });
 
         CarSetup driverSetup;
         if (team.isBot) {
@@ -99,6 +103,7 @@ class RaceService {
           'driverName': driver.name,
           'teamName': team.name,
           'lapTime': result.lapTime,
+          'tyreCompound': driverSetup.tyreCompound.name,
           'gap': 0.0, // Se calcula después de ordenar
         });
       }
@@ -120,18 +125,45 @@ class RaceService {
     // 6. Guardar parrilla en races/{raceId}
     await SeasonService().saveQualifyingGrid(raceId, qualyResults);
 
-    // 7. Increment Pole Stat for the winner
+    // 7. Increment Pole Stat and update player's weekStatus with best compound
     if (qualyResults.isNotEmpty) {
       final poleDriverId = qualyResults.first['driverId'] as String;
-      // We need the reference. This is a bit tricky since we don't have it here easily.
-      // But we can find which team is it from qualyResults or just run a query.
-      final teams = await _db.collection('teams').get();
-      for (var tDoc in teams.docs) {
-        final dDoc = await _db.collection('drivers').doc(poleDriverId).get();
+
+      // Update individual driver and team stats for pole
+      final poleDriverDoc = await _db
+          .collection('drivers')
+          .doc(poleDriverId)
+          .get();
+      if (poleDriverDoc.exists) {
+        await poleDriverDoc.reference.update({
+          'poles': FieldValue.increment(1),
+        });
+        final pTeamId = poleDriverDoc.data()!['teamId'] as String?;
+        if (pTeamId != null) {
+          await _db.collection('teams').doc(pTeamId).update({
+            'poles': FieldValue.increment(1),
+          });
+        }
+      }
+
+      // Update Player's weekStatus with qualifying best compounds (important for Strategy lockdown)
+      for (var res in qualyResults) {
+        final dId = res['driverId'] as String;
+        final compound = res['tyreCompound'] as String;
+
+        // Find which team this driver belongs to
+        final dDoc = await _db.collection('drivers').doc(dId).get();
         if (dDoc.exists) {
-          await dDoc.reference.update({'poles': FieldValue.increment(1)});
-          await tDoc.reference.update({'poles': FieldValue.increment(1)});
-          break;
+          final tId = dDoc.data()!['teamId'] as String?;
+          if (tId != null) {
+            final tRef = _db.collection('teams').doc(tId);
+            final tDoc = await tRef.get();
+            if (tDoc.exists && tDoc.data()!['isBot'] != true) {
+              await tRef.update({
+                'weekStatus.driverSetups.$dId.qualifyingBestCompound': compound,
+              });
+            }
+          }
         }
       }
     }
@@ -218,6 +250,7 @@ class RaceService {
     required Team team,
     required Driver driver,
     required CarSetup setup,
+    DriverStyle? styleOverride,
   }) {
     final random = Random();
     final ideal = circuit.idealSetup;
@@ -339,7 +372,9 @@ class RaceService {
     double fitnessCost = 1.0;
     double accidentBaseRisk = 0.03; // 3% Normal
 
-    switch (setup.qualifyingStyle) {
+    final effectiveStyle = styleOverride ?? setup.qualifyingStyle;
+
+    switch (effectiveStyle) {
       case DriverStyle.defensive:
         styleBonus = -0.01;
         fitnessCost = 0.5;
@@ -607,11 +642,19 @@ class RaceService {
     Map<String, double> totalTimes = {for (var id in currentOrder) id: 0.0};
     Map<String, double> tyreWear = {for (var id in currentOrder) id: 0.0};
 
-    // Track active compound and pit stops for each driver
+    // Track active compound, fuel, and style for each driver
     Map<String, TyreCompound> activeCompounds = {
       for (var id in currentOrder)
         id: setupsMap[id]?.tyreCompound ?? TyreCompound.medium,
     };
+    Map<String, double> fuelInTank = {
+      for (var id in currentOrder) id: setupsMap[id]?.initialFuel ?? 50.0,
+    };
+    Map<String, DriverStyle> activeStyles = {
+      for (var id in currentOrder)
+        id: setupsMap[id]?.raceStyle ?? DriverStyle.normal,
+    };
+
     Map<String, int> stopsMade = {for (var id in currentOrder) id: 0};
     Map<String, bool> usedHard = {
       for (var id in currentOrder)
@@ -639,37 +682,108 @@ class RaceService {
         final stintSetup = baseSetup.copyWith(tyreCompound: currentCompound);
 
         // Base Performance
+        final currentStyle = activeStyles[driverId]!;
         PracticeRunResult baseRun = simulatePracticeRun(
           circuit: circuit,
           team: team,
           driver: driver,
           setup: stintSetup,
+          styleOverride: currentStyle,
         );
+
+        if (baseRun.isCrashed) {
+          dnfs.add(driverId);
+          lapEvents.add(
+            RaceEventLog(
+              lapNumber: lap,
+              driverId: driverId,
+              description: "CRASH: Retired from race",
+              type: "DNF",
+            ),
+          );
+          continue;
+        }
 
         double lapTime = baseRun.lapTime;
 
         // Tyre Wear Penalty
         double wear = tyreWear[driverId]!;
-        lapTime += pow(wear / 100.0, 2) * 6.0; // Slightly higher wear impact
+        lapTime += pow(wear / 100.0, 2) * 8.0; // Wear impact
 
         // Fuel Effect (Car gets lighter)
-        lapTime -= (lap * 0.04 * circuit.fuelConsumptionMultiplier);
+        // Current weight = fuelInTank / max (assume ~100L max for 2s diff)
+        double fuelWeightPenalty = (fuelInTank[driverId]! / 100.0) * 1.5;
+        lapTime += fuelWeightPenalty;
+
+        // Fuel Consumption
+        double baseFuelCons = 2.5 * circuit.fuelConsumptionMultiplier;
+        double styleFuelMod = 1.0;
+        double styleWearMod = 1.0;
+
+        switch (currentStyle) {
+          case DriverStyle.defensive:
+            styleFuelMod = 0.85;
+            styleWearMod = 0.75;
+            break;
+          case DriverStyle.offensive:
+            styleFuelMod = 1.15;
+            styleWearMod = 1.25;
+            break;
+          case DriverStyle.mostRisky:
+            styleFuelMod = 1.35;
+            styleWearMod = 1.6;
+            break;
+          case DriverStyle.normal:
+            styleFuelMod = 1.0;
+            styleWearMod = 1.0;
+            break;
+        }
+
+        fuelInTank[driverId] =
+            fuelInTank[driverId]! - (baseFuelCons * styleFuelMod);
+
+        // Out of Fuel Check (Penalty)
+        if (fuelInTank[driverId]! <= 0) {
+          lapTime += 10.0; // Limping
+          fuelInTank[driverId] = 0.5; // Avoid negative
+          lapEvents.add(
+            RaceEventLog(
+              lapNumber: lap,
+              driverId: driverId,
+              description: "OUT OF FUEL: Limping to pits",
+              type: "INFO",
+            ),
+          );
+        }
 
         // Pit Stop Logic
-        // Strategy: Pit if wear > 75% or if it's the last lap (simplified)
-        if (wear > 75 && lap < totalLaps) {
-          lapTime += 24.0 + random.nextDouble() * 2.0; // Pit Time (24-26s)
+        // Strategy: Pit if wear > 80% or if fuel is low (< baseConsumption * 2)
+        bool needsTyres = wear > 80;
+        bool needsFuel = fuelInTank[driverId]! < (baseFuelCons * 2.5);
+
+        if ((needsTyres || needsFuel) && lap < totalLaps) {
+          lapTime += 24.0 + random.nextDouble() * 2.0; // Pit Time
           tyreWear[driverId] = 0.0;
 
-          // Select next compound from plan or fallback
-          final plan = baseSetup.pitStops;
           int stopIdx = stopsMade[driverId]!;
+
+          // Refuel
+          final pitFuels = baseSetup.pitStopFuel;
+          double refuelingAmount = (stopIdx < pitFuels.length)
+              ? pitFuels[stopIdx]
+              : 50.0;
+          fuelInTank[driverId] = refuelingAmount;
+
+          // Select next compound and style
+          final plan = baseSetup.pitStops;
+          final stylePlan = baseSetup.pitStopStyles;
+
           TyreCompound nextCompound;
+          DriverStyle nextStyle;
 
           if (stopIdx < plan.length) {
             nextCompound = plan[stopIdx];
           } else {
-            // If plan exhausted, reuse last compound or default to Hard if rule not met
             if (!usedHard[driverId]!) {
               nextCompound = TyreCompound.hard;
             } else {
@@ -677,7 +791,14 @@ class RaceService {
             }
           }
 
+          if (stopIdx < stylePlan.length) {
+            nextStyle = stylePlan[stopIdx];
+          } else {
+            nextStyle = DriverStyle.normal;
+          }
+
           activeCompounds[driverId] = nextCompound;
+          activeStyles[driverId] = nextStyle;
           stopsMade[driverId] = stopIdx + 1;
           if (nextCompound == TyreCompound.hard) usedHard[driverId] = true;
 
@@ -685,12 +806,13 @@ class RaceService {
             RaceEventLog(
               lapNumber: lap,
               driverId: driverId,
-              description: "Pit Stop (${nextCompound.name.toUpperCase()})",
+              description:
+                  "Pit Stop (Refueled, ${nextCompound.name.toUpperCase()}, ${nextStyle.name.toUpperCase()})",
               type: "PIT",
             ),
           );
         } else {
-          // Add Wear based on circuit factor and compound
+          // Add Wear
           double compoundWearMod = 1.0;
           switch (currentCompound) {
             case TyreCompound.soft:
@@ -709,7 +831,10 @@ class RaceService {
 
           tyreWear[driverId] =
               wear +
-              (4.0 * circuit.tyreWearMultiplier * compoundWearMod) +
+              (4.5 *
+                  circuit.tyreWearMultiplier *
+                  compoundWearMod *
+                  styleWearMod) +
               random.nextDouble();
         }
 

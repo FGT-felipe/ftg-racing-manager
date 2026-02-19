@@ -13,6 +13,7 @@ import '../../services/driver_portrait_service.dart';
 import '../../services/universe_service.dart';
 import '../../services/team_assignment_service.dart';
 import '../../utils/app_constants.dart';
+import '../../widgets/fuel_input.dart';
 import 'package:ftg_racing_manager/l10n/app_localizations.dart';
 
 class GarageScreen extends StatefulWidget {
@@ -185,6 +186,12 @@ class _GarageScreenState extends State<GarageScreen>
                 Map<String, dynamic>.from(driverData['race']),
               );
               _raceSetupsSubmitted[dId] = driverData['raceSubmitted'] == true;
+
+              // Force Qualy Best compound on Race Start (Rule)
+              if (_qualifyingBestCompounds.containsKey(dId)) {
+                _driverRaceSetups[dId]!.tyreCompound =
+                    _qualifyingBestCompounds[dId]!;
+              }
             }
           });
         }
@@ -202,10 +209,51 @@ class _GarageScreenState extends State<GarageScreen>
         widget.circuitId ?? 'interlagos',
       );
 
-      // 5. Load practice results per driver
+      // 5. Load Qualifying Results from race doc to ensure best compounds (even if simulated)
+      final seasonData = await SeasonService().getActiveSeason();
+      if (seasonData != null) {
+        final current = SeasonService().getCurrentRace(seasonData);
+        if (current != null) {
+          final raceId = SeasonService().raceDocumentId(
+            seasonData.id,
+            current.event,
+          );
+          final raceDoc = await FirebaseFirestore.instance
+              .collection('races')
+              .doc(raceId)
+              .get();
+
+          if (raceDoc.exists) {
+            final data = raceDoc.data()!;
+            if (data['qualifyingResults'] != null) {
+              final qResults = List<Map<String, dynamic>>.from(
+                data['qualifyingResults'],
+              );
+              for (var res in qResults) {
+                final dId = res['driverId'] as String;
+                final compoundName = res['tyreCompound'] as String?;
+                if (compoundName != null) {
+                  final compound = TyreCompound.values.firstWhere(
+                    (c) => c.name == compoundName,
+                    orElse: () => TyreCompound.soft,
+                  );
+                  _qualifyingBestCompounds[dId] = compound;
+
+                  // Force Qualy Best compound on Race Start (Rule)
+                  if (_driverRaceSetups.containsKey(dId)) {
+                    _driverRaceSetups[dId]!.tyreCompound = compound;
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+
+      // 6. Load practice results per driver
       await _loadPracticeResults();
 
-      // 6. Load division teams/drivers for qualifying results
+      // 7. Load division teams/drivers for qualifying results
       await _loadDivisionData();
     } catch (e) {
       debugPrint("Error loading garage data: $e");
@@ -2258,9 +2306,9 @@ class _GarageScreenState extends State<GarageScreen>
                 const SizedBox(width: 12),
                 Expanded(
                   child: Text(
-                    "Configure your race strategy setup. This setup will be used during the race itself. "
+                    "Configure your complete race strategy and driving styles. This setup will be used during the race itself. "
                     "Rule: Hard compound tyres MUST be used at least once during the race. "
-                    "Consider tyre wear and fuel consumption for the full race distance.",
+                    "Optimize fuel load, tyre choices, and driving aggression for each stint.",
                     style: theme.textTheme.bodyMedium,
                   ),
                 ),
@@ -2319,20 +2367,32 @@ class _GarageScreenState extends State<GarageScreen>
                 _updateCurrentDriverSetup(_currentDriverRaceSetup, tabIndex: 2);
               });
             },
+            onTyreChanged: (compound) {
+              setState(() {
+                _currentDriverRaceSetup.tyreCompound = compound;
+                _updateCurrentDriverSetup(_currentDriverRaceSetup, tabIndex: 2);
+              });
+            },
             onStyleChanged: (style) {
               setState(() {
                 _currentDriverRaceSetup.raceStyle = style;
                 _updateCurrentDriverSetup(_currentDriverRaceSetup, tabIndex: 2);
               });
             },
-            onPitStopsChanged: (List<TyreCompound> stops, List<double> fuels) {
-              setState(() {
-                final s = _currentDriverRaceSetup;
-                s.pitStops = stops;
-                s.pitStopFuel = fuels;
-                _updateCurrentDriverSetup(s, tabIndex: 2);
-              });
-            },
+            onPitStopsChanged:
+                (
+                  List<TyreCompound> stops,
+                  List<double> fuels,
+                  List<DriverStyle> styles,
+                ) {
+                  setState(() {
+                    final s = _currentDriverRaceSetup;
+                    s.pitStops = stops;
+                    s.pitStopFuel = fuels;
+                    s.pitStopStyles = styles;
+                    _updateCurrentDriverSetup(s, tabIndex: 2);
+                  });
+                },
           ),
           const SizedBox(height: 16),
 
@@ -3093,16 +3153,15 @@ class _GarageScreenState extends State<GarageScreen>
     required bool editable,
     required void Function(String field, int value) onChanged,
     required void Function(double liters) onInitialFuelChanged,
+    required void Function(TyreCompound compound) onTyreChanged,
     required void Function(DriverStyle style) onStyleChanged,
-    required void Function(List<TyreCompound> stops, List<double> fuels)
+    required void Function(
+      List<TyreCompound> stops,
+      List<double> fuels,
+      List<DriverStyle> styles,
+    )
     onPitStopsChanged,
   }) {
-    final driverId = _selectedDriverId;
-    final bestCompound = driverId != null
-        ? _qualifyingBestCompounds[driverId]
-        : null;
-    final initialTyre = bestCompound ?? setup.tyreCompound;
-
     Widget buildSlider(String label, int value, String fieldId) {
       return _buildCompactSlider(
         theme,
@@ -3113,55 +3172,66 @@ class _GarageScreenState extends State<GarageScreen>
     }
 
     Widget buildFuelInput(double value, void Function(double) onFuelChanged) {
-      return _FuelInput(
+      return FuelInput(
         value: value,
         onChanged: onFuelChanged,
         enabled: editable,
       );
     }
 
-    Widget buildStyleDropdown(
+    Widget buildStyleSelector(
       DriverStyle currentStyle,
       void Function(DriverStyle) onStyleChanged,
     ) {
       final styles = [
-        DriverStyle.defensive,
-        DriverStyle.normal,
-        DriverStyle.offensive,
+        (
+          DriverStyle.defensive,
+          Icons.keyboard_arrow_down,
+          const Color(0xFF42A5F5),
+        ),
+        (DriverStyle.normal, Icons.remove, const Color(0xFF00C853)),
+        (
+          DriverStyle.offensive,
+          Icons.keyboard_arrow_up,
+          const Color(0xFFFF9800),
+        ),
+        (
+          DriverStyle.mostRisky,
+          Icons.keyboard_double_arrow_up,
+          const Color(0xFFFF3D3D),
+        ),
       ];
-      return Container(
-        padding: const EdgeInsets.symmetric(horizontal: 8),
-        height: 28,
-        decoration: BoxDecoration(
-          color: Colors.white.withValues(alpha: 0.05),
-          borderRadius: BorderRadius.circular(4),
-          border: Border.all(color: Colors.white.withValues(alpha: 0.1)),
-        ),
-        child: DropdownButtonHideUnderline(
-          child: DropdownButton<DriverStyle>(
-            value: currentStyle == DriverStyle.mostRisky
-                ? DriverStyle.offensive
-                : currentStyle,
-            dropdownColor: const Color(0xFF1A1A1A),
-            icon: const Icon(
-              Icons.arrow_drop_down,
-              size: 14,
-              color: Colors.white38,
+
+      return Row(
+        mainAxisSize: MainAxisSize.min,
+        children: styles.map((s) {
+          final isSelected = currentStyle == s.$1;
+          return MouseRegion(
+            cursor: SystemMouseCursors.click,
+            child: GestureDetector(
+              onTap: editable ? () => onStyleChanged(s.$1) : null,
+              child: Container(
+                margin: const EdgeInsets.symmetric(horizontal: 2),
+                padding: const EdgeInsets.all(4),
+                decoration: BoxDecoration(
+                  color: isSelected
+                      ? s.$3.withValues(alpha: 0.2)
+                      : Colors.transparent,
+                  borderRadius: BorderRadius.circular(4),
+                  border: Border.all(
+                    color: isSelected ? s.$3 : Colors.white10,
+                    width: 1,
+                  ),
+                ),
+                child: Icon(
+                  s.$2,
+                  size: 14,
+                  color: isSelected ? s.$3 : Colors.white24,
+                ),
+              ),
             ),
-            style: const TextStyle(
-              fontSize: 10,
-              fontWeight: FontWeight.bold,
-              color: Colors.white70,
-            ),
-            onChanged: (val) {
-              if (val != null) onStyleChanged(val);
-            },
-            items: styles.map((s) {
-              String label = s.name.toUpperCase();
-              return DropdownMenuItem(value: s, child: Text(label));
-            }).toList(),
-          ),
-        ),
+          );
+        }).toList(),
       );
     }
 
@@ -3282,7 +3352,7 @@ class _GarageScreenState extends State<GarageScreen>
                               Row(
                                 children: [
                                   const SizedBox(
-                                    width: 70,
+                                    width: 75,
                                     child: Text(
                                       "RACE START",
                                       style: TextStyle(
@@ -3292,17 +3362,57 @@ class _GarageScreenState extends State<GarageScreen>
                                       ),
                                     ),
                                   ),
-                                  _buildSmallTyreIcon(initialTyre),
-                                  const SizedBox(width: 8),
+                                  // Tyre Selector for Start
+                                  Row(
+                                    children: TyreCompound.values.map((tc) {
+                                      final isSelected =
+                                          setup.tyreCompound == tc;
+                                      final tcColor = _getTyreColor(tc);
+                                      return Container(
+                                        margin: const EdgeInsets.only(right: 6),
+                                        padding: const EdgeInsets.all(4),
+                                        decoration: BoxDecoration(
+                                          color: isSelected
+                                              ? tcColor.withValues(alpha: 0.2)
+                                              : Colors.transparent,
+                                          shape: BoxShape.circle,
+                                          border: Border.all(
+                                            color: isSelected
+                                                ? tcColor
+                                                : Colors.white10,
+                                          ),
+                                        ),
+                                        child: Text(
+                                          tc.name[0].toUpperCase(),
+                                          style: TextStyle(
+                                            fontSize: 9,
+                                            fontWeight: FontWeight.bold,
+                                            color: isSelected
+                                                ? tcColor
+                                                : Colors.white24,
+                                          ),
+                                        ),
+                                      );
+                                    }).toList(),
+                                  ),
+                                  const SizedBox(width: 12),
                                   buildFuelInput(
                                     setup.initialFuel,
                                     onInitialFuelChanged,
                                   ),
                                   const SizedBox(width: 12),
-                                  Expanded(
-                                    child: buildStyleDropdown(
-                                      setup.raceStyle,
-                                      onStyleChanged,
+                                  buildStyleSelector(
+                                    setup.raceStyle,
+                                    onStyleChanged,
+                                  ),
+                                  const SizedBox(width: 8),
+                                  const Tooltip(
+                                    message:
+                                        "REGULATION: Start tyres are fixed. Drivers must start on the same compound used for their best qualifying lap.",
+                                    child: Icon(
+                                      Icons.lock_outline,
+                                      size: 10,
+                                      color: Colors.orangeAccent,
                                     ),
                                   ),
                                 ],
@@ -3347,6 +3457,7 @@ class _GarageScreenState extends State<GarageScreen>
                                             onPitStopsChanged(
                                               newStops,
                                               setup.pitStopFuel,
+                                              setup.pitStopStyles,
                                             );
                                           },
                                           child: Container(
@@ -3381,7 +3492,7 @@ class _GarageScreenState extends State<GarageScreen>
                                         );
                                       }).toList(),
                                     ),
-                                    const SizedBox(width: 8),
+                                    const SizedBox(width: 12),
                                     buildFuelInput(fuel, (v) {
                                       final newFuels = List<double>.from(
                                         setup.pitStopFuel,
@@ -3396,9 +3507,44 @@ class _GarageScreenState extends State<GarageScreen>
                                       onPitStopsChanged(
                                         setup.pitStops,
                                         newFuels,
+                                        setup.pitStopStyles,
                                       );
                                     }),
-                                    const Spacer(),
+                                    const SizedBox(width: 12),
+                                    buildStyleSelector(
+                                      setup.pitStopStyles.length > idx
+                                          ? setup.pitStopStyles[idx]
+                                          : DriverStyle.normal,
+                                      (newStyle) {
+                                        final newStyles =
+                                            List<DriverStyle>.from(
+                                              setup.pitStopStyles,
+                                            );
+                                        if (newStyles.length > idx) {
+                                          newStyles[idx] = newStyle;
+                                        } else {
+                                          while (newStyles.length <= idx)
+                                            newStyles.add(DriverStyle.normal);
+                                          newStyles[idx] = newStyle;
+                                        }
+                                        onPitStopsChanged(
+                                          setup.pitStops,
+                                          setup.pitStopFuel,
+                                          newStyles,
+                                        );
+                                      },
+                                    ),
+                                    const SizedBox(width: 8),
+                                    const Tooltip(
+                                      message:
+                                          "Strategy for this pit stop stint. Define tyres, fuel and style.",
+                                      child: Icon(
+                                        Icons.info_outline,
+                                        size: 10,
+                                        color: Colors.white24,
+                                      ),
+                                    ),
+                                    const SizedBox(width: 8),
                                     IconButton(
                                       icon: const Icon(
                                         Icons.remove_circle_outline,
@@ -3415,7 +3561,15 @@ class _GarageScreenState extends State<GarageScreen>
                                         final newFuels = List<double>.from(
                                           setup.pitStopFuel,
                                         )..removeAt(idx);
-                                        onPitStopsChanged(newStops, newFuels);
+                                        final newStyles =
+                                            List<DriverStyle>.from(
+                                              setup.pitStopStyles,
+                                            )..removeAt(idx);
+                                        onPitStopsChanged(
+                                          newStops,
+                                          newFuels,
+                                          newStyles,
+                                        );
                                       },
                                     ),
                                   ],
@@ -3434,7 +3588,14 @@ class _GarageScreenState extends State<GarageScreen>
                                     final newFuels = List<double>.from(
                                       setup.pitStopFuel,
                                     )..add(50.0);
-                                    onPitStopsChanged(newStops, newFuels);
+                                    final newStyles = List<DriverStyle>.from(
+                                      setup.pitStopStyles,
+                                    )..add(DriverStyle.normal);
+                                    onPitStopsChanged(
+                                      newStops,
+                                      newFuels,
+                                      newStyles,
+                                    );
                                   },
                                   icon: const Icon(Icons.add, size: 14),
                                   label: const Text(
@@ -4704,101 +4865,5 @@ class _GarageScreenState extends State<GarageScreen>
       case TyreCompound.wet:
         return Colors.blue;
     }
-  }
-}
-
-class _FuelInput extends StatefulWidget {
-  final double value;
-  final ValueChanged<double> onChanged;
-  final bool enabled;
-
-  const _FuelInput({
-    required this.value,
-    required this.onChanged,
-    this.enabled = true,
-  });
-
-  @override
-  State<_FuelInput> createState() => _FuelInputState();
-}
-
-class _FuelInputState extends State<_FuelInput> {
-  late TextEditingController _controller;
-
-  @override
-  void initState() {
-    super.initState();
-    _controller = TextEditingController(text: widget.value.toStringAsFixed(1));
-  }
-
-  @override
-  void didUpdateWidget(_FuelInput oldWidget) {
-    super.didUpdateWidget(oldWidget);
-    if (widget.value != oldWidget.value) {
-      final currentTextValue = double.tryParse(_controller.text);
-      if (currentTextValue != widget.value) {
-        _controller.text = widget.value.toStringAsFixed(1);
-      }
-    }
-  }
-
-  @override
-  void dispose() {
-    _controller.dispose();
-    super.dispose();
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      width: 65,
-      height: 28,
-      decoration: BoxDecoration(
-        color: Colors.white.withValues(alpha: 0.05),
-        borderRadius: BorderRadius.circular(4),
-        border: Border.all(color: Colors.white.withValues(alpha: 0.1)),
-      ),
-      child: Row(
-        children: [
-          Expanded(
-            child: TextField(
-              enabled: widget.enabled,
-              keyboardType: const TextInputType.numberWithOptions(
-                decimal: true,
-              ),
-              textAlign: TextAlign.center,
-              style: const TextStyle(
-                fontSize: 11,
-                fontWeight: FontWeight.bold,
-                color: Colors.orange,
-              ),
-              decoration: const InputDecoration(
-                border: InputBorder.none,
-                isDense: true,
-                contentPadding: EdgeInsets.zero,
-              ),
-              controller: _controller,
-              onChanged: (v) {
-                final d = double.tryParse(v);
-                if (d != null) {
-                  widget.onChanged(d);
-                }
-              },
-            ),
-          ),
-          const Padding(
-            padding: EdgeInsets.only(right: 6),
-            child: Text(
-              "L",
-              style: TextStyle(
-                fontSize: 8,
-                color: Colors.white24,
-                fontWeight: FontWeight.bold,
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
   }
 }

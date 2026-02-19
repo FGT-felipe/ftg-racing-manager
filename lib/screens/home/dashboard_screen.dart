@@ -102,6 +102,28 @@ class DashboardScreen extends StatelessWidget {
                       if (v is int) totalPracticeLaps += v;
                     }
 
+                    // Check driver setups status for real-time checklist
+                    final driverSetups =
+                        team.weekStatus['driverSetups']
+                            as Map<String, dynamic>? ??
+                        {};
+
+                    // READY if at least one driver has done it (or check both if we want perfect completeness)
+                    final bool isQualySetupReady =
+                        driverSetups.values.any(
+                          (d) =>
+                              (d as Map<String, dynamic>)['qualifying'] != null,
+                        ) ||
+                        team.weekStatus['qualifyingSetup'] != null;
+
+                    final bool isRaceStrategyReady =
+                        driverSetups.values.any(
+                          (d) =>
+                              (d as Map<String, dynamic>)['raceSubmitted'] ==
+                              true,
+                        ) ||
+                        team.weekStatus['raceStrategy'] == true;
+
                     void onHeroAction() {
                       if (onNavigate != null) {
                         if (currentStatus == RaceWeekStatus.race) {
@@ -188,12 +210,8 @@ class DashboardScreen extends StatelessWidget {
                                 final isDesktop = constraints.maxWidth > 800;
 
                                 final cardChecklist = PreparationChecklist(
-                                  setupSubmitted:
-                                      team.weekStatus['qualifyingSetup'] !=
-                                          null &&
-                                      totalPracticeLaps >= 1,
-                                  strategySubmitted:
-                                      team.weekStatus['raceStrategy'] != null,
+                                  setupSubmitted: isQualySetupReady,
+                                  strategySubmitted: isRaceStrategyReady,
                                   completedLaps: totalPracticeLaps,
                                   totalLaps: kMaxPracticeLapsPerDriver * 2,
                                 );
