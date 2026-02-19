@@ -21,7 +21,7 @@ import '../../utils/app_constants.dart';
 
 class DashboardScreen extends StatelessWidget {
   final String teamId;
-  final Function(int)? onNavigate;
+  final Function(String)? onNavigate;
 
   const DashboardScreen({super.key, required this.teamId, this.onNavigate});
 
@@ -129,9 +129,9 @@ class DashboardScreen extends StatelessWidget {
                     void onHeroAction() {
                       if (onNavigate != null) {
                         if (currentStatus == RaceWeekStatus.race) {
-                          onNavigate!(5); // Index 5 is Race Day
+                          onNavigate!('racing_day');
                         } else {
-                          onNavigate!(4); // Index 4 is Paddock/Padock
+                          onNavigate!('racing_setup');
                         }
                       } else {
                         // Fallback in case onNavigate is not provided
@@ -183,6 +183,10 @@ class DashboardScreen extends StatelessWidget {
                       }
                     }
 
+                    final circuitProfile = CircuitService().getCircuitProfile(
+                      circuitId,
+                    );
+
                     return SafeArea(
                       child: SingleChildScrollView(
                         padding: const EdgeInsets.symmetric(
@@ -204,6 +208,18 @@ class DashboardScreen extends StatelessWidget {
                               flagEmoji: flagEmoji,
                               targetDate: targetDate,
                               onActionPressed: onHeroAction,
+                              totalLaps: currentRace?.event.totalLaps ?? 50,
+                              weatherPractice:
+                                  currentRace?.event.weatherPractice ?? 'Sunny',
+                              weatherQualifying:
+                                  currentRace?.event.weatherQualifying ??
+                                  'Cloudy',
+                              weatherRace:
+                                  currentRace?.event.weatherRace ?? 'Sunny',
+                              characteristics: circuitProfile.characteristics,
+                              aeroWeight: circuitProfile.aeroWeight,
+                              chassisWeight: circuitProfile.chassisWeight,
+                              powertrainWeight: circuitProfile.powertrainWeight,
                             ),
 
                             const SizedBox(height: 16),
@@ -218,49 +234,15 @@ class DashboardScreen extends StatelessWidget {
                                   totalLaps: kMaxPracticeLapsPerDriver * 2,
                                 );
 
-                                final circuitProfile = CircuitService()
-                                    .getCircuitProfile(circuitId);
-
-                                final cardCircuit = CircuitInfoCard(
-                                  circuitName: circuitName,
-                                  flagEmoji: flagEmoji,
-                                  totalLaps: currentRace?.event.totalLaps ?? 50,
-                                  weatherPractice:
-                                      currentRace?.event.weatherPractice ??
-                                      'Sunny',
-                                  weatherQualifying:
-                                      currentRace?.event.weatherQualifying ??
-                                      'Cloudy',
-                                  weatherRace:
-                                      currentRace?.event.weatherRace ?? 'Sunny',
-                                  characteristics:
-                                      circuitProfile.characteristics,
-                                  aeroWeight: circuitProfile.aeroWeight,
-                                  chassisWeight: circuitProfile.chassisWeight,
-                                  powertrainWeight:
-                                      circuitProfile.powertrainWeight,
-                                );
-
                                 if (isDesktop) {
-                                  return IntrinsicHeight(
-                                    child: Row(
-                                      crossAxisAlignment:
-                                          CrossAxisAlignment.stretch,
-                                      children: [
-                                        Expanded(child: cardChecklist),
-                                        const SizedBox(width: 16),
-                                        Expanded(child: cardCircuit),
-                                      ],
-                                    ),
-                                  );
-                                } else {
-                                  return Column(
+                                  return Row(
                                     children: [
-                                      cardChecklist,
-                                      const SizedBox(height: 16),
-                                      cardCircuit,
+                                      Expanded(child: cardChecklist),
+                                      const Spacer(),
                                     ],
                                   );
+                                } else {
+                                  return cardChecklist;
                                 }
                               },
                             ),
@@ -269,7 +251,7 @@ class DashboardScreen extends StatelessWidget {
                               budget: team.budget,
                               onTap: () {
                                 if (onNavigate != null) {
-                                  onNavigate!(7); // Index 7 is Finances
+                                  onNavigate!('mgmt_finances');
                                   return;
                                 }
                                 if (team.id.isEmpty) {
