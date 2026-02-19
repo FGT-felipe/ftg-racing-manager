@@ -58,7 +58,7 @@ class AppTheme {
         color: secondaryButton, // Using secondary dark color for cards
         elevation: 2,
         shadowColor: Colors.black.withValues(alpha: 0.3),
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(100)),
         margin: EdgeInsets.zero,
       ),
 
@@ -86,9 +86,7 @@ class AppTheme {
           textStyle: WidgetStateProperty.all(
             GoogleFonts.raleway(fontWeight: FontWeight.bold),
           ),
-          shape: WidgetStateProperty.all(
-            RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-          ),
+          shape: WidgetStateProperty.all(const StadiumBorder()),
           padding: WidgetStateProperty.all(
             const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
           ),
@@ -105,9 +103,7 @@ class AppTheme {
                 width: 1,
               ),
               textStyle: GoogleFonts.raleway(fontWeight: FontWeight.bold),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(8),
-              ),
+              shape: const StadiumBorder(),
               padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
             ).copyWith(
               backgroundColor: WidgetStateProperty.resolveWith<Color>((states) {
@@ -115,6 +111,13 @@ class AppTheme {
                 return secondaryButton;
               }),
             ),
+      ),
+
+      textButtonTheme: TextButtonThemeData(
+        style: TextButton.styleFrom(
+          shape: const StadiumBorder(),
+          textStyle: GoogleFonts.raleway(fontWeight: FontWeight.bold),
+        ),
       ),
 
       bottomNavigationBarTheme: BottomNavigationBarThemeData(

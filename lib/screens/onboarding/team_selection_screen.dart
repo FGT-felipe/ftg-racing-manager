@@ -379,10 +379,6 @@ class _TeamSelectionCard extends StatelessWidget {
                 onPressed: onApply,
                 style: ElevatedButton.styleFrom(
                   backgroundColor: Theme.of(context).colorScheme.secondary,
-                  foregroundColor: Colors.black,
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(8),
-                  ),
                   padding: const EdgeInsets.symmetric(vertical: 10),
                 ),
                 child: const Text(

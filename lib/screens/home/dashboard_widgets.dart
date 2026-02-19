@@ -78,7 +78,7 @@ class StatusCard extends StatelessWidget {
       padding: const EdgeInsets.all(24),
       decoration: BoxDecoration(
         color: Theme.of(context).cardTheme.color,
-        borderRadius: BorderRadius.circular(8),
+        borderRadius: BorderRadius.circular(100),
         gradient: LinearGradient(
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
@@ -151,7 +151,7 @@ class FinanceCard extends StatelessWidget {
         padding: const EdgeInsets.all(20),
         decoration: BoxDecoration(
           color: const Color(0xFF121212),
-          borderRadius: BorderRadius.circular(12),
+          borderRadius: BorderRadius.circular(100),
           gradient: const LinearGradient(
             begin: Alignment.topLeft,
             end: Alignment.bottomRight,
@@ -172,7 +172,7 @@ class FinanceCard extends StatelessWidget {
               padding: const EdgeInsets.all(12),
               decoration: BoxDecoration(
                 color: color.withValues(alpha: 0.1),
-                borderRadius: BorderRadius.circular(12),
+                borderRadius: BorderRadius.circular(100),
                 border: Border.all(color: color.withValues(alpha: 0.3)),
               ),
               child: Icon(Icons.account_balance_wallet, color: color, size: 20),
@@ -247,7 +247,7 @@ class NewsItemCard extends StatelessWidget {
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
         color: Theme.of(context).cardTheme.color,
-        borderRadius: BorderRadius.circular(8),
+        borderRadius: BorderRadius.circular(100),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -298,7 +298,7 @@ class UpcomingCircuitCard extends StatelessWidget {
         width: double.infinity,
         padding: const EdgeInsets.all(20),
         decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(8),
+          borderRadius: BorderRadius.circular(100),
           gradient: const LinearGradient(
             colors: [Color(0xFF15151E), Color(0xFF292A33)],
             begin: Alignment.bottomLeft,
@@ -326,7 +326,7 @@ class UpcomingCircuitCard extends StatelessWidget {
                   ),
                   decoration: BoxDecoration(
                     color: Colors.white24,
-                    borderRadius: BorderRadius.circular(8),
+                    borderRadius: BorderRadius.circular(100),
                   ),
                   child: Text(
                     countryCode.toUpperCase(),
@@ -503,7 +503,7 @@ class _RaceStatusHeroState extends State<RaceStatusHero>
       width: double.infinity,
       decoration: BoxDecoration(
         color: const Color(0xFF121212),
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: BorderRadius.circular(100),
         gradient: const LinearGradient(
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
@@ -519,7 +519,7 @@ class _RaceStatusHeroState extends State<RaceStatusHero>
         ],
       ),
       child: ClipRRect(
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: BorderRadius.circular(100),
         child: Stack(
           children: [
             // Background Climate Icon
@@ -551,7 +551,7 @@ class _RaceStatusHeroState extends State<RaceStatusHero>
                         ),
                         decoration: BoxDecoration(
                           color: statusColor.withValues(alpha: 0.1),
-                          borderRadius: BorderRadius.circular(8),
+                          borderRadius: BorderRadius.circular(100),
                           border: Border.all(color: statusColor),
                         ),
                         child: Text(
@@ -716,7 +716,7 @@ class _RaceStatusHeroState extends State<RaceStatusHero>
                       _buildLiveIndicator(),
                       Container(
                         decoration: BoxDecoration(
-                          borderRadius: BorderRadius.circular(8),
+                          borderRadius: BorderRadius.circular(100),
                           gradient: const LinearGradient(
                             begin: Alignment.topLeft,
                             end: Alignment.bottomRight,
@@ -758,7 +758,7 @@ class _RaceStatusHeroState extends State<RaceStatusHero>
                               fontSize: 13,
                             ),
                             shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(8),
+                              borderRadius: BorderRadius.circular(100),
                             ),
                           ),
                         ),
@@ -816,7 +816,7 @@ class _RaceStatusHeroState extends State<RaceStatusHero>
       padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
       decoration: BoxDecoration(
         color: Colors.white.withValues(alpha: 0.05),
-        borderRadius: BorderRadius.circular(4),
+        borderRadius: BorderRadius.circular(100),
         border: Border.all(color: Colors.white.withValues(alpha: 0.1)),
       ),
       child: Text(
@@ -872,7 +872,7 @@ class _RaceStatusHeroState extends State<RaceStatusHero>
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
       decoration: BoxDecoration(
         color: Colors.white.withValues(alpha: 0.03),
-        borderRadius: BorderRadius.circular(8),
+        borderRadius: BorderRadius.circular(100),
         border: Border.all(
           color: isLive
               ? const Color(0xFFFF5252).withValues(alpha: 0.2)
@@ -921,7 +921,7 @@ class _RaceStatusHeroState extends State<RaceStatusHero>
           padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
           decoration: BoxDecoration(
             color: Colors.white.withValues(alpha: 0.05),
-            borderRadius: BorderRadius.circular(8),
+            borderRadius: BorderRadius.circular(100),
           ),
           child: Text(
             value,
@@ -982,7 +982,7 @@ class PreparationChecklist extends StatelessWidget {
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
         color: const Color(0xFF121212),
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: BorderRadius.circular(100),
         gradient: const LinearGradient(
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
@@ -1060,7 +1060,7 @@ class PreparationChecklist extends StatelessWidget {
           padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
           decoration: BoxDecoration(
             color: color.withValues(alpha: 0.1),
-            borderRadius: BorderRadius.circular(4),
+            borderRadius: BorderRadius.circular(100),
             border: Border.all(color: color.withValues(alpha: 0.5)),
           ),
           child: Row(

@@ -29,7 +29,7 @@ class DriverCard extends StatelessWidget {
     return Card(
       elevation: 4,
       margin: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
       clipBehavior: Clip.antiAlias,
       child: Container(
         decoration: BoxDecoration(
@@ -227,8 +227,8 @@ class DriverCard extends StatelessWidget {
                     fontSize: 10,
                     fontWeight: FontWeight.bold,
                   ),
-                  shape: const RoundedRectangleBorder(
-                    borderRadius: BorderRadius.zero,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
                   ),
                 ),
                 child: const FittedBox(
@@ -247,8 +247,8 @@ class DriverCard extends StatelessWidget {
                     fontSize: 10,
                     fontWeight: FontWeight.bold,
                   ),
-                  shape: const RoundedRectangleBorder(
-                    borderRadius: BorderRadius.zero,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
                   ),
                 ),
                 child: const FittedBox(
