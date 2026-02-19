@@ -74,5 +74,74 @@
   "circuitIndianapolis": "Indianapolis Motor Speedway",
   "circuitMontreal": "Circuit Gilles Villeneuve",
   "circuitTexas": "Circuit of the Americas",
-  "circuitBuenosAires": "Autódromo Oscar y Juan Gálvez"
+  "circuitBuenosAires": "Autódromo Oscar y Juan Gálvez",
+  "pitBoardTitle": "PIT BOARD",
+  "pitBoardLeftPits": "{name} left the pits",
+  "@pitBoardLeftPits": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "pitBoardStartingPractice": "{name} is starting practice series",
+  "@pitBoardStartingPractice": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "pitBoardOnLap": "{name} is on lap {current}/{total}",
+  "@pitBoardOnLap": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      },
+      "current": {
+        "type": "int"
+      },
+      "total": {
+        "type": "int"
+      }
+    }
+  },
+  "pitBoardReturningPits": "{name} is returning to pits",
+  "@pitBoardReturningPits": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "pitBoardInGarage": "{name} is back in the garage",
+  "@pitBoardInGarage": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "pitBoardNewPB": "{name} NEW PERSONAL BEST: {time}",
+  "@pitBoardNewPB": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      },
+      "time": {
+        "type": "String"
+      }
+    }
+  },
+  "pitBoardNewTeamRecord": "{name} NEW TEAM RECORD: {time}",
+  "@pitBoardNewTeamRecord": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      },
+      "time": {
+        "type": "String"
+      }
+    }
+  }
 }

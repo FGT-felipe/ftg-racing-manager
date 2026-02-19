@@ -1,20 +1,32 @@
 enum TyreCompound { soft, medium, hard, wet }
 
+enum DriverStyle { defensive, normal, offensive, mostRisky }
+
 class CarSetup {
   int frontWing;
   int rearWing;
   int suspension;
   int gearRatio;
-  int tyrePressure;
   TyreCompound tyreCompound;
+  List<TyreCompound> pitStops;
+  double initialFuel;
+  List<double> pitStopFuel;
+  DriverStyle qualifyingStyle;
+  DriverStyle raceStyle;
+  List<DriverStyle> pitStopStyles;
 
   CarSetup({
     this.frontWing = 50,
     this.rearWing = 50,
     this.suspension = 50,
     this.gearRatio = 50,
-    this.tyrePressure = 50,
     this.tyreCompound = TyreCompound.medium,
+    this.pitStops = const [TyreCompound.hard], // Default 1 stop
+    this.initialFuel = 50.0,
+    this.pitStopFuel = const [50.0],
+    this.qualifyingStyle = DriverStyle.normal,
+    this.raceStyle = DriverStyle.normal,
+    this.pitStopStyles = const [DriverStyle.normal],
   });
 
   Map<String, dynamic> toMap() {
@@ -23,22 +35,60 @@ class CarSetup {
       'rearWing': rearWing,
       'suspension': suspension,
       'gearRatio': gearRatio,
-      'tyrePressure': tyrePressure,
       'tyreCompound': tyreCompound.name,
+      'pitStops': pitStops.map((e) => e.name).toList(),
+      'initialFuel': initialFuel,
+      'pitStopFuel': pitStopFuel,
+      'qualifyingStyle': qualifyingStyle.name,
+      'raceStyle': raceStyle.name,
+      'pitStopStyles': pitStopStyles.map((e) => e.name).toList(),
     };
   }
 
   factory CarSetup.fromMap(Map<String, dynamic> map) {
+    final pitStopsList = (map['pitStops'] as List? ?? [TyreCompound.hard.name])
+        .map(
+          (e) => TyreCompound.values.firstWhere(
+            (tc) => tc.name == e,
+            orElse: () => TyreCompound.medium,
+          ),
+        )
+        .toList();
+
     return CarSetup(
       frontWing: map['frontWing'] ?? 50,
       rearWing: map['rearWing'] ?? 50,
       suspension: map['suspension'] ?? 50,
       gearRatio: map['gearRatio'] ?? 50,
-      tyrePressure: map['tyrePressure'] ?? 50,
       tyreCompound: TyreCompound.values.firstWhere(
         (e) => e.name == (map['tyreCompound'] ?? 'medium'),
         orElse: () => TyreCompound.medium,
       ),
+      pitStops: pitStopsList,
+      initialFuel: (map['initialFuel'] ?? 50.0).toDouble(),
+      pitStopFuel:
+          (map['pitStopFuel'] as List?)
+              ?.map((e) => (e as num).toDouble())
+              .toList() ??
+          List.filled(pitStopsList.length, 50.0),
+      qualifyingStyle: DriverStyle.values.firstWhere(
+        (e) => e.name == (map['qualifyingStyle'] ?? 'normal'),
+        orElse: () => DriverStyle.normal,
+      ),
+      raceStyle: DriverStyle.values.firstWhere(
+        (e) => e.name == (map['raceStyle'] ?? 'normal'),
+        orElse: () => DriverStyle.normal,
+      ),
+      pitStopStyles:
+          (map['pitStopStyles'] as List?)
+              ?.map(
+                (e) => DriverStyle.values.firstWhere(
+                  (ds) => ds.name == e,
+                  orElse: () => DriverStyle.normal,
+                ),
+              )
+              .toList() ??
+          List.filled(pitStopsList.length, DriverStyle.normal),
     );
   }
 
@@ -47,16 +97,26 @@ class CarSetup {
     int? rearWing,
     int? suspension,
     int? gearRatio,
-    int? tyrePressure,
     TyreCompound? tyreCompound,
+    List<TyreCompound>? pitStops,
+    double? initialFuel,
+    List<double>? pitStopFuel,
+    DriverStyle? qualifyingStyle,
+    DriverStyle? raceStyle,
+    List<DriverStyle>? pitStopStyles,
   }) {
     return CarSetup(
       frontWing: frontWing ?? this.frontWing,
       rearWing: rearWing ?? this.rearWing,
       suspension: suspension ?? this.suspension,
       gearRatio: gearRatio ?? this.gearRatio,
-      tyrePressure: tyrePressure ?? this.tyrePressure,
       tyreCompound: tyreCompound ?? this.tyreCompound,
+      pitStops: pitStops ?? this.pitStops,
+      initialFuel: initialFuel ?? this.initialFuel,
+      pitStopFuel: pitStopFuel ?? this.pitStopFuel,
+      qualifyingStyle: qualifyingStyle ?? this.qualifyingStyle,
+      raceStyle: raceStyle ?? this.raceStyle,
+      pitStopStyles: pitStopStyles ?? this.pitStopStyles,
     );
   }
 }
@@ -102,16 +162,40 @@ class PracticeRunResult {
   final double lapTime;
   final double gapToBest; // 0.0 if best
   final List<String> driverFeedback;
+  final List<String> tyreFeedback;
   final double setupConfidence; // 0.0 to 1.0
   final CarSetup setupUsed;
+  final bool isCrashed;
 
   PracticeRunResult({
     required this.lapTime,
     this.gapToBest = 0.0,
     required this.driverFeedback,
+    this.tyreFeedback = const [],
     required this.setupConfidence,
     required this.setupUsed,
+    this.isCrashed = false,
   });
+
+  PracticeRunResult copyWith({
+    double? lapTime,
+    double? gapToBest,
+    List<String>? driverFeedback,
+    List<String>? tyreFeedback,
+    double? setupConfidence,
+    CarSetup? setupUsed,
+    bool? isCrashed,
+  }) {
+    return PracticeRunResult(
+      lapTime: lapTime ?? this.lapTime,
+      gapToBest: gapToBest ?? this.gapToBest,
+      driverFeedback: driverFeedback ?? this.driverFeedback,
+      tyreFeedback: tyreFeedback ?? this.tyreFeedback,
+      setupConfidence: setupConfidence ?? this.setupConfidence,
+      setupUsed: setupUsed ?? this.setupUsed,
+      isCrashed: isCrashed ?? this.isCrashed,
+    );
+  }
 }
 
 class RaceEventLog {

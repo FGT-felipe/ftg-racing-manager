@@ -27,6 +27,10 @@ El sistema utiliza una paleta oscura moderna basada en un color de fondo profund
 | **Qualifying** | `#FFB800` | Sesión de clasificación, avisos o advertencias. |
 | **Race/Strategy** | `#FF5252` | Día de carrera, criticidad alta. |
 | **Neutral/Grey** | `#9E9E9E` | Deshabilitado, estados concluidos. |
+| **Onyx Background** | `#121212` | Fondo de paneles de telemetría y Pit Boards. |
+| **Onyx Gradient (Start)**| `#1E1E1E` | Inicio del degradado premium. |
+| **Onyx Gradient (End)** | `#0A0A0A` | Fin del degradado premium. |
+| **Telemetry Value** | `#FFD700` | Color dorado para tiempos y datos competitivos. |
 | **Driver Stats Scale** | *Ver abajo* | Representación visual del nivel de habilidad (0-20). |
 
 ### Escala de Color para Driver Stats (0-20)
@@ -122,6 +126,69 @@ Botón minimalista posicionado en el borde derecho del sidebar.
 - **Selection Outline**: Relación de 1px con el color `#secondary` para indicar foco activo.
 - **Sliders**: Tracks de color `#secondary` con fondos de carril muy sutiles (`alpha: 0.1`).
 
+#### 6. Paneles de Telemetría 'Onyx' (Pit Board & Results)
+Diseñados para representar datos críticos de carrera con un look de alta tecnología.
+- **Estética "Onyx Deep"**: Contenedores con degradado lineal (`TopLeft` a `BottomRight`) y bordes refinados de 1px con 10% de opacidad.
+- **Estandarización de Altura**: Uso mandatorio de `IntrinsicHeight` en filas de datos para asegurar que todos los "cajones" de telemetría tengan la misma altura visual.
+- **Pit Board Fields (Cajones de Datos)**:
+  - **Etiqueta**: Mayúsculas, 9px, `letterSpacing: 0.8`, opacidad 40%.
+  - **Valor**: `fontFamily: 'monospace'`, 15px+, `fontWeight: 900`, color `#FFD700` (Gold).
+  - **Padding**: Estándar de `8px vertical, 10px horizontal`.
+- **Tablas de Resultados y Práctica**:
+  - **Cabeceras**: Fondo sutil de `white.withOpacity(0.03)` y bordes inferiores de 1px.
+  - **Iconografía**: Uso de iconos específicos por sesión (Copa para Qualifying, Reloj para Practice).
+  - **Filas de Datos**: Altura optimizada para visualización densa, con `InkWell` para mostrar detalles del setup.
+  - **Resaltado (PB)**: Uso de colores de acento (Verde para PB, Purpura para Global Best) tanto en texto como en fondo de fila (opacidad 8%).
+
+#### 7. Tarjetas de Piloto 'Onyx' (Weekend Setup)
+Componente híbrido que combina identidad visual con telemetría de preparación.
+- **Estructura 35/65**: 
+  - **35% Izquierda**: Avatar a sangre (Portrait) con un degradado de transición hacia la zona de datos.
+  - **65% Derecha**: Contenedor de información con padding de 12px.
+- **Formato de Nombre**: Regla de visualización `[Inicial]. [Apellido]` (ej. "F. ALONSO").
+  - Estilo: Mayúsculas, `fontSize: 12-13px`, `fontWeight: 900`.
+- **Indicadores de Progreso**: Integración de la barra de fitness y contador de vueltas con iconos de telemetría.
+- **Interactividad**: Elevación y sombra dinámica en estado seleccionado, con un borde de 2px en el color primario del equipo.
+
+#### 8. Intel de Circuito 'Onyx' (Dynamic Weather)
+Visualización adaptativa que utiliza el clima actual como lenguaje visual.
+- **Estructura 35/65**:
+  - **35% Izquierda**: Fondo con un icono de clima centrado (120px) con opacidad del 15% y un matiz sutil del color de acento.
+  - **65% Derecha**: Información técnica (chips de características y enfoque de rendimiento).
+- **Lógica de Colores Dinámica**:
+  | Clima | Color de Acento | Tono Onyx (Gradient) | Ícono |
+  | :--- | :--- | :--- | :--- |
+  | **Soleado** | Naranja (`Amber`) | Cálido (Marrón Cálido `#453018` / Negro) | `wb_sunny` |
+  | **Lluvioso** | Gris (`Grey`) | Neutro (Gris/Negro) | `umbrella` |
+  | **Nublado/Sol** | Azul (`Blue`) | Frío (Azul/Negro) | `wb_cloudy` |
+  | **Nublado** | Gris Azulado (`BlueGrey`) | Mate (Acero/Negro) | `cloud` |
+- **Jerarquía**: El título "CIRCUIT INTEL" y el icono de info adoptan el color de acento para reforzar la temática climática.
+- **Optimización en Race Tab**: Para maximizar el espacio útil, el componente se posiciona en paralelo al selector de pilotos utilizando una distribución de `flex: 60/40`, permitiendo configurar la estrategia con todo el contexto visual en una sola fila.
+
+---
+
+#### 9. Tarjeta de Estrategia de Carrera 'Onyx'
+Diseñada para la configuración crítica pre-carrera, enfocada en la legibilidad y el orden de ejecución.
+- **Visuales**: Fondo Onyx Deep (`#121212`) con gradiente superior izquierdo a transparente y sombras pesadas (`blurRadius: 20`).
+- **Distribución 60/40**:
+  - **60% Izquierda**: Configuración del Coche (Alerones, Suspensión, etc.).
+  - **40% Derecha**: Estrategia de Paradas y Combustible.
+- **Aparciencia de Tabla**:
+  - Las filas de estrategia (Race Start, Stop 1, Stop 2) utilizan un fondo alternado para facilitar la lectura horizontal.
+  - **Fila Impar**: `Colors.white.withValues(alpha: 0.03)`
+  - **Fila Par**: `Colors.transparent`
+- **Inputs Aliniados a la Izquierda**: Todos los selectores de neumáticos y campos de combustible se alinean a la izquierda para mantener una columna visual limpia.
+- **Unidad de Combustible**: Estándar en **Litros (L)** con precisión de un decimal (ej. "50.0 L").
+
+#### 10. Intel de Circuito Cualitativo
+Evolución del sistema de información para aumentar el desafío estratégico.
+- **Categorización**: Sustitución de valores numéricos por etiquetas cualitativas:
+  - `Very Low`, `Low`, `Normal`, `High`, `Very High`.
+- **Organización en 3 Filas**:
+  - **Fila 1**: Vueltas Totales y Clima.
+  - **Fila 2**: Enfoque Técnico (Aero/Power) y Velocidad Punta (Top Speed).
+  - **Fila 3**: Desgaste de Neumáticos (Tyre Wear) y Consumo (Fuel).
+
 ---
 
 ## 4. Navegación Jerárquica
@@ -147,15 +214,20 @@ El sistema utiliza una arquitectura de información sin íconos (Icon-less), cen
 
 ## 5. Patrones de Feedback y Badges
 
-- **Diagonal Ribbon ("SOON")**: Indica características planificadas. Color: Rojo vibrante, texto blanco, fuente pequeña (8px) y Bold.
-- **Status Indicator ("CURRENT")**: Fondo sólido `Primary`, texto negro `8-10px Bold`. Utilizado en el calendario para resaltar la carrera activa.
-- **Checkmark Completion**: Ícono `check_circle` en color `Success` para tareas o eventos finalizados.
+- **Diagonal Ribbon ("SOON")**: Indica características planificadas. Color: Rojo vibrante, texto blanco.
+- **Status Indicator ("CURRENT")**: Fondo sólido `Primary`, texto negro.
+- **Checkmark Completion**: Ícono `check_circle` en color `Success`.
+- **Driver Style Badges**:
+  - **Defensive**: Azul (`shield`).
+  - **Normal**: Verde (`directions_car`).
+  - **Offensive**: Naranja (`flash_on`).
+  - **Risky**: Rojo (`warning`).
 
 ---
 
 ## 6. Layout
 
-- **MaxWidth (Desktop Content)**: 1400px (Centrado con `ConstrainedBox` para evitar estiramiento excesivo en monitores ultra-wide).
-- **Padding Lateral**: 20px (Dashboard/Hubs) / 16px (Vistas de detalle).
+- **MaxWidth (Desktop Content)**: 1400px.
+- **Padding Lateral**: 20px.
 - **Spacing vertical**: Sistema de 8px (8, 16, 24, 32).
-- **Responsive Shell**: Uso de `LayoutBuilder` para alternar entre Sidebar (Desktop) y BottomNav (Mobile) basado en un breakpoint de `600px` (ancho de tablet pequeña).
+- **Responsive Shell**: Breakpoint de `600px`.

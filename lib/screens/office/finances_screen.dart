@@ -178,6 +178,10 @@ class FinancesScreen extends StatelessWidget {
         icon = Icons.emoji_events_outlined;
         iconColor = Colors.amber;
         break;
+      case 'PRACTICE':
+        icon = Icons.directions_car_outlined;
+        iconColor = Colors.blueGrey;
+        break;
       default:
         icon = Icons.monetization_on_outlined;
         iconColor = Theme.of(context).colorScheme.secondary;

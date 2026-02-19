@@ -172,7 +172,7 @@ class Transaction {
   final String description;
   final int amount;
   final DateTime date;
-  final String type; // 'SPONSOR', 'SALARY', 'UPGRADE', 'REWARD'
+  final String type; // 'SPONSOR', 'SALARY', 'UPGRADE', 'REWARD', 'PRACTICE'
 
   Transaction({
     required this.id,
@@ -878,7 +878,10 @@ class Driver {
 
   factory Driver.fromMap(Map<String, dynamic> map) {
     // Migración: si tiene stats viejos (speed, racecraft, defending), convertirlos
-    Map<String, int> rawStats = Map<String, int>.from(map['stats'] ?? {});
+    // Safe parsing of stats from num to int
+    final Map<String, int> rawStats = (map['stats'] as Map? ?? {}).map(
+      (k, v) => MapEntry(k.toString(), (v as num).toInt()),
+    );
     final migratedStats = _migrateOldStats(rawStats);
 
     // Parsear traits
@@ -1009,6 +1012,57 @@ class Driver {
       weeklyGrowth: weeklyGrowth ?? this.weeklyGrowth,
       portraitUrl: portraitUrl ?? this.portraitUrl,
       statusTitle: statusTitle ?? this.statusTitle,
+    );
+  }
+}
+
+class AppNotification {
+  final String id;
+  final String title;
+  final String message;
+  final String type; // 'NEWS', 'ALERT', 'SUCCESS', 'TEAM'
+  final DateTime timestamp;
+  final bool isRead;
+  final String? actionRoute;
+
+  AppNotification({
+    required this.id,
+    required this.title,
+    required this.message,
+    required this.type,
+    required this.timestamp,
+    this.isRead = false,
+    this.actionRoute,
+  });
+
+  Map<String, dynamic> toMap() {
+    return {
+      'id': id,
+      'title': title,
+      'message': message,
+      'type': type,
+      'timestamp': timestamp.toIso8601String(),
+      'isRead': isRead,
+      'actionRoute': actionRoute,
+    };
+  }
+
+  factory AppNotification.fromMap(Map<String, dynamic> map) {
+    DateTime parseTs(dynamic ts) {
+      if (ts == null) return DateTime.now();
+      if (ts is Timestamp) return ts.toDate();
+      if (ts is String) return DateTime.tryParse(ts) ?? DateTime.now();
+      return DateTime.now();
+    }
+
+    return AppNotification(
+      id: map['id'] ?? '',
+      title: map['title'] ?? '',
+      message: map['message'] ?? '',
+      type: map['type'] ?? 'NEWS',
+      timestamp: parseTs(map['timestamp']),
+      isRead: map['isRead'] ?? false,
+      actionRoute: map['actionRoute'],
     );
   }
 }

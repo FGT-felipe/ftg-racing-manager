@@ -1,1 +1,1 @@
-const int kMaxPracticeLapsPerDriver = 6;
+const int kMaxPracticeLapsPerDriver = 60;

@@ -129,6 +129,25 @@ class AppTheme {
         ),
         unselectedLabelStyle: GoogleFonts.raleway(fontSize: 12),
       ),
+      tabBarTheme: TabBarThemeData(
+        indicatorSize: TabBarIndicatorSize.label,
+        dividerColor: Colors.transparent,
+        indicator: const UnderlineTabIndicator(
+          borderSide: BorderSide(color: accentHighlight, width: 2),
+        ),
+        labelStyle: GoogleFonts.poppins(
+          fontWeight: FontWeight.bold,
+          fontSize: 12,
+          letterSpacing: 1.1,
+        ),
+        unselectedLabelStyle: GoogleFonts.poppins(
+          fontWeight: FontWeight.bold,
+          fontSize: 12,
+          letterSpacing: 1.1,
+        ),
+        labelColor: accentHighlight,
+        unselectedLabelColor: textNormal.withOpacity(0.4),
+      ),
     );
   }
 }

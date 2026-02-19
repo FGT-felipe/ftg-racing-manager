@@ -849,79 +849,61 @@ class CircuitInfoCard extends StatelessWidget {
               ),
             ],
           ),
-          if (characteristics.isNotEmpty) ...[
-            const SizedBox(height: 16),
-            const Text(
-              "CIRCUIT INTEL",
-              style: TextStyle(
-                fontSize: 10,
-                fontWeight: FontWeight.bold,
-                color: Colors.grey,
-              ),
-            ),
-            const SizedBox(height: 12),
-            Wrap(
-              spacing: 8,
-              runSpacing: 8,
-              children: characteristics.entries.map((e) {
-                return Container(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 8,
-                    vertical: 4,
-                  ),
-                  decoration: BoxDecoration(
-                    color: Theme.of(
-                      context,
-                    ).colorScheme.secondary.withValues(alpha: 0.1),
-                    borderRadius: BorderRadius.circular(8),
-                    border: Border.all(
-                      color: Theme.of(
-                        context,
-                      ).colorScheme.secondary.withValues(alpha: 0.2),
-                    ),
-                  ),
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Text(
-                        "${e.key}: ",
-                        style: TextStyle(
-                          fontSize: 10,
-                          fontWeight: FontWeight.bold,
-                          color: Theme.of(context).colorScheme.secondary,
-                        ),
-                      ),
-                      Text(
-                        e.value,
-                        style: TextStyle(
-                          fontSize: 10,
-                          fontWeight: FontWeight.w600,
-                          color: Theme.of(context).textTheme.bodyMedium?.color,
-                        ),
-                      ),
-                    ],
-                  ),
-                );
-              }).toList(),
-            ),
-          ],
           const SizedBox(height: 16),
+
+          // Row 1: Laps & Weather (already exists as a structured row above, but let's conform)
+          // Actually, let's keep the existing Laps + P/Q/R row as Row 1.
           const Text(
-            "CAR PERFORMANCE FOCUS",
+            "CIRCUIT INTEL",
             style: TextStyle(
               fontSize: 10,
               fontWeight: FontWeight.bold,
               color: Colors.grey,
             ),
           ),
-          const SizedBox(height: 8),
-          Row(
+          const SizedBox(height: 12),
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              _buildFocusTag(context, "AERO", aeroWeight, Colors.blue),
-              const SizedBox(width: 8),
-              _buildFocusTag(context, "CHASSIS", chassisWeight, Colors.orange),
-              const SizedBox(width: 8),
-              _buildFocusTag(context, "POWER", powertrainWeight, Colors.red),
+              // Row 2: Aero, Powertrain, Top Speed
+              Row(
+                children: [
+                  if (aeroWeight >= 0.4) ...[
+                    _buildCompactChip(context, "AERO", "High Focus"),
+                    const SizedBox(width: 8),
+                  ],
+                  if (powertrainWeight >= 0.4) ...[
+                    _buildCompactChip(context, "POWER", "High Focus"),
+                    const SizedBox(width: 8),
+                  ],
+                  if (characteristics.containsKey('Top Speed'))
+                    _buildCompactChip(
+                      context,
+                      "TOP SPEED",
+                      characteristics['Top Speed']!,
+                    ),
+                ],
+              ),
+              const SizedBox(height: 8),
+              // Row 3: Tyre Wear, Fuel Consumption
+              Row(
+                children: [
+                  if (characteristics.containsKey('Tyre Wear')) ...[
+                    _buildCompactChip(
+                      context,
+                      "TYRE WEAR",
+                      characteristics['Tyre Wear']!,
+                    ),
+                    const SizedBox(width: 8),
+                  ],
+                  if (characteristics.containsKey('Fuel Consumption'))
+                    _buildCompactChip(
+                      context,
+                      "FUEL",
+                      characteristics['Fuel Consumption']!,
+                    ),
+                ],
+              ),
             ],
           ),
         ],
@@ -929,34 +911,33 @@ class CircuitInfoCard extends StatelessWidget {
     );
   }
 
-  Widget _buildFocusTag(
-    BuildContext context,
-    String label,
-    double weight,
-    Color color,
-  ) {
-    return Expanded(
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
+  Widget _buildCompactChip(BuildContext context, String label, String value) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+      decoration: BoxDecoration(
+        color: Theme.of(context).colorScheme.secondary.withValues(alpha: 0.1),
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(
+          color: Theme.of(context).colorScheme.secondary.withValues(alpha: 0.2),
+        ),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
         children: [
           Text(
-            label,
+            "$label: ",
             style: TextStyle(
-              fontSize: 9,
+              fontSize: 10,
               fontWeight: FontWeight.bold,
-              color: color,
+              color: Theme.of(context).colorScheme.secondary,
             ),
           ),
-          const SizedBox(height: 4),
-          ClipRRect(
-            borderRadius: BorderRadius.circular(2),
-            child: LinearProgressIndicator(
-              value:
-                  weight *
-                  2, // Multiply by 2 for better visibility as weights are small
-              backgroundColor: color.withValues(alpha: 0.1),
-              valueColor: AlwaysStoppedAnimation<Color>(color),
-              minHeight: 4,
+          Text(
+            value.toUpperCase(),
+            style: TextStyle(
+              fontSize: 10,
+              fontWeight: FontWeight.w600,
+              color: Theme.of(context).textTheme.bodyMedium?.color,
             ),
           ),
         ],

@@ -152,6 +152,19 @@ class DriverAssignmentService {
     return count;
   }
 
+  /// Obtiene pilotos de un equipo (Stream para tiempo real)
+  Stream<List<Driver>> streamDriversByTeam(String teamId) {
+    return _db
+        .collection('drivers')
+        .where('teamId', isEqualTo: teamId)
+        .snapshots()
+        .map((snapshot) {
+          return snapshot.docs
+              .map((doc) => Driver.fromMap({...doc.data(), 'id': doc.id}))
+              .toList();
+        });
+  }
+
   /// Obtiene pilotos de un equipo
   Future<List<Driver>> getDriversByTeam(String teamId) async {
     final snapshot = await _db

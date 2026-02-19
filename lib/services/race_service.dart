@@ -34,7 +34,6 @@ class RaceService {
       rearWing: (ideal.rearWing + dev()).clamp(0, 100),
       suspension: (ideal.suspension + dev()).clamp(0, 100),
       gearRatio: (ideal.gearRatio + dev()).clamp(0, 100),
-      tyrePressure: (ideal.tyrePressure + dev()).clamp(0, 100),
     );
   }
 
@@ -67,7 +66,11 @@ class RaceService {
           .get();
       for (var i = 0; i < driversSnapshot.docs.length; i++) {
         final driverDoc = driversSnapshot.docs[i];
-        final driver = Driver.fromMap({...driverDoc.data(), 'carIndex': i});
+        final driver = Driver.fromMap({
+          ...driverDoc.data(),
+          'id': driverDoc.id,
+          'carIndex': i,
+        });
 
         CarSetup driverSetup;
         if (team.isBot) {
@@ -100,6 +103,7 @@ class RaceService {
           'driverName': driver.name,
           'teamName': team.name,
           'lapTime': result.lapTime,
+          'tyreCompound': driverSetup.tyreCompound.name,
           'gap': 0.0, // Se calcula después de ordenar
         });
       }
@@ -121,23 +125,123 @@ class RaceService {
     // 6. Guardar parrilla en races/{raceId}
     await SeasonService().saveQualifyingGrid(raceId, qualyResults);
 
-    // 7. Increment Pole Stat for the winner
+    // 7. Increment Pole Stat and update player's weekStatus with best compound
     if (qualyResults.isNotEmpty) {
       final poleDriverId = qualyResults.first['driverId'] as String;
-      // We need the reference. This is a bit tricky since we don't have it here easily.
-      // But we can find which team is it from qualyResults or just run a query.
-      final teams = await _db.collection('teams').get();
-      for (var tDoc in teams.docs) {
-        final dDoc = await _db.collection('drivers').doc(poleDriverId).get();
+
+      // Update individual driver and team stats for pole
+      final poleDriverDoc = await _db
+          .collection('drivers')
+          .doc(poleDriverId)
+          .get();
+      if (poleDriverDoc.exists) {
+        await poleDriverDoc.reference.update({
+          'poles': FieldValue.increment(1),
+        });
+        final pTeamId = poleDriverDoc.data()!['teamId'] as String?;
+        if (pTeamId != null) {
+          await _db.collection('teams').doc(pTeamId).update({
+            'poles': FieldValue.increment(1),
+          });
+        }
+      }
+
+      // Update Player's weekStatus with qualifying best compounds (important for Strategy lockdown)
+      for (var res in qualyResults) {
+        final dId = res['driverId'] as String;
+        final compound = res['tyreCompound'] as String;
+
+        // Find which team this driver belongs to
+        final dDoc = await _db.collection('drivers').doc(dId).get();
         if (dDoc.exists) {
-          await dDoc.reference.update({'poles': FieldValue.increment(1)});
-          await tDoc.reference.update({'poles': FieldValue.increment(1)});
-          break;
+          final tId = dDoc.data()!['teamId'] as String?;
+          if (tId != null) {
+            final tRef = _db.collection('teams').doc(tId);
+            final tDoc = await tRef.get();
+            if (tDoc.exists && tDoc.data()!['isBot'] != true) {
+              await tRef.update({
+                'weekStatus.driverSetups.$dId.qualifyingBestCompound': compound,
+              });
+            }
+          }
         }
       }
     }
 
     return qualyResults;
+  }
+
+  Future<void> chargeActionCost(
+    String teamId,
+    String description,
+    int amount,
+    String type,
+  ) async {
+    await _db.collection('teams').doc(teamId).update({
+      'budget': FieldValue.increment(-amount),
+    });
+
+    final transactionId = _db
+        .collection('teams')
+        .doc(teamId)
+        .collection('transactions')
+        .doc()
+        .id;
+
+    await _db
+        .collection('teams')
+        .doc(teamId)
+        .collection('transactions')
+        .doc(transactionId)
+        .set({
+          'id': transactionId,
+          'description': description,
+          'amount': -amount,
+          'date': DateTime.now().toIso8601String(),
+          'type': type,
+        });
+  }
+
+  Future<void> chargeCrashPenalty(String teamId, String driverId) async {
+    // -$500k repairs, -$200k medical as per user request
+    const int repairCost = 500000;
+    const int medicalCost = 200000;
+    const int totalPenalty = repairCost + medicalCost;
+
+    await _db.collection('teams').doc(teamId).update({
+      'budget': FieldValue.increment(-totalPenalty),
+    });
+
+    // Log the transaction
+    final transactionId = _db
+        .collection('teams')
+        .doc(teamId)
+        .collection('transactions')
+        .doc()
+        .id;
+    await _db
+        .collection('teams')
+        .doc(teamId)
+        .collection('transactions')
+        .doc(transactionId)
+        .set({
+          'id': transactionId,
+          'description':
+              'Crash Penalties ($repairCost Repair + $medicalCost Medical)',
+          'amount': -totalPenalty,
+          'date': DateTime.now().toIso8601String(),
+          'type': 'REPAIR',
+        });
+
+    // Apply strong fitness penalty (-40 points)
+    final driverDoc = await _db.collection('drivers').doc(driverId).get();
+    if (driverDoc.exists) {
+      final stats = Map<String, int>.from(driverDoc.data()?['stats'] ?? {});
+      final currentFitness =
+          stats[DriverStats.fitness] ?? stats['fitness'] ?? 100;
+      stats['fitness'] = (currentFitness - 40).clamp(0, 100);
+      await driverDoc.reference.update({'stats': stats});
+    }
   }
 
   /// Simula una vuelta de práctica para un conductor específico con un setup dado
@@ -146,6 +250,7 @@ class RaceService {
     required Team team,
     required Driver driver,
     required CarSetup setup,
+    DriverStyle? styleOverride,
   }) {
     final random = Random();
     final ideal = circuit.idealSetup;
@@ -163,10 +268,15 @@ class RaceService {
 
     double setupPenalty = 0.0;
     List<String> feedback = [];
+    List<String> tyreFeedback = [];
 
     // Aero Front
-    int gapFront = setup.frontWing - ideal.frontWing;
-    setupPenalty += gapFront.abs() * 0.04 * aeroBonus;
+    int gapFront = (setup.frontWing - ideal.frontWing);
+    // 3-point dead zone to reduce micro-management frustration
+    double effectiveGapFront = (gapFront.abs() <= 3)
+        ? 0
+        : (gapFront.abs() - 3).toDouble();
+    setupPenalty += effectiveGapFront * 0.03 * aeroBonus;
     if (gapFront > 15) {
       feedback.add(
         "The front end is way too sharp, I'm fighting oversteer in every corner.",
@@ -177,7 +287,10 @@ class RaceService {
 
     // Aero Rear
     int gapRear = setup.rearWing - ideal.rearWing;
-    setupPenalty += gapRear.abs() * 0.04 * aeroBonus;
+    double effectiveGapRear = (gapRear.abs() <= 3)
+        ? 0
+        : (gapRear.abs() - 3).toDouble();
+    setupPenalty += effectiveGapRear * 0.03 * aeroBonus;
     if (gapRear > 15) {
       feedback.add(
         "We're slow on the straights, feels like we have a parachute attached.",
@@ -190,7 +303,10 @@ class RaceService {
 
     // Suspension
     int gapSusp = setup.suspension - ideal.suspension;
-    setupPenalty += gapSusp.abs() * 0.025 * chassisBonus;
+    double effectiveGapSusp = (gapSusp.abs() <= 3)
+        ? 0
+        : (gapSusp.abs() - 3).toDouble();
+    setupPenalty += effectiveGapSusp * 0.02 * chassisBonus;
     if (gapSusp > 15) {
       feedback.add(
         "The car is too stiff, it's bouncing like crazy over the kerbs.",
@@ -203,7 +319,10 @@ class RaceService {
 
     // Gear Ratio
     int gapGear = setup.gearRatio - ideal.gearRatio;
-    setupPenalty += gapGear.abs() * 0.035 * powerBonus;
+    double effectiveGapGear = (gapGear.abs() <= 3)
+        ? 0
+        : (gapGear.abs() - 3).toDouble();
+    setupPenalty += effectiveGapGear * 0.025 * powerBonus;
     if (gapGear > 15) {
       feedback.add(
         "The gears are too short, I'm hitting the limiter way before the end of the straight.",
@@ -213,113 +332,136 @@ class RaceService {
         "The gear ratios are too long, the acceleration out of slow corners is non-existent.",
       );
     }
-
-    // Tyre Pressure
-    int gapTyre = setup.tyrePressure - ideal.tyrePressure;
-    setupPenalty += gapTyre.abs() * 0.02 * chassisBonus;
-    if (gapTyre > 10) {
-      feedback.add(
-        "Tyre pressures are too high, they're overheating and losing grip after three corners.",
-      );
-    } else if (gapTyre < -10) {
-      feedback.add(
-        "I can't get any heat into the tyres, they feel stone cold.",
-      );
-    }
-
     // 2. Calcular Base Lap Time ajustado por el coche y conductor
-    // Car Score: Quality levels 1-20.
     double aeroVal = (stats['aero'] ?? 1).toDouble().clamp(1, 20);
     double powerVal = (stats['powertrain'] ?? 1).toDouble().clamp(1, 20);
     double chassisVal = (stats['chassis'] ?? 1).toDouble().clamp(1, 20);
 
-    // Performance factor logic using circuit weights
     double weightedStat =
         (aeroVal * circuit.aeroWeight) +
         (powerVal * circuit.powertrainWeight) +
         (chassisVal * circuit.chassisWeight);
 
-    // Weighted stat max is 20 if all stats are 20 and weights sum to 1.0.
-    // Factor impact is 25% (0.25)
     double carPerformanceFactor = 1.0 - ((weightedStat / 20.0) * 0.25);
 
-    // Determinar condiciones de lluvia (necesario antes del driver factor)
     final bool formIsWet =
         circuit.characteristics.containsKey('Weather') &&
         circuit.characteristics['Weather']!.contains('Rain');
 
-    // --- DRIVER PERFORMANCE (New 11-stat model) ---
-    // Braking: qué tan tarde frena (reduce tiempo en curvas)
     final braking = (driver.stats[DriverStats.braking] ?? 50) / 100.0;
-    // Cornering: velocidad de paso por curva
     final cornering = (driver.stats[DriverStats.cornering] ?? 50) / 100.0;
-    // Adaptability: ajuste al circuito y condiciones
     final adaptability = (driver.stats[DriverStats.adaptability] ?? 50) / 100.0;
-    // Focus: reduce errores bajo presión
-    final focus = (driver.stats[DriverStats.focus] ?? 50) / 100.0;
-    // Morale: impacto en rendimiento general
+    final focusVal = (driver.stats[DriverStats.focus] ?? 50) / 100.0;
     final morale = (driver.stats[DriverStats.morale] ?? 70) / 100.0;
+    final consistency = (driver.stats[DriverStats.consistency] ?? 50) / 100.0;
 
-    // Combinación ponderada de stats de conducción (impacto total: 8%)
     double driverFactor =
         1.0 -
         (braking * 0.02 +
             cornering * 0.025 +
             adaptability * 0.015 +
-            focus * 0.01 +
-            (morale - 0.5) * 0.01); // Morale: -0.5% a +0.5%
+            focusVal * 0.01 +
+            (morale - 0.5) * 0.01);
 
-    // Rasgo: Maestro de la Lluvia en condiciones húmedas
     if (formIsWet && driver.hasTrait(DriverTrait.rainMaster)) {
-      driverFactor -= 0.01; // Bonus adicional en lluvia
+      driverFactor -= 0.01;
+    }
+
+    // --- DRIVER STYLE LOGIC ---
+    double styleBonus = 0.0;
+    double fitnessCost = 1.0;
+    double accidentBaseRisk = 0.03; // 3% Normal
+
+    final effectiveStyle = styleOverride ?? setup.qualifyingStyle;
+
+    switch (effectiveStyle) {
+      case DriverStyle.defensive:
+        styleBonus = -0.01;
+        fitnessCost = 0.5;
+        accidentBaseRisk = 0.01;
+        break;
+      case DriverStyle.mostRisky:
+        styleBonus = 0.04; // Big bonus
+        fitnessCost = 5.0;
+        accidentBaseRisk = 0.20;
+        break;
+      case DriverStyle.offensive:
+        styleBonus = 0.02;
+        fitnessCost = 3.0;
+        accidentBaseRisk = 0.10;
+        break;
+      case DriverStyle.normal:
+        styleBonus = 0.0;
+        fitnessCost = 1.0;
+        accidentBaseRisk = 0.03;
+        break;
+    }
+
+    // Impact of stats on accident risk
+    // Low focus/consistency/fitness increases risk
+    double driverRiskFactor =
+        (1.0 - focusVal) * 0.5 +
+        (1.0 - consistency) * 0.3 +
+        (1.0 - morale) * 0.2;
+    double totalAccidentProb = accidentBaseRisk + (driverRiskFactor * 0.1);
+
+    // If fitness is already low, risk spikes
+    final currentFitness = driver.stats[DriverStats.fitness] ?? 100;
+    if (currentFitness < 40) {
+      totalAccidentProb *= 1.5;
+    }
+
+    bool hasCrashed = false;
+    // We only simulate crashes if it's NOT a practice run (optional, but let's apply it)
+    if (random.nextDouble() < totalAccidentProb) {
+      hasCrashed = true;
+    }
+
+    driverFactor -= styleBonus;
+
+    // Apply fitness cost
+    if (fitnessCost > 0) {
+      final currentFullFitness = driver.stats[DriverStats.fitness] ?? 100;
+      final newFitness = (currentFullFitness - fitnessCost.round()).clamp(
+        0,
+        100,
+      );
+      driver.stats[DriverStats.fitness] = newFitness;
     }
 
     double actualLapTime =
         circuit.baseLapTime * carPerformanceFactor * driverFactor;
 
-    // --- TYRE LOGIC ---
-    // User Request:
-    // Soft: +5 speed (approx -0.5s on lap time)
-    // Medium: +3 speed (approx -0.3s)
-    // Hard: +1 speed (approx -0.1s)
-    // Wet: +3 speed in wet (approx -0.3s in wet), but huge penalty in dry.
-
-    // For now assuming DRY conditions unless circuit says otherwise.
     double tyreDelta = 0.0;
-
     if (formIsWet) {
-      // WET CONDITIONS
       switch (setup.tyreCompound) {
         case TyreCompound.wet:
-          tyreDelta = -0.3; // Proper tyre for conditions
-          feedback.add("The wet tyres are working well in this rain.");
+          tyreDelta = -0.3;
+          tyreFeedback.add("The wet tyres are working well in this rain.");
           break;
         default:
-          // Dry tyres in wet -> DISASTER
           tyreDelta = 8.0;
-          feedback.add("I have zero grip! We need wet tyres immediately!");
-          setupPenalty += 5.0; // Extra penalty to setup confidence
+          tyreFeedback.add("I have zero grip! We need wet tyres immediately!");
+          setupPenalty += 5.0;
           break;
       }
     } else {
-      // DRY CONDITIONS (Default)
       switch (setup.tyreCompound) {
         case TyreCompound.soft:
           tyreDelta = -0.5;
-          feedback.add("Softs feel grippy and fast.");
+          tyreFeedback.add("Softs feel grippy and fast.");
           break;
         case TyreCompound.medium:
           tyreDelta = -0.3;
-          feedback.add("Mediums are a good balance.");
+          tyreFeedback.add("Mediums are a good balance.");
           break;
         case TyreCompound.hard:
           tyreDelta = -0.1;
-          feedback.add("Hards are a bit slow but durable.");
+          tyreFeedback.add("Hards are a bit slow but durable.");
           break;
         case TyreCompound.wet:
-          // Wet tyres in dry -> DISASTER penalty
           tyreDelta = 3.0;
-          feedback.add(
+          tyreFeedback.add(
             "Why are we on wets? The track is dry! I'm burning these up!",
           );
           setupPenalty += 2.0;
@@ -329,32 +471,25 @@ class RaceService {
 
     actualLapTime += tyreDelta;
 
-    // --- TYRE WEAR LOGIC ---
     double circuitWearFactor = circuit.tyreWearMultiplier;
-
-    // Compound wear factors (Relative)
     double compoundWearMod = 1.0;
     switch (setup.tyreCompound) {
       case TyreCompound.soft:
-        compoundWearMod = 1.5; // High wear
+        compoundWearMod = 1.5;
         break;
       case TyreCompound.medium:
-        compoundWearMod = 1.0; // Normal wear
+        compoundWearMod = 1.0;
         break;
       case TyreCompound.hard:
-        compoundWearMod = 0.7; // Low wear
+        compoundWearMod = 0.7;
         break;
       case TyreCompound.wet:
-        compoundWearMod = formIsWet ? 0.8 : 4.0; // Destroyed in dry
+        compoundWearMod = formIsWet ? 0.8 : 4.0;
         break;
     }
 
-    // Smoothness reduce el desgaste de neumáticos
-    // 100 smoothness = 30% menos desgaste; 0 smoothness = 20% más desgaste
     final smoothness = (driver.stats[DriverStats.smoothness] ?? 50) / 100.0;
-    final smoothnessMod = 1.0 - ((smoothness - 0.5) * 0.5); // 0.75 to 1.25
-
-    // Rasgo: Cuidador de Neumáticos reduce desgaste un 15%
+    final smoothnessMod = 1.0 - ((smoothness - 0.5) * 0.5);
     final tyreSaverMod = driver.hasTrait(DriverTrait.tyreSaver) ? 0.85 : 1.0;
 
     double wearIntensity =
@@ -362,28 +497,21 @@ class RaceService {
 
     if (wearIntensity > 1.8) {
       if (!formIsWet) {
-        feedback.add(
+        tyreFeedback.add(
           "I'm struggling with high degradation. These tyres won't last long here.",
         );
       }
       actualLapTime += 0.2;
     } else if (wearIntensity < 0.8) {
       if (!formIsWet) {
-        feedback.add(
+        tyreFeedback.add(
           "Tyre wear is non-existent. We could probably push harder or use softer compounds.",
         );
       }
     }
 
-    // Add Setup Penalty
     actualLapTime += setupPenalty;
 
-    // Add Randomness (Driver consistency + focus)
-    // Smoothness reduce el desgaste de neumáticos (ya aplicado arriba)
-    // Consistency reduce la variabilidad de tiempos
-    double consistency = (driver.stats[DriverStats.consistency] ?? 50) / 100.0;
-    double focusVal = (driver.stats[DriverStats.focus] ?? 50) / 100.0;
-    // Combinamos consistency y focus para reducir variabilidad
     double stabilityFactor = (consistency * 0.7 + focusVal * 0.3);
     double randomVariation =
         (random.nextDouble() - 0.5) * 1.2 * (1.0 - stabilityFactor);
@@ -391,64 +519,107 @@ class RaceService {
 
     // 3. Calcular Setup Confidence
     double totalGap =
-        (gapFront.abs() +
-                gapRear.abs() +
-                gapSusp.abs() +
-                gapGear.abs() +
-                gapTyre.abs())
+        (gapFront.abs() + gapRear.abs() + gapSusp.abs() + gapGear.abs())
             .toDouble();
-    double confidence = (1.0 - (totalGap / 120.0)).clamp(0.0, 1.0);
+    double confidence = (1.0 - (totalGap / 100.0)).clamp(0.0, 1.0);
 
-    if (feedback.isEmpty) {
-      if (confidence > 0.98) {
-        feedback.add(
-          "The balance is spot on! I wouldn't change a single thing.",
-        );
-      } else if (confidence > 0.92) {
-        feedback.add(
-          "The car feels excellent, only very minor tweaks could improve it.",
-        );
+    // Filter feedback based on feedback stat
+    final feedbackStat = (driver.stats[DriverStats.feedback] ?? 50);
+    List<String> nuancedFeedback = [];
+
+    if (feedback.isNotEmpty) {
+      // Keep only most relevant feedback if stat is low
+      if (feedbackStat < 40) {
+        nuancedFeedback = [feedback.first];
       } else {
-        // Find the part with the largest remaining gap
-        Map<String, int> gaps = {
-          "front wing": gapFront,
-          "rear wing": gapRear,
-          "suspension": gapSusp,
-          "gearing": gapGear,
-          "tyre pressures": gapTyre,
-        };
+        nuancedFeedback = feedback;
+      }
+    }
 
-        String worstPart = "";
-        int maxAbsGap = 0;
-        gaps.forEach((key, val) {
-          if (val.abs() > maxAbsGap) {
-            maxAbsGap = val.abs();
-            worstPart = key;
-          }
-        });
+    // 4. Handle Setup Feedback (even if tyre/wear feedback exists)
+    if (confidence >= 0.98) {
+      nuancedFeedback.add(
+        "The balance is spot on! I wouldn't change a single thing.",
+      );
+    } else if (confidence > 0.92) {
+      nuancedFeedback.add(
+        "The car feels excellent, only very minor tweaks could improve it.",
+      );
+    } else if (nuancedFeedback.length < 2) {
+      // Only add technical hints if we don't have too many messages already
+      // Find the part with the largest remaining gap
+      Map<String, int> gaps = {
+        "front wing": gapFront,
+        "rear wing": gapRear,
+        "suspension": gapSusp,
+        "gearing": gapGear,
+      };
 
-        int gapValue = gaps[worstPart]!;
-        if (gapValue > 5) {
-          feedback.add(
-            "I still feel $worstPart is a bit too high for this track.",
+      String worstPart = gaps.keys.first;
+      int maxAbsGap = -1;
+      gaps.forEach((key, val) {
+        if (val.abs() > maxAbsGap) {
+          maxAbsGap = val.abs();
+          worstPart = key;
+        }
+      });
+
+      int gapValue = gaps[worstPart]!;
+      bool isAccurate = random.nextInt(100) < feedbackStat;
+
+      if (isAccurate) {
+        if (gapValue > 10) {
+          nuancedFeedback.add(
+            "The $worstPart is way too high, it's killing the balance.",
           );
-        } else if (gapValue < -5) {
-          feedback.add(
-            "I think we could gain time by increasing the $worstPart.",
+        } else if (gapValue > 0) {
+          nuancedFeedback.add(
+            "I think reducing the $worstPart slightly would help.",
+          );
+        } else if (gapValue < -10) {
+          nuancedFeedback.add(
+            "The car needs a lot more $worstPart to feel stable.",
           );
         } else {
-          feedback.add(
-            "The setup is okay, but I feel there is still more potential in the car.",
+          nuancedFeedback.add(
+            "A bit more $worstPart could give me more confidence.",
+          );
+        }
+      } else {
+        if (feedbackStat < 30) {
+          nuancedFeedback.add(
+            "I'm not sure, the car just feels 'off' in the middle of the corners.",
+          );
+        } else if (nuancedFeedback.isEmpty) {
+          nuancedFeedback.add(
+            "The car is okay but we are missing some pace somewhere.",
           );
         }
       }
     }
 
+    if (nuancedFeedback.isEmpty) {
+      if (confidence >= 0.9) {
+        nuancedFeedback.add("The car feels very good out there.");
+      } else {
+        nuancedFeedback.add("We need to keep working on this setup.");
+      }
+    }
+
+    if (hasCrashed) {
+      nuancedFeedback.clear();
+      nuancedFeedback.add(
+        "I've lost the car! I'm in the wall... sorry guys, session is over.",
+      );
+    }
+
     return PracticeRunResult(
-      lapTime: actualLapTime,
-      driverFeedback: feedback,
+      lapTime: hasCrashed ? 999.0 : actualLapTime,
+      driverFeedback: nuancedFeedback,
+      tyreFeedback: tyreFeedback,
       setupConfidence: confidence,
       setupUsed: setup,
+      isCrashed: hasCrashed,
     );
   }
 
@@ -470,6 +641,26 @@ class RaceService {
         .toList();
     Map<String, double> totalTimes = {for (var id in currentOrder) id: 0.0};
     Map<String, double> tyreWear = {for (var id in currentOrder) id: 0.0};
+
+    // Track active compound, fuel, and style for each driver
+    Map<String, TyreCompound> activeCompounds = {
+      for (var id in currentOrder)
+        id: setupsMap[id]?.tyreCompound ?? TyreCompound.medium,
+    };
+    Map<String, double> fuelInTank = {
+      for (var id in currentOrder) id: setupsMap[id]?.initialFuel ?? 50.0,
+    };
+    Map<String, DriverStyle> activeStyles = {
+      for (var id in currentOrder)
+        id: setupsMap[id]?.raceStyle ?? DriverStyle.normal,
+    };
+
+    Map<String, int> stopsMade = {for (var id in currentOrder) id: 0};
+    Map<String, bool> usedHard = {
+      for (var id in currentOrder)
+        id: (setupsMap[id]?.tyreCompound == TyreCompound.hard),
+    };
+
     List<String> dnfs = [];
     List<LapData> raceLog = [];
 
@@ -484,42 +675,167 @@ class RaceService {
 
         final driver = driversMap[driverId]!;
         final team = teamsMap[driver.teamId!]!;
-        final setup = setupsMap[driverId]!;
+        final baseSetup = setupsMap[driverId]!;
+
+        // Use a stint setup with the currently active compound
+        final currentCompound = activeCompounds[driverId]!;
+        final stintSetup = baseSetup.copyWith(tyreCompound: currentCompound);
 
         // Base Performance
+        final currentStyle = activeStyles[driverId]!;
         PracticeRunResult baseRun = simulatePracticeRun(
           circuit: circuit,
           team: team,
           driver: driver,
-          setup: setup,
+          setup: stintSetup,
+          styleOverride: currentStyle,
         );
+
+        if (baseRun.isCrashed) {
+          dnfs.add(driverId);
+          lapEvents.add(
+            RaceEventLog(
+              lapNumber: lap,
+              driverId: driverId,
+              description: "CRASH: Retired from race",
+              type: "DNF",
+            ),
+          );
+          continue;
+        }
 
         double lapTime = baseRun.lapTime;
 
         // Tyre Wear Penalty
         double wear = tyreWear[driverId]!;
-        lapTime += pow(wear / 100.0, 2) * 5.0; // Exponential penalty
+        lapTime += pow(wear / 100.0, 2) * 8.0; // Wear impact
 
         // Fuel Effect (Car gets lighter)
-        // Fuel consumption affects how much time is gained as fuel is burned
-        lapTime -= (lap * 0.05 * circuit.fuelConsumptionMultiplier);
+        // Current weight = fuelInTank / max (assume ~100L max for 2s diff)
+        double fuelWeightPenalty = (fuelInTank[driverId]! / 100.0) * 1.5;
+        lapTime += fuelWeightPenalty;
 
-        // Pit Stop Logic
-        if (wear > 70) {
-          lapTime += 25.0; // Pit Time
-          tyreWear[driverId] = 0.0;
+        // Fuel Consumption
+        double baseFuelCons = 2.5 * circuit.fuelConsumptionMultiplier;
+        double styleFuelMod = 1.0;
+        double styleWearMod = 1.0;
+
+        switch (currentStyle) {
+          case DriverStyle.defensive:
+            styleFuelMod = 0.85;
+            styleWearMod = 0.75;
+            break;
+          case DriverStyle.offensive:
+            styleFuelMod = 1.15;
+            styleWearMod = 1.25;
+            break;
+          case DriverStyle.mostRisky:
+            styleFuelMod = 1.35;
+            styleWearMod = 1.6;
+            break;
+          case DriverStyle.normal:
+            styleFuelMod = 1.0;
+            styleWearMod = 1.0;
+            break;
+        }
+
+        fuelInTank[driverId] =
+            fuelInTank[driverId]! - (baseFuelCons * styleFuelMod);
+
+        // Out of Fuel Check (Penalty)
+        if (fuelInTank[driverId]! <= 0) {
+          lapTime += 10.0; // Limping
+          fuelInTank[driverId] = 0.5; // Avoid negative
           lapEvents.add(
             RaceEventLog(
               lapNumber: lap,
               driverId: driverId,
-              description: "Pit Stop",
+              description: "OUT OF FUEL: Limping to pits",
+              type: "INFO",
+            ),
+          );
+        }
+
+        // Pit Stop Logic
+        // Strategy: Pit if wear > 80% or if fuel is low (< baseConsumption * 2)
+        bool needsTyres = wear > 80;
+        bool needsFuel = fuelInTank[driverId]! < (baseFuelCons * 2.5);
+
+        if ((needsTyres || needsFuel) && lap < totalLaps) {
+          lapTime += 24.0 + random.nextDouble() * 2.0; // Pit Time
+          tyreWear[driverId] = 0.0;
+
+          int stopIdx = stopsMade[driverId]!;
+
+          // Refuel
+          final pitFuels = baseSetup.pitStopFuel;
+          double refuelingAmount = (stopIdx < pitFuels.length)
+              ? pitFuels[stopIdx]
+              : 50.0;
+          fuelInTank[driverId] = refuelingAmount;
+
+          // Select next compound and style
+          final plan = baseSetup.pitStops;
+          final stylePlan = baseSetup.pitStopStyles;
+
+          TyreCompound nextCompound;
+          DriverStyle nextStyle;
+
+          if (stopIdx < plan.length) {
+            nextCompound = plan[stopIdx];
+          } else {
+            if (!usedHard[driverId]!) {
+              nextCompound = TyreCompound.hard;
+            } else {
+              nextCompound = plan.isNotEmpty ? plan.last : TyreCompound.medium;
+            }
+          }
+
+          if (stopIdx < stylePlan.length) {
+            nextStyle = stylePlan[stopIdx];
+          } else {
+            nextStyle = DriverStyle.normal;
+          }
+
+          activeCompounds[driverId] = nextCompound;
+          activeStyles[driverId] = nextStyle;
+          stopsMade[driverId] = stopIdx + 1;
+          if (nextCompound == TyreCompound.hard) usedHard[driverId] = true;
+
+          lapEvents.add(
+            RaceEventLog(
+              lapNumber: lap,
+              driverId: driverId,
+              description:
+                  "Pit Stop (Refueled, ${nextCompound.name.toUpperCase()}, ${nextStyle.name.toUpperCase()})",
               type: "PIT",
             ),
           );
         } else {
-          // Add Wear based on circuit factor
+          // Add Wear
+          double compoundWearMod = 1.0;
+          switch (currentCompound) {
+            case TyreCompound.soft:
+              compoundWearMod = 1.6;
+              break;
+            case TyreCompound.medium:
+              compoundWearMod = 1.1;
+              break;
+            case TyreCompound.hard:
+              compoundWearMod = 0.7;
+              break;
+            case TyreCompound.wet:
+              compoundWearMod = 1.0;
+              break;
+          }
+
           tyreWear[driverId] =
-              wear + (3.0 * circuit.tyreWearMultiplier) + random.nextDouble();
+              wear +
+              (4.5 *
+                  circuit.tyreWearMultiplier *
+                  compoundWearMod *
+                  styleWearMod) +
+              random.nextDouble();
         }
 
         currentLapTimes[driverId] = lapTime;
@@ -568,6 +884,33 @@ class RaceService {
         ),
       );
     }
+
+    // 4. Verify Hard Compound Rule
+    for (var driverId in currentOrder) {
+      if (!dnfs.contains(driverId) && !usedHard[driverId]!) {
+        // Apply 35 second penalty for not using Hard compound
+        totalTimes[driverId] = totalTimes[driverId]! + 35.0;
+
+        // Log the penalty in the last lap
+        if (raceLog.isNotEmpty) {
+          raceLog.last.events.add(
+            RaceEventLog(
+              lapNumber: totalLaps,
+              driverId: driverId,
+              description: "35s PENALTY: Failed to use Hard compound",
+              type: "INFO",
+            ),
+          );
+        }
+      }
+    }
+
+    // Final Sort after penalties
+    currentOrder.sort((a, b) {
+      if (dnfs.contains(a)) return 1;
+      if (dnfs.contains(b)) return -1;
+      return totalTimes[a]!.compareTo(totalTimes[b]!);
+    });
 
     // Final Result
     Map<String, int> finalPositions = {};
