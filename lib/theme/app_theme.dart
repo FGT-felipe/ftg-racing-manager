@@ -58,7 +58,7 @@ class AppTheme {
         color: secondaryButton, // Using secondary dark color for cards
         elevation: 2,
         shadowColor: Colors.black.withValues(alpha: 0.3),
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(100)),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
         margin: EdgeInsets.zero,
       ),
 

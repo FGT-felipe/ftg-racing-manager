@@ -568,6 +568,9 @@ class _MainLayoutState extends State<MainLayout> {
                 context: context,
                 builder: (context) => AlertDialog(
                   backgroundColor: const Color(0xFF1A1A1A),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
                   title: Text(
                     'LOG OUT',
                     style: GoogleFonts.poppins(fontWeight: FontWeight.w900),

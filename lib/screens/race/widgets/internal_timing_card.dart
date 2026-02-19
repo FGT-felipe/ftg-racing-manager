@@ -118,7 +118,7 @@ class InternalTimingCard extends StatelessWidget {
                       ),
                       decoration: BoxDecoration(
                         color: const Color(0xFF00FF88).withValues(alpha: 0.1),
-                        borderRadius: BorderRadius.circular(8),
+                        borderRadius: BorderRadius.circular(12),
                       ),
                       child: Row(
                         children: [

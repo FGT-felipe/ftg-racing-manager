@@ -291,7 +291,7 @@ class _RaceStrategyScreenState extends State<RaceStrategyScreen> {
                 color: isSelected
                     ? s.$3.withValues(alpha: 0.2)
                     : Colors.transparent,
-                borderRadius: BorderRadius.circular(4),
+                borderRadius: BorderRadius.circular(12),
                 border: Border.all(
                   color: isSelected ? s.$3 : Colors.white10,
                   width: 1,
@@ -439,7 +439,7 @@ class _RaceStrategyScreenState extends State<RaceStrategyScreen> {
                       selectedColor: theme.colorScheme.secondary,
                       backgroundColor: theme.cardTheme.color,
                       shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(8),
+                        borderRadius: BorderRadius.circular(12),
                       ),
                       labelStyle: TextStyle(
                         color: isSelected
@@ -517,7 +517,7 @@ class _RaceStrategyScreenState extends State<RaceStrategyScreen> {
                           decoration: BoxDecoration(
                             color: theme.colorScheme.surfaceContainerHighest
                                 .withValues(alpha: 0.3),
-                            borderRadius: BorderRadius.circular(8),
+                            borderRadius: BorderRadius.circular(12),
                           ),
                           child: Row(
                             children: [
@@ -609,7 +609,7 @@ class _RaceStrategyScreenState extends State<RaceStrategyScreen> {
                             decoration: BoxDecoration(
                               color: theme.colorScheme.surfaceContainerHighest
                                   .withValues(alpha: 0.1),
-                              borderRadius: BorderRadius.circular(8),
+                              borderRadius: BorderRadius.circular(12),
                             ),
                             child: Row(
                               children: [

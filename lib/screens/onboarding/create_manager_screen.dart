@@ -377,7 +377,7 @@ class _CreateManagerScreenState extends State<CreateManagerScreen> {
                               foregroundColor: Colors.black,
                               elevation: 4,
                               shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(12),
+                                borderRadius: BorderRadius.circular(100),
                               ),
                             ),
                             child: const Text(
@@ -435,7 +435,7 @@ class _CreateManagerScreenState extends State<CreateManagerScreen> {
               padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
               decoration: BoxDecoration(
                 color: Colors.white,
-                borderRadius: BorderRadius.circular(4),
+                borderRadius: BorderRadius.circular(12),
               ),
               child: Text(label),
             )
@@ -453,15 +453,15 @@ class _CreateManagerScreenState extends State<CreateManagerScreen> {
       filled: true,
       fillColor: Colors.white,
       border: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: BorderRadius.circular(100),
         borderSide: BorderSide.none,
       ),
       enabledBorder: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: BorderRadius.circular(100),
         borderSide: BorderSide(color: Colors.white.withValues(alpha: 0.1)),
       ),
       focusedBorder: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: BorderRadius.circular(100),
         borderSide: BorderSide(
           color: Theme.of(context).colorScheme.secondary,
           width: 2,
@@ -489,7 +489,7 @@ class _CreateManagerScreenState extends State<CreateManagerScreen> {
                       context,
                     ).colorScheme.secondary.withValues(alpha: 0.1)
                   : Theme.of(context).cardTheme.color,
-              borderRadius: BorderRadius.circular(12),
+              borderRadius: BorderRadius.circular(100),
               border: Border.all(
                 color: isSelected
                     ? Theme.of(context).colorScheme.secondary
@@ -522,7 +522,7 @@ class _CreateManagerScreenState extends State<CreateManagerScreen> {
       height: 400,
       decoration: BoxDecoration(
         color: Theme.of(context).cardTheme.color,
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: BorderRadius.circular(100),
       ),
       clipBehavior: Clip.antiAlias,
       child: Row(

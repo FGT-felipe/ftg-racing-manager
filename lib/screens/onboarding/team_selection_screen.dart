@@ -265,7 +265,7 @@ class _TeamSelectionScreenState extends State<TeamSelectionScreen> {
                 padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                 decoration: BoxDecoration(
                   color: Colors.green.withValues(alpha: 0.2),
-                  borderRadius: BorderRadius.circular(4),
+                  borderRadius: BorderRadius.circular(12),
                   border: Border.all(color: Colors.green),
                 ),
                 child: const Text(
@@ -332,7 +332,7 @@ class _TeamSelectionCard extends StatelessWidget {
 
     return Card(
       color: Theme.of(context).cardTheme.color,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
       elevation: 4,
       child: Container(
         padding: const EdgeInsets.all(16),

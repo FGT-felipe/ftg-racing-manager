@@ -71,7 +71,8 @@ El sistema tipográfico utiliza una combinación de dos fuentes para separar la 
 ## 3. Elementos de UI y Componentes
 
 ### Tarjetas y Contenedores
-- **Border Radius**: 12px (Estándar global para tarjetas, botones, inputs y contenedores premium).
+- **Border Radius**: 12px (Estándar global para tarjetas, inputs y contenedores premium).
+- **Botones**: 100% (Estándar "Stadium" exclusivo para botones e indicadores de progreso).
 - **Elevación**: Sutil (Elevation 4), utilizando sombras con opacidad `0.3` sobre el fondo `#15151E`.
 - **Zebra Tables**: Las tablas de standings utilizan un fondo nulo para filas normales y un fondo `#secondary` con opacidad `0.15` para filas resaltadas.
 - **Highlighters**: Las filas seleccionadas o del jugador incluyen una **borde izquierdo de 4px** con el color `#secondary`.
@@ -122,7 +123,7 @@ Botón minimalista posicionado en el borde derecho del sidebar.
 - **Comportamiento**: Flota en el borde para permitir el colapsado total (ancho 0px). Incluye una rotación animada de la flecha indicadora.
 
 ### Interactividad (Buttons & Selectors)
-- **Elevated Buttons**: Altura generosa (12-16px padding vertical), 12px border radius. Look moderno de "Flat neumorphism".
+- **Elevated Buttons**: Altura generosa (12-16px padding vertical), 100% (Stadium) border radius. Look moderno de "Flat neumorphism".
 - **Selection Outline**: Relación de 1px con el color `#secondary` para indicar foco activo.
 - **Sliders**: Tracks de color `#secondary` con fondos de carril muy sutiles (`alpha: 0.1`).
 
@@ -193,7 +194,7 @@ Evolución del sistema de información para aumentar el desafío estratégico.
 
 #### 11. Botones 'Onyx' (Action Buttons)
 Utilizado para acciones de alta importancia donde se requiere un look industrial y tecnológico.
-- **Estilo**: Contenedor con gradiente lineal (`TopLeft` a `BottomRight`) de `#2A2A2A` a `#000000` y **12px border radius**.
+- **Estilo**: Contenedor con gradiente lineal (`TopLeft` a `BottomRight`) de `#2A2A2A` a `#000000` y **100% (Stadium) border radius**.
 - **Borde**: 1px sólido con el color de acento (`#00C853`) con opacidad del 30%.
 - **Sombra**: `blurRadius: 8`, `offset: (0, 4)` con 30% de opacidad negra.
 - **Contenido**: 
@@ -232,7 +233,7 @@ Componentes de navegación persistentes en la barra superior para gestión de id
   - **Texto**: "LOG OUT", `Poppins Bold`, 12px.
   - **Color (Normal)**: Blanco Muted (`rgba(255, 255, 255, 0.7)`).
 - **Estados de Interacción (:hover)**:
-  - **Account**: Fondo highlight sutil (`white.withOpacity(0.05)`) con el border-radius estándar de 12px.
+  - **Account**: Fondo highlight sutil (`white.withOpacity(0.05)`) con el border-radius de 12px.
   - **Log out**: El texto e icono cambian a rojo sólido (`#EF5350`) y se aplica un `overlayColor` rojo tenue (10% opacidad).
   - **Transformación**: Elevación visual mediante un cambio de opacidad del icono al 100%.
   - **Transición**: 200ms para suavidad.

@@ -196,7 +196,7 @@ class _SponsorshipScreenState extends State<SponsorshipScreen> {
               color: Theme.of(
                 context,
               ).colorScheme.secondary.withValues(alpha: 0.05),
-              borderRadius: BorderRadius.circular(8),
+              borderRadius: BorderRadius.circular(12),
             ),
             child: Column(
               children: [
@@ -377,7 +377,7 @@ class _SponsorshipScreenState extends State<SponsorshipScreen> {
           color: (hasContract || isSelected)
               ? color.withValues(alpha: 0.05)
               : Theme.of(context).cardTheme.color,
-          borderRadius: BorderRadius.circular(8),
+          borderRadius: BorderRadius.circular(12),
         ),
         child: Center(
           child: Column(
@@ -561,7 +561,7 @@ class _SponsorOfferCardState extends State<_SponsorOfferCard> {
       padding: const EdgeInsets.all(24),
       decoration: BoxDecoration(
         color: Theme.of(context).cardTheme.color,
-        borderRadius: BorderRadius.circular(8),
+        borderRadius: BorderRadius.circular(12),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -588,7 +588,7 @@ class _SponsorOfferCardState extends State<_SponsorOfferCard> {
                   ),
                   decoration: BoxDecoration(
                     color: Colors.green.withValues(alpha: 0.2),
-                    borderRadius: BorderRadius.circular(8),
+                    borderRadius: BorderRadius.circular(12),
                   ),
                   child: const Text(
                     "+15%",
@@ -725,7 +725,7 @@ class _SponsorOfferCardState extends State<_SponsorOfferCard> {
       style: OutlinedButton.styleFrom(
         side: BorderSide(color: color.withValues(alpha: 0.4)),
         padding: const EdgeInsets.symmetric(vertical: 12),
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(100)),
       ),
       child: Text(
         label,

@@ -131,7 +131,7 @@ class _AccountScreenState extends State<AccountScreen> {
                 side: const BorderSide(color: Colors.redAccent),
                 padding: const EdgeInsets.symmetric(vertical: 16),
                 shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12),
+                  borderRadius: BorderRadius.circular(100),
                 ),
               ),
             ),

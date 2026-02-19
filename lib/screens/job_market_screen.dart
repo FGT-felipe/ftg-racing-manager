@@ -263,7 +263,7 @@ class _TeamCard extends StatelessWidget {
                 onPressed: onSign,
                 style: ElevatedButton.styleFrom(
                   shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12),
+                    borderRadius: BorderRadius.circular(100),
                   ),
                 ),
                 child: Text(
