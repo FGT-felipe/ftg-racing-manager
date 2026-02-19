@@ -88,7 +88,7 @@ class EngineeringScreen extends StatelessWidget {
                       decoration: BoxDecoration(
                         color: Colors.orangeAccent.withValues(alpha: 0.1),
                         border: Border.all(color: Colors.orangeAccent),
-                        borderRadius: BorderRadius.circular(8),
+                        borderRadius: BorderRadius.circular(12),
                       ),
                       child: Row(
                         children: [
@@ -313,7 +313,7 @@ class _UpgradeTileState extends State<_UpgradeTile> {
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
         color: Theme.of(context).cardTheme.color,
-        borderRadius: BorderRadius.circular(8),
+        borderRadius: BorderRadius.circular(12),
         border: Border.all(color: Colors.white10),
       ),
       child: Column(

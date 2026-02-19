@@ -125,6 +125,14 @@ class AuthService {
   }
 
   Future<void> signOut() async {
+    try {
+      // Forzar desconexión total para limpiar caché de SSO en Web/Mobile
+      await _googleSignIn.disconnect();
+    } catch (e) {
+      debugPrint(
+        "Google disconnect error (likely not signed in with Google): $e",
+      );
+    }
     await _googleSignIn.signOut();
     await _auth.signOut();
   }

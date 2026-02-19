@@ -29,7 +29,7 @@ class DriverCard extends StatelessWidget {
     return Card(
       elevation: 4,
       margin: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
       clipBehavior: Clip.antiAlias,
       child: Container(
         decoration: BoxDecoration(
@@ -227,8 +227,8 @@ class DriverCard extends StatelessWidget {
                     fontSize: 10,
                     fontWeight: FontWeight.bold,
                   ),
-                  shape: const RoundedRectangleBorder(
-                    borderRadius: BorderRadius.zero,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(100),
                   ),
                 ),
                 child: const FittedBox(
@@ -247,8 +247,8 @@ class DriverCard extends StatelessWidget {
                     fontSize: 10,
                     fontWeight: FontWeight.bold,
                   ),
-                  shape: const RoundedRectangleBorder(
-                    borderRadius: BorderRadius.zero,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(100),
                   ),
                 ),
                 child: const FittedBox(
@@ -378,7 +378,7 @@ class DriverCard extends StatelessWidget {
                 ),
                 decoration: BoxDecoration(
                   color: theme.colorScheme.secondary.withValues(alpha: 0.15),
-                  borderRadius: BorderRadius.circular(4),
+                  borderRadius: BorderRadius.circular(12),
                   border: Border.all(
                     color: theme.colorScheme.secondary.withValues(alpha: 0.3),
                     width: 0.5,
@@ -646,7 +646,7 @@ class DriverCard extends StatelessWidget {
               height: 18,
               decoration: BoxDecoration(
                 color: theme.colorScheme.surfaceContainerHighest,
-                borderRadius: BorderRadius.circular(4),
+                borderRadius: BorderRadius.circular(100),
               ),
             ),
             Align(
@@ -657,7 +657,7 @@ class DriverCard extends StatelessWidget {
                   height: 18,
                   decoration: BoxDecoration(
                     color: statColor,
-                    borderRadius: BorderRadius.circular(4),
+                    borderRadius: BorderRadius.circular(100),
                     boxShadow: [
                       BoxShadow(
                         color: statColor.withValues(alpha: 0.3),
@@ -791,7 +791,7 @@ class DriverCard extends StatelessWidget {
         padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
         decoration: BoxDecoration(
           color: theme.colorScheme.secondary.withValues(alpha: 0.15),
-          borderRadius: BorderRadius.circular(4),
+          borderRadius: BorderRadius.circular(12),
           border: Border.all(
             color: theme.colorScheme.secondary.withValues(alpha: 0.3),
             width: 0.5,

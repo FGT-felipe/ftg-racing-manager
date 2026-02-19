@@ -371,7 +371,7 @@ class _LandingScreenState extends State<LandingScreen>
           backgroundColor: bg,
           elevation: 0,
           shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(16),
+            borderRadius: BorderRadius.circular(100),
             side: bg == Theme.of(context).cardColor
                 ? BorderSide(color: Colors.white10)
                 : BorderSide.none,

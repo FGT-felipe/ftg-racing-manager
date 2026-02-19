@@ -1251,7 +1251,7 @@ class _GarageScreenState extends State<GarageScreen>
                 ),
                 decoration: BoxDecoration(
                   border: Border.all(color: Colors.redAccent),
-                  borderRadius: BorderRadius.circular(8),
+                  borderRadius: BorderRadius.circular(12),
                 ),
                 child: const Text(
                   "PARC FERMÉ",
@@ -1306,7 +1306,7 @@ class _GarageScreenState extends State<GarageScreen>
                       padding: const EdgeInsets.all(12),
                       decoration: BoxDecoration(
                         color: theme.primaryColor.withValues(alpha: 0.1),
-                        borderRadius: BorderRadius.circular(8),
+                        borderRadius: BorderRadius.circular(12),
                         border: Border.all(
                           color: theme.primaryColor.withValues(alpha: 0.3),
                         ),
@@ -1480,7 +1480,7 @@ class _GarageScreenState extends State<GarageScreen>
                   padding: const EdgeInsets.all(16),
                   decoration: BoxDecoration(
                     color: Colors.red.withValues(alpha: 0.15),
-                    borderRadius: BorderRadius.circular(8),
+                    borderRadius: BorderRadius.circular(12),
                     border: Border.all(
                       color: Colors.red.withValues(alpha: 0.6),
                     ),
@@ -1552,7 +1552,7 @@ class _GarageScreenState extends State<GarageScreen>
                     color: isParcFerme
                         ? Colors.orange.withOpacity(0.08)
                         : const Color(0xFFFFB800).withOpacity(0.08),
-                    borderRadius: BorderRadius.circular(8),
+                    borderRadius: BorderRadius.circular(12),
                     border: Border.all(
                       color: isParcFerme
                           ? Colors.orange.withOpacity(0.4)
@@ -1600,7 +1600,7 @@ class _GarageScreenState extends State<GarageScreen>
                           Colors.green.withOpacity(0.05),
                         ],
                       ),
-                      borderRadius: BorderRadius.circular(8),
+                      borderRadius: BorderRadius.circular(12),
                       border: Border.all(color: Colors.green.withOpacity(0.3)),
                     ),
                     child: Row(
@@ -1933,7 +1933,7 @@ class _GarageScreenState extends State<GarageScreen>
       decoration: BoxDecoration(
         color: Colors.white.withOpacity(0.03),
         border: Border.all(color: Colors.white.withOpacity(0.1)),
-        borderRadius: BorderRadius.circular(8),
+        borderRadius: BorderRadius.circular(12),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -3217,7 +3217,7 @@ class _GarageScreenState extends State<GarageScreen>
                   color: isSelected
                       ? s.$3.withValues(alpha: 0.2)
                       : Colors.transparent,
-                  borderRadius: BorderRadius.circular(4),
+                  borderRadius: BorderRadius.circular(12),
                   border: Border.all(
                     color: isSelected ? s.$3 : Colors.white10,
                     width: 1,
@@ -3243,7 +3243,7 @@ class _GarageScreenState extends State<GarageScreen>
           color: isEven
               ? Colors.white.withValues(alpha: 0.03)
               : Colors.transparent,
-          borderRadius: BorderRadius.circular(4),
+          borderRadius: BorderRadius.circular(12),
         ),
         child: child,
       );
@@ -3911,7 +3911,7 @@ class _GarageScreenState extends State<GarageScreen>
                                                       : Colors.transparent,
                                                 ),
                                                 borderRadius:
-                                                    BorderRadius.circular(4),
+                                                    BorderRadius.circular(12),
                                               ),
                                               child: Text(
                                                 compound.name.toUpperCase(),
