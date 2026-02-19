@@ -218,6 +218,25 @@ Patrón de organización para pantallas de inicio.
   - **Mobile**: Columna simple con espaciado de `16px`.
 - **Consistencia**: Todas las tarjetas en esta sección deben compartir el mismo lenguaje visual 'Onyx' para coherencia estética.
 
+#### 14. Botones de Cuenta y Sesión (AppBar Actions)
+Componentes de navegación persistentes en la barra superior para gestión de identidad.
+- **Botón Account**:
+  - **Tipo**: `TextButton.icon`.
+  - **Icono**: `account_circle_outlined`.
+  - **Texto**: "ACCOUNT", `Poppins Bold`, 12px.
+  - **Color (Normal)**: Blanco (`#FFFFFF`).
+  - **Color (Activo/Abierto)**: Secondary/Accent (`#C1C4F4`).
+- **Botón Log out**:
+  - **Tipo**: `TextButton.icon`.
+  - **Icono**: `logout`.
+  - **Texto**: "LOG OUT", `Poppins Bold`, 12px.
+  - **Color**: Blanco Muted (`rgba(255, 255, 255, 0.7)`).
+- **Estados de Interacción (:hover)**:
+  - **Account**: Fondo highlight sutil (`white.withOpacity(0.05)`).
+  - **Log out**: El fondo cambia a un rojo tenue (`Error/Critical` con opacidad reducida) y el texto/ícono se vuelve rojo sólido.
+  - **Transformación**: Elevación visual mediante un cambio de opacidad del icono al 100%.
+  - **Transición**: 200ms para suavidad.
+
 ---
 
 ## 4. Navegación Jerárquica

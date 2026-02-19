@@ -19,7 +19,11 @@ import '../services/season_service.dart';
 import '../services/time_service.dart';
 import '../services/notification_service.dart';
 import '../models/core_models.dart';
+import '../models/user_model.dart';
 import '../widgets/notification_card.dart';
+import '../services/auth_service.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:intl/intl.dart';
 import 'dart:async';
 
 class NavNode {
@@ -51,6 +55,10 @@ class _MainLayoutState extends State<MainLayout> {
   StreamSubscription<List<AppNotification>>? _notificationSubscription;
   Set<String> _knownNotificationIds = {};
   bool _firstLoad = true;
+  AppUser? _appUser;
+  final LayerLink _accountLayerLink = LayerLink();
+  OverlayEntry? _accountOverlayEntry;
+  bool _isAccountCardOpen = false;
 
   late final List<NavNode> _navTree;
   late final List<NavNode> _flatLeaves;
@@ -170,6 +178,166 @@ class _MainLayoutState extends State<MainLayout> {
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _insertNotificationsOverlay();
     });
+    _fetchUserData();
+  }
+
+  Future<void> _fetchUserData() async {
+    final user = FirebaseAuth.instance.currentUser;
+    if (user != null) {
+      final appUser = await AuthService().getAppUser(user.uid);
+      if (mounted) {
+        setState(() {
+          _appUser = appUser;
+        });
+      }
+    }
+  }
+
+  void _toggleAccountCard() {
+    if (_isAccountCardOpen) {
+      _closeAccountCard();
+    } else {
+      _openAccountCard();
+    }
+  }
+
+  void _openAccountCard() {
+    _accountOverlayEntry = _createAccountOverlayEntry();
+    Overlay.of(context).insert(_accountOverlayEntry!);
+    setState(() {
+      _isAccountCardOpen = true;
+    });
+  }
+
+  void _closeAccountCard() {
+    _accountOverlayEntry?.remove();
+    _accountOverlayEntry = null;
+    setState(() {
+      _isAccountCardOpen = false;
+    });
+  }
+
+  OverlayEntry _createAccountOverlayEntry() {
+    return OverlayEntry(
+      builder: (context) => Stack(
+        children: [
+          GestureDetector(
+            onTap: _closeAccountCard,
+            behavior: HitTestBehavior.translucent,
+            child: Container(
+              color: Colors.transparent,
+              width: MediaQuery.of(context).size.width,
+              height: MediaQuery.of(context).size.height,
+            ),
+          ),
+          Positioned(
+            width: 320,
+            child: CompositedTransformFollower(
+              link: _accountLayerLink,
+              showWhenUnlinked: false,
+              offset: const Offset(
+                -250,
+                48,
+              ), // Adjust to show below and to the left
+              child: Material(
+                elevation: 8,
+                borderRadius: BorderRadius.circular(12),
+                color: const Color(0xFF1A1A1A), // Onyx background
+                child: Container(
+                  padding: const EdgeInsets.all(20),
+                  decoration: BoxDecoration(
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(
+                      color: Colors.white.withValues(alpha: 0.1),
+                    ),
+                  ),
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'ACCOUNT INFO',
+                        style: GoogleFonts.poppins(
+                          fontSize: 12,
+                          fontWeight: FontWeight.w900,
+                          color: Theme.of(context).colorScheme.secondary,
+                          letterSpacing: 1.2,
+                        ),
+                      ),
+                      const SizedBox(height: 16),
+                      _buildInfoRow(
+                        'Email',
+                        _appUser?.email ??
+                            FirebaseAuth.instance.currentUser?.email ??
+                            'N/A',
+                      ),
+                      const SizedBox(height: 12),
+                      _buildInfoRow(
+                        'Registered',
+                        _appUser != null
+                            ? DateFormat(
+                                'MMM dd, yyyy',
+                              ).format(_appUser!.registrationDate)
+                            : 'N/A',
+                      ),
+                      const SizedBox(height: 12),
+                      _buildInfoRow(
+                        'Last Session',
+                        FirebaseAuth
+                                    .instance
+                                    .currentUser
+                                    ?.metadata
+                                    .lastSignInTime !=
+                                null
+                            ? DateFormat('MMM dd, yyyy HH:mm').format(
+                                FirebaseAuth
+                                    .instance
+                                    .currentUser!
+                                    .metadata
+                                    .lastSignInTime!,
+                              )
+                            : 'N/A',
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildInfoRow(String label, String value) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          label.toUpperCase(),
+          style: GoogleFonts.raleway(
+            fontSize: 10,
+            fontWeight: FontWeight.bold,
+            color: Colors.white54,
+            letterSpacing: 1,
+          ),
+        ),
+        const SizedBox(height: 4),
+        Text(
+          value,
+          style: GoogleFonts.poppins(
+            fontSize: 14,
+            fontWeight: FontWeight.w500,
+            color: Colors.white,
+          ),
+        ),
+      ],
+    );
+  }
+
+  Future<void> _logout() async {
+    _closeAccountCard();
+    await AuthService().signOut();
   }
 
   void _insertNotificationsOverlay() {
@@ -358,11 +526,82 @@ class _MainLayoutState extends State<MainLayout> {
         elevation: 0,
         centerTitle: false,
         actions: [
-          IconButton(
-            icon: const Icon(Icons.account_circle_outlined),
-            onPressed: () {},
+          CompositedTransformTarget(
+            link: _accountLayerLink,
+            child: TextButton.icon(
+              onPressed: _toggleAccountCard,
+              icon: Icon(
+                Icons.account_circle_outlined,
+                color: _isAccountCardOpen
+                    ? theme.colorScheme.secondary
+                    : Colors.white,
+              ),
+              label: Text(
+                'ACCOUNT',
+                style: GoogleFonts.poppins(
+                  fontSize: 12,
+                  fontWeight: FontWeight.bold,
+                  color: _isAccountCardOpen
+                      ? theme.colorScheme.secondary
+                      : Colors.white,
+                ),
+              ),
+            ),
           ),
           const SizedBox(width: 8),
+          TextButton.icon(
+            style: TextButton.styleFrom(foregroundColor: Colors.white70)
+                .copyWith(
+                  foregroundColor: MaterialStateProperty.resolveWith<Color?>(
+                    (states) => states.contains(MaterialState.hovered)
+                        ? theme.colorScheme.error
+                        : Colors.white70,
+                  ),
+                  overlayColor: MaterialStateProperty.resolveWith<Color?>(
+                    (states) => states.contains(MaterialState.hovered)
+                        ? theme.colorScheme.error.withValues(alpha: 0.1)
+                        : null,
+                  ),
+                ),
+            onPressed: () {
+              showDialog(
+                context: context,
+                builder: (context) => AlertDialog(
+                  backgroundColor: const Color(0xFF1A1A1A),
+                  title: Text(
+                    'LOG OUT',
+                    style: GoogleFonts.poppins(fontWeight: FontWeight.w900),
+                  ),
+                  content: const Text('Are you sure you want to log out?'),
+                  actions: [
+                    TextButton(
+                      onPressed: () => Navigator.pop(context),
+                      child: const Text('CANCEL'),
+                    ),
+                    TextButton(
+                      onPressed: () {
+                        Navigator.pop(context);
+                        _logout();
+                      },
+                      child: Text(
+                        'LOG OUT',
+                        style: TextStyle(color: theme.colorScheme.error),
+                      ),
+                    ),
+                  ],
+                ),
+              );
+            },
+            icon: const Icon(Icons.logout), // Color handled by foregroundColor
+            label: Text(
+              'LOG OUT',
+              style: GoogleFonts.poppins(
+                fontSize: 12,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+          ),
+          const SizedBox(width: 16),
         ],
         bottom: PreferredSize(
           preferredSize: const Size.fromHeight(1.0),
