@@ -17,6 +17,9 @@ import '../widgets/common/app_logo.dart';
 import '../widgets/common/breadcrumbs.dart';
 import '../services/season_service.dart';
 import '../services/time_service.dart';
+import '../services/notification_service.dart';
+import '../models/core_models.dart';
+import '../widgets/notification_card.dart';
 import 'dart:async';
 
 class NavNode {
@@ -42,7 +45,12 @@ class _MainLayoutState extends State<MainLayout> {
   String _activeParentId = 'dashboard';
   bool _isCollapsed = false;
   bool _isRaceInProgress = false;
+  final List<AppNotification> _activeOverlayNotifications = [];
+  OverlayEntry? _notificationsOverlayEntry;
   Timer? _statusTimer;
+  StreamSubscription<List<AppNotification>>? _notificationSubscription;
+  Set<String> _knownNotificationIds = {};
+  bool _firstLoad = true;
 
   late final List<NavNode> _navTree;
   late final List<NavNode> _flatLeaves;
@@ -157,6 +165,84 @@ class _MainLayoutState extends State<MainLayout> {
     ];
 
     _flatLeaves = _getFlatLeaves(_navTree);
+    _setupNotificationListener();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _insertNotificationsOverlay();
+    });
+  }
+
+  void _insertNotificationsOverlay() {
+    _notificationsOverlayEntry = OverlayEntry(
+      builder: (context) => _buildNotificationsOverlay(context),
+    );
+    Overlay.of(context).insert(_notificationsOverlayEntry!);
+  }
+
+  Widget _buildNotificationsOverlay(BuildContext context) {
+    if (_activeOverlayNotifications.isEmpty) return const SizedBox.shrink();
+
+    return Positioned(
+      bottom: 24,
+      right: 24,
+      width: 400, // Slightly wider for better readability
+      child: Material(
+        color: Colors.transparent,
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.end,
+          children: _activeOverlayNotifications.reversed.map((notification) {
+            return Padding(
+              padding: const EdgeInsets.only(top: 12),
+              child: NotificationCard(
+                notification: notification,
+                onDismiss: () => _removeNotificationFromOverlay(notification),
+              ),
+            );
+          }).toList(),
+        ),
+      ),
+    );
+  }
+
+  void _removeNotificationFromOverlay(AppNotification notification) {
+    _activeOverlayNotifications.removeWhere((n) => n.id == notification.id);
+    _notificationsOverlayEntry?.markNeedsBuild();
+  }
+
+  void _setupNotificationListener() {
+    _notificationSubscription = NotificationService()
+        .getTeamNotifications(widget.teamId)
+        .listen((notifications) {
+          if (_firstLoad) {
+            _knownNotificationIds = notifications.map((n) => n.id).toSet();
+            _firstLoad = false;
+            return;
+          }
+
+          for (final n in notifications) {
+            if (!_knownNotificationIds.contains(n.id)) {
+              _knownNotificationIds.add(n.id);
+              // Only show if it's recent (e.g., < 1 minute old)
+              if (n.timestamp.isAfter(
+                DateTime.now().subtract(const Duration(minutes: 1)),
+              )) {
+                _showNotificationOverlay(n);
+                break; // Show only one at a time to avoid overlap
+              }
+            }
+          }
+        });
+  }
+
+  void _showNotificationOverlay(AppNotification notification) {
+    // Add to list
+    _activeOverlayNotifications.add(notification);
+    _notificationsOverlayEntry?.markNeedsBuild();
+
+    // Auto remove after 10 seconds
+    Future.delayed(const Duration(seconds: 10), () {
+      _removeNotificationFromOverlay(notification);
+    });
   }
 
   List<NavNode> _getFlatLeaves(List<NavNode> nodes) {
@@ -175,6 +261,9 @@ class _MainLayoutState extends State<MainLayout> {
   @override
   void dispose() {
     _statusTimer?.cancel();
+    _notificationSubscription?.cancel();
+    _notificationsOverlayEntry?.remove();
+    _notificationsOverlayEntry = null;
     super.dispose();
   }
 

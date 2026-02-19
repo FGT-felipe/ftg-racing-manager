@@ -161,4 +161,42 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get circuitBuenosAires => 'Autódromo Oscar y Juan Gálvez';
+
+  @override
+  String get pitBoardTitle => 'PIT BOARD';
+
+  @override
+  String pitBoardLeftPits(String name) {
+    return '$name left the pits';
+  }
+
+  @override
+  String pitBoardStartingPractice(String name) {
+    return '$name is starting practice series';
+  }
+
+  @override
+  String pitBoardOnLap(String name, int current, int total) {
+    return '$name is on lap $current/$total';
+  }
+
+  @override
+  String pitBoardReturningPits(String name) {
+    return '$name is returning to pits';
+  }
+
+  @override
+  String pitBoardInGarage(String name) {
+    return '$name is back in the garage';
+  }
+
+  @override
+  String pitBoardNewPB(String name, String time) {
+    return '$name NEW PERSONAL BEST: $time';
+  }
+
+  @override
+  String pitBoardNewTeamRecord(String name, String time) {
+    return '$name NEW TEAM RECORD: $time';
+  }
 }

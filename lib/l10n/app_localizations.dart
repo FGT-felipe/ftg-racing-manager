@@ -387,6 +387,54 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Autódromo Oscar y Juan Gálvez'**
   String get circuitBuenosAires;
+
+  /// No description provided for @pitBoardTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'PIT BOARD'**
+  String get pitBoardTitle;
+
+  /// No description provided for @pitBoardLeftPits.
+  ///
+  /// In en, this message translates to:
+  /// **'{name} left the pits'**
+  String pitBoardLeftPits(String name);
+
+  /// No description provided for @pitBoardStartingPractice.
+  ///
+  /// In en, this message translates to:
+  /// **'{name} is starting practice series'**
+  String pitBoardStartingPractice(String name);
+
+  /// No description provided for @pitBoardOnLap.
+  ///
+  /// In en, this message translates to:
+  /// **'{name} is on lap {current}/{total}'**
+  String pitBoardOnLap(String name, int current, int total);
+
+  /// No description provided for @pitBoardReturningPits.
+  ///
+  /// In en, this message translates to:
+  /// **'{name} is returning to pits'**
+  String pitBoardReturningPits(String name);
+
+  /// No description provided for @pitBoardInGarage.
+  ///
+  /// In en, this message translates to:
+  /// **'{name} is back in the garage'**
+  String pitBoardInGarage(String name);
+
+  /// No description provided for @pitBoardNewPB.
+  ///
+  /// In en, this message translates to:
+  /// **'{name} NEW PERSONAL BEST: {time}'**
+  String pitBoardNewPB(String name, String time);
+
+  /// No description provided for @pitBoardNewTeamRecord.
+  ///
+  /// In en, this message translates to:
+  /// **'{name} NEW TEAM RECORD: {time}'**
+  String pitBoardNewTeamRecord(String name, String time);
 }
 
 class _AppLocalizationsDelegate

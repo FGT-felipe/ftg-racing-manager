@@ -368,11 +368,6 @@ class _RaceStrategyScreenState extends State<RaceStrategyScreen> {
                 currentSetup.gearRatio,
                 (v) => setState(() => currentSetup.gearRatio = v),
               ),
-              _buildSlider(
-                "Tyre Pressure (Grip)",
-                currentSetup.tyrePressure,
-                (v) => setState(() => currentSetup.tyrePressure = v),
-              ),
             ],
 
             const SizedBox(height: 32),

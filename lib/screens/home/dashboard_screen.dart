@@ -13,6 +13,8 @@ import '../race/qualifying_screen.dart';
 import '../race/race_live_screen.dart';
 import '../race/race_strategy_screen.dart';
 import '../../services/circuit_service.dart';
+import '../../services/notification_service.dart';
+import '../../widgets/notification_card.dart';
 import '../../utils/app_constants.dart';
 
 class DashboardScreen extends StatelessWidget {
@@ -270,6 +272,87 @@ class DashboardScreen extends StatelessWidget {
                                 );
                               },
                             ),
+                            const SizedBox(height: 32),
+                            Text(
+                              "LATEST UPDATES",
+                              style: Theme.of(context).textTheme.labelLarge
+                                  ?.copyWith(
+                                    letterSpacing: 1.5,
+                                    color: Colors.grey,
+                                  ),
+                            ),
+                            const SizedBox(height: 16),
+
+                            StreamBuilder<List<AppNotification>>(
+                              stream: NotificationService()
+                                  .getTeamNotifications(teamId),
+                              builder: (context, notifSnapshot) {
+                                if (notifSnapshot.hasError) {
+                                  debugPrint(
+                                    "Notification stream error: ${notifSnapshot.error}",
+                                  );
+                                  return Text(
+                                    "Notifications unavailable",
+                                    style: TextStyle(
+                                      color: Colors.grey[600],
+                                      fontSize: 12,
+                                    ),
+                                  );
+                                }
+
+                                final notifications = notifSnapshot.data ?? [];
+                                debugPrint(
+                                  "Dashboard loaded ${notifications.length} notifications",
+                                );
+
+                                if (notifications.isEmpty) {
+                                  return Container(
+                                    padding: const EdgeInsets.all(24),
+                                    decoration: BoxDecoration(
+                                      color: Theme.of(
+                                        context,
+                                      ).cardTheme.color?.withOpacity(0.5),
+                                      borderRadius: BorderRadius.circular(12),
+                                      border: Border.all(
+                                        color: Colors.white.withOpacity(0.05),
+                                      ),
+                                    ),
+                                    child: Row(
+                                      children: [
+                                        Icon(
+                                          Icons.notifications_none_rounded,
+                                          color: Colors.grey[600],
+                                        ),
+                                        const SizedBox(width: 16),
+                                        Text(
+                                          "No new notifications",
+                                          style: TextStyle(
+                                            color: Colors.grey[600],
+                                            fontStyle: FontStyle.italic,
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  );
+                                }
+
+                                return Column(
+                                  children: notifications
+                                      .take(3)
+                                      .map(
+                                        (n) => NotificationCard(
+                                          notification: n,
+                                          onTap: () => NotificationService()
+                                              .markAsRead(teamId, n.id),
+                                          onDismiss: () => NotificationService()
+                                              .deleteNotification(teamId, n.id),
+                                        ),
+                                      )
+                                      .toList(),
+                                );
+                              },
+                            ),
+
                             const SizedBox(height: 32),
                             Text(
                               "PADDOCK RUMORS",

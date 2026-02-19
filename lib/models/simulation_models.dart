@@ -5,16 +5,16 @@ class CarSetup {
   int rearWing;
   int suspension;
   int gearRatio;
-  int tyrePressure;
   TyreCompound tyreCompound;
+  List<TyreCompound> pitStops;
 
   CarSetup({
     this.frontWing = 50,
     this.rearWing = 50,
     this.suspension = 50,
     this.gearRatio = 50,
-    this.tyrePressure = 50,
     this.tyreCompound = TyreCompound.medium,
+    this.pitStops = const [TyreCompound.hard], // Default 1 stop
   });
 
   Map<String, dynamic> toMap() {
@@ -23,8 +23,8 @@ class CarSetup {
       'rearWing': rearWing,
       'suspension': suspension,
       'gearRatio': gearRatio,
-      'tyrePressure': tyrePressure,
       'tyreCompound': tyreCompound.name,
+      'pitStops': pitStops.map((e) => e.name).toList(),
     };
   }
 
@@ -34,11 +34,18 @@ class CarSetup {
       rearWing: map['rearWing'] ?? 50,
       suspension: map['suspension'] ?? 50,
       gearRatio: map['gearRatio'] ?? 50,
-      tyrePressure: map['tyrePressure'] ?? 50,
       tyreCompound: TyreCompound.values.firstWhere(
         (e) => e.name == (map['tyreCompound'] ?? 'medium'),
         orElse: () => TyreCompound.medium,
       ),
+      pitStops: (map['pitStops'] as List? ?? [TyreCompound.hard.name])
+          .map(
+            (e) => TyreCompound.values.firstWhere(
+              (tc) => tc.name == e,
+              orElse: () => TyreCompound.medium,
+            ),
+          )
+          .toList(),
     );
   }
 
@@ -47,16 +54,16 @@ class CarSetup {
     int? rearWing,
     int? suspension,
     int? gearRatio,
-    int? tyrePressure,
     TyreCompound? tyreCompound,
+    List<TyreCompound>? pitStops,
   }) {
     return CarSetup(
       frontWing: frontWing ?? this.frontWing,
       rearWing: rearWing ?? this.rearWing,
       suspension: suspension ?? this.suspension,
       gearRatio: gearRatio ?? this.gearRatio,
-      tyrePressure: tyrePressure ?? this.tyrePressure,
       tyreCompound: tyreCompound ?? this.tyreCompound,
+      pitStops: pitStops ?? this.pitStops,
     );
   }
 }
@@ -102,6 +109,7 @@ class PracticeRunResult {
   final double lapTime;
   final double gapToBest; // 0.0 if best
   final List<String> driverFeedback;
+  final List<String> tyreFeedback;
   final double setupConfidence; // 0.0 to 1.0
   final CarSetup setupUsed;
 
@@ -109,6 +117,7 @@ class PracticeRunResult {
     required this.lapTime,
     this.gapToBest = 0.0,
     required this.driverFeedback,
+    this.tyreFeedback = const [],
     required this.setupConfidence,
     required this.setupUsed,
   });

@@ -16,7 +16,6 @@ class DriversScreen extends StatefulWidget {
 }
 
 class _DriversScreenState extends State<DriversScreen> {
-  late Future<List<Driver>> _driversFuture;
   String? _teamName;
   String? _divisionName;
   int? _currentYear;
@@ -28,12 +27,6 @@ class _DriversScreenState extends State<DriversScreen> {
   }
 
   void _refreshDrivers() async {
-    setState(() {
-      _driversFuture = DriverAssignmentService().getDriversByTeam(
-        widget.teamId,
-      );
-    });
-
     // Fetch Team Name and Division Name
     try {
       final teamDoc = await FirebaseFirestore.instance
@@ -87,15 +80,19 @@ class _DriversScreenState extends State<DriversScreen> {
   }
 
   Widget _buildCurrentDriversTab() {
-    return FutureBuilder<List<Driver>>(
-      future: _driversFuture,
+    return StreamBuilder<List<Driver>>(
+      stream: DriverAssignmentService().streamDriversByTeam(widget.teamId),
       builder: (context, snapshot) {
-        if (snapshot.connectionState == ConnectionState.waiting) {
+        if (snapshot.connectionState == ConnectionState.waiting &&
+            !snapshot.hasData) {
           return const Center(child: CircularProgressIndicator());
         }
 
         if (snapshot.hasError) {
-          return Center(child: Text('Error: ${snapshot.error}'));
+          debugPrint("Drivers stream error: ${snapshot.error}");
+          return const Center(
+            child: Text('Error loading drivers. Please check your connection.'),
+          );
         }
 
         final drivers = snapshot.data ?? [];
