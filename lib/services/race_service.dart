@@ -390,7 +390,7 @@ class RaceService {
     // --- DRIVER STYLE LOGIC ---
     double styleBonus = 0.0;
     double fitnessCost = 1.0;
-    double accidentBaseRisk = 0.03; // 3% Normal
+    double accidentBaseRisk = 0.0003; // 0.03% Normal
 
     final effectiveStyle = styleOverride ?? setup.qualifyingStyle;
 
@@ -398,22 +398,22 @@ class RaceService {
       case DriverStyle.defensive:
         styleBonus = -0.01;
         fitnessCost = 0.5;
-        accidentBaseRisk = 0.01;
+        accidentBaseRisk = 0.0001; // 0.01%
         break;
       case DriverStyle.mostRisky:
-        styleBonus = 0.04; // Big bonus
+        styleBonus = 0.04;
         fitnessCost = 5.0;
-        accidentBaseRisk = 0.20;
+        accidentBaseRisk = 0.002; // 0.2%
         break;
       case DriverStyle.offensive:
         styleBonus = 0.02;
         fitnessCost = 3.0;
-        accidentBaseRisk = 0.10;
+        accidentBaseRisk = 0.001; // 0.1%
         break;
       case DriverStyle.normal:
         styleBonus = 0.0;
         fitnessCost = 1.0;
-        accidentBaseRisk = 0.03;
+        accidentBaseRisk = 0.0003; // 0.03%
         break;
     }
 
@@ -423,12 +423,12 @@ class RaceService {
         (1.0 - focusVal) * 0.5 +
         (1.0 - consistency) * 0.3 +
         (1.0 - morale) * 0.2;
-    double totalAccidentProb = accidentBaseRisk + (driverRiskFactor * 0.1);
+    double totalAccidentProb = accidentBaseRisk + (driverRiskFactor * 0.001);
 
     // If fitness is already low, risk spikes
     final currentFitness = driver.stats[DriverStats.fitness] ?? 100;
     if (currentFitness < 40) {
-      totalAccidentProb *= 1.5;
+      totalAccidentProb *= 1.2;
     }
 
     bool hasCrashed = false;
@@ -652,6 +652,7 @@ class RaceService {
     required Map<String, Team> teamsMap, // id -> Team
     required Map<String, Driver> driversMap, // id -> Driver
     required Map<String, CarSetup> setupsMap, // driverId -> Setup
+    bool isDemo = false,
   }) async {
     final random = Random();
     int totalLaps = circuit.laps;
@@ -722,6 +723,8 @@ class RaceService {
               type: "DNF",
             ),
           );
+
+          if (isDemo) continue; // Skip notifications in Demo Mode
 
           try {
             await LeagueNotificationService().addLeagueNotification(
@@ -839,12 +842,14 @@ class RaceService {
           stopsMade[driverId] = stopIdx + 1;
           if (nextCompound == TyreCompound.hard) usedHard[driverId] = true;
 
+          final pitDescription =
+              "In for a stop! Swapping to ${nextCompound.name.toUpperCase()}s.";
+
           lapEvents.add(
             RaceEventLog(
               lapNumber: lap,
               driverId: driverId,
-              description:
-                  "Pit Stop (Refueled, ${nextCompound.name.toUpperCase()}, ${nextStyle.name.toUpperCase()})",
+              description: pitDescription,
               type: "PIT",
             ),
           );
@@ -894,11 +899,26 @@ class RaceService {
 
         int oldPos = currentOrder.indexOf(driver);
         if (oldPos != -1 && i < oldPos) {
+          // Simplistic Narrative: Overtakes driver who is now behind
+          String flavor = "Overtake move!";
+          if (i + 1 < newOrder.length) {
+            String passedDriverId = newOrder[i + 1];
+            String passedName = driversMap[passedDriverId]?.name ?? "rival";
+            List<String> phrases = [
+              "Dives down the inside of $passedName!",
+              "Moves past $passedName for P${i + 1}!",
+              "Great move on $passedName!",
+              "Takes P${i + 1} from $passedName!",
+            ];
+            flavor =
+                phrases[newOrder.length % phrases.length]; // Deterministicish
+          }
+
           lapEvents.add(
             RaceEventLog(
               lapNumber: lap,
               driverId: driver,
-              description: "Overtake", // Generic for now
+              description: flavor,
               type: "OVERTAKE",
             ),
           );

@@ -19,11 +19,44 @@ import '../../widgets/notification_card.dart';
 import '../../widgets/press_news_card.dart';
 import '../../utils/app_constants.dart';
 
-class DashboardScreen extends StatelessWidget {
+class DashboardScreen extends StatefulWidget {
   final String teamId;
   final Function(String)? onNavigate;
 
   const DashboardScreen({super.key, required this.teamId, this.onNavigate});
+
+  @override
+  State<DashboardScreen> createState() => _DashboardScreenState();
+}
+
+class _DashboardScreenState extends State<DashboardScreen> {
+  late Stream<DocumentSnapshot> _teamStream;
+  late Stream<Season?> _seasonStream;
+
+  // Manager stream depends on UID, so we memorize it locally
+  Stream<DocumentSnapshot>? _managerStream;
+  String? _currentManagerUid;
+
+  @override
+  void initState() {
+    super.initState();
+    _teamStream = FirebaseFirestore.instance
+        .collection('teams')
+        .doc(widget.teamId)
+        .snapshots();
+    _seasonStream = SeasonService().getActiveSeasonStream().asBroadcastStream();
+  }
+
+  @override
+  void didUpdateWidget(DashboardScreen oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.teamId != widget.teamId) {
+      _teamStream = FirebaseFirestore.instance
+          .collection('teams')
+          .doc(widget.teamId)
+          .snapshots();
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -31,17 +64,31 @@ class DashboardScreen extends StatelessWidget {
     return StreamBuilder<User?>(
       stream: AuthService().user,
       builder: (context, authSnapshot) {
+        if (authSnapshot.hasError) {
+          return Center(child: Text("Auth Error: ${authSnapshot.error}"));
+        }
         if (!authSnapshot.hasData) {
           return const Center(child: CircularProgressIndicator());
         }
         final uid = authSnapshot.data!.uid;
 
-        return StreamBuilder<DocumentSnapshot>(
-          stream: FirebaseFirestore.instance
+        // Memoize manager stream
+        if (_managerStream == null || _currentManagerUid != uid) {
+          _currentManagerUid = uid;
+          _managerStream = FirebaseFirestore.instance
               .collection('managers')
               .doc(uid)
-              .snapshots(),
+              .snapshots();
+        }
+
+        return StreamBuilder<DocumentSnapshot>(
+          stream: _managerStream,
           builder: (context, managerSnapshot) {
+            if (managerSnapshot.hasError) {
+              return Center(
+                child: Text("Manager Error: ${managerSnapshot.error}"),
+              );
+            }
             if (!managerSnapshot.hasData) {
               return const Center(child: CircularProgressIndicator());
             }
@@ -54,11 +101,13 @@ class DashboardScreen extends StatelessWidget {
             final manager = ManagerProfile.fromMap(managerData);
 
             return StreamBuilder<DocumentSnapshot>(
-              stream: FirebaseFirestore.instance
-                  .collection('teams')
-                  .doc(teamId)
-                  .snapshots(),
+              stream: _teamStream,
               builder: (context, teamSnapshot) {
+                if (teamSnapshot.hasError) {
+                  return Center(
+                    child: Text("Team Error: ${teamSnapshot.error}"),
+                  );
+                }
                 if (!teamSnapshot.hasData) {
                   return const Center(child: CircularProgressIndicator());
                 }
@@ -71,8 +120,13 @@ class DashboardScreen extends StatelessWidget {
                 final team = Team.fromMap(teamData);
 
                 return StreamBuilder<Season?>(
-                  stream: SeasonService().getActiveSeasonStream(),
+                  stream: _seasonStream,
                   builder: (context, seasonSnapshot) {
+                    if (seasonSnapshot.hasError) {
+                      return Center(
+                        child: Text("Season Error: ${seasonSnapshot.error}"),
+                      );
+                    }
                     final season = seasonSnapshot.data;
                     final currentRace = season != null
                         ? SeasonService().getCurrentRace(season)
@@ -111,11 +165,11 @@ class DashboardScreen extends StatelessWidget {
                         {};
 
                     void onHeroAction() {
-                      if (onNavigate != null) {
+                      if (widget.onNavigate != null) {
                         if (currentStatus == RaceWeekStatus.race) {
-                          onNavigate!('racing_day');
+                          widget.onNavigate!('racing_day');
                         } else {
-                          onNavigate!('racing_setup');
+                          widget.onNavigate!('racing_setup');
                         }
                       } else {
                         // Fallback in case onNavigate is not provided
@@ -223,8 +277,8 @@ class DashboardScreen extends StatelessWidget {
                                 final budgetCard = FinanceCard(
                                   budget: team.budget,
                                   onTap: () {
-                                    if (onNavigate != null) {
-                                      onNavigate!('mgmt_finances');
+                                    if (widget.onNavigate != null) {
+                                      widget.onNavigate!('mgmt_finances');
                                       return;
                                     }
                                     if (team.id.isEmpty) return;
@@ -395,7 +449,7 @@ class DashboardScreen extends StatelessWidget {
                                     const SizedBox(height: 16),
                                     StreamBuilder<List<AppNotification>>(
                                       stream: NotificationService()
-                                          .getTeamNotifications(teamId),
+                                          .getTeamNotifications(widget.teamId),
                                       builder: (context, notifSnapshot) {
                                         if (notifSnapshot.hasError) {
                                           debugPrint(
@@ -457,13 +511,13 @@ class DashboardScreen extends StatelessWidget {
                                                   onTap: () =>
                                                       NotificationService()
                                                           .markAsRead(
-                                                            teamId,
+                                                            widget.teamId,
                                                             n.id,
                                                           ),
                                                   onDismiss: () =>
                                                       NotificationService()
                                                           .deleteNotification(
-                                                            teamId,
+                                                            widget.teamId,
                                                             n.id,
                                                           ),
                                                 ),
