@@ -34,6 +34,18 @@ class NotificationCard extends StatelessWidget {
         icon = Icons.group_outlined;
         iconColor = theme.colorScheme.secondary;
         break;
+      case 'OFFICE':
+        if (notification.eventType == 'RACE_RESULT') {
+          icon = Icons.emoji_events_outlined;
+          iconColor = const Color(0xFFFFD700); // Gold
+        } else if (notification.eventType == 'QUALY_RESULT') {
+          icon = Icons.timer_outlined;
+          iconColor = Colors.tealAccent;
+        } else {
+          icon = Icons.business_center_outlined;
+          iconColor = Colors.blueGrey;
+        }
+        break;
       case 'NEWS':
       default:
         icon = Icons.newspaper_outlined;
