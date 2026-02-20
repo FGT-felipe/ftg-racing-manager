@@ -552,13 +552,13 @@ class _MainLayoutState extends State<MainLayout> {
           TextButton.icon(
             style: TextButton.styleFrom(foregroundColor: Colors.white70)
                 .copyWith(
-                  foregroundColor: MaterialStateProperty.resolveWith<Color?>(
-                    (states) => states.contains(MaterialState.hovered)
+                  foregroundColor: WidgetStateProperty.resolveWith<Color?>(
+                    (states) => states.contains(WidgetState.hovered)
                         ? theme.colorScheme.error
                         : Colors.white70,
                   ),
-                  overlayColor: MaterialStateProperty.resolveWith<Color?>(
-                    (states) => states.contains(MaterialState.hovered)
+                  overlayColor: WidgetStateProperty.resolveWith<Color?>(
+                    (states) => states.contains(WidgetState.hovered)
                         ? theme.colorScheme.error.withValues(alpha: 0.1)
                         : null,
                   ),

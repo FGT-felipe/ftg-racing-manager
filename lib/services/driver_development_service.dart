@@ -27,12 +27,13 @@ class DriverDevelopmentService {
 
     // Multiplier based on age (learning faster if young)
     double ageMult = 1.0;
-    if (driver.age < 22)
+    if (driver.age < 22) {
       ageMult = 1.5;
-    else if (driver.age < 26)
+    } else if (driver.age < 26) {
       ageMult = 1.25;
-    else if (driver.age > 35)
+    } else if (driver.age > 35) {
       ageMult = 0.5;
+    }
 
     // Multiplier based on potential (1-5 stars)
     double potMult = 0.5 + (driver.potential * 0.2); // 0.7x to 1.5x
@@ -49,8 +50,9 @@ class DriverDevelopmentService {
         )
         .toList();
 
-    if (eligibleStats.isEmpty)
+    if (eligibleStats.isEmpty) {
       return "No more room to grow."; // No more room to grow
+    }
 
     final numStatsToImprove = _random.nextInt(3) + 1; // 1 to 3
     eligibleStats.shuffle(_random);

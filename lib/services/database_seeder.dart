@@ -1,6 +1,5 @@
 import 'dart:math';
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:flutter/foundation.dart';
 import 'package:flutter/widgets.dart'; // Add widgets for Locale
 import '../l10n/app_localizations.dart'; // Import AppLocalizations
 import '../models/core_models.dart';
@@ -130,7 +129,7 @@ class DatabaseSeeder {
       // 2. CALENDARIO
       final now = startDate ?? DateTime.now();
 
-      final l10n = await lookupAppLocalizations(const Locale('en'));
+      final l10n = lookupAppLocalizations(const Locale('en'));
 
       final List<RaceEvent> calendar = [
         RaceEvent(
