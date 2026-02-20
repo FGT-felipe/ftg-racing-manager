@@ -382,7 +382,7 @@ class _RaceDayScreenState extends State<RaceDayScreen>
         Set<String> allUniverseTeamIds = {};
 
         for (final league in universe.getAllLeagues()) {
-          final leagueTeams = league.divisions.expand((d) => d.teamIds).toSet();
+          final leagueTeams = league.teams.map((t) => t.id).toSet();
           allUniverseTeamIds.addAll(leagueTeams);
 
           if (leagueTeams.contains(widget.teamId)) {

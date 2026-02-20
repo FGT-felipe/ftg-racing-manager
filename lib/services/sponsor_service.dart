@@ -185,11 +185,19 @@ class SponsorService {
     double chance = 30.0; // Base chance
 
     final personalityName = offer.personality.name.toUpperCase();
+    final normalizedTactic = tactic.toUpperCase();
+
+    // Map new tactics to old internal ones for comparison if needed
+    String effectiveTactic = normalizedTactic;
+    if (normalizedTactic == 'PERSUASIVE') effectiveTactic = 'AGGRESSIVE';
+    if (normalizedTactic == 'NEGOTIATOR') effectiveTactic = 'PROFESSIONAL';
+    if (normalizedTactic == 'COLLABORATIVE') effectiveTactic = 'FRIENDLY';
 
     // Check Matching
-    if (tactic == personalityName) {
+    if (effectiveTactic == personalityName) {
       chance += 50.0; // Perfect match -> 80%
-    } else if (tactic == 'PROFESSIONAL' || personalityName == 'PROFESSIONAL') {
+    } else if (effectiveTactic == 'PROFESSIONAL' ||
+        personalityName == 'PROFESSIONAL') {
       chance += 10.0; // Neutral match -> 40%
     } else {
       chance -= 20.0; // Opposite match -> 10%

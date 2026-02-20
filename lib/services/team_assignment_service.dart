@@ -18,40 +18,25 @@ class TeamAssignmentService {
 
   final FirebaseFirestore _db = FirebaseFirestore.instance;
 
-  /// Puebla todas las divisiones del universo con equipos bot
-  ///
-  /// Estrategia:
-  /// - 10 equipos por división
-  /// - Equipos generados específicamente para el país de la liga
-  /// - Distribuidos automáticamente entre División Élite (tier 1)
-  ///   y División Profesional (tier 2)
-  ///
-  /// Este método es idempotente: si las divisiones ya tienen equipos,
-  /// no hará nada.
-  Future<void> populateAllDivisions() async {
-    debugPrint("TEAM ASSIGNMENT: Iniciando población de divisiones...");
+  /// Puebla todas las ligas del universo con equipos bot si están vacías
+  Future<void> populateLeagues() async {
+    debugPrint("TEAM ASSIGNMENT: Iniciando población de ligas...");
 
     final universe = await UniverseService().getUniverse();
     if (universe == null) {
-      throw Exception(
-        'Universe not initialized. Call initializeIfNeeded() first.',
-      );
+      throw Exception('Universe not initialized.');
     }
 
     int totalTeamsCreated = 0;
 
-    for (final league in universe.getAllLeagues()) {
-      // Verificar si la liga ya tiene equipos asignados
-      final hasTeams = league.divisions.any((div) => div.teamIds.isNotEmpty);
-      if (hasTeams) {
-        debugPrint(
-          "TEAM ASSIGNMENT: Liga ${league.name} ya tiene equipos, saltando...",
-        );
+    for (final league in universe.leagues) {
+      if (league.teams.isNotEmpty) {
+        debugPrint("TEAM ASSIGNMENT: Liga ${league.name} ya tiene equipos.");
         continue;
       }
 
       debugPrint("TEAM ASSIGNMENT: Poblando liga ${league.name}...");
-      final teamsCreated = await _populateLeagueDivisions(league);
+      final teamsCreated = await _populateLeague(league);
       totalTeamsCreated += teamsCreated;
     }
 
@@ -60,47 +45,22 @@ class TeamAssignmentService {
     );
   }
 
-  /// Puebla las divisiones de una liga específica
-  ///
-  /// Retorna el número de equipos creados
-  Future<int> _populateLeagueDivisions(CountryLeague league) async {
-    final factory = TeamFactory(league.country);
-    int teamsCreated = 0;
+  /// Puebla una liga específica (11 equipos)
+  Future<int> _populateLeague(FtgLeague league) async {
+    final factory = TeamFactory();
+    final teams = <Team>[];
 
-    // Actualizar todas las divisiones
-    final updatedDivisions = <LeagueDivision>[];
-
-    for (final division in league.divisions) {
-      final teams = <Team>[];
-      final teamIds = <String>[];
-
-      // Generar equipos para esta división
-      for (int i = 0; i < division.maxCapacity; i++) {
-        final team = factory.generateBotTeam();
-        teams.add(team);
-        teamIds.add(team.id);
-      }
-
-      // Persistir equipos en Firestore
-      await _saveTeams(teams);
-      teamsCreated += teams.length;
-
-      // Crear división actualizada con IDs de equipos
-      final updatedDivision = division.copyWith(teamIds: teamIds);
-      updatedDivisions.add(updatedDivision);
-
-      debugPrint(
-        "TEAM ASSIGNMENT: ${division.name}: ${teams.length} equipos creados",
-      );
+    for (int i = 0; i < 11; i++) {
+      final team = factory.generateBotTeam();
+      teams.add(team);
     }
 
-    // Actualizar liga con divisiones pobladas
-    final updatedLeague = league.copyWith(divisions: updatedDivisions);
+    await _saveTeams(teams);
 
-    // Persistir en universo
+    final updatedLeague = league.copyWith(teams: teams);
     await UniverseService().updateLeague(updatedLeague);
 
-    return teamsCreated;
+    return teams.length;
   }
 
   /// Guarda múltiples equipos en Firestore usando batch
@@ -115,37 +75,15 @@ class TeamAssignmentService {
     await batch.commit();
   }
 
-  /// Obtiene todos los equipos de una división
-  Future<List<Team>> getTeamsByDivision(String divisionId) async {
-    // Primero obtener la división del universo
+  /// Obtiene todos los equipos de una liga
+  Future<List<Team>> getTeamsByLeague(String leagueId) async {
     final universe = await UniverseService().getUniverse();
     if (universe == null) return [];
 
-    // Buscar división en todas las ligas
-    LeagueDivision? targetDivision;
-    for (final league in universe.getAllLeagues()) {
-      final division = league.getDivisionById(divisionId);
-      if (division != null) {
-        targetDivision = division;
-        break;
-      }
-    }
+    final league = universe.getLeagueById(leagueId);
+    if (league == null) return [];
 
-    if (targetDivision == null) return [];
-
-    // Obtener equipos por sus IDs
-    final teams = <Team>[];
-    for (final teamId in targetDivision.teamIds) {
-      final doc = await _db.collection('teams').doc(teamId).get();
-      if (doc.exists) {
-        final data = doc.data();
-        if (data != null) {
-          teams.add(Team.fromMap({...data, 'id': doc.id}));
-        }
-      }
-    }
-
-    return teams;
+    return league.teams;
   }
 
   /// Elimina todos los equipos (útil para testing/debugging)
@@ -166,14 +104,11 @@ class TeamAssignmentService {
 
     debugPrint("TEAM ASSIGNMENT: ${snapshot.docs.length} equipos eliminados.");
 
-    // También limpiar referencias en divisiones
+    // También limpiar referencias en el universo
     final universe = await UniverseService().getUniverse();
     if (universe != null) {
-      for (final league in universe.getAllLeagues()) {
-        final clearedDivisions = league.divisions
-            .map((div) => div.copyWith(teamIds: []))
-            .toList();
-        final clearedLeague = league.copyWith(divisions: clearedDivisions);
+      for (final league in universe.leagues) {
+        final clearedLeague = league.copyWith(teams: []);
         await UniverseService().updateLeague(clearedLeague);
       }
     }

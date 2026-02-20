@@ -56,7 +56,7 @@ class UniverseService {
   ///
   /// Verifica si el universo ya está creado en Firestore.
   /// Si no existe, lo crea usando UniverseSeeder con la configuración
-  /// inicial de países y ligas.
+  /// inicial de ligas.
   ///
   /// Es seguro llamar múltiples veces - solo crea si no existe.
   Future<void> initializeIfNeeded() async {
@@ -68,22 +68,19 @@ class UniverseService {
     await saveUniverse(universe);
   }
 
-  /// Obtiene una liga específica por código de país
-  ///
-  /// Ejemplo: getLeagueByCountry('BR') retorna la Liga Brasil
-  /// Retorna null si el universo no existe o el país no tiene liga.
-  Future<CountryLeague?> getLeagueByCountry(String countryCode) async {
+  /// Obtiene una liga específica por su ID
+  Future<FtgLeague?> getLeagueById(String id) async {
     final universe = await getUniverse();
-    return universe?.getLeagueByCountry(countryCode);
+    return universe?.getLeagueById(id);
   }
 
   /// Actualiza una liga específica en el universo
   ///
-  /// Reemplaza la liga del país correspondiente con la nueva versión.
+  /// Reemplaza la liga correspondiente con la nueva versión.
   /// Mantiene todas las demás ligas sin cambios.
   ///
   /// Throws Exception si el universo no está inicializado.
-  Future<void> updateLeague(CountryLeague league) async {
+  Future<void> updateLeague(FtgLeague league) async {
     final universe = await getUniverse();
     if (universe == null) {
       throw Exception(
@@ -92,17 +89,16 @@ class UniverseService {
     }
 
     // Crear nuevo universo con la liga actualizada
-    final updatedLeagues = Map<String, CountryLeague>.from(
-      universe.activeLeagues,
-    );
-    updatedLeagues[league.country.code] = league;
+    final updatedLeagues = List<FtgLeague>.from(universe.leagues);
+    final index = updatedLeagues.indexWhere((l) => l.id == league.id);
 
-    final updatedUniverse = GameUniverse(
-      activeLeagues: updatedLeagues,
-      createdAt: universe.createdAt,
-      gameVersion: universe.gameVersion,
-    );
+    if (index != -1) {
+      updatedLeagues[index] = league;
+    } else {
+      updatedLeagues.add(league);
+    }
 
+    final updatedUniverse = universe.copyWith(leagues: updatedLeagues);
     await saveUniverse(updatedUniverse);
   }
 

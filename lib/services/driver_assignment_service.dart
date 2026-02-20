@@ -4,7 +4,6 @@ import '../models/core_models.dart';
 import '../models/domain/domain_models.dart';
 import 'driver_factory.dart';
 import 'universe_service.dart';
-import 'team_assignment_service.dart';
 
 /// Servicio para asignar pilotos a equipos.
 ///
@@ -19,45 +18,27 @@ class DriverAssignmentService {
   final FirebaseFirestore _db = FirebaseFirestore.instance;
 
   /// Puebla todos los equipos del universo con pilotos
-  ///
-  /// Estrategia:
-  /// - 2 pilotos por equipo
-  /// - Total: 240 pilotos (120 equipos × 2)
-  /// - Stats basados en tier de división
-  ///
-  /// Este método es idempotente: si los equipos ya tienen pilotos,
-  /// no hará nada.
-  Future<void> populateAllTeams() async {
+  Future<void> populateLeagues() async {
     debugPrint("DRIVER ASSIGNMENT: Iniciando asignación de pilotos...");
 
     final universe = await UniverseService().getUniverse();
     if (universe == null) {
-      throw Exception(
-        'Universe not initialized. Call initializeIfNeeded() first.',
-      );
+      throw Exception('Universe not initialized.');
     }
 
     int totalDriversCreated = 0;
 
-    for (final league in universe.getAllLeagues()) {
+    for (final league in universe.leagues) {
       debugPrint("DRIVER ASSIGNMENT: Poblando liga ${league.name}...");
 
-      for (final division in league.divisions) {
-        // Verificar si la división ya tiene pilotos
-        final existingDrivers = await _countDriversInDivision(division.id);
-        if (existingDrivers > 0) {
-          debugPrint(
-            "DRIVER ASSIGNMENT: División ${division.name} ya tiene $existingDrivers pilotos, saltando...",
-          );
-          continue;
-        }
-
-        final driversCreated = await _populateDivisionTeams(
-          league.country,
-          division,
-        );
-        totalDriversCreated += driversCreated;
+      // Verificar si la liga ya tiene pilotos
+      if (league.drivers.isNotEmpty) {
+        debugPrint("DRIVER ASSIGNMENT: Liga ${league.name} ya tiene pilotos.");
+        continue;
       }
+
+      final driversCreated = await _populateLeagueDrivers(league);
+      totalDriversCreated += driversCreated;
     }
 
     debugPrint(
@@ -65,40 +46,37 @@ class DriverAssignmentService {
     );
   }
 
-  /// Puebla los equipos de una división con pilotos
-  ///
-  /// Retorna el número de pilotos creados
-  Future<int> _populateDivisionTeams(
-    Country country,
-    LeagueDivision division,
-  ) async {
-    final factory = DriverFactory(country);
+  /// Puebla los equipos de una liga con pilotos
+  Future<int> _populateLeagueDrivers(FtgLeague league) async {
+    final factory = DriverFactory();
     int driversCreated = 0;
 
-    // Obtener equipos de esta división
-    final teams = await TeamAssignmentService().getTeamsByDivision(division.id);
-
+    // Obtener equipos de esta liga
+    final teams = league.teams;
     final drivers = <Driver>[];
 
     for (final team in teams) {
-      // Generar 2 pilotos por equipo
+      // Generar 1 Male y 1 Female driver per team as per new requirements
       for (int i = 0; i < 2; i++) {
-        final driver = factory.generateDriver(divisionTier: division.tier);
+        final gender = i == 0 ? 'M' : 'F';
+        final driver = factory.generateDriver(
+          divisionTier: league.tier,
+          forcedGender: gender,
+        );
 
         // Assign role based on index
         final role = i == 0 ? 'Main Driver' : 'Secondary Driver';
 
-        // Mock weekly growth for visual demonstration
+        // Mock weekly growth
         final mockGrowth = {
           'speed': (0.1 + (i * 0.1)) * (driver.age > 35 ? -1 : 1),
           'consistency': 0.2,
           'racecraft': 0.1,
         };
 
-        // Crear driver con teamId asignado
         final assignedDriver = driver.copyWith(
-          teamId: team.id, // Vincular con equipo
-          carIndex: i, // 0 for Car A, 1 for Car B
+          teamId: team.id,
+          carIndex: i,
           role: role,
           weeklyGrowth: mockGrowth,
         );
@@ -108,11 +86,14 @@ class DriverAssignmentService {
       }
     }
 
-    // Persistir drivers usando batch
     await _saveDrivers(drivers);
 
+    // Actualizar liga con pilotos poblados
+    final updatedLeague = league.copyWith(drivers: drivers);
+    await UniverseService().updateLeague(updatedLeague);
+
     debugPrint(
-      "DRIVER ASSIGNMENT: ${division.name}: $driversCreated pilotos creados",
+      "DRIVER ASSIGNMENT: ${league.name}: $driversCreated pilotos creados",
     );
 
     return driversCreated;
@@ -130,27 +111,7 @@ class DriverAssignmentService {
     await batch.commit();
   }
 
-  /// Cuenta pilotos existentes en una división
-  Future<int> _countDriversInDivision(String divisionId) async {
-    // Obtener equipos de la división
-    final teams = await TeamAssignmentService().getTeamsByDivision(divisionId);
-    if (teams.isEmpty) return 0;
-
-    final teamIds = teams.map((t) => t.id).toList();
-
-    // Contar drivers de estos equipos
-    int count = 0;
-    for (final teamId in teamIds) {
-      final snapshot = await _db
-          .collection('drivers')
-          .where('teamId', isEqualTo: teamId)
-          .limit(1)
-          .get();
-      if (snapshot.docs.isNotEmpty) count++;
-    }
-
-    return count;
-  }
+  // Method _countDriversInDivision removed as we use league.drivers now.
 
   /// Obtiene pilotos de un equipo (Stream para tiempo real)
   Stream<List<Driver>> streamDriversByTeam(String teamId) {
@@ -177,17 +138,15 @@ class DriverAssignmentService {
         .toList();
   }
 
-  /// Obtiene todos los pilotos de una división
-  Future<List<Driver>> getDriversByDivision(String divisionId) async {
-    final teams = await TeamAssignmentService().getTeamsByDivision(divisionId);
-    final allDrivers = <Driver>[];
+  /// Obtiene todos los pilotos de una liga
+  Future<List<Driver>> getDriversByLeague(String leagueId) async {
+    final universe = await UniverseService().getUniverse();
+    if (universe == null) return [];
 
-    for (final team in teams) {
-      final drivers = await getDriversByTeam(team.id);
-      allDrivers.addAll(drivers);
-    }
+    final league = universe.getLeagueById(leagueId);
+    if (league == null) return [];
 
-    return allDrivers;
+    return league.drivers;
   }
 
   /// Elimina todos los pilotos (útil para testing/debugging)

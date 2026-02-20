@@ -8,7 +8,7 @@ class DriverCard extends StatelessWidget {
   final VoidCallback? onRenew;
   final VoidCallback? onFire;
   final String? teamName;
-  final String? divisionName;
+  final String? leagueName;
   final int? currentYear;
 
   const DriverCard({
@@ -17,7 +17,7 @@ class DriverCard extends StatelessWidget {
     this.onRenew,
     this.onFire,
     this.teamName,
-    this.divisionName,
+    this.leagueName,
     this.currentYear,
   });
 
@@ -572,7 +572,7 @@ class DriverCard extends StatelessWidget {
             rows: _generateStableHistory(
               driver,
               teamName ?? 'Individual',
-              divisionName ?? '--',
+              leagueName ?? '--',
             ),
           ),
         ],
@@ -814,7 +814,7 @@ class DriverCard extends StatelessWidget {
   List<List<String>> _generateStableHistory(
     Driver driver,
     String currentTeam,
-    String currentDiv,
+    String currentLeague,
   ) {
     final List<List<String>> rows = [];
 
@@ -822,7 +822,7 @@ class DriverCard extends StatelessWidget {
     rows.add([
       '${currentYear ?? 2026}',
       currentTeam,
-      currentDiv,
+      currentLeague,
       '0',
       '0',
       '0',
@@ -891,7 +891,7 @@ class DriverCard extends StatelessWidget {
         }
       }
 
-      String divDisplay = i == 0 ? currentDiv : 'Lower Division';
+      String divDisplay = i == 0 ? currentLeague : 'Lower Division';
       if (isChampion) {
         divDisplay = '🏆 CHAMPION';
       }

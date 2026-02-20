@@ -7,6 +7,7 @@ import '../../services/auth_service.dart';
 import '../../services/team_service.dart';
 import '../../services/universe_service.dart';
 import '../../services/league_notification_service.dart';
+import '../../models/user_models.dart';
 import '../main_layout.dart';
 
 class TeamSelectionScreen extends StatefulWidget {
@@ -20,9 +21,13 @@ class TeamSelectionScreen extends StatefulWidget {
 
 class _TeamSelectionScreenState extends State<TeamSelectionScreen> {
   bool _isLoading = true;
-  CountryLeague? _league;
-  List<Team> _tier1Teams = [];
-  List<Team> _tier2Teams = [];
+  FtgLeague? _worldLeague;
+  FtgLeague? _secondLeague;
+  List<Team> _worldTeams = [];
+  List<Team> _secondTeams = [];
+  Map<String, List<Driver>> _driversByTeam = {};
+  Map<String, ManagerProfile> _managersByTeam = {};
+  bool _isWorldFull = false;
   String? _errorMessage;
 
   @override
@@ -33,30 +38,62 @@ class _TeamSelectionScreenState extends State<TeamSelectionScreen> {
 
   Future<void> _loadLeagueData() async {
     try {
-      final countryCode = _mapNationalityToCode(widget.nationality);
       final universe = await UniverseService().getUniverse();
 
       if (universe == null) {
         throw Exception("Game universe not initialized");
       }
 
-      final league = universe.getLeagueByCountry(countryCode);
-      if (league == null) {
-        throw Exception("No league found for ${widget.nationality}");
+      final worldLeague = universe.getLeagueById('ftg_world');
+      final secondLeague = universe.getLeagueById('ftg_2th');
+
+      if (worldLeague == null || secondLeague == null) {
+        throw Exception("Required leagues not found");
       }
 
-      // Fetch teams for each division
-      final tier1Div = league.getDivisionByTier(1);
-      final tier2Div = league.getDivisionByTier(2);
+      final worldTeams = worldLeague.teams;
+      final secondTeams = secondLeague.teams;
 
-      final t1Teams = await _fetchAvailableTeams(tier1Div?.teamIds ?? []);
-      final t2Teams = await _fetchAvailableTeams(tier2Div?.teamIds ?? []);
+      // Map drivers by team
+      final Map<String, List<Driver>> driversByTeam = {};
+      for (var driver in worldLeague.drivers) {
+        if (driver.teamId != null) {
+          driversByTeam.putIfAbsent(driver.teamId!, () => []).add(driver);
+        }
+      }
+      for (var driver in secondLeague.drivers) {
+        if (driver.teamId != null) {
+          driversByTeam.putIfAbsent(driver.teamId!, () => []).add(driver);
+        }
+      }
+
+      // Identify taken teams and fetch manager profiles
+      final Map<String, ManagerProfile> managersByTeam = {};
+      final List<Team> allTeams = [...worldTeams, ...secondTeams];
+
+      for (var team in allTeams) {
+        if (!team.isBot && team.managerId != null) {
+          final manager = await AuthService().getManagerProfile(
+            team.managerId!,
+          );
+          if (manager != null) {
+            managersByTeam[team.id] = manager;
+          }
+        }
+      }
+
+      // Check if world league is full
+      final worldFull = worldTeams.every((t) => !t.isBot);
 
       if (mounted) {
         setState(() {
-          _league = league;
-          _tier1Teams = t1Teams;
-          _tier2Teams = t2Teams;
+          _worldLeague = worldLeague;
+          _secondLeague = secondLeague;
+          _worldTeams = worldTeams;
+          _secondTeams = secondTeams;
+          _driversByTeam = driversByTeam;
+          _managersByTeam = managersByTeam;
+          _isWorldFull = worldFull;
           _isLoading = false;
         });
       }
@@ -70,49 +107,11 @@ class _TeamSelectionScreenState extends State<TeamSelectionScreen> {
     }
   }
 
-  String _mapNationalityToCode(String nationality) {
-    switch (nationality) {
-      case 'Brazil':
-        return 'BR';
-      case 'Argentina':
-        return 'AR';
-      case 'Colombia':
-        return 'CO';
-      case 'Mexico':
-        return 'MX';
-      case 'Uruguay':
-        return 'UY';
-      case 'Chile':
-        return 'CL';
-      default:
-        return 'BR';
-    }
-  }
-
-  Future<List<Team>> _fetchAvailableTeams(List<String> teamIds) async {
-    if (teamIds.isEmpty) return [];
-
-    // Firestore 'in' query supports up to 10 items usually, but here we have exactly 10 ids per division.
-    // However, to be safe and efficient, we can fetch all by IDs.
-    // Or filter locally if list is small.
-    // Query: teams where id IN [list] AND isBot == true
-
-    if (teamIds.length > 10) {
-      // Chunking if needed, but for now we expect 10
-      return [];
-    }
-
-    final snapshot = await FirebaseFirestore.instance
-        .collection('teams')
-        .where(FieldPath.documentId, whereIn: teamIds)
-        .where('isBot', isEqualTo: true)
-        .get();
-
-    return snapshot.docs.map((doc) => Team.fromMap(doc.data())).toList();
-  }
-
-  Future<void> _handleApplyJob(Team team) async {
-    // ... existing logic ...
+  Future<void> _handleApplyJob(
+    Team team,
+    String leagueId,
+    String leagueName,
+  ) async {
     try {
       showDialog(
         context: context,
@@ -127,11 +126,6 @@ class _TeamSelectionScreenState extends State<TeamSelectionScreen> {
       final user = AuthService().currentUser;
       if (user == null) throw Exception("Auth failed");
 
-      // Need reference to the specific team doc.
-      // Since we used collectionGroup, we might lose the path if directly creating Team.
-      // But we can reconstruct path: teams/{teamId} is usually root?
-      // ACTUALLY, teams are in a root collection 'teams' as per Phase 4 TeamAssignmentService.
-
       final teamRef = FirebaseFirestore.instance
           .collection('teams')
           .doc(team.id);
@@ -142,12 +136,12 @@ class _TeamSelectionScreenState extends State<TeamSelectionScreen> {
       // Trigger Press News notification
       try {
         final manager = await AuthService().getManagerProfile(user.uid);
-        if (manager != null && _league != null) {
+        if (manager != null) {
           await LeagueNotificationService().addLeagueNotification(
-            leagueId: _league!.id,
+            leagueId: leagueId,
             title: "NEW MANAGER ARRIVES",
             message:
-                "${manager.name} ${manager.surname} has signed with ${team.name} to lead them in the ${_league!.name}!",
+                "${manager.name} ${manager.surname} has signed with ${team.name} to lead them in the $leagueName!",
             type: "MANAGER_JOIN",
             managerName: "${manager.name} ${manager.surname}",
             teamName: team.name,
@@ -190,7 +184,7 @@ class _TeamSelectionScreenState extends State<TeamSelectionScreen> {
     return Scaffold(
       backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       appBar: AppBar(
-        title: Text("SELECT TEAM - ${_league?.country.name.toUpperCase()}"),
+        title: const Text("SELECT TEAM"),
         centerTitle: true,
         backgroundColor: Colors.transparent,
         elevation: 0,
@@ -200,7 +194,7 @@ class _TeamSelectionScreenState extends State<TeamSelectionScreen> {
         child: Column(
           children: [
             Text(
-              "Choose a team to manage in the ${_league?.name}. Teams with fewer managers are recommended.",
+              "Choose a team to manage. Teams with fewer human managers are recommended.",
               textAlign: TextAlign.center,
               style: TextStyle(
                 color: Theme.of(
@@ -211,24 +205,25 @@ class _TeamSelectionScreenState extends State<TeamSelectionScreen> {
             ),
             const SizedBox(height: 32),
 
-            if (_tier1Teams.isNotEmpty) ...[
+            if (_worldTeams.isNotEmpty) ...[
               _buildDivisionSection(
-                "Elite Division",
-                _tier1Teams,
-                isTier1: true,
+                _worldLeague?.name ?? "World Championship",
+                _worldTeams,
+                leagueId: _worldLeague?.id ?? '',
               ),
               const SizedBox(height: 32),
             ],
 
-            if (_tier2Teams.isNotEmpty) ...[
+            if (_secondTeams.isNotEmpty) ...[
               _buildDivisionSection(
-                "Professional Division",
-                _tier2Teams,
-                isTier1: false,
+                _secondLeague?.name ?? "2th Series",
+                _secondTeams,
+                leagueId: _secondLeague?.id ?? '',
+                isLocked: !_isWorldFull,
               ),
             ],
 
-            if (_tier1Teams.isEmpty && _tier2Teams.isEmpty)
+            if (_worldTeams.isEmpty && _secondTeams.isEmpty)
               const Center(child: Text("No teams available.")),
           ],
         ),
@@ -239,16 +234,11 @@ class _TeamSelectionScreenState extends State<TeamSelectionScreen> {
   Widget _buildDivisionSection(
     String title,
     List<Team> teams, {
-    required bool isTier1,
+    required String leagueId,
+    bool isLocked = false,
   }) {
-    // Recommendation logic:
-    // If Tier 1 has fewer available bot teams (meaning more humans), it's more active?
-    // User requested: "suggest always playing in leagues with more human players".
-    // More humans = Fewer bot teams available.
-    // So if available count is small, it's highly populated.
-    // Let's mark as recommended if available count <= 5 (meaning >= 5 humans).
-
-    final isRecommended = teams.length <= 8; // Arbitrary threshold
+    // Recommendation logic: mark as recommended if available bot count <= 8
+    final isRecommended = teams.where((t) => t.isBot).length <= 8;
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -257,9 +247,17 @@ class _TeamSelectionScreenState extends State<TeamSelectionScreen> {
           children: [
             Text(
               title,
-              style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+              style: TextStyle(
+                fontSize: 20,
+                fontWeight: FontWeight.bold,
+                color: isLocked ? Colors.grey : Colors.white,
+              ),
             ),
-            if (isRecommended) ...[
+            if (isLocked) ...[
+              const SizedBox(width: 12),
+              Icon(Icons.lock, color: Colors.grey, size: 18),
+            ],
+            if (isRecommended && !isLocked) ...[
               const SizedBox(width: 12),
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
@@ -280,13 +278,24 @@ class _TeamSelectionScreenState extends State<TeamSelectionScreen> {
             ],
           ],
         ),
+        if (isLocked)
+          Padding(
+            padding: const EdgeInsets.only(top: 8.0, bottom: 16.0),
+            child: Text(
+              "Complete the World Championship entries to unlock this league.",
+              style: TextStyle(
+                color: Colors.orange.withValues(alpha: 0.8),
+                fontSize: 13,
+              ),
+            ),
+          ),
         const SizedBox(height: 16),
         GridView.builder(
           shrinkWrap: true,
           physics: const NeverScrollableScrollPhysics(),
           gridDelegate: const SliverGridDelegateWithMaxCrossAxisExtent(
             maxCrossAxisExtent: 400,
-            childAspectRatio: 1.5,
+            childAspectRatio: 1.1,
             crossAxisSpacing: 16,
             mainAxisSpacing: 16,
           ),
@@ -294,11 +303,18 @@ class _TeamSelectionScreenState extends State<TeamSelectionScreen> {
           itemBuilder: (context, index) {
             final team = teams[index];
             final budgetInMillions = (team.budget / 1000000).toStringAsFixed(0);
+            final drivers = _driversByTeam[team.id] ?? [];
+            final manager = _managersByTeam[team.id];
 
             return _TeamSelectionCard(
               team: team,
               budgetFormatted: "\$${budgetInMillions}M",
-              onApply: () => _handleApplyJob(team),
+              drivers: drivers,
+              manager: manager,
+              isLocked: isLocked,
+              onApply: isLocked
+                  ? null
+                  : () => _handleApplyJob(team, leagueId, title),
             );
           },
         ),
@@ -310,32 +326,77 @@ class _TeamSelectionScreenState extends State<TeamSelectionScreen> {
 class _TeamSelectionCard extends StatelessWidget {
   final Team team;
   final String budgetFormatted;
-  final VoidCallback onApply;
+  final List<Driver> drivers;
+  final ManagerProfile? manager;
+  final bool isLocked;
+  final VoidCallback? onApply;
 
   const _TeamSelectionCard({
     required this.team,
     required this.budgetFormatted,
-    required this.onApply,
+    required this.drivers,
+    this.manager,
+    this.isLocked = false,
+    this.onApply,
   });
+
+  String _getFlagEmoji(String? country) {
+    if (country == null) return '🏳️';
+    final upperCountry = country.toUpperCase();
+
+    // Map of codes and names to flags
+    const flags = {
+      'BR': '🇧🇷',
+      'BRAZIL': '🇧🇷',
+      'AR': '🇦🇷',
+      'ARGENTINA': '🇦🇷',
+      'CO': '🇨🇴',
+      'COLOMBIA': '🇨🇴',
+      'MX': '🇲🇽',
+      'MEXICO': '🇲🇽',
+      'UY': '🇺🇾',
+      'URUGUAY': '🇺🇾',
+      'CL': '🇨🇱',
+      'CHILE': '🇨🇱',
+      'GB': '🇬🇧',
+      'UNITED KINGDOM': '🇬🇧',
+      'UK': '🇬🇧',
+      'DE': '🇩🇪',
+      'GERMANY': '🇩🇪',
+      'IT': '🇮🇹',
+      'ITALY': '🇮🇹',
+      'ES': '🇪🇸',
+      'SPAIN': '🇪🇸',
+      'FR': '🇫🇷',
+      'FRANCE': '🇫🇷',
+    };
+    return flags[upperCountry] ?? '🏳️';
+  }
 
   @override
   Widget build(BuildContext context) {
-    // Calculate stats average for display
-    final stats =
-        team.carStats['0'] ?? {'aero': 1, 'engine': 1, 'reliability': 1};
-    final avgStats =
-        ((stats['aero'] ?? 1) +
-            (stats['engine'] ?? 1) +
-            (stats['reliability'] ?? 1)) /
-        3.0;
-    final avgStatsStr = avgStats.toStringAsFixed(1);
+    final isOccupied = !team.isBot;
 
     return Card(
-      color: Theme.of(context).cardTheme.color,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-      elevation: 4,
+      color: const Color(0xFF1A1A1A), // Onyx background
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(12),
+        side: BorderSide(
+          color: isLocked ? Colors.white10 : Colors.white24,
+          width: 1,
+        ),
+      ),
+      elevation: 0,
       child: Container(
         padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(12),
+          gradient: LinearGradient(
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+            colors: [const Color(0xFF1A1A1A), const Color(0xFF121212)],
+          ),
+        ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -343,50 +404,148 @@ class _TeamSelectionCard extends StatelessWidget {
             Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(
-                  team.name,
-                  style: TextStyle(
-                    fontSize: 18,
-                    fontWeight: FontWeight.bold,
-                    color: Theme.of(context).colorScheme.onSurface,
-                  ),
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Expanded(
+                      child: Text(
+                        team.name,
+                        style: TextStyle(
+                          fontSize: 18,
+                          fontWeight: FontWeight.bold,
+                          color: isLocked ? Colors.grey : Colors.white,
+                        ),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ),
+                    if (isOccupied)
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 6,
+                          vertical: 2,
+                        ),
+                        decoration: BoxDecoration(
+                          color: Colors.redAccent.withValues(alpha: 0.1),
+                          borderRadius: BorderRadius.circular(4),
+                          border: Border.all(
+                            color: Colors.redAccent.withValues(alpha: 0.5),
+                          ),
+                        ),
+                        child: const Text(
+                          "UNAVAILABLE",
+                          style: TextStyle(
+                            color: Colors.redAccent,
+                            fontSize: 10,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ),
+                  ],
                 ),
+                const SizedBox(height: 12),
+
+                // Driver Info
+                ...drivers.asMap().entries.map((entry) {
+                  final idx = entry.key;
+                  final driver = entry.value;
+                  final label = idx == 0 ? "Main" : "Secondary";
+                  return Padding(
+                    padding: const EdgeInsets.only(bottom: 4.0),
+                    child: Row(
+                      children: [
+                        Text(
+                          _getFlagEmoji(driver.countryCode),
+                          style: const TextStyle(fontSize: 12),
+                        ),
+                        const SizedBox(width: 6),
+                        Text(
+                          "$label: ${driver.name}",
+                          style: TextStyle(
+                            color: Colors.white70,
+                            fontSize: 12,
+                            fontStyle: FontStyle.italic,
+                          ),
+                        ),
+                      ],
+                    ),
+                  );
+                }),
+
+                if (isOccupied && manager != null) ...[
+                  const Padding(
+                    padding: EdgeInsets.symmetric(vertical: 4.0),
+                    child: Divider(color: Colors.white10),
+                  ),
+                  Row(
+                    children: [
+                      Text(
+                        _getFlagEmoji(
+                          manager?.country,
+                        ), // manager.country should be code? check
+                        style: const TextStyle(fontSize: 12),
+                      ),
+                      const SizedBox(width: 6),
+                      Text(
+                        "Manager: ${manager?.name} ${manager?.surname}",
+                        style: const TextStyle(
+                          color: Colors.amber,
+                          fontSize: 12,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+
                 const SizedBox(height: 8),
                 Row(
                   children: [
-                    Icon(Icons.monetization_on, size: 14, color: Colors.grey),
+                    Icon(
+                      Icons.monetization_on,
+                      size: 14,
+                      color: Colors.grey[600],
+                    ),
                     const SizedBox(width: 4),
                     Text(
                       budgetFormatted,
-                      style: const TextStyle(color: Colors.grey, fontSize: 13),
-                    ),
-                    const SizedBox(width: 12),
-                    Icon(Icons.speed, size: 14, color: Colors.grey),
-                    const SizedBox(width: 4),
-                    Text(
-                      "Rating: $avgStatsStr",
-                      style: const TextStyle(color: Colors.grey, fontSize: 13),
+                      style: TextStyle(color: Colors.grey[600], fontSize: 13),
                     ),
                   ],
                 ),
               ],
             ),
-            SizedBox(
-              width: double.infinity,
-              child: ElevatedButton(
-                onPressed: onApply,
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: Theme.of(context).colorScheme.secondary,
-                  padding: const EdgeInsets.symmetric(vertical: 10),
+            if (!isOccupied && !isLocked)
+              SizedBox(
+                width: double.infinity,
+                child: ElevatedButton(
+                  onPressed: onApply,
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Theme.of(context).colorScheme.secondary,
+                    padding: const EdgeInsets.symmetric(vertical: 10),
+                  ),
+                  child: const Text(
+                    "SELECT TEAM",
+                    style: TextStyle(fontWeight: FontWeight.bold),
+                  ),
                 ),
-                child: const Text(
-                  "SELECT TEAM",
-                  style: TextStyle(fontWeight: FontWeight.bold),
+              )
+            else if (!isLocked)
+              const SizedBox(
+                width: double.infinity,
+                child: Padding(
+                  padding: EdgeInsets.symmetric(vertical: 10),
+                  child: Center(
+                    child: Text(
+                      "OCCUPIED",
+                      style: TextStyle(
+                        color: Colors.grey,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ),
                 ),
               ),
-            ),
           ],
         ),
       ),

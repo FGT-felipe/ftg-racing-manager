@@ -630,13 +630,12 @@ class _MainLayoutState extends State<MainLayout> {
               Expanded(
                 child: Column(
                   children: [
-                    if (isMobile)
-                      _SubNavbar(
-                        navTree: _navTree,
-                        activeParentId: _activeParentId,
-                        selectedId: _selectedId,
-                        onNodeSelected: _onNodeSelected,
-                      ),
+                    _SubNavbar(
+                      navTree: _navTree,
+                      activeParentId: _activeParentId,
+                      selectedId: _selectedId,
+                      onNodeSelected: _onNodeSelected,
+                    ),
                     Expanded(
                       child: Center(
                         child: ConstrainedBox(
@@ -807,68 +806,21 @@ class _Sidebar extends StatelessWidget {
         : FontWeight.normal;
     final double fontSize = depth > 0 ? 12 : 14;
 
-    if (!isCollapsed && hasChildren) {
-      if (depth == 0) {
-        // Level 1 items always show their children and have no chevron
-        return Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            _buildTile(
-              node: node,
-              depth: depth,
-              isSelected: isSelected,
-              contentColor: contentColor,
-              fontWeight: fontWeight,
-              fontSize: fontSize,
-              paddingLeft: paddingLeft,
-            ),
-            ...node.children!.map((child) => _buildNode(child, depth + 1)),
-          ],
-        );
-      } else {
-        // Level 2+ items use ExpansionTile for their submenus
-        return Theme(
-          data: theme.copyWith(
-            dividerColor: Colors.transparent,
-            hoverColor: Colors.white.withValues(alpha: 0.05),
-          ),
-          child: ExpansionTile(
-            tilePadding: EdgeInsets.only(left: paddingLeft, right: 16.0),
-            initiallyExpanded: isAnyChildSelected,
-            title: Text(
-              node.title.toUpperCase(),
-              style: GoogleFonts.raleway(
-                color: contentColor,
-                fontWeight: FontWeight.bold,
-                fontSize: fontSize,
-              ),
-            ),
-            trailing: Icon(
-              Icons.keyboard_arrow_down_rounded,
-              color: contentColor,
-              size: 20,
-            ),
-            onExpansionChanged: (expanded) {
-              if (node.screen != null) onNodeSelected(node);
-            },
-            children: node.children!
-                .map((child) => _buildNode(child, depth + 1))
-                .toList(),
-          ),
-        );
-      }
+    // Level 1 items (depth 0) are the only ones shown in the sidebar now
+    if (depth == 0) {
+      return _buildTile(
+        node: node,
+        depth: depth,
+        isSelected: isSelected,
+        contentColor: contentColor,
+        fontWeight: fontWeight,
+        fontSize: fontSize,
+        paddingLeft: paddingLeft,
+      );
     }
 
-    return _buildTile(
-      node: node,
-      depth: depth,
-      isSelected: isSelected,
-      contentColor: contentColor,
-      fontWeight: fontWeight,
-      fontSize: fontSize,
-      paddingLeft: paddingLeft,
-    );
+    // Hide everything else (depth > 0)
+    return const SizedBox.shrink();
   }
 
   Widget _buildTile({

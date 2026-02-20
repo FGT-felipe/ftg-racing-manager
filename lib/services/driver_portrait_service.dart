@@ -1,37 +1,74 @@
+import 'dart:math';
+
 class DriverPortraitService {
   static final DriverPortraitService _instance =
       DriverPortraitService._internal();
   factory DriverPortraitService() => _instance;
   DriverPortraitService._internal();
 
-  /// Returns the path to the hyper-realistic driver avatar.
-  /// Uses specific assets provided by the user.
+  final Random _random = Random();
+
+  /// List of male driver image names (a-l)
+  static const List<String> _maleImages = [
+    'male_driver_a.png',
+    'male_driver_b.png',
+    'male_driver_c.png',
+    'male_driver_d.png',
+    'male_driver_e.png',
+    'male_driver_f.png',
+    'male_driver_g.png',
+    'male_driver_h.png',
+    'male_driver_i.png',
+    'male_driver_j.png',
+    'male_driver_k.png',
+    'male_driver_l.png',
+  ];
+
+  /// List of female driver image names (a-l)
+  static const List<String> _femaleImages = [
+    'female_driver_a.png',
+    'female_driver_b.png',
+    'female_driver_c.png',
+    'female_driver_d.png',
+    'female_driver_e.png',
+    'female_driver_f.png',
+    'female_driver_g.png',
+    'female_driver_h.png',
+    'female_driver_i.png',
+    'female_driver_j.png',
+    'female_driver_k.png',
+    'female_driver_l.png',
+  ];
+
+  /// Returns the path to a random hyper-realistic driver avatar.
   String getPortraitUrl({
     required String driverId,
-    required String countryCode,
     required String gender,
-    required int age,
+    String? countryCode,
+    int? age,
   }) {
     final isFemale = gender.toLowerCase().startsWith('f');
 
     if (isFemale) {
-      return 'assets/drivers/Gemini_Generated_Image_yl6vheyl6vheyl6v.png';
+      final imageName = _femaleImages[_random.nextInt(_femaleImages.length)];
+      return 'drivers/female/$imageName';
     } else {
-      return 'assets/drivers/Gemini_Generated_Image_vdio0kvdio0kvdio.png';
+      final imageName = _maleImages[_random.nextInt(_maleImages.length)];
+      return 'drivers/male/$imageName';
     }
   }
 
   /// Helper to get a portrait URL for a driver.
   String getEffectivePortraitUrl({
     required String driverId,
-    required String countryCode,
     required String gender,
-    required int age,
+    String? countryCode,
+    int? age,
   }) {
     return getPortraitUrl(
       driverId: driverId,
-      countryCode: countryCode,
       gender: gender,
+      countryCode: countryCode,
       age: age,
     );
   }
