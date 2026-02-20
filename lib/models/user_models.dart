@@ -175,9 +175,9 @@ class ManagerProfile {
   factory ManagerProfile.fromMap(Map<String, dynamic> map) {
     return ManagerProfile(
       uid: map['uid'] ?? '',
-      name: map['name'] ?? '',
-      surname: map['surname'] ?? '',
-      country: map['country'] ?? 'Unknown',
+      name: map['firstName'] ?? '',
+      surname: map['lastName'] ?? '',
+      country: map['nationality'] ?? 'Unknown',
       birthDate: map['birthDate'] != null
           ? DateTime.parse(map['birthDate'])
           : DateTime(2000),

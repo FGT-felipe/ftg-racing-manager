@@ -17,7 +17,7 @@ class DriversScreen extends StatefulWidget {
 
 class _DriversScreenState extends State<DriversScreen> {
   String? _teamName;
-  String? _divisionName;
+  String? _leagueName;
   int? _currentYear;
 
   @override
@@ -27,7 +27,7 @@ class _DriversScreenState extends State<DriversScreen> {
   }
 
   void _refreshDrivers() async {
-    // Fetch Team Name and Division Name
+    // Fetch Team Name and League Name
     try {
       final teamDoc = await FirebaseFirestore.instance
           .collection('teams')
@@ -45,18 +45,15 @@ class _DriversScreenState extends State<DriversScreen> {
 
       final universe = await UniverseService().getUniverse();
       if (universe != null && mounted) {
-        String? foundDivision;
+        String? foundLeagueName;
         for (var league in universe.getAllLeagues()) {
-          for (var division in league.divisions) {
-            if (division.teamIds.contains(widget.teamId)) {
-              foundDivision = division.name;
-              break;
-            }
+          if (league.teams.any((t) => t.id == widget.teamId)) {
+            foundLeagueName = league.name;
+            break;
           }
-          if (foundDivision != null) break;
         }
         setState(() {
-          _divisionName = foundDivision;
+          _leagueName = foundLeagueName;
         });
       }
 
@@ -108,7 +105,7 @@ class _DriversScreenState extends State<DriversScreen> {
             return DriverCard(
               driver: driver,
               teamName: _teamName,
-              divisionName: _divisionName,
+              leagueName: _leagueName,
               currentYear: _currentYear,
               onRenew: () {
                 ScaffoldMessenger.of(context).showSnackBar(

@@ -8,7 +8,6 @@ import '../config/game_config.dart';
 import 'universe_service.dart';
 import 'team_assignment_service.dart';
 import 'driver_assignment_service.dart';
-import 'driver_portrait_service.dart';
 import 'driver_name_service.dart';
 import 'driver_status_service.dart';
 
@@ -16,19 +15,8 @@ class DatabaseSeeder {
   static final FirebaseFirestore _db = FirebaseFirestore.instance;
 
   /// Servicio centralizado de nombres (con anti-repetición)
+  /// Contador para IDs únicos
   static final DriverNameService _nameService = DriverNameService();
-  static const List<String> _teamNames = [
-    "Escudería Los Andes",
-    "Bogotá Racing",
-    "Furia Porteña",
-    "Carioca Speed",
-    "Azteca Motorsport",
-    "Pampa Speed",
-    "Antioquia Grand Prix",
-    "Quito Motorsport",
-    "Caracas Racing Team",
-    "Montevideo Performance",
-  ];
 
   static Future<void> nukeAndReseed({DateTime? startDate}) async {
     try {
@@ -92,14 +80,14 @@ class DatabaseSeeder {
       await UniverseService().initializeIfNeeded();
       debugPrint("SEEDING: GameUniverse inicializado.");
 
-      // PHASE 4: Poblar divisiones con equipos
-      debugPrint("SEEDING: Poblando divisiones con equipos...");
-      await TeamAssignmentService().populateAllDivisions();
-      debugPrint("SEEDING: Equipos asignados a divisiones.");
+      // PHASE 4: Poblar ligas con equipos
+      debugPrint("SEEDING: Poblando ligas con equipos...");
+      await TeamAssignmentService().populateLeagues();
+      debugPrint("SEEDING: Equipos asignados.");
 
       // PHASE 5: Asignar pilotos a equipos
       debugPrint("SEEDING: Asignando pilotos a equipos...");
-      await DriverAssignmentService().populateAllTeams();
+      await DriverAssignmentService().populateLeagues();
       debugPrint("SEEDING: Pilotos asignados.");
 
       if (!force) {
@@ -107,15 +95,59 @@ class DatabaseSeeder {
         if (leaguesSnapshot.docs.isNotEmpty) return;
       }
 
-      final random = Random();
       final batch = _db.batch();
 
-      // 1. LIGA
-      final leagueRef = _db.collection('leagues').doc();
-      final league = League(id: leagueRef.id, name: "Copa Suramericana");
-      batch.set(leagueRef, league.toMap());
+      final universe = await UniverseService().getUniverse();
+      if (universe == null) throw Exception("Universe not seeded");
 
-      // 1.5 SEED TITLES
+      // 1. Create root "leagues" documents for each league in the universe
+      // to support existing features like LeagueNotificationService
+      for (final league in universe.leagues) {
+        batch.set(_db.collection('leagues').doc(league.id), {
+          'id': league.id,
+          'name': league.name,
+          'tier': league.tier,
+        });
+
+        // 2. CALENDARIO base for each league
+        final now = startDate ?? DateTime.now();
+        final l10n = lookupAppLocalizations(const Locale('en'));
+
+        final List<RaceEvent> calendar = [
+          RaceEvent(
+            id: 'r1',
+            trackName: l10n.circuitMexico,
+            countryCode: "MX",
+            flagEmoji: "🇲🇽",
+            circuitId: 'mexico',
+            date: now.add(const Duration(days: 7)),
+            isCompleted: false,
+          ),
+          RaceEvent(
+            id: 'r2',
+            trackName: l10n.circuitInterlagos,
+            countryCode: "BR",
+            flagEmoji: "🇧🇷",
+            circuitId: 'interlagos',
+            date: now.add(const Duration(days: 14)),
+            isCompleted: false,
+          ),
+        ];
+
+        // 3. SEASON for each league
+        final seasonRef = _db.collection('seasons').doc();
+        final season = Season(
+          id: seasonRef.id,
+          leagueId: league.id,
+          number: 1,
+          year: 2026,
+          calendar: calendar,
+          startDate: now,
+        );
+        batch.set(seasonRef, season.toMap());
+      }
+
+      // 1.5 SEED TITLES (Global)
       final titles = DriverStatusService.getAllTitles();
       for (final entry in titles.entries) {
         final titleRef = _db.collection('driver_titles').doc(entry.key);
@@ -124,265 +156,6 @@ class DatabaseSeeder {
           'description': entry.value,
           'updatedAt': FieldValue.serverTimestamp(),
         });
-      }
-
-      // 2. CALENDARIO
-      final now = startDate ?? DateTime.now();
-
-      final l10n = lookupAppLocalizations(const Locale('en'));
-
-      final List<RaceEvent> calendar = [
-        RaceEvent(
-          id: 'r1',
-          trackName: l10n.circuitMexico,
-          countryCode: "MX",
-          flagEmoji: "🇲🇽",
-          circuitId: 'mexico',
-          date: now,
-          isCompleted: false,
-          totalLaps: 71,
-          weatherPractice: "Sunny",
-          weatherQualifying: "Sunny",
-          weatherRace: "Sunny",
-        ),
-        RaceEvent(
-          id: 'r2',
-          trackName: l10n.circuitVegas,
-          countryCode: "US",
-          flagEmoji: "🇺🇸",
-          circuitId: 'vegas',
-          date: now.add(const Duration(days: 7)),
-          isCompleted: false,
-          totalLaps: 50,
-          weatherPractice: "Sunny",
-          weatherQualifying: "Cloudy",
-          weatherRace: "Sunny",
-        ),
-        RaceEvent(
-          id: 'r3',
-          trackName: l10n.circuitInterlagos,
-          countryCode: "BR",
-          flagEmoji: "🇧🇷",
-          circuitId: 'interlagos',
-          date: now.add(const Duration(days: 14)),
-          isCompleted: false,
-          totalLaps: 71,
-          weatherPractice: "Cloudy",
-          weatherQualifying: "Rainy",
-          weatherRace: "Rainy",
-        ),
-        RaceEvent(
-          id: 'r4',
-          trackName: l10n.circuitMiami,
-          countryCode: "US",
-          flagEmoji: "🇺🇸",
-          circuitId: 'miami',
-          date: now.add(const Duration(days: 21)),
-          isCompleted: false,
-          totalLaps: 57,
-          weatherPractice: "Sunny",
-          weatherQualifying: "Sunny",
-          weatherRace: "Sunny",
-        ),
-        RaceEvent(
-          id: 'r5',
-          trackName: l10n.circuitSanPabloStreet,
-          countryCode: "BR",
-          flagEmoji: "🇧🇷",
-          circuitId: 'san_pablo_street',
-          date: now.add(const Duration(days: 28)),
-          isCompleted: false,
-          totalLaps: 40,
-          weatherPractice: "Sunny",
-          weatherQualifying: "Sunny",
-          weatherRace: "Sunny",
-        ),
-        RaceEvent(
-          id: 'r6',
-          trackName: l10n.circuitIndianapolis,
-          countryCode: "US",
-          flagEmoji: "🇺🇸",
-          circuitId: 'indianapolis',
-          date: now.add(const Duration(days: 35)),
-          isCompleted: false,
-          totalLaps: 73,
-          weatherPractice: "Sunny",
-          weatherQualifying: "Cloudy",
-          weatherRace: "Sunny",
-        ),
-        RaceEvent(
-          id: 'r7',
-          trackName: l10n.circuitMontreal,
-          countryCode: "CA",
-          flagEmoji: "🇨🇦",
-          circuitId: 'montreal',
-          date: now.add(const Duration(days: 42)),
-          isCompleted: false,
-          totalLaps: 70,
-          weatherPractice: "Sunny",
-          weatherQualifying: "Sunny",
-          weatherRace: "Cloudy",
-        ),
-        RaceEvent(
-          id: 'r8',
-          trackName: l10n.circuitTexas,
-          countryCode: "US",
-          flagEmoji: "🇺🇸",
-          circuitId: 'texas',
-          date: now.add(const Duration(days: 49)),
-          isCompleted: false,
-          totalLaps: 56,
-          weatherPractice: "Sunny",
-          weatherQualifying: "Sunny",
-          weatherRace: "Sunny",
-        ),
-        RaceEvent(
-          id: 'r9',
-          trackName: l10n.circuitBuenosAires,
-          countryCode: "AR",
-          flagEmoji: "🇦🇷",
-          circuitId: 'buenos_aires',
-          date: now.add(const Duration(days: 56)),
-          isCompleted: false,
-          totalLaps: 72,
-          weatherPractice: "Sunny",
-          weatherQualifying: "Sunny",
-          weatherRace: "Sunny",
-        ),
-      ];
-
-      // 3. SEASON
-      final seasonRef = _db.collection('seasons').doc();
-      final season = Season(
-        id: seasonRef.id,
-        leagueId: leagueRef.id,
-        number: 1,
-        year: 2026,
-        calendar: calendar,
-        startDate: now, // Persist start date
-      );
-      batch.set(seasonRef, season.toMap());
-
-      final divisionRef = _db.collection('divisions').doc();
-      final division = Division(
-        id: divisionRef.id,
-        leagueId: leagueRef.id,
-        name: "Primera División",
-        level: 1,
-      );
-      batch.set(divisionRef, division.toMap());
-
-      // 4. EQUIPOS Y PILOTOS
-      for (var teamName in _teamNames) {
-        final teamRef = _db.collection('teams').doc();
-        final team = Team(
-          id: teamRef.id,
-          name: teamName,
-          isBot: true,
-          budget: 10000000 + random.nextInt(5000000),
-          points: 0,
-          races: 0,
-          wins: 0,
-          podiums: 0,
-          poles: 0,
-          seasonPoints: 0,
-          seasonRaces: 0,
-          seasonWins: 0,
-          seasonPodiums: 0,
-          seasonPoles: 0,
-          carStats: {
-            '0': {'aero': 1, 'powertrain': 1, 'chassis': 1, 'reliability': 1},
-            '1': {'aero': 1, 'powertrain': 1, 'chassis': 1, 'reliability': 1},
-          },
-          weekStatus: {
-            'practiceCompleted': false,
-            'strategySet': false,
-            'sponsorReviewed': false,
-          },
-        );
-        batch.set(teamRef, team.toMap());
-
-        for (int i = 0; i < 2; i++) {
-          final isFemale = random.nextBool();
-          final gender = isFemale ? 'F' : 'M';
-          final age = 29 + random.nextInt(12);
-          final fullName = _nameService.generateName(
-            gender: gender,
-            countryCode: 'CO',
-          );
-
-          final driverRef = teamRef.collection('drivers').doc();
-
-          // Generar stats con el nuevo modelo de 11 atributos
-          int r(int min, int max) => min + random.nextInt(max - min + 1);
-          final ageFitnessBonus = age > 35 ? -10 : 0;
-          final ageFeedbackBonus = age > 32 ? 8 : 0;
-
-          final stats = {
-            DriverStats.braking: r(40, 70),
-            DriverStats.cornering: r(40, 70),
-            DriverStats.smoothness: r(40, 70),
-            DriverStats.overtaking: r(40, 70),
-            DriverStats.consistency: r(40, 70),
-            DriverStats.adaptability: r(40, 70),
-            DriverStats.fitness: (r(40, 70) + ageFitnessBonus).clamp(0, 100),
-            DriverStats.feedback: (r(35, 65) + ageFeedbackBonus).clamp(0, 100),
-            DriverStats.focus: r(35, 65),
-            DriverStats.morale: r(60, 85),
-            DriverStats.marketability: r(25, 60),
-          };
-
-          // Potenciales por stat (techo de mejora)
-          final statPotentials = <String, int>{};
-          for (final key in DriverStats.all) {
-            final current = stats[key]!;
-            statPotentials[key] = (current + 5 + random.nextInt(16)).clamp(
-              0,
-              100,
-            );
-          }
-
-          final baseDriver = Driver(
-            id: driverRef.id,
-            teamId: teamRef.id,
-            carIndex: i,
-            name: fullName,
-            age: age,
-            potential: 2 + random.nextInt(3), // 2-4 estrellas
-            points: 0,
-            seasonPoints: 0,
-            seasonRaces: 0,
-            seasonWins: 0,
-            seasonPodiums: 0,
-            seasonPoles: 0,
-            gender: gender,
-            stats: stats,
-            statPotentials: statPotentials,
-            countryCode: 'CO',
-            role: i == 0 ? 'Main Driver' : 'Secondary Driver',
-            salary: 500000,
-            contractYearsRemaining: 1,
-            weeklyGrowth: {
-              DriverStats.feedback: 0.2,
-              DriverStats.consistency: 0.1,
-            },
-            portraitUrl: DriverPortraitService().getPortraitUrl(
-              driverId: driverRef.id,
-              countryCode: 'CO',
-              gender: gender,
-              age: age,
-            ),
-          );
-
-          batch.set(
-            driverRef,
-            baseDriver
-                .copyWith(
-                  statusTitle: DriverStatusService.calculateTitle(baseDriver),
-                )
-                .toMap(),
-          );
-        }
       }
 
       await batch.commit();

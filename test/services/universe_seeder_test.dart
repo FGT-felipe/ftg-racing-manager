@@ -3,99 +3,75 @@ import 'package:ftg_racing_manager/models/domain/domain_models.dart';
 import 'package:ftg_racing_manager/services/universe_seeder.dart';
 
 void main() {
-  group('Phase 3: Universe Seeder Tests', () {
-    test('creates initial universe with correct structure', () {
+  group('Phase 3: Universe Seeder Tests (Refactored)', () {
+    test('creates initial universe with correct version and leagues', () {
       final universe = UniverseSeeder.createInitialUniverse();
 
       expect(universe, isNotNull);
-      expect(universe.gameVersion, '1.0.0');
-      expect(universe.createdAt, isNotNull);
+      expect(universe.gameVersion, '1.1.0');
+      expect(universe.leagues.length, 3);
     });
 
-    test('creates 6 country leagues', () {
+    test('creates the 3 main hierarchy leagues', () {
       final universe = UniverseSeeder.createInitialUniverse();
 
-      expect(universe.totalActiveLeagues(), 6);
-      expect(universe.activeLeagues.length, 6);
+      final leagueIds = universe.leagues.map((l) => l.id).toList();
+      expect(leagueIds, containsAll(['ftg_world', 'ftg_2th', 'ftg_karting']));
+
+      final world = universe.getLeagueById('ftg_world');
+      expect(world?.name, 'FTG World Championship');
+      expect(world?.tier, 1);
+
+      final second = universe.getLeagueById('ftg_2th');
+      expect(second?.name, 'FTG 2th Series');
+      expect(second?.tier, 2);
+
+      final karting = universe.getLeagueById('ftg_karting');
+      expect(karting?.name, 'FTG Karting Championship');
+      expect(karting?.tier, 3);
     });
 
-    test('includes all expected countries', () {
+    test('each league has 11 teams and correct driver pairs', () {
       final universe = UniverseSeeder.createInitialUniverse();
 
-      final expectedCountries = ['BR', 'AR', 'CO', 'MX', 'UY', 'CL'];
+      for (final league in universe.leagues) {
+        expect(league.totalTeams(), 11);
+        expect(league.teams.length, 11);
 
-      for (final code in expectedCountries) {
-        final league = universe.getLeagueByCountry(code);
-        expect(league, isNotNull, reason: 'Missing league for country $code');
-        expect(league!.country.code, code);
-      }
-    });
+        // Cada liga debe tener 22 pilotos (2 por equipo)
+        expect(league.drivers.length, 22);
 
-    test('each country has correct league structure', () {
-      final universe = UniverseSeeder.createInitialUniverse();
+        for (final team in league.teams) {
+          final teamDrivers = league.drivers
+              .where((d) => d.teamId == team.id)
+              .toList();
 
-      for (final league in universe.getAllLeagues()) {
-        // League debe tener ID basado en el código del país
-        expect(league.id, contains(league.country.code.toLowerCase()));
+          expect(
+            teamDrivers.length,
+            2,
+            reason: 'Team ${team.id} should have 2 drivers',
+          );
 
-        // Nombre debe contener el nombre del país
-        expect(league.name, contains(league.country.name));
-
-        // Debe tener 2 divisiones
-        expect(league.divisions.length, 2);
-
-        // Debe tener academy inicializada
-        expect(league.academy, isNotNull);
-        expect(league.academy.country.code, league.country.code);
-      }
-    });
-
-    test('each league has 2 divisions with correct tiers', () {
-      final universe = UniverseSeeder.createInitialUniverse();
-
-      for (final league in universe.getAllLeagues()) {
-        final divisions = league.divisions;
-
-        expect(divisions.length, 2);
-
-        // División Élite (tier 1)
-        final eliteDivision = divisions.firstWhere((d) => d.tier == 1);
-        expect(eliteDivision.name, 'División Élite');
-        expect(eliteDivision.maxCapacity, 10);
-        expect(eliteDivision.teamIds, isEmpty);
-
-        // División Profesional (tier 2)
-        final proDivision = divisions.firstWhere((d) => d.tier == 2);
-        expect(proDivision.name, 'División Profesional');
-        expect(proDivision.maxCapacity, 10);
-        expect(proDivision.teamIds, isEmpty);
-      }
-    });
-
-    test('divisions have correct IDs and references', () {
-      final universe = UniverseSeeder.createInitialUniverse();
-
-      for (final league in universe.getAllLeagues()) {
-        for (final division in league.divisions) {
-          // ID debe contener el código del país
-          expect(division.id, contains(league.country.code.toLowerCase()));
-
-          // countryLeagueId debe coincidir con el ID de la liga
-          expect(division.countryLeagueId, league.id);
+          final genders = teamDrivers.map((d) => d.gender).toList();
+          expect(
+            genders,
+            containsAll(['M', 'F']),
+            reason: 'Team ${team.id} must have 1 male and 1 female driver',
+          );
         }
       }
     });
 
-    test('each league can generate young drivers', () {
+    test('each league has academy initialized with Colombia', () {
       final universe = UniverseSeeder.createInitialUniverse();
 
-      for (final league in universe.getAllLeagues()) {
-        final youngDriver = league.academy.generatePromisingDriver();
+      for (final league in universe.leagues) {
+        expect(league.academy, isNotNull);
+        expect(league.academy.country.code, 'CO');
 
-        expect(youngDriver, isNotNull);
-        expect(youngDriver.nationality.code, league.country.code);
-        expect(youngDriver.age, greaterThanOrEqualTo(16));
-        expect(youngDriver.age, lessThanOrEqualTo(19));
+        // El piloto generado por la academia debe ser de Colombia
+        final youngDriver = league.academy.generatePromisingDriver();
+        expect(youngDriver.nationality.code, 'CO');
       }
     });
 
@@ -105,125 +81,26 @@ void main() {
       final map = universe.toMap();
       final restored = GameUniverse.fromMap(map);
 
-      expect(restored.totalActiveLeagues(), universe.totalActiveLeagues());
+      expect(restored.leagues.length, universe.leagues.length);
       expect(restored.gameVersion, universe.gameVersion);
 
-      // Verificar que todas las ligas se serializaron correctamente
-      for (final code in ['BR', 'AR', 'CO', 'MX', 'UY', 'CL']) {
-        final originalLeague = universe.getLeagueByCountry(code);
-        final restoredLeague = restored.getLeagueByCountry(code);
+      for (int i = 0; i < universe.leagues.length; i++) {
+        final original = universe.leagues[i];
+        final restoredLeague = restored.leagues[i];
 
-        expect(restoredLeague, isNotNull);
-        expect(restoredLeague!.id, originalLeague!.id);
-        expect(restoredLeague.country.code, originalLeague.country.code);
-        expect(
-          restoredLeague.divisions.length,
-          originalLeague.divisions.length,
-        );
+        expect(restoredLeague.id, original.id);
+        expect(restoredLeague.name, original.name);
+        expect(restoredLeague.teams.length, original.teams.length);
+        expect(restoredLeague.drivers.length, original.drivers.length);
       }
-    });
-
-    test('brasil league has correct configuration', () {
-      final universe = UniverseSeeder.createInitialUniverse();
-      final leagueBR = universe.getLeagueByCountry('BR');
-
-      expect(leagueBR, isNotNull);
-      expect(leagueBR!.id, 'league_br');
-      expect(leagueBR.country.code, 'BR');
-      expect(leagueBR.country.name, 'Brasil');
-      expect(leagueBR.country.flagEmoji, '🇧🇷');
-      expect(leagueBR.name, 'Liga Brasil');
-      expect(leagueBR.currentSeasonId, 'season_2026_br');
-    });
-
-    test('argentina league has correct configuration', () {
-      final universe = UniverseSeeder.createInitialUniverse();
-      final leagueAR = universe.getLeagueByCountry('AR');
-
-      expect(leagueAR, isNotNull);
-      expect(leagueAR!.id, 'league_ar');
-      expect(leagueAR.country.code, 'AR');
-      expect(leagueAR.country.name, 'Argentina');
-      expect(leagueAR.country.flagEmoji, '🇦🇷');
-      expect(leagueAR.name, 'Liga Argentina');
     });
 
     test('multiple universe instances are independent', () {
       final universe1 = UniverseSeeder.createInitialUniverse();
       final universe2 = UniverseSeeder.createInitialUniverse();
 
-      // Deben ser instancias diferentes
       expect(identical(universe1, universe2), isFalse);
-
-      // Pero con la misma estructura
-      expect(universe1.totalActiveLeagues(), universe2.totalActiveLeagues());
-    });
-
-    test('total teams is zero initially', () {
-      final universe = UniverseSeeder.createInitialUniverse();
-
-      // No hay equipos asignados todavía
-      expect(universe.totalTeams(), 0);
-
-      for (final league in universe.getAllLeagues()) {
-        expect(league.totalTeams(), 0);
-      }
-    });
-
-    test('all divisions have available slots', () {
-      final universe = UniverseSeeder.createInitialUniverse();
-
-      for (final league in universe.getAllLeagues()) {
-        for (final division in league.divisions) {
-          expect(division.hasSpace(), isTrue);
-          expect(division.isFull(), isFalse);
-          expect(division.availableSlots(), 10);
-        }
-      }
-    });
-
-    test('can access divisions by tier', () {
-      final universe = UniverseSeeder.createInitialUniverse();
-      final league = universe.getLeagueByCountry('CO');
-
-      final eliteDivision = league!.getDivisionByTier(1);
-      final proDivision = league.getDivisionByTier(2);
-      final nonexistent = league.getDivisionByTier(3);
-
-      expect(eliteDivision, isNotNull);
-      expect(eliteDivision!.tier, 1);
-
-      expect(proDivision, isNotNull);
-      expect(proDivision!.tier, 2);
-
-      expect(nonexistent, isNull);
-    });
-
-    test('integration: universe with all phases combined', () {
-      // Fase 1: GameUniverse
-      final universe = UniverseSeeder.createInitialUniverse();
-
-      // Verificar estructura completa
-      expect(universe.totalActiveLeagues(), 6);
-
-      // Fase 2: Youth Academy
-      final leagueMX = universe.getLeagueByCountry('MX');
-      final youngDriver = leagueMX!.academy.generatePromisingDriver();
-
-      expect(youngDriver.nationality.code, 'MX');
-
-      // Fase 3: Verificar que todo funciona junto
-      final allLeagues = universe.getAllLeagues();
-      for (final league in allLeagues) {
-        // Cada liga puede generar pilotos
-        final driver = league.academy.generatePromisingDriver();
-        expect(driver.nationality.code, league.country.code);
-
-        // Cada liga tiene divisiones válidas
-        expect(league.divisions.length, 2);
-        expect(league.getDivisionByTier(1), isNotNull);
-        expect(league.getDivisionByTier(2), isNotNull);
-      }
+      expect(universe1.leagues.length, universe2.leagues.length);
     });
   });
 }

@@ -806,28 +806,27 @@ class _GarageScreenState extends State<GarageScreen>
     }
   }
 
-  /// Load all teams and drivers from the player's division
+  /// Load all teams and drivers from the player's league
   Future<void> _loadDivisionData() async {
     try {
       final universe = await UniverseService().getUniverse();
       if (universe == null) return;
 
-      // Find the division containing this team
-      for (final league in universe.getAllLeagues()) {
-        for (final division in league.divisions) {
-          if (division.teamIds.contains(widget.teamId)) {
-            _divisionTeams = await TeamAssignmentService().getTeamsByDivision(
-              division.id,
-            );
-            _divisionDrivers = await DriverAssignmentService()
-                .getDriversByDivision(division.id);
-            _buildInitialQualifyingTable();
-            return;
-          }
+      // Find the league containing this team
+      for (final league in universe.leagues) {
+        if (league.teams.any((t) => t.id == widget.teamId)) {
+          _divisionTeams = await TeamAssignmentService().getTeamsByLeague(
+            league.id,
+          );
+          _divisionDrivers = await DriverAssignmentService().getDriversByLeague(
+            league.id,
+          );
+          _buildInitialQualifyingTable();
+          return;
         }
       }
     } catch (e) {
-      debugPrint("Error loading division data: $e");
+      debugPrint("Error loading league data: $e");
     }
   }
 

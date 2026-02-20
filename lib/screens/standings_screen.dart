@@ -16,33 +16,26 @@ class StandingsScreen extends StatefulWidget {
 
 class _StandingsScreenState extends State<StandingsScreen> {
   String? _selectedLeagueId;
-  String? _selectedDivisionId;
   bool _initialized = false;
 
   void _initializeSelection(GameUniverse universe, String? userTeamId) {
     if (_initialized) return;
 
-    // Default: try to find user's league and division
+    // Default: try to find user's league
     if (userTeamId != null) {
-      for (final league in universe.getAllLeagues()) {
-        for (final division in league.divisions) {
-          if (division.teamIds.contains(userTeamId)) {
-            _selectedLeagueId = league.id;
-            _selectedDivisionId = division.id;
-            _initialized = true;
-            return;
-          }
+      for (final league in universe.leagues) {
+        if (league.teams.any((t) => t.id == userTeamId)) {
+          _selectedLeagueId = league.id;
+          _initialized = true;
+          return;
         }
       }
     }
 
-    // Fallback: first league and first division
-    if (universe.activeLeagues.isNotEmpty) {
-      final firstLeague = universe.getAllLeagues().first;
+    // Fallback: first league
+    if (universe.leagues.isNotEmpty) {
+      final firstLeague = universe.leagues.first;
       _selectedLeagueId = firstLeague.id;
-      if (firstLeague.divisions.isNotEmpty) {
-        _selectedDivisionId = firstLeague.divisions.first.id;
-      }
     }
     _initialized = true;
   }
@@ -80,34 +73,21 @@ class _StandingsScreenState extends State<StandingsScreen> {
             _initializeSelection(universe, userTeamId);
 
             // Get selected objects
-            CountryLeague? selectedLeague;
+            FtgLeague? selectedLeague;
             if (_selectedLeagueId != null) {
-              // IDK why finding by value in map is hard, checking values list
               try {
-                selectedLeague = universe.getAllLeagues().firstWhere(
+                selectedLeague = universe.leagues.firstWhere(
                   (l) => l.id == _selectedLeagueId,
                 );
               } catch (_) {}
             }
 
-            LeagueDivision? selectedDivision;
-            if (selectedLeague != null && _selectedDivisionId != null) {
-              selectedDivision = selectedLeague.getDivisionById(
-                _selectedDivisionId!,
-              );
-              // Fallback if division not in this league (handling switch logic)
-              if (selectedDivision == null &&
-                  selectedLeague.divisions.isNotEmpty) {
-                selectedDivision = selectedLeague.divisions.first;
-                _selectedDivisionId = selectedDivision.id;
-              }
-            } else if (selectedLeague != null &&
-                selectedLeague.divisions.isNotEmpty) {
-              selectedDivision = selectedLeague.divisions.first;
-              _selectedDivisionId = selectedDivision.id;
+            if (selectedLeague == null && universe.leagues.isNotEmpty) {
+              selectedLeague = universe.leagues.first;
+              _selectedLeagueId = selectedLeague.id;
             }
 
-            if (selectedLeague == null || selectedDivision == null) {
+            if (selectedLeague == null) {
               return const Center(child: Text("No leagues available."));
             }
 
@@ -146,88 +126,39 @@ class _StandingsScreenState extends State<StandingsScreen> {
                         ),
                       ),
                       // DROPDOWNS
-                      Row(
-                        children: [
-                          // LEAGUE DROPDOWN
-                          Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 12),
-                            decoration: BoxDecoration(
-                              color: Theme.of(
-                                context,
-                              ).colorScheme.surfaceContainerHighest,
-                              borderRadius: BorderRadius.circular(12),
-                            ),
-                            child: DropdownButtonHideUnderline(
-                              child: DropdownButton<String>(
-                                value: selectedLeague.id,
-                                dropdownColor: Theme.of(
-                                  context,
-                                ).colorScheme.surface,
-                                items: universe.getAllLeagues().map((league) {
-                                  return DropdownMenuItem(
-                                    value: league.id,
-                                    child: Text(
-                                      league.name, // e.g., "Liga Brasil"
-                                      style: const TextStyle(fontSize: 14),
-                                    ),
-                                  );
-                                }).toList(),
-                                onChanged: (val) {
-                                  if (val != null) {
-                                    setState(() {
-                                      _selectedLeagueId = val;
-                                      // Reset division when league changes
-                                      final newLeague = universe
-                                          .getAllLeagues()
-                                          .firstWhere((l) => l.id == val);
-                                      if (newLeague.divisions.isNotEmpty) {
-                                        _selectedDivisionId =
-                                            newLeague.divisions.first.id;
-                                      } else {
-                                        _selectedDivisionId = null;
-                                      }
-                                    });
-                                  }
-                                },
-                              ),
-                            ),
+                      // LEAGUE DROPDOWN
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 12),
+                        decoration: BoxDecoration(
+                          color: Theme.of(
+                            context,
+                          ).colorScheme.surfaceContainerHighest,
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        child: DropdownButtonHideUnderline(
+                          child: DropdownButton<String>(
+                            value: selectedLeague.id,
+                            dropdownColor: Theme.of(
+                              context,
+                            ).colorScheme.surface,
+                            items: universe.leagues.map((league) {
+                              return DropdownMenuItem(
+                                value: league.id,
+                                child: Text(
+                                  league.name,
+                                  style: const TextStyle(fontSize: 14),
+                                ),
+                              );
+                            }).toList(),
+                            onChanged: (val) {
+                              if (val != null) {
+                                setState(() {
+                                  _selectedLeagueId = val;
+                                });
+                              }
+                            },
                           ),
-                          const SizedBox(width: 12),
-                          // DIVISION DROPDOWN
-                          Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 12),
-                            decoration: BoxDecoration(
-                              color: Theme.of(
-                                context,
-                              ).colorScheme.surfaceContainerHighest,
-                              borderRadius: BorderRadius.circular(12),
-                            ),
-                            child: DropdownButtonHideUnderline(
-                              child: DropdownButton<String>(
-                                value: selectedDivision.id,
-                                dropdownColor: Theme.of(
-                                  context,
-                                ).colorScheme.surface,
-                                items: selectedLeague.divisions.map((div) {
-                                  return DropdownMenuItem(
-                                    value: div.id,
-                                    child: Text(
-                                      div.name,
-                                      style: const TextStyle(fontSize: 14),
-                                    ),
-                                  );
-                                }).toList(),
-                                onChanged: (val) {
-                                  if (val != null) {
-                                    setState(() {
-                                      _selectedDivisionId = val;
-                                    });
-                                  }
-                                },
-                              ),
-                            ),
-                          ),
-                        ],
+                        ),
                       ),
                     ],
                   ),
@@ -273,11 +204,11 @@ class _StandingsScreenState extends State<StandingsScreen> {
                               child: TabBarView(
                                 children: [
                                   _DriversStandingsTab(
-                                    division: selectedDivision,
+                                    league: selectedLeague,
                                     highlightTeamId: userTeamId,
                                   ),
                                   _ConstructorsStandingsTab(
-                                    division: selectedDivision,
+                                    league: selectedLeague,
                                     highlightTeamId: userTeamId,
                                   ),
                                   _LastRaceStandingsTab(
@@ -303,183 +234,108 @@ class _StandingsScreenState extends State<StandingsScreen> {
 }
 
 class _DriversStandingsTab extends StatelessWidget {
-  final LeagueDivision division;
+  final FtgLeague league;
   final String? highlightTeamId;
 
-  const _DriversStandingsTab({required this.division, this.highlightTeamId});
+  const _DriversStandingsTab({required this.league, this.highlightTeamId});
 
   @override
   Widget build(BuildContext context) {
-    if (division.teamIds.isEmpty) {
-      return const Center(child: Text("No teams in this division."));
+    if (league.teams.isEmpty) {
+      return const Center(child: Text("No teams in this league."));
     }
 
-    // Optimization: we could filter by teamIds in query if < 30 items
-    // Since division size is usually small, this is fine.
+    final drivers = List<Driver>.from(league.drivers);
+    final teamMap = {for (var t in league.teams) t.id: t.name};
 
-    // We cannot easily do collectionGroup('drivers').where('teamId', whereIn: teamIds)
-    // without composite index usually.
-    // Instead, we fetch all and filter client side OR fetch per team.
-    // Given low volume, client side filter (or just fetching all drivers if collection not huge) is simplest.
-    // BUT we should try to be efficient.
-    // Let's rely on fetching all drivers for now as before, but filtering output.
+    drivers.sort((a, b) {
+      if (b.seasonPoints != a.seasonPoints) {
+        return b.seasonPoints.compareTo(a.seasonPoints);
+      }
+      return a.name.toLowerCase().compareTo(b.name.toLowerCase());
+    });
 
-    return StreamBuilder<QuerySnapshot>(
-      stream: FirebaseFirestore.instance.collectionGroup('drivers').snapshots(),
-      builder: (context, snapshot) {
-        if (!snapshot.hasData) {
-          return const Center(child: CircularProgressIndicator());
-        }
+    Map<String, int> ranks = {};
+    for (int i = 0; i < drivers.length; i++) {
+      ranks[drivers[i].id] = i + 1;
+    }
 
-        // Filter drivers that belong to teams in this division
-        final drivers = snapshot.data!.docs
-            .map((d) {
-              final data = d.data() as Map<String, dynamic>;
-              // Ensure teamId is set
-              if (data['teamId'] == null) {
-                data['teamId'] = d.reference.parent.parent?.id;
-              } else if (data['teamId'] is DocumentReference) {
-                data['teamId'] = (data['teamId'] as DocumentReference).id;
-              }
-              return Driver.fromMap(data);
-            })
-            .where((d) => division.teamIds.contains(d.teamId))
-            .toList();
-
-        // Need team names map
-        return StreamBuilder<QuerySnapshot>(
-          stream: FirebaseFirestore.instance
-              .collection('teams')
-              .where(FieldPath.documentId, whereIn: division.teamIds)
-              .snapshots(),
-          builder: (context, teamSnapshot) {
-            if (!teamSnapshot.hasData) {
-              return const Center(child: CircularProgressIndicator());
-            }
-
-            final teamMap = {
-              for (var doc in teamSnapshot.data!.docs)
-                doc.id: (doc.data() as Map<String, dynamic>)['name'] as String,
-            };
-
-            drivers.sort((a, b) {
-              if (b.seasonPoints != a.seasonPoints) {
-                return b.seasonPoints.compareTo(a.seasonPoints);
-              }
-              return a.name.toLowerCase().compareTo(b.name.toLowerCase());
-            });
-
-            Map<String, int> ranks = {};
-            for (int i = 0; i < drivers.length; i++) {
-              ranks[drivers[i].id] = i + 1;
-            }
-
-            return _StandingsTable(
-              flexValues: const [1, 4, 4, 1, 1, 1, 1, 2],
-              columns: const [
-                "Pos",
-                "Driver",
-                "Team",
-                "R",
-                "W",
-                "P",
-                "Pl",
-                "Pts",
-              ],
-              highlightIndices: drivers
-                  .asMap()
-                  .entries
-                  .where((e) => e.value.teamId == highlightTeamId)
-                  .map((e) => e.key)
-                  .toList(),
-              rows: drivers
-                  .map(
-                    (d) => <String>[
-                      "#${ranks[d.id] ?? '-'}",
-                      d.name,
-                      teamMap[d.teamId] ?? '—',
-                      "${d.seasonRaces}",
-                      "${d.seasonWins}",
-                      "${d.seasonPodiums}",
-                      "${d.seasonPoles}",
-                      "${d.seasonPoints}",
-                    ],
-                  )
-                  .toList(),
-            );
-          },
-        );
-      },
+    return _StandingsTable(
+      flexValues: const [1, 4, 4, 1, 1, 1, 1, 2],
+      columns: const ["Pos", "Driver", "Team", "R", "W", "P", "Pl", "Pts"],
+      highlightIndices: drivers
+          .asMap()
+          .entries
+          .where((e) => e.value.teamId == highlightTeamId)
+          .map((e) => e.key)
+          .toList(),
+      rows: drivers
+          .map(
+            (d) => <String>[
+              "#${ranks[d.id] ?? '-'}",
+              d.name,
+              teamMap[d.teamId] ?? '—',
+              "${d.seasonRaces}",
+              "${d.seasonWins}",
+              "${d.seasonPodiums}",
+              "${d.seasonPoles}",
+              "${d.seasonPoints}",
+            ],
+          )
+          .toList(),
     );
   }
 }
 
 class _ConstructorsStandingsTab extends StatelessWidget {
-  final LeagueDivision division;
+  final FtgLeague league;
   final String? highlightTeamId;
 
-  const _ConstructorsStandingsTab({
-    required this.division,
-    this.highlightTeamId,
-  });
+  const _ConstructorsStandingsTab({required this.league, this.highlightTeamId});
 
   @override
   Widget build(BuildContext context) {
-    if (division.teamIds.isEmpty) {
-      return const Center(child: Text("No teams in this division."));
+    if (league.teams.isEmpty) {
+      return const Center(child: Text("No teams in this league."));
     }
 
-    return StreamBuilder<QuerySnapshot>(
-      stream: FirebaseFirestore.instance
-          .collection('teams')
-          .where(FieldPath.documentId, whereIn: division.teamIds)
-          .snapshots(),
-      builder: (context, snapshot) {
-        if (!snapshot.hasData) {
-          return const Center(child: CircularProgressIndicator());
-        }
+    final teams = List<Team>.from(league.teams);
 
-        final teams = snapshot.data!.docs
-            .map((d) => Team.fromMap(d.data() as Map<String, dynamic>))
-            .toList();
+    // Sort by seasonPoints DESC (primary) then Name ASC (secondary tie-breaker)
+    teams.sort((a, b) {
+      if (b.seasonPoints != a.seasonPoints) {
+        return b.seasonPoints.compareTo(a.seasonPoints);
+      }
+      return a.name.toLowerCase().compareTo(b.name.toLowerCase());
+    });
 
-        // Sort by seasonPoints DESC (primary) then Name ASC (secondary tie-breaker)
-        teams.sort((a, b) {
-          if (b.seasonPoints != a.seasonPoints) {
-            return b.seasonPoints.compareTo(a.seasonPoints);
-          }
-          return a.name.toLowerCase().compareTo(b.name.toLowerCase());
-        });
+    Map<String, int> ranks = {};
+    for (int i = 0; i < teams.length; i++) {
+      ranks[teams[i].id] = i + 1;
+    }
 
-        Map<String, int> ranks = {};
-        for (int i = 0; i < teams.length; i++) {
-          ranks[teams[i].id] = i + 1;
-        }
-
-        return _StandingsTable(
-          flexValues: const [1, 6, 1, 1, 1, 1, 2],
-          columns: const ["Pos", "Team", "R", "W", "P", "Pl", "Pts"],
-          highlightIndices: teams
-              .asMap()
-              .entries
-              .where((e) => e.value.id == highlightTeamId)
-              .map((e) => e.key)
-              .toList(),
-          rows: teams
-              .map(
-                (t) => <String>[
-                  "#${ranks[t.id] ?? '-'}",
-                  t.name,
-                  "${t.seasonRaces}",
-                  "${t.seasonWins}",
-                  "${t.seasonPodiums}",
-                  "${t.seasonPoles}",
-                  "${t.seasonPoints}",
-                ],
-              )
-              .toList(),
-        );
-      },
+    return _StandingsTable(
+      flexValues: const [1, 6, 1, 1, 1, 1, 2],
+      columns: const ["Pos", "Team", "R", "W", "P", "Pl", "Pts"],
+      highlightIndices: teams
+          .asMap()
+          .entries
+          .where((e) => e.value.id == highlightTeamId)
+          .map((e) => e.key)
+          .toList(),
+      rows: teams
+          .map(
+            (t) => <String>[
+              "#${ranks[t.id] ?? '-'}",
+              t.name,
+              "${t.seasonRaces}",
+              "${t.seasonWins}",
+              "${t.seasonPodiums}",
+              "${t.seasonPoles}",
+              "${t.seasonPoints}",
+            ],
+          )
+          .toList(),
     );
   }
 }

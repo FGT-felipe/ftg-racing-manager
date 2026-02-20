@@ -2,38 +2,30 @@ import 'dart:math';
 import '../models/core_models.dart';
 import '../models/domain/domain_models.dart';
 
-/// Fábrica para generar equipos de un país específico.
+/// Fábrica para generar equipos bot.
 ///
-/// Similar a YouthAcademyFactory pero para equipos bot.
 /// Genera nombres temáticos y configuraciones basadas en el país.
 class TeamFactory {
-  /// País del cual esta fábrica genera equipos (inmutable)
-  final Country country;
-
   /// Generador de números aleatorios
   final Random _random;
 
-  /// Contador para IDs únicos por país
-  static final Map<String, int> _countryCounters = {};
+  /// Contador para IDs únicos
+  static int _globalCounter = 0;
 
-  TeamFactory(this.country) : _random = Random() {
-    _countryCounters.putIfAbsent(country.code, () => 0);
-  }
+  TeamFactory({Random? random}) : _random = random ?? Random();
 
-  /// Genera un equipo bot del país
+  /// Genera un equipo bot
   ///
-  /// El equipo tendrá:
-  /// - Nombre temático del país
-  /// - isBot = true, managerId = null
-  /// - Budget: $5M - $15M
-  /// - Stats iniciales: 1-20 (para permitir progresión)
-  Team generateBotTeam() {
+  /// [forcedCountry]: Si se provee, el equipo será de este país.
+  Team generateBotTeam({Country? forcedCountry}) {
+    final country = forcedCountry ?? _pickRandomCountry();
+
     return Team(
-      id: _generateId(),
-      name: _generateTeamName(),
+      id: _generateId(country),
+      name: _generateTeamName(country),
       managerId: null, // Bot team sin manager
       isBot: true,
-      budget: _generateBudget(),
+      budget: 5000000,
       points: 0,
       races: 0,
       wins: 0,
@@ -46,19 +38,12 @@ class TeamFactory {
   }
 
   /// Genera un ID único para el equipo
-  String _generateId() {
-    final countryCode = country.code.toLowerCase();
-    final counter = _countryCounters[country.code]!;
-    _countryCounters[country.code] = counter + 1;
-
-    final timestamp = DateTime.now().millisecondsSinceEpoch;
-    final randomSuffix = _random.nextInt(999);
-
-    return 'team_${countryCode}_${timestamp}_$randomSuffix';
+  String _generateId(Country country) {
+    return 'team_${country.code.toLowerCase()}_${DateTime.now().millisecondsSinceEpoch}_${_globalCounter++}';
   }
 
   /// Genera un nombre de equipo temático del país
-  String _generateTeamName() {
+  String _generateTeamName(Country country) {
     final prefixes = _teamPrefixesByCountry[country.code] ?? _defaultPrefixes;
     final suffixes = _teamSuffixesByCountry[country.code] ?? _defaultSuffixes;
 
@@ -68,9 +53,17 @@ class TeamFactory {
     return '$prefix $suffix';
   }
 
-  /// Genera presupuesto inicial ($5M fijo)
-  int _generateBudget() {
-    return 5000000;
+  /// Pick a random country for team thematic
+  Country _pickRandomCountry() {
+    final countryList = [
+      Country(code: 'BR', name: 'Brasil', flagEmoji: '🇧🇷'),
+      Country(code: 'AR', name: 'Argentina', flagEmoji: '🇦🇷'),
+      Country(code: 'CO', name: 'Colombia', flagEmoji: '🇨🇴'),
+      Country(code: 'MX', name: 'México', flagEmoji: '🇲🇽'),
+      Country(code: 'UY', name: 'Uruguay', flagEmoji: '🇺🇾'),
+      Country(code: 'CL', name: 'Chile', flagEmoji: '🇨🇱'),
+    ];
+    return countryList[_random.nextInt(countryList.length)];
   }
 
   /// Genera stats iniciales del auto (1-20 en cada categoría)
@@ -182,7 +175,6 @@ class TeamFactory {
     'Grand Prix',
     'Velocity',
   ];
-
   static const List<String> _defaultSuffixes = [
     'Team',
     'Racing',
