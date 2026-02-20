@@ -37,10 +37,10 @@ class PressNewsCard extends StatelessWidget {
       decoration: BoxDecoration(
         color: theme.cardTheme.color,
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: Colors.white.withOpacity(0.05), width: 1),
+        border: Border.all(color: Colors.white.withValues(alpha: ), width: 1),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.2),
+            color: Colors.black.withValues(alpha: ),
             blurRadius: 8,
             offset: const Offset(0, 4),
           ),
@@ -77,7 +77,7 @@ class PressNewsCard extends StatelessWidget {
                       _formatTimestamp(notification.timestamp),
                       style: TextStyle(
                         fontSize: 10,
-                        color: theme.colorScheme.onSurface.withOpacity(0.4),
+                        color: theme.colorScheme.onSurface.withValues(alpha: ),
                       ),
                     ),
                   ],
@@ -101,7 +101,7 @@ class PressNewsCard extends StatelessWidget {
                     overflow: TextOverflow.ellipsis,
                     style: TextStyle(
                       fontSize: 12,
-                      color: theme.colorScheme.onSurface.withOpacity(0.7),
+                      color: theme.colorScheme.onSurface.withValues(alpha: ),
                       height: 1.4,
                     ),
                   ),

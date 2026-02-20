@@ -473,12 +473,12 @@ class _DashboardScreenState extends State<DashboardScreen> {
                                               color: Theme.of(context)
                                                   .cardTheme
                                                   .color
-                                                  ?.withOpacity(0.5),
+                                                  ?.withValues(alpha: 0.5),
                                               borderRadius:
                                                   BorderRadius.circular(12),
                                               border: Border.all(
-                                                color: Colors.white.withOpacity(
-                                                  0.05,
+                                                color: Colors.white.withValues(
+                                                  alpha: 0.05,
                                                 ),
                                               ),
                                             ),
@@ -585,14 +585,14 @@ class _DashboardScreenState extends State<DashboardScreen> {
     return Container(
       padding: const EdgeInsets.all(24),
       decoration: BoxDecoration(
-        color: Theme.of(context).cardTheme.color?.withOpacity(0.5),
+        color: Theme.of(context).cardTheme.color?.withValues(alpha: 0.5),
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: Colors.white.withOpacity(0.05)),
+        border: Border.all(color: Colors.white.withValues(alpha: 0.05)),
       ),
       child: const Row(
         children: [
           Icon(Icons.newspaper, color: Colors.grey),
-          const SizedBox(width: 16),
+          SizedBox(width: 16),
           Text(
             "No news from the paddock yet.",
             style: TextStyle(color: Colors.grey, fontStyle: FontStyle.italic),

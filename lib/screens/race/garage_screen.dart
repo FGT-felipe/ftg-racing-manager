@@ -431,6 +431,9 @@ class _GarageScreenState extends State<GarageScreen>
 
     setState(() => _isLoading = true);
 
+    final defaultTextColor = Theme.of(context).colorScheme.onSurface;
+    final l10n = AppLocalizations.of(context);
+
     // Charge practice cost
     await RaceService().chargeActionCost(
       widget.teamId,
@@ -438,10 +441,8 @@ class _GarageScreenState extends State<GarageScreen>
       kPracticeRunCost,
       'PRACTICE',
     );
-    final defaultTextColor = Theme.of(context).colorScheme.onSurface;
 
     try {
-      final l10n = AppLocalizations.of(context);
       final teamDoc = await FirebaseFirestore.instance
           .collection('teams')
           .doc(widget.teamId)
@@ -1563,13 +1564,13 @@ class _GarageScreenState extends State<GarageScreen>
                   padding: const EdgeInsets.all(12),
                   decoration: BoxDecoration(
                     color: isParcFerme
-                        ? Colors.orange.withOpacity(0.08)
-                        : const Color(0xFFFFB800).withOpacity(0.08),
+                        ? Colors.orange.withValues(alpha: )
+                        : const Color(0xFFFFB800).withValues(alpha: ),
                     borderRadius: BorderRadius.circular(12),
                     border: Border.all(
                       color: isParcFerme
-                          ? Colors.orange.withOpacity(0.4)
-                          : const Color(0xFFFFB800).withOpacity(0.3),
+                          ? Colors.orange.withValues(alpha: )
+                          : const Color(0xFFFFB800).withValues(alpha: ),
                     ),
                   ),
                   child: Row(
@@ -1609,12 +1610,12 @@ class _GarageScreenState extends State<GarageScreen>
                     decoration: BoxDecoration(
                       gradient: LinearGradient(
                         colors: [
-                          Colors.green.withOpacity(0.15),
-                          Colors.green.withOpacity(0.05),
+                          Colors.green.withValues(alpha: ),
+                          Colors.green.withValues(alpha: ),
                         ],
                       ),
                       borderRadius: BorderRadius.circular(12),
-                      border: Border.all(color: Colors.green.withOpacity(0.3)),
+                      border: Border.all(color: Colors.green.withValues(alpha: )),
                     ),
                     child: Row(
                       children: [
@@ -1637,7 +1638,7 @@ class _GarageScreenState extends State<GarageScreen>
                         Text(
                           "$attempts/$kMaxQualifyingAttempts ATTEMPTS",
                           style: TextStyle(
-                            color: Colors.white.withOpacity(0.5),
+                            color: Colors.white.withValues(alpha: ),
                             fontSize: 10,
                             fontWeight: FontWeight.bold,
                           ),
@@ -1759,7 +1760,7 @@ class _GarageScreenState extends State<GarageScreen>
       decoration: BoxDecoration(
         color: const Color(0xFF121212),
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: Colors.white.withOpacity(0.1), width: 1),
+        border: Border.all(color: Colors.white.withValues(alpha: ), width: 1),
         gradient: LinearGradient(
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
@@ -1767,7 +1768,7 @@ class _GarageScreenState extends State<GarageScreen>
         ),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.6),
+            color: Colors.black.withValues(alpha: ),
             blurRadius: 15,
             offset: const Offset(0, 8),
           ),
@@ -1823,13 +1824,13 @@ class _GarageScreenState extends State<GarageScreen>
                 ),
                 decoration: BoxDecoration(
                   color: _isLoading
-                      ? const Color(0xFFFF5252).withOpacity(0.2)
-                      : Colors.white.withOpacity(0.05),
+                      ? const Color(0xFFFF5252).withValues(alpha: )
+                      : Colors.white.withValues(alpha: ),
                   borderRadius: BorderRadius.circular(6),
                   border: Border.all(
                     color: _isLoading
                         ? const Color(0xFFFF5252)
-                        : Colors.white.withOpacity(0.1),
+                        : Colors.white.withValues(alpha: ),
                   ),
                 ),
                 child: Text(
@@ -1852,7 +1853,7 @@ class _GarageScreenState extends State<GarageScreen>
                   Text(
                     "LAPS ",
                     style: TextStyle(
-                      color: Colors.white.withOpacity(0.4),
+                      color: Colors.white.withValues(alpha: ),
                       fontSize: 10,
                       fontWeight: FontWeight.w900,
                       letterSpacing: 1.0,
@@ -1944,8 +1945,8 @@ class _GarageScreenState extends State<GarageScreen>
     return Container(
       padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 10),
       decoration: BoxDecoration(
-        color: Colors.white.withOpacity(0.03),
-        border: Border.all(color: Colors.white.withOpacity(0.1)),
+        color: Colors.white.withValues(alpha: ),
+        border: Border.all(color: Colors.white.withValues(alpha: )),
         borderRadius: BorderRadius.circular(12),
       ),
       child: Column(
@@ -1955,7 +1956,7 @@ class _GarageScreenState extends State<GarageScreen>
           Text(
             label.toUpperCase(),
             style: TextStyle(
-              color: Colors.white.withOpacity(0.4),
+              color: Colors.white.withValues(alpha: ),
               fontSize: 9,
               fontWeight: FontWeight.w900,
               letterSpacing: 0.8,
@@ -2027,7 +2028,7 @@ class _GarageScreenState extends State<GarageScreen>
       decoration: BoxDecoration(
         color: Colors.black,
         borderRadius: BorderRadius.circular(8),
-        border: Border.all(color: Colors.white.withOpacity(0.08)),
+        border: Border.all(color: Colors.white.withValues(alpha: )),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -2036,7 +2037,7 @@ class _GarageScreenState extends State<GarageScreen>
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
             decoration: BoxDecoration(
-              color: const Color(0xFFFFB800).withOpacity(0.1),
+              color: const Color(0xFFFFB800).withValues(alpha: ),
               borderRadius: const BorderRadius.vertical(
                 top: Radius.circular(8),
               ),
@@ -2063,7 +2064,7 @@ class _GarageScreenState extends State<GarageScreen>
                   _currentEvent?.trackName ?? '',
                   style: TextStyle(
                     fontSize: 10,
-                    color: Colors.white.withOpacity(0.4),
+                    color: Colors.white.withValues(alpha: ),
                     fontWeight: FontWeight.bold,
                   ),
                 ),
@@ -2073,7 +2074,7 @@ class _GarageScreenState extends State<GarageScreen>
           // Table header
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-            color: Colors.white.withOpacity(0.03),
+            color: Colors.white.withValues(alpha: ),
             child: const Row(
               children: [
                 SizedBox(
@@ -2115,14 +2116,14 @@ class _GarageScreenState extends State<GarageScreen>
               ],
             ),
           ),
-          Divider(height: 1, color: Colors.white.withOpacity(0.08)),
+          Divider(height: 1, color: Colors.white.withValues(alpha: )),
           // Table rows
           Expanded(
             child: _qualifyingResultsTable.isEmpty
                 ? Center(
                     child: Text(
                       "Loading participants...",
-                      style: TextStyle(color: Colors.white.withOpacity(0.3)),
+                      style: TextStyle(color: Colors.white.withValues(alpha: )),
                     ),
                   )
                 : ListView.builder(
@@ -2170,13 +2171,13 @@ class _GarageScreenState extends State<GarageScreen>
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
       decoration: BoxDecoration(
         color: isPlayerTeam
-            ? theme.colorScheme.secondary.withOpacity(0.08)
+            ? theme.colorScheme.secondary.withValues(alpha: )
             : null,
         border: Border(
           left: isPlayerTeam
               ? BorderSide(color: theme.colorScheme.secondary, width: 3)
               : BorderSide.none,
-          bottom: BorderSide(color: Colors.white.withOpacity(0.04)),
+          bottom: BorderSide(color: Colors.white.withValues(alpha: )),
         ),
       ),
       child: Row(
@@ -2190,7 +2191,7 @@ class _GarageScreenState extends State<GarageScreen>
                 fontWeight: FontWeight.w900,
                 color: pos <= 3 && hasTime
                     ? const Color(0xFFFFB800)
-                    : Colors.white.withOpacity(hasTime ? 0.7 : 0.2),
+                    : Colors.white.withValues(alpha: ),
               ),
             ),
           ),
@@ -2203,7 +2204,7 @@ class _GarageScreenState extends State<GarageScreen>
                 fontWeight: isPlayerTeam ? FontWeight.bold : FontWeight.normal,
                 color: isPlayerTeam
                     ? theme.colorScheme.secondary
-                    : Colors.white.withOpacity(hasTime ? 0.9 : 0.3),
+                    : Colors.white.withValues(alpha: ),
               ),
               overflow: TextOverflow.ellipsis,
             ),
@@ -2214,7 +2215,7 @@ class _GarageScreenState extends State<GarageScreen>
               row['teamName'] ?? '',
               style: TextStyle(
                 fontSize: 10,
-                color: Colors.white.withOpacity(hasTime ? 0.5 : 0.2),
+                color: Colors.white.withValues(alpha: ),
               ),
               overflow: TextOverflow.ellipsis,
             ),
@@ -2239,8 +2240,8 @@ class _GarageScreenState extends State<GarageScreen>
                     color: hasTime
                         ? (index == 0
                               ? const Color(0xFFFFB800)
-                              : Colors.white.withOpacity(0.8))
-                        : Colors.white.withOpacity(0.15),
+                              : Colors.white.withValues(alpha: ))
+                        : Colors.white.withValues(alpha: ),
                   ),
                   textAlign: TextAlign.right,
                 ),
@@ -2249,7 +2250,7 @@ class _GarageScreenState extends State<GarageScreen>
                     gapText,
                     style: TextStyle(
                       fontSize: 9,
-                      color: Colors.white.withOpacity(0.35),
+                      color: Colors.white.withValues(alpha: ),
                       fontFamily: 'monospace',
                     ),
                     textAlign: TextAlign.right,
@@ -2264,7 +2265,7 @@ class _GarageScreenState extends State<GarageScreen>
               style: TextStyle(
                 fontSize: 11,
                 fontWeight: FontWeight.bold,
-                color: Colors.white.withOpacity(hasTime ? 0.5 : 0.15),
+                color: Colors.white.withValues(alpha: ),
               ),
               textAlign: TextAlign.center,
             ),
@@ -2470,7 +2471,7 @@ class _GarageScreenState extends State<GarageScreen>
                 border: Border.all(
                   color: isSelected
                       ? theme.primaryColor
-                      : Colors.white.withOpacity(0.08),
+                      : Colors.white.withValues(alpha: ),
                   width: isSelected ? 2 : 1,
                 ),
                 gradient: LinearGradient(
@@ -2483,14 +2484,14 @@ class _GarageScreenState extends State<GarageScreen>
                 boxShadow: isSelected
                     ? [
                         BoxShadow(
-                          color: theme.primaryColor.withOpacity(0.3),
+                          color: theme.primaryColor.withValues(alpha: ),
                           blurRadius: 10,
                           offset: const Offset(0, 4),
                         ),
                       ]
                     : [
                         BoxShadow(
-                          color: Colors.black.withOpacity(0.4),
+                          color: Colors.black.withValues(alpha: ),
                           blurRadius: 4,
                           offset: const Offset(0, 2),
                         ),
@@ -2523,7 +2524,7 @@ class _GarageScreenState extends State<GarageScreen>
                                   begin: Alignment.centerRight,
                                   end: Alignment.centerLeft,
                                   colors: [
-                                    Colors.black.withOpacity(0.4),
+                                    Colors.black.withValues(alpha: ),
                                     Colors.transparent,
                                   ],
                                 ),
@@ -2553,7 +2554,7 @@ class _GarageScreenState extends State<GarageScreen>
                                           fontWeight: FontWeight.w900,
                                           color: isSelected
                                               ? Colors.white
-                                              : Colors.white.withOpacity(0.7),
+                                              : Colors.white.withValues(alpha: ),
                                           letterSpacing: 0.5,
                                         ),
                                         overflow: TextOverflow.ellipsis,
@@ -3517,8 +3518,9 @@ class _GarageScreenState extends State<GarageScreen>
                                       if (newFuels.length > idx) {
                                         newFuels[idx] = v;
                                       } else {
-                                        while (newFuels.length <= idx)
+                                        while (newFuels.length <= idx) {
                                           newFuels.add(50.0);
+                                        }
                                         newFuels[idx] = v;
                                       }
                                       onPitStopsChanged(
@@ -3540,8 +3542,9 @@ class _GarageScreenState extends State<GarageScreen>
                                         if (newStyles.length > idx) {
                                           newStyles[idx] = newStyle;
                                         } else {
-                                          while (newStyles.length <= idx)
+                                          while (newStyles.length <= idx) {
                                             newStyles.add(DriverStyle.normal);
+                                          }
                                           newStyles[idx] = newStyle;
                                         }
                                         onPitStopsChanged(
@@ -4011,7 +4014,7 @@ class _GarageScreenState extends State<GarageScreen>
               label,
               style: TextStyle(
                 fontSize: 12,
-                color: theme.colorScheme.onSurface.withOpacity(0.7),
+                color: theme.colorScheme.onSurface.withValues(alpha: ),
               ),
             ),
           ),
@@ -4023,7 +4026,7 @@ class _GarageScreenState extends State<GarageScreen>
                   0.1,
                 ),
                 thumbColor: theme.colorScheme.secondary,
-                overlayColor: theme.colorScheme.secondary.withOpacity(0.1),
+                overlayColor: theme.colorScheme.secondary.withValues(alpha: ),
                 trackHeight: 3,
                 thumbShape: const RoundSliderThumbShape(enabledThumbRadius: 6),
                 overlayShape: const RoundSliderOverlayShape(overlayRadius: 12),
@@ -4155,7 +4158,7 @@ class _GarageScreenState extends State<GarageScreen>
         Text(
           label,
           style: TextStyle(
-            color: theme.colorScheme.onSurface.withOpacity(0.5),
+            color: theme.colorScheme.onSurface.withValues(alpha: ),
             letterSpacing: 1.5,
             fontSize: 9,
             fontWeight: FontWeight.bold,
@@ -4190,7 +4193,7 @@ class _GarageScreenState extends State<GarageScreen>
       thickness: 1,
       indent: 5,
       endIndent: 5,
-      color: theme.colorScheme.onSurface.withOpacity(0.1),
+      color: theme.colorScheme.onSurface.withValues(alpha: ),
     );
   }
 
@@ -4405,7 +4408,7 @@ class _GarageScreenState extends State<GarageScreen>
       decoration: BoxDecoration(
         color: const Color(0xFF121212),
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: Colors.white.withOpacity(0.1), width: 1),
+        border: Border.all(color: Colors.white.withValues(alpha: ), width: 1),
         gradient: const LinearGradient(
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
@@ -4413,7 +4416,7 @@ class _GarageScreenState extends State<GarageScreen>
         ),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.6),
+            color: Colors.black.withValues(alpha: ),
             blurRadius: 15,
             offset: const Offset(0, 8),
           ),
@@ -4439,7 +4442,7 @@ class _GarageScreenState extends State<GarageScreen>
               Text(
                 "LAPS: $totalLaps",
                 style: TextStyle(
-                  color: Colors.white.withOpacity(0.4),
+                  color: Colors.white.withValues(alpha: ),
                   fontSize: 10,
                   fontWeight: FontWeight.bold,
                 ),
@@ -4458,7 +4461,7 @@ class _GarageScreenState extends State<GarageScreen>
               decoration: BoxDecoration(
                 color: Colors.black,
                 borderRadius: BorderRadius.circular(8),
-                border: Border.all(color: Colors.white.withOpacity(0.1)),
+                border: Border.all(color: Colors.white.withValues(alpha: )),
               ),
               child: Center(
                 child: Text(
@@ -4489,7 +4492,7 @@ class _GarageScreenState extends State<GarageScreen>
       decoration: BoxDecoration(
         color: const Color(0xFF0A0A0A),
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: Colors.white.withOpacity(0.08)),
+        border: Border.all(color: Colors.white.withValues(alpha: )),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -4498,7 +4501,7 @@ class _GarageScreenState extends State<GarageScreen>
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
             decoration: BoxDecoration(
-              color: Colors.white.withOpacity(0.03),
+              color: Colors.white.withValues(alpha: ),
               borderRadius: const BorderRadius.vertical(
                 top: Radius.circular(12),
               ),
@@ -4508,13 +4511,13 @@ class _GarageScreenState extends State<GarageScreen>
                 Icon(
                   Icons.chat_bubble_outline,
                   size: 16,
-                  color: Colors.white.withOpacity(0.4),
+                  color: Colors.white.withValues(alpha: ),
                 ),
                 const SizedBox(width: 8),
                 Text(
                   "DRIVER FEEDBACK",
                   style: TextStyle(
-                    color: Colors.white.withOpacity(0.6),
+                    color: Colors.white.withValues(alpha: ),
                     fontSize: 11,
                     fontWeight: FontWeight.w900,
                     letterSpacing: 1.5,
@@ -4537,9 +4540,9 @@ class _GarageScreenState extends State<GarageScreen>
                     margin: const EdgeInsets.only(bottom: 12),
                     padding: const EdgeInsets.all(12),
                     decoration: BoxDecoration(
-                      color: Colors.white.withOpacity(0.02),
+                      color: Colors.white.withValues(alpha: ),
                       borderRadius: BorderRadius.circular(12),
-                      border: Border.all(color: Colors.white.withOpacity(0.05)),
+                      border: Border.all(color: Colors.white.withValues(alpha: )),
                     ),
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
@@ -4575,7 +4578,7 @@ class _GarageScreenState extends State<GarageScreen>
                                 style: TextStyle(
                                   fontSize: 10,
                                   fontWeight: FontWeight.w900,
-                                  color: theme.primaryColor.withOpacity(0.7),
+                                  color: theme.primaryColor.withValues(alpha: ),
                                   fontFamily: 'monospace',
                                 ),
                               ),
@@ -4599,7 +4602,7 @@ class _GarageScreenState extends State<GarageScreen>
                                 Icon(
                                   Icons.keyboard_arrow_right,
                                   size: 14,
-                                  color: color.withOpacity(0.5),
+                                  color: color.withValues(alpha: ),
                                 ),
                                 const SizedBox(width: 4),
                                 Expanded(
@@ -4607,7 +4610,7 @@ class _GarageScreenState extends State<GarageScreen>
                                     m['message'] ?? '',
                                     style: TextStyle(
                                       fontSize: 12,
-                                      color: color.withOpacity(0.9),
+                                      color: color.withValues(alpha: ),
                                       fontWeight: FontWeight.w500,
                                     ),
                                   ),
@@ -4615,7 +4618,7 @@ class _GarageScreenState extends State<GarageScreen>
                               ],
                             ),
                           );
-                        }).toList(),
+                        }),
                       ],
                     ),
                   );
@@ -4628,7 +4631,7 @@ class _GarageScreenState extends State<GarageScreen>
                 child: Text(
                   "No feedback gathered yet",
                   style: TextStyle(
-                    color: Colors.white.withOpacity(0.1),
+                    color: Colors.white.withValues(alpha: ),
                     fontStyle: FontStyle.italic,
                   ),
                 ),
@@ -4680,7 +4683,7 @@ class _GarageScreenState extends State<GarageScreen>
                   "\"${lap['feedback']}\"",
                   style: TextStyle(
                     fontStyle: FontStyle.italic,
-                    color: theme.colorScheme.onSurface.withOpacity(0.8),
+                    color: theme.colorScheme.onSurface.withValues(alpha: ),
                     fontSize: 13,
                   ),
                   textAlign: TextAlign.center,
@@ -4806,7 +4809,7 @@ class _GarageScreenState extends State<GarageScreen>
                 color: barColor,
                 borderRadius: BorderRadius.circular(2),
                 boxShadow: [
-                  BoxShadow(color: barColor.withOpacity(0.3), blurRadius: 4),
+                  BoxShadow(color: barColor.withValues(alpha: ), blurRadius: 4),
                 ],
               ),
             ),

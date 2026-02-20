@@ -149,7 +149,7 @@ class AppTheme {
           letterSpacing: 1.1,
         ),
         labelColor: accentHighlight,
-        unselectedLabelColor: textNormal.withOpacity(0.4),
+        unselectedLabelColor: textNormal.withValues(alpha: 0.4),
       ),
     );
   }
