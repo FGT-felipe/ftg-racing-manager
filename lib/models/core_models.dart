@@ -407,6 +407,15 @@ class Team {
     this.facilities = const {},
   });
 
+  /// Check if a driver has submitted their setup for the current session.
+  bool hasSubmittedSetup(String driverId) {
+    final driverData = weekStatus['driverSetups']?[driverId];
+    return driverData?['isSetupSent'] == true;
+  }
+
+  /// Indicates if the team is currently locked for post-race processing.
+  bool get isLockedForProcessing => weekStatus['isLockedForProcessing'] == true;
+
   Map<String, dynamic> toMap() {
     return {
       'id': id,
@@ -1020,7 +1029,8 @@ class AppNotification {
   final String id;
   final String title;
   final String message;
-  final String type; // 'NEWS', 'ALERT', 'SUCCESS', 'TEAM'
+  final String type; // 'NEWS', 'ALERT', 'SUCCESS', 'TEAM', 'OFFICE'
+  final String? eventType; // e.g. 'RACE_RESULT', 'QUALY_RESULT'
   final DateTime timestamp;
   final bool isRead;
   final String? actionRoute;
@@ -1030,6 +1040,7 @@ class AppNotification {
     required this.title,
     required this.message,
     required this.type,
+    this.eventType,
     required this.timestamp,
     this.isRead = false,
     this.actionRoute,
@@ -1041,6 +1052,7 @@ class AppNotification {
       'title': title,
       'message': message,
       'type': type,
+      'eventType': eventType,
       'timestamp': timestamp.toIso8601String(),
       'isRead': isRead,
       'actionRoute': actionRoute,
@@ -1060,6 +1072,7 @@ class AppNotification {
       title: map['title'] ?? '',
       message: map['message'] ?? '',
       type: map['type'] ?? 'NEWS',
+      eventType: map['eventType'],
       timestamp: parseTs(map['timestamp']),
       isRead: map['isRead'] ?? false,
       actionRoute: map['actionRoute'],

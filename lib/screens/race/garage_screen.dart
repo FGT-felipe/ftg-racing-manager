@@ -51,6 +51,7 @@ class _GarageScreenState extends State<GarageScreen>
 
   final Map<String, bool> _qualifyingSetupsSubmitted = {};
   final Map<String, bool> _raceSetupsSubmitted = {};
+  final Map<String, bool> _setupsSent = {};
 
   // Per-driver lap history: driverId -> [{lapTime, confidence, feedback}]
   final Map<String, List<Map<String, dynamic>>> _driverLapHistory = {};
@@ -128,6 +129,7 @@ class _GarageScreenState extends State<GarageScreen>
           _driverLapHistory.putIfAbsent(driver.id, () => []);
           _qualifyingSetupsSubmitted.putIfAbsent(driver.id, () => false);
           _raceSetupsSubmitted.putIfAbsent(driver.id, () => false);
+          _setupsSent.putIfAbsent(driver.id, () => false);
         }
       }
 
@@ -180,6 +182,9 @@ class _GarageScreenState extends State<GarageScreen>
                   orElse: () => TyreCompound.soft,
                 );
               }
+            }
+            if (driverData['isSetupSent'] == true) {
+              _setupsSent[dId] = true;
             }
             if (driverData['race'] != null) {
               _driverRaceSetups[dId] = CarSetup.fromMap(
@@ -1003,7 +1008,10 @@ class _GarageScreenState extends State<GarageScreen>
               'weekStatus.driverSetups.$driverId.qualifyingLaps': startLaps + 2,
               'weekStatus.driverSetups.$driverId.qualifyingDnf': true,
               'weekStatus.driverSetups.$driverId.qualifyingParcFerme': true,
+              'weekStatus.driverSetups.$driverId.isSetupSent': true,
             });
+
+        _setupsSent[driverId] = true;
 
         // RE-FETCH DRIVERS
         final updatedDrivers = await DriverAssignmentService().getDriversByTeam(
@@ -1081,12 +1089,13 @@ class _GarageScreenState extends State<GarageScreen>
           .update({
             'weekStatus.driverSetups.$driverId.qualifying': setup.toMap(),
             'weekStatus.driverSetups.$driverId.qualifyingAttempts': newAttempts,
-            'weekStatus.driverSetups.$driverId.qualifyingLaps': totalLaps,
-            'weekStatus.driverSetups.$driverId.qualifyingBestTime': bestTime,
             'weekStatus.driverSetups.$driverId.qualifyingBestCompound':
                 bestCompound.name,
             'weekStatus.driverSetups.$driverId.qualifyingParcFerme': true,
+            'weekStatus.driverSetups.$driverId.isSetupSent': true,
           });
+
+      _setupsSent[driverId] = true;
 
       // --- PERSIST DRIVER STATS (Fitness, etc.) ---
       await DriverDevelopmentService().applyQualifyingPersistence(
@@ -1156,11 +1165,15 @@ class _GarageScreenState extends State<GarageScreen>
           .update({
             'weekStatus.driverSetups.$_selectedDriverId.race': setup.toMap(),
             'weekStatus.driverSetups.$_selectedDriverId.raceSubmitted': true,
+            'weekStatus.driverSetups.$_selectedDriverId.isSetupSent': true,
             'weekStatus.driverSetups.$_selectedDriverId.raceSubmittedAt':
                 FieldValue.serverTimestamp(),
           });
 
-      setState(() => _raceSetupsSubmitted[_selectedDriverId!] = true);
+      setState(() {
+        _raceSetupsSubmitted[_selectedDriverId!] = true;
+        _setupsSent[_selectedDriverId!] = true;
+      });
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
@@ -2530,25 +2543,29 @@ class _GarageScreenState extends State<GarageScreen>
                               mainAxisAlignment: MainAxisAlignment.center,
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
-                                Builder(
-                                  builder: (context) {
-                                    final parts = driver.name.split(' ');
-                                    final displayName = parts.length > 1
-                                        ? "${parts[0][0]}. ${parts.last}"
-                                        : driver.name;
-                                    return Text(
-                                      displayName.toUpperCase(),
-                                      style: TextStyle(
-                                        fontSize: 12,
-                                        fontWeight: FontWeight.w900,
-                                        color: isSelected
-                                            ? Colors.white
-                                            : Colors.white.withOpacity(0.7),
-                                        letterSpacing: 0.5,
+                                Row(
+                                  children: [
+                                    Expanded(
+                                      child: Text(
+                                        driver.name.toUpperCase(),
+                                        style: TextStyle(
+                                          fontSize: 12,
+                                          fontWeight: FontWeight.w900,
+                                          color: isSelected
+                                              ? Colors.white
+                                              : Colors.white.withOpacity(0.7),
+                                          letterSpacing: 0.5,
+                                        ),
+                                        overflow: TextOverflow.ellipsis,
                                       ),
-                                      overflow: TextOverflow.ellipsis,
-                                    );
-                                  },
+                                    ),
+                                    if (_setupsSent[driver.id] == true)
+                                      const Icon(
+                                        Icons.check_circle,
+                                        color: Colors.green,
+                                        size: 14,
+                                      ),
+                                  ],
                                 ),
                                 const SizedBox(height: 8),
                                 _buildFitnessBar(theme, driver),
