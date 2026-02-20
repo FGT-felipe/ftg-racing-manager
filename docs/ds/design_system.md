@@ -274,6 +274,23 @@ El sistema utiliza una arquitectura de información sin íconos (Icon-less), cen
 
 ---
 
+#### 15. Botones de Táctica 'SponsorsButtons'
+Utilizados para la negociación de contratos en la pantalla de Sponsorship.
+- **Estética**: Flat Stadium con estilo "Mute" por defecto.
+- **Comportamiento Interactividad**:
+  - **Estado Normal (Mute)**: Fondo sutil (`white.withOpacity(0.05)`) y texto atenuado (`white.withOpacity(0.4)`).
+  - **Estado Hover**: El botón revela su color de marca sólido y el texto pasa a blanco puro/crema.
+- **Variaciones de Color (en Hover)**:
+  - **Persuasive**: `#FF5733` (Naranja intenso).
+  - **Negotiator**: `#F1C40F` (Dorado/Ámbar).
+  - **Collaborative**: `#E9967A` (Melocotón/Arena).
+- **Formatos**:
+  - **Texto**: `Poppins Black`, 9px, `letterSpacing: 1.2`.
+  - **Forma**: Stadium (100% border radius).
+  - **Elevación**: 0 (Flat) siempre.
+
+---
+
 ## 6. Layout
 
 - **MaxWidth (Desktop Content)**: 1400px.

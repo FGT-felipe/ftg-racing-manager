@@ -24,6 +24,17 @@ class _SponsorshipScreenState extends State<SponsorshipScreen> {
   SponsorSlot? _selectedSlotDesktop;
   List<SponsorOffer>? _desktopOffers;
 
+  late Future<DocumentSnapshot> _managerFuture;
+
+  @override
+  void initState() {
+    super.initState();
+    _managerFuture = FirebaseFirestore.instance
+        .collection('managers')
+        .doc(AuthService().currentUser?.uid)
+        .get();
+  }
+
   void _showSponsorCarouselMobile(
     BuildContext context,
     SponsorSlot slot,
@@ -65,10 +76,7 @@ class _SponsorshipScreenState extends State<SponsorshipScreen> {
   @override
   Widget build(BuildContext context) {
     return FutureBuilder<DocumentSnapshot>(
-      future: FirebaseFirestore.instance
-          .collection('managers')
-          .doc(AuthService().currentUser?.uid)
-          .get(),
+      future: _managerFuture,
       builder: (context, managerSnapshot) {
         if (!managerSnapshot.hasData) {
           return Center(
@@ -139,9 +147,9 @@ class _SponsorshipScreenState extends State<SponsorshipScreen> {
           Row(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // Left Side: Car Visualization (40%)
+              // Left Side: Car Visualization (30%)
               Expanded(
-                flex: 4,
+                flex: 3,
                 child: Column(
                   children: [
                     _buildCarVisualization(team, role, isDesktop: true),
@@ -149,8 +157,8 @@ class _SponsorshipScreenState extends State<SponsorshipScreen> {
                 ),
               ),
               const SizedBox(width: 32),
-              // Right Side: Details / Offers (60%)
-              Expanded(flex: 6, child: _buildDesktopRightPanel(team)),
+              // Right Side: Details / Offers (70%)
+              Expanded(flex: 7, child: _buildDesktopRightPanel(team)),
             ],
           ),
         ],
@@ -250,28 +258,25 @@ class _SponsorshipScreenState extends State<SponsorshipScreen> {
             ),
           ),
           const SizedBox(height: 20),
-          Expanded(
-            child: GridView.builder(
-              gridDelegate: const SliverGridDelegateWithMaxCrossAxisExtent(
-                maxCrossAxisExtent: 400,
-                childAspectRatio: 0.8,
-                crossAxisSpacing: 16,
-                mainAxisSpacing: 16,
-              ),
-              itemCount: _desktopOffers?.length ?? 0,
-              itemBuilder: (context, index) {
-                return _SponsorOfferCard(
-                  offer: _desktopOffers![index],
-                  teamId: widget.teamId,
-                  slot: _selectedSlotDesktop!,
-                  role: ManagerRole
-                      .noExperience, // Role logic handled in generation
-                  sponsorService: _sponsorService,
-                  financeService: _financeService,
-                  onNegotiationComplete: () => setState(() {}),
-                );
-              },
-            ),
+          // Desktop: 1 sponsor per row (100% width)
+          ListView.separated(
+            shrinkWrap: true,
+            physics: const NeverScrollableScrollPhysics(),
+            itemCount: _desktopOffers?.length ?? 0,
+            separatorBuilder: (context, index) => const SizedBox(height: 12),
+            itemBuilder: (context, index) {
+              return _SponsorOfferCard(
+                offer: _desktopOffers![index],
+                teamId: widget.teamId,
+                slot: _selectedSlotDesktop!,
+                role: ManagerRole
+                    .noExperience, // Role logic handled in generation
+                sponsorService: _sponsorService,
+                financeService: _financeService,
+                onNegotiationComplete: () => setState(() {}),
+                isDesktop: true,
+              );
+            },
           ),
         ],
       );
@@ -352,6 +357,21 @@ class _SponsorshipScreenState extends State<SponsorshipScreen> {
     );
   }
 
+  String _getSlotAsset(SponsorSlot slot) {
+    switch (slot) {
+      case SponsorSlot.rearWing:
+        return 'blueprints/rearwing.png';
+      case SponsorSlot.frontWing:
+        return 'blueprints/frontwing.png';
+      case SponsorSlot.sidepods:
+        return 'blueprints/sidepot.png';
+      case SponsorSlot.nose:
+        return 'blueprints/nose.png';
+      case SponsorSlot.halo:
+        return 'blueprints/halo.png';
+    }
+  }
+
   Widget _buildSlotItem(
     String label,
     SponsorSlot slot,
@@ -362,6 +382,7 @@ class _SponsorshipScreenState extends State<SponsorshipScreen> {
   ) {
     final hasContract = contract != null;
     final isSelected = _selectedSlotDesktop == slot;
+    final assetPath = _getSlotAsset(slot);
 
     return GestureDetector(
       onTap: () {
@@ -372,44 +393,72 @@ class _SponsorshipScreenState extends State<SponsorshipScreen> {
         }
       },
       child: Container(
-        height: 70,
+        constraints: const BoxConstraints(minHeight: 80),
+        clipBehavior: Clip.antiAlias,
+        padding: const EdgeInsets.symmetric(vertical: 12),
         decoration: BoxDecoration(
           color: (hasContract || isSelected)
               ? color.withValues(alpha: 0.05)
               : Theme.of(context).cardTheme.color,
           borderRadius: BorderRadius.circular(12),
-        ),
-        child: Center(
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Text(
-                label.toUpperCase(),
-                style: TextStyle(
-                  color: hasContract
-                      ? color
-                      : Theme.of(
-                          context,
-                        ).colorScheme.onSurface.withValues(alpha: 0.38),
-                  fontSize: 10,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-              const SizedBox(height: 4),
-              Text(
-                hasContract
-                    ? contract.sponsorName
-                    : (isDesktop ? "MANAGE" : "+ SELECT SPONSOR"),
-                style: TextStyle(
-                  color: hasContract
-                      ? Theme.of(context).colorScheme.onSurface
-                      : Theme.of(context).primaryColor,
-                  fontWeight: FontWeight.bold,
-                  fontSize: 16,
-                ),
-              ),
-            ],
+          border: Border.all(
+            color: isSelected
+                ? color.withValues(alpha: 0.5)
+                : Colors.white.withValues(alpha: 0.05),
+            width: 1,
           ),
+        ),
+        child: Stack(
+          children: [
+            // Background Blueprint Image
+            Positioned(
+              left: -15,
+              top: 0,
+              bottom: 0,
+              child: Opacity(
+                opacity: 0.15,
+                child: Image.asset(
+                  assetPath,
+                  width: 120,
+                  fit: BoxFit.fitHeight,
+                  alignment: Alignment.centerLeft,
+                ),
+              ),
+            ),
+            Center(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Text(
+                    label.toUpperCase(),
+                    style: TextStyle(
+                      color: hasContract
+                          ? color
+                          : Theme.of(
+                              context,
+                            ).colorScheme.onSurface.withValues(alpha: 0.38),
+                      fontSize: 10,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    hasContract
+                        ? contract.sponsorName
+                        : (isDesktop ? "MANAGE" : "+ SELECT SPONSOR"),
+                    style: TextStyle(
+                      color: hasContract
+                          ? Theme.of(context).colorScheme.onSurface
+                          : Theme.of(context).primaryColor,
+                      fontWeight: FontWeight.bold,
+                      fontSize:
+                          14, // Slightly smaller to accommodate images better
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
         ),
       ),
     );
@@ -501,6 +550,7 @@ class _SponsorOfferCard extends StatefulWidget {
   final SponsorService sponsorService;
   final FinanceService financeService;
   final VoidCallback onNegotiationComplete;
+  final bool isDesktop;
 
   const _SponsorOfferCard({
     required this.offer,
@@ -510,6 +560,7 @@ class _SponsorOfferCard extends StatefulWidget {
     required this.sponsorService,
     required this.financeService,
     required this.onNegotiationComplete,
+    this.isDesktop = false,
   });
 
   @override
@@ -554,133 +605,295 @@ class _SponsorOfferCardState extends State<_SponsorOfferCard> {
         widget.offer.lockedUntil!.isAfter(DateTime.now());
 
     return Container(
-      margin: const EdgeInsets.symmetric(
-        horizontal: 0,
-        vertical: 5,
-      ), // Adjusted for general use
-      padding: const EdgeInsets.all(24),
+      margin: const EdgeInsets.symmetric(vertical: 4),
+      padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: Theme.of(context).cardTheme.color,
+        color: const Color(0xFF121212),
         borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: Colors.white.withValues(alpha: 0.1)),
+        gradient: const LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [Color(0xFF1E1E1E), Color(0xFF0A0A0A)],
+        ),
       ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Expanded(
-                child: Text(
-                  widget.offer.name,
+      child: widget.isDesktop
+          ? _buildHorizontalContent(isLocked)
+          : _buildVerticalContent(isLocked),
+    );
+  }
+
+  Widget _buildVerticalContent(bool isLocked) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            Expanded(
+              child: Text(
+                widget.offer.name.toUpperCase(),
+                style: const TextStyle(
+                  color: Colors.white,
+                  fontSize: 16,
+                  fontWeight: FontWeight.w900,
+                  letterSpacing: 1.2,
+                  fontFamily: 'Poppins',
+                ),
+                overflow: TextOverflow.ellipsis,
+              ),
+            ),
+            if (widget.offer.isAdminBonusApplied)
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                decoration: BoxDecoration(
+                  color: Colors.green.withValues(alpha: 0.2),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: const Text(
+                  "+15%",
                   style: TextStyle(
-                    color: Theme.of(context).colorScheme.onSurface,
-                    fontSize: 20,
+                    color: Colors.green,
+                    fontSize: 10,
                     fontWeight: FontWeight.bold,
                   ),
-                  overflow: TextOverflow.ellipsis,
                 ),
               ),
-              if (widget.offer.isAdminBonusApplied)
-                Container(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 8,
-                    vertical: 4,
+          ],
+        ),
+        const SizedBox(height: 16),
+        _infoRow(
+          Icons.monetization_on_outlined,
+          "Signing Bonus",
+          widget.financeService.formatCurrency(widget.offer.signingBonus),
+          Colors.green,
+        ),
+        _infoRow(
+          Icons.calendar_today_outlined,
+          "Weekly Payment",
+          widget.financeService.formatCurrency(widget.offer.weeklyBasePayment),
+          Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.7),
+        ),
+        _infoRow(
+          Icons.timer_outlined,
+          "Duration",
+          "${widget.offer.contractDuration} Races",
+          Colors.blue,
+        ),
+        _infoRow(
+          Icons.emoji_events_outlined,
+          "Objective",
+          widget.offer.objectiveDescription,
+          Colors.orangeAccent,
+        ),
+        const SizedBox(height: 16),
+        if (isLocked)
+          const Center(
+            child: Text(
+              "SUSPENDED",
+              style: TextStyle(
+                color: Colors.redAccent,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+          )
+        else if (_isNegotiating)
+          Center(
+            child: CircularProgressIndicator(
+              color: Theme.of(context).colorScheme.secondary,
+            ),
+          )
+        else ...[
+          Center(
+            child: Text(
+              "CHOOSE TACTIC (${3 - widget.offer.attemptsMade} left)",
+              style: TextStyle(
+                color: Colors.white.withValues(alpha: 0.4),
+                fontSize: 9,
+                fontWeight: FontWeight.w900,
+                letterSpacing: 1.0,
+              ),
+            ),
+          ),
+          const SizedBox(height: 10),
+          Row(
+            children: [
+              Expanded(
+                child: _tacticBtn("PERSUASIVE", const Color(0xFFFF5733)),
+              ),
+              const SizedBox(width: 8),
+              Expanded(
+                child: _tacticBtn("NEGOTIATOR", const Color(0xFFF1C40F)),
+              ),
+              const SizedBox(width: 8),
+              Expanded(
+                child: _tacticBtn("COLLABORATIVE", const Color(0xFFE9967A)),
+              ),
+            ],
+          ),
+        ],
+      ],
+    );
+  }
+
+  Widget _buildHorizontalContent(bool isLocked) {
+    return Row(
+      children: [
+        // Left Info Section
+        Expanded(
+          flex: 4,
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Row(
+                children: [
+                  Text(
+                    widget.offer.name.toUpperCase(),
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontSize: 16,
+                      fontWeight: FontWeight.w900,
+                      letterSpacing: 1.2,
+                      fontFamily: 'Poppins',
+                    ),
                   ),
-                  decoration: BoxDecoration(
-                    color: Colors.green.withValues(alpha: 0.2),
-                    borderRadius: BorderRadius.circular(12),
+                  const SizedBox(width: 12),
+                  if (widget.offer.isAdminBonusApplied)
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 6,
+                        vertical: 2,
+                      ),
+                      decoration: BoxDecoration(
+                        color: Colors.green.withValues(alpha: 0.2),
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      child: const Text(
+                        "+15%",
+                        style: TextStyle(
+                          color: Colors.green,
+                          fontSize: 9,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ),
+                ],
+              ),
+              const SizedBox(height: 8),
+              Wrap(
+                spacing: 16,
+                runSpacing: 4,
+                children: [
+                  _infoChip(
+                    Icons.monetization_on_outlined,
+                    widget.financeService.formatCurrency(
+                      widget.offer.signingBonus,
+                    ),
+                    Colors.green,
                   ),
-                  child: const Text(
-                    "+15%",
+                  _infoChip(
+                    Icons.calendar_today_outlined,
+                    widget.financeService.formatCurrency(
+                      widget.offer.weeklyBasePayment,
+                    ),
+                    Colors.white.withValues(alpha: 0.7),
+                  ),
+                  _infoChip(
+                    Icons.timer_outlined,
+                    "${widget.offer.contractDuration} Races",
+                    Colors.blue,
+                  ),
+                  _infoChip(
+                    Icons.emoji_events_outlined,
+                    widget.offer.objectiveDescription,
+                    Colors.orangeAccent,
+                  ),
+                ],
+              ),
+            ],
+          ),
+        ),
+        const SizedBox(width: 24),
+        // Right Action Section
+        Expanded(
+          flex: 3,
+          child: _isNegotiating
+              ? Center(
+                  child: CircularProgressIndicator(
+                    color: Theme.of(context).colorScheme.secondary,
+                  ),
+                )
+              : isLocked
+              ? const Center(
+                  child: Text(
+                    "SUSPENDED",
                     style: TextStyle(
-                      color: Colors.green,
-                      fontSize: 10,
+                      color: Colors.redAccent,
                       fontWeight: FontWeight.bold,
                     ),
                   ),
+                )
+              : Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text(
+                      "CHOOSE TACTIC (${3 - widget.offer.attemptsMade} left)",
+                      style: TextStyle(
+                        color: Colors.white.withValues(alpha: 0.4),
+                        fontSize: 9,
+                        fontWeight: FontWeight.w900,
+                        letterSpacing: 1.0,
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    Row(
+                      children: [
+                        Expanded(
+                          child: _tacticBtn(
+                            "PERSUASIVE",
+                            const Color(0xFFFF5733),
+                          ),
+                        ),
+                        const SizedBox(width: 8),
+                        Expanded(
+                          child: _tacticBtn(
+                            "NEGOTIATOR",
+                            const Color(0xFFF1C40F),
+                          ),
+                        ),
+                        const SizedBox(width: 8),
+                        Expanded(
+                          child: _tacticBtn(
+                            "COLLABORATIVE",
+                            const Color(0xFFE9967A),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
                 ),
-            ],
+        ),
+      ],
+    );
+  }
+
+  Widget _infoChip(IconData icon, String value, Color color) {
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Icon(icon, size: 14, color: Colors.white.withValues(alpha: 0.2)),
+        const SizedBox(width: 4),
+        Text(
+          value,
+          style: TextStyle(
+            color: color,
+            fontSize: 11,
+            fontWeight: FontWeight.bold,
           ),
-          const SizedBox(height: 16),
-          _infoRow(
-            Icons.monetization_on_outlined,
-            "Signing Bonus",
-            widget.financeService.formatCurrency(widget.offer.signingBonus),
-            Colors.green,
-          ),
-          _infoRow(
-            Icons.calendar_today_outlined,
-            "Weekly Payment",
-            widget.financeService.formatCurrency(
-              widget.offer.weeklyBasePayment,
-            ),
-            Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.7),
-          ),
-          _infoRow(
-            Icons.timer_outlined,
-            "Duration",
-            "${widget.offer.contractDuration} Races",
-            Colors.blue,
-          ),
-          _infoRow(
-            Icons.emoji_events_outlined,
-            "Objective",
-            widget.offer.objectiveDescription,
-            Colors.orangeAccent,
-          ),
-          const Spacer(),
-          if (isLocked)
-            const Center(
-              child: Text(
-                "SUSPENDED",
-                style: TextStyle(
-                  color: Colors.redAccent,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-            )
-          else if (_isNegotiating)
-            Center(
-              child: CircularProgressIndicator(
-                color: Theme.of(context).colorScheme.secondary,
-              ),
-            )
-          else ...[
-            Center(
-              child: Text(
-                "CHOOSE TACTIC (${3 - widget.offer.attemptsMade} left)",
-                style: TextStyle(
-                  color: Theme.of(
-                    context,
-                  ).colorScheme.onSurface.withValues(alpha: 0.38),
-                  fontSize: 11,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-            ),
-            const SizedBox(height: 12),
-            Row(
-              children: [
-                Expanded(child: _tacticBtn("AGGRESSIVE", Colors.red)),
-                const SizedBox(width: 8),
-                Expanded(
-                  child: _tacticBtn(
-                    "PROFESSIONAL",
-                    Theme.of(context).colorScheme.onSurface,
-                  ),
-                ),
-                const SizedBox(width: 8),
-                Expanded(
-                  child: _tacticBtn(
-                    "FRIENDLY",
-                    Theme.of(context).colorScheme.secondary,
-                  ),
-                ),
-              ],
-            ),
-          ],
-        ],
-      ),
+        ),
+      ],
     );
   }
 
@@ -719,20 +932,42 @@ class _SponsorOfferCardState extends State<_SponsorOfferCard> {
     );
   }
 
+  /// Componente 'sponsorsButtons' - Estilo Mute con revelación de color en Hover
   Widget _tacticBtn(String label, Color color) {
-    return OutlinedButton(
+    return ElevatedButton(
       onPressed: () => _negotiate(label),
-      style: OutlinedButton.styleFrom(
-        side: BorderSide(color: color.withValues(alpha: 0.4)),
-        padding: const EdgeInsets.symmetric(vertical: 12),
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(100)),
+      style: ButtonStyle(
+        backgroundColor: WidgetStateProperty.resolveWith<Color?>((states) {
+          if (states.contains(WidgetState.hovered)) {
+            return color;
+          }
+          return Colors.white.withValues(alpha: 0.05);
+        }),
+        foregroundColor: WidgetStateProperty.resolveWith<Color?>((states) {
+          if (states.contains(WidgetState.hovered)) {
+            return const Color(0xFFFEF9E7); // Crema claro
+          }
+          return Colors.white.withValues(alpha: 0.4);
+        }),
+        overlayColor: WidgetStateProperty.resolveWith<Color?>((states) {
+          if (states.contains(WidgetState.pressed)) {
+            return Colors.white.withValues(alpha: 0.1);
+          }
+          return null;
+        }),
+        elevation: WidgetStateProperty.all(0),
+        padding: WidgetStateProperty.all(
+          const EdgeInsets.symmetric(vertical: 14),
+        ),
+        shape: WidgetStateProperty.all(const StadiumBorder()),
       ),
       child: Text(
         label,
-        style: TextStyle(
-          color: color,
+        style: const TextStyle(
           fontSize: 9,
-          fontWeight: FontWeight.bold,
+          fontWeight: FontWeight.w900,
+          letterSpacing: 1.2,
+          fontFamily: 'Poppins',
         ),
         overflow: TextOverflow.ellipsis,
       ),
@@ -807,7 +1042,7 @@ class _SponsorCarouselModalState extends State<_SponsorCarouselModal> {
   @override
   Widget build(BuildContext context) {
     return SizedBox(
-      height: 520,
+      height: 500,
       child: Column(
         children: [
           const SizedBox(height: 12),

@@ -15,9 +15,9 @@ class DriverPortraitService {
     final isFemale = gender.toLowerCase().startsWith('f');
 
     if (isFemale) {
-      return 'assets/drivers/Gemini_Generated_Image_yl6vheyl6vheyl6v.png';
+      return 'drivers/Gemini_Generated_Image_yl6vheyl6vheyl6v.png';
     } else {
-      return 'assets/drivers/Gemini_Generated_Image_vdio0kvdio0kvdio.png';
+      return 'drivers/Gemini_Generated_Image_vdio0kvdio0kvdio.png';
     }
   }
 
