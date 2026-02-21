@@ -36,6 +36,16 @@ class DatabaseSeeder {
         debugPrint("NUKE: Pilotos eliminados.");
       }
 
+      final pressNewsSnapshot = await _db.collectionGroup('press_news').get();
+      if (pressNewsSnapshot.docs.isNotEmpty) {
+        final batch = _db.batch();
+        for (var doc in pressNewsSnapshot.docs) {
+          batch.delete(doc.reference);
+        }
+        await batch.commit();
+        debugPrint("NUKE: Noticias de prensa eliminadas.");
+      }
+
       final collectionsToClear = [
         'teams',
         'leagues',

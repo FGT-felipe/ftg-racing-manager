@@ -1091,6 +1091,7 @@ class LeagueNotification {
   final String? pilotName;
   final String? managerName;
   final String? teamName;
+  final Map<String, dynamic>? payload;
   final bool isArchived;
 
   LeagueNotification({
@@ -1104,6 +1105,7 @@ class LeagueNotification {
     this.pilotName,
     this.managerName,
     this.teamName,
+    this.payload,
     this.isArchived = false,
   });
 
@@ -1119,6 +1121,7 @@ class LeagueNotification {
       'pilotName': pilotName,
       'managerName': managerName,
       'teamName': teamName,
+      'payload': payload,
       'isArchived': isArchived,
     };
   }
@@ -1142,6 +1145,7 @@ class LeagueNotification {
       pilotName: map['pilotName'],
       managerName: map['managerName'],
       teamName: map['teamName'],
+      payload: map['payload'] as Map<String, dynamic>?,
       isArchived: map['isArchived'] ?? false,
     );
   }

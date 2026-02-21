@@ -410,7 +410,8 @@ class _DashboardScreenState extends State<DashboardScreen> {
                                                               : 1,
                                                           crossAxisSpacing: 16,
                                                           mainAxisSpacing: 12,
-                                                          mainAxisExtent: 120,
+                                                          childAspectRatio:
+                                                              1.25,
                                                         ),
                                                     itemCount: news.length,
                                                     itemBuilder:

@@ -137,14 +137,31 @@ class _TeamSelectionScreenState extends State<TeamSelectionScreen> {
       try {
         final manager = await AuthService().getManagerProfile(user.uid);
         if (manager != null) {
+          final drivers = _driversByTeam[team.id] ?? [];
+          final mainDriverName = drivers.isNotEmpty
+              ? drivers[0].name
+              : "the main driver";
+          final secondaryDriverName = drivers.length > 1
+              ? drivers[1].name
+              : "the secondary driver";
+
           await LeagueNotificationService().addLeagueNotification(
             leagueId: leagueId,
             title: "NEW MANAGER ARRIVES",
             message:
-                "${manager.name} ${manager.surname} has signed with ${team.name} to lead them in the $leagueName!",
+                "pressNewsManagerJoin", // We use the message field for the translation key
             type: "MANAGER_JOIN",
             managerName: "${manager.name} ${manager.surname}",
             teamName: team.name,
+            payload: {
+              "managerName": manager.name,
+              "managerSurname": manager.surname,
+              "teamName": team.name,
+              "leagueName": leagueName,
+              "roleManager": "manager",
+              "mainDriver": mainDriverName,
+              "secondaryDriver": secondaryDriverName,
+            },
           );
         }
       } catch (e) {

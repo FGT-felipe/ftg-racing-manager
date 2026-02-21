@@ -435,6 +435,20 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'{name} NEW TEAM RECORD: {time}'**
   String pitBoardNewTeamRecord(String name, String time);
+
+  /// No description provided for @pressNewsManagerJoin.
+  ///
+  /// In en, this message translates to:
+  /// **'{managerName} has been hired by {teamName} to lead the team to glory in the {leagueName}. Fans believe their background as {roleManager} will not be enough and they will need to make several adjustments to achieve the goals. {mainDriver} thinks {managerSurname} has what it takes at this level, while {secondaryDriver} hopes to prove that with their arrival, many things can change in their favor.'**
+  String pressNewsManagerJoin(
+    String managerName,
+    String managerSurname,
+    String teamName,
+    String leagueName,
+    String roleManager,
+    String mainDriver,
+    String secondaryDriver,
+  );
 }
 
 class _AppLocalizationsDelegate

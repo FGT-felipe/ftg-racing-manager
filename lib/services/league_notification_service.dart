@@ -48,6 +48,7 @@ class LeagueNotificationService {
     String? pilotName,
     String? managerName,
     String? teamName,
+    Map<String, dynamic>? payload,
   }) async {
     await _db.collection('leagues').doc(leagueId).collection('press_news').add({
       'title': title,
@@ -59,6 +60,7 @@ class LeagueNotificationService {
       'pilotName': pilotName,
       'managerName': managerName,
       'teamName': teamName,
+      'payload': payload,
       'isArchived': false,
     });
   }

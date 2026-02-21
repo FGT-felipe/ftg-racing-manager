@@ -143,5 +143,31 @@
         "type": "String"
       }
     }
+  },
+  "pressNewsManagerJoin": "{managerName} has been hired by {teamName} to lead the team to glory in the {leagueName}. Fans believe their background as {roleManager} will not be enough and they will need to make several adjustments to achieve the goals. {mainDriver} thinks {managerSurname} has what it takes at this level, while {secondaryDriver} hopes to prove that with their arrival, many things can change in their favor.",
+  "@pressNewsManagerJoin": {
+    "placeholders": {
+      "managerName": {
+        "type": "String"
+      },
+      "managerSurname": {
+        "type": "String"
+      },
+      "teamName": {
+        "type": "String"
+      },
+      "leagueName": {
+        "type": "String"
+      },
+      "roleManager": {
+        "type": "String"
+      },
+      "mainDriver": {
+        "type": "String"
+      },
+      "secondaryDriver": {
+        "type": "String"
+      }
+    }
   }
 }
