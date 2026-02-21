@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:math';
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import '../../services/season_service.dart';
@@ -47,9 +48,17 @@ class _RaceDayScreenState extends State<RaceDayScreen>
   // Current display state
   int _currentLapNumber = 0;
   Map<String, dynamic> _currentPositions = {}; // driverId -> position
+  Map<String, dynamic> _previousPositions =
+      {}; // driverId -> position (last lap)
   Map<String, dynamic> _currentLapTimes = {};
+  Map<String, dynamic> _currentTyres = {}; // driverId -> TyreCompound
+  Map<String, double> _bestLapTimes = {}; // driverId -> best lap time
   List<Map<String, dynamic>> _allEvents =
       []; // Cumulative events up to current lap
+
+  String? _overallFastestDriverId;
+  double _overallFastestTime = double.infinity;
+  double _leaderTotalTime = 0.0;
 
   // Drivers / Teams cache
   final Map<String, String> _driverNames = {};
@@ -65,6 +74,7 @@ class _RaceDayScreenState extends State<RaceDayScreen>
   late AnimationController _pulseController;
   final ScrollController _leaderboardScroll = ScrollController();
   final ScrollController _eventsScroll = ScrollController();
+  final ScrollController _commentaryScroll = ScrollController();
 
   @override
   void initState() {
@@ -83,6 +93,7 @@ class _RaceDayScreenState extends State<RaceDayScreen>
     _pulseController.dispose();
     _leaderboardScroll.dispose();
     _eventsScroll.dispose();
+    _commentaryScroll.dispose();
     super.dispose();
   }
 
@@ -286,17 +297,123 @@ class _RaceDayScreenState extends State<RaceDayScreen>
 
     _currentPositions = Map<String, dynamic>.from(lapData['positions'] ?? {});
     _currentLapTimes = Map<String, dynamic>.from(lapData['lapTimes'] ?? {});
+    _currentTyres = Map<String, dynamic>.from(lapData['tyres'] ?? {});
 
     // Gather all events from lap 1 to current lap
-    _allEvents = [];
+    final List<Map<String, dynamic>> localEvents = [];
+    double localOverallFastestTime = double.infinity;
+    String? localOverallFastestDriverId;
+    double localLeaderTotalTime = 0.0;
+
+    Map<String, dynamic> localPreviousPositions = {};
+    Map<String, double> localBestLapTimes = {};
+
     for (var key in _sortedLapKeys) {
       if (key > _currentLapNumber) break;
       final ld = _lapDataMap[key];
-      if (ld != null && ld['events'] != null) {
-        for (var evt in (ld['events'] as List<dynamic>)) {
-          _allEvents.add(Map<String, dynamic>.from(evt));
+      if (ld == null) continue;
+
+      final positions = ld['positions'] as Map<String, dynamic>? ?? {};
+      final lapTimes = ld['lapTimes'] as Map<String, dynamic>? ?? {};
+
+      // Track previous positions for the change indicator
+      if (key == _currentLapNumber - 1) {
+        localPreviousPositions = Map.from(positions);
+      } else if (_currentLapNumber == 1 && key == 0) {
+        // If current lap is 1 and we have grid data (lap 0)
+        localPreviousPositions = Map.from(positions);
+      }
+
+      // Track personal best lap times
+      for (var entry in lapTimes.entries) {
+        final driverId = entry.key;
+        final t = (entry.value as num?)?.toDouble() ?? 999.0;
+        if (t < 900) {
+          final currentBest = localBestLapTimes[driverId] ?? double.infinity;
+          if (t < currentBest) {
+            localBestLapTimes[driverId] = t;
+          }
         }
       }
+
+      // Accumulate leader's total time for this lap
+      int bestPos = 999;
+      String? lapLeader;
+      for (var pe in positions.entries) {
+        final p = (pe.value as num).toInt();
+        if (p < bestPos) {
+          bestPos = p;
+          lapLeader = pe.key;
+        }
+      }
+      if (lapLeader != null) {
+        final lt = (lapTimes[lapLeader] as num?)?.toDouble() ?? 0;
+        if (lt < 900) localLeaderTotalTime += lt;
+      }
+
+      // Add original events with position tag
+      if (ld['events'] != null) {
+        for (var evt in (ld['events'] as List<dynamic>)) {
+          final evtMap = Map<String, dynamic>.from(evt);
+          // Tag with the driver's position in this lap
+          final driverId = (evtMap['driverId'] as String?) ?? '';
+          final driverPos = (positions[driverId] as num?)?.toInt() ?? 99;
+          evtMap['position'] = driverPos;
+          localEvents.add(evtMap);
+        }
+      }
+
+      // Inject FASTEST_LAP event when a new overall fastest is set
+      String? lapFastestId;
+      double lapFastestTime = double.infinity;
+      for (var entry in lapTimes.entries) {
+        final t = (entry.value as num?)?.toDouble() ?? 999.0;
+        if (t < 900 && t < lapFastestTime) {
+          lapFastestTime = t;
+          lapFastestId = entry.key;
+        }
+      }
+      if (lapFastestId != null && lapFastestTime < localOverallFastestTime) {
+        localOverallFastestTime = lapFastestTime;
+        localOverallFastestDriverId = lapFastestId;
+        localEvents.add({
+          'type': 'FASTEST_LAP',
+          'lap': key,
+          'driverId': localOverallFastestDriverId,
+          'desc':
+              '${_formatLapTime(localOverallFastestTime)} — New fastest lap of the race!',
+          'position': (positions[lapFastestId] as num?)?.toInt() ?? 99,
+        });
+      }
+    }
+
+    // Commit to state variables at once
+    _allEvents = localEvents;
+    _overallFastestTime = localOverallFastestTime;
+    _overallFastestDriverId = localOverallFastestDriverId;
+    _leaderTotalTime = localLeaderTotalTime;
+    _previousPositions = localPreviousPositions;
+    _bestLapTimes = localBestLapTimes;
+
+    // Inject a FINISH event when race reaches the last lap
+    if (_currentLapNumber >= _totalLaps && _currentLapNumber > 0) {
+      final sorted = _currentPositions.entries.toList()
+        ..sort(
+          (a, b) =>
+              (a.value as num).toInt().compareTo((b.value as num).toInt()),
+        );
+
+      final p1 = sorted.isNotEmpty ? _driverName(sorted[0].key) : '???';
+      final p2 = sorted.length > 1 ? _driverName(sorted[1].key) : '???';
+      final p3 = sorted.length > 2 ? _driverName(sorted[2].key) : '???';
+
+      _allEvents.add({
+        'type': 'FINISH',
+        'lap': _currentLapNumber,
+        'driverId': sorted.isNotEmpty ? sorted[0].key : '',
+        'desc': 'P1: $p1 — P2: $p2 — P3: $p3',
+        'position': 1,
+      });
     }
   }
 
@@ -428,7 +545,27 @@ class _RaceDayScreenState extends State<RaceDayScreen>
             'lapTime': 80.0 + gridPos * 0.1, // Fake qualy
           });
 
-          setupsMap[d.id] = CarSetup(); // Defaults
+          // Randomize setup for Demo to test different strategies
+          final setup = CarSetup();
+          final rng = Random();
+          final strategyRand = rng.nextInt(3);
+          if (strategyRand == 0) {
+            setup.tyreCompound = TyreCompound.soft;
+            setup.pitStops = [TyreCompound.hard];
+            setup.raceStyle = DriverStyle.offensive;
+            setup.initialFuel = 40.0;
+          } else if (strategyRand == 1) {
+            setup.tyreCompound = TyreCompound.medium;
+            setup.pitStops = [TyreCompound.hard];
+            setup.raceStyle = DriverStyle.normal;
+            setup.initialFuel = 50.0;
+          } else {
+            setup.tyreCompound = TyreCompound.hard;
+            setup.pitStops = [TyreCompound.medium];
+            setup.raceStyle = DriverStyle.defensive;
+            setup.initialFuel = 60.0;
+          }
+          setupsMap[d.id] = setup;
 
           _driverNames[d.id] = d.name;
           _driverTeamIds[d.id] = d.teamId!;
@@ -495,6 +632,7 @@ class _RaceDayScreenState extends State<RaceDayScreen>
       _lapDataMap[lap.lapNumber] = {
         'positions': lap.positions,
         'lapTimes': lap.driverLapTimes,
+        'tyres': lap.driverTyres,
         'events': lap.events
             .map(
               (e) => {
@@ -516,6 +654,13 @@ class _RaceDayScreenState extends State<RaceDayScreen>
     final mins = (seconds / 60).floor();
     final secs = seconds - (mins * 60);
     return "$mins:${secs.toStringAsFixed(3).padLeft(6, '0')}";
+  }
+
+  String _formatRaceTime(double totalSeconds) {
+    final hours = (totalSeconds / 3600).floor();
+    final mins = ((totalSeconds % 3600) / 60).floor();
+    final secs = (totalSeconds % 60).floor();
+    return '${hours.toString().padLeft(2, '0')}H:${mins.toString().padLeft(2, '0')}M:${secs.toString().padLeft(2, '0')}S';
   }
 
   String _driverName(String driverId) {
@@ -558,6 +703,36 @@ class _RaceDayScreenState extends State<RaceDayScreen>
         return Icons.info_outline;
       default:
         return Icons.radio_button_unchecked;
+    }
+  }
+
+  Color _getTyreColor(TyreCompound? compound) {
+    switch (compound) {
+      case TyreCompound.soft:
+        return Colors.redAccent;
+      case TyreCompound.medium:
+        return Colors.yellowAccent;
+      case TyreCompound.hard:
+        return Colors.white70;
+      case TyreCompound.wet:
+        return Colors.blueAccent;
+      default:
+        return Colors.grey;
+    }
+  }
+
+  String _getTyreShorthand(TyreCompound? compound) {
+    switch (compound) {
+      case TyreCompound.soft:
+        return 'S';
+      case TyreCompound.medium:
+        return 'M';
+      case TyreCompound.hard:
+        return 'H';
+      case TyreCompound.wet:
+        return 'W';
+      default:
+        return '?';
     }
   }
 
@@ -708,8 +883,17 @@ class _RaceDayScreenState extends State<RaceDayScreen>
                 // Left: Leaderboard
                 Expanded(flex: 6, child: _buildLeaderboard(context)),
                 const SizedBox(width: 12),
-                // Right: Event Feed / Pit Board
-                Expanded(flex: 4, child: _buildEventFeed(context)),
+                // Right: Pit Board + Commentary
+                Expanded(
+                  flex: 4,
+                  child: Column(
+                    children: [
+                      Expanded(flex: 5, child: _buildEventFeed(context)),
+                      const SizedBox(height: 12),
+                      Expanded(flex: 5, child: _buildCommentaryFeed(context)),
+                    ],
+                  ),
+                ),
               ],
             ),
           ),
@@ -893,6 +1077,99 @@ class _RaceDayScreenState extends State<RaceDayScreen>
               ),
             ),
           ),
+
+          const SizedBox(height: 12),
+
+          // Fastest Lap & Total Race Time row
+          Builder(
+            builder: (context) {
+              final hasFastest =
+                  _overallFastestDriverId != null &&
+                  _overallFastestTime < double.infinity;
+
+              return Row(
+                children: [
+                  // Fastest Lap
+                  Expanded(
+                    child: Row(
+                      children: [
+                        Icon(
+                          Icons.timer,
+                          size: 14,
+                          color: const Color(0xFFE040FB),
+                        ),
+                        const SizedBox(width: 6),
+                        Text(
+                          'FASTEST LAP',
+                          style: TextStyle(
+                            fontSize: 9,
+                            fontWeight: FontWeight.w900,
+                            letterSpacing: 1.0,
+                            color: Colors.white.withValues(alpha: 0.4),
+                          ),
+                        ),
+                        const SizedBox(width: 8),
+                        if (hasFastest)
+                          Flexible(
+                            child: Text(
+                              '${_driverName(_overallFastestDriverId!)}  ${_formatLapTime(_overallFastestTime)}',
+                              style: const TextStyle(
+                                fontFamily: 'monospace',
+                                fontSize: 11,
+                                fontWeight: FontWeight.bold,
+                                color: Color(0xFFE040FB),
+                              ),
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                          )
+                        else
+                          Text(
+                            '—',
+                            style: TextStyle(
+                              fontSize: 11,
+                              color: Colors.white.withValues(alpha: 0.3),
+                            ),
+                          ),
+                      ],
+                    ),
+                  ),
+
+                  // Total Race Time
+                  Row(
+                    children: [
+                      Icon(
+                        Icons.schedule,
+                        size: 14,
+                        color: Colors.white.withValues(alpha: 0.4),
+                      ),
+                      const SizedBox(width: 6),
+                      Text(
+                        'RACE TIME',
+                        style: TextStyle(
+                          fontSize: 9,
+                          fontWeight: FontWeight.w900,
+                          letterSpacing: 1.0,
+                          color: Colors.white.withValues(alpha: 0.4),
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      Text(
+                        _leaderTotalTime > 0
+                            ? _formatRaceTime(_leaderTotalTime)
+                            : '—',
+                        style: TextStyle(
+                          fontFamily: 'monospace',
+                          fontSize: 11,
+                          fontWeight: FontWeight.bold,
+                          color: Colors.white.withValues(alpha: 0.7),
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+              );
+            },
+          ),
         ],
       ),
     );
@@ -970,7 +1247,18 @@ class _RaceDayScreenState extends State<RaceDayScreen>
             child: Row(
               children: [
                 SizedBox(
-                  width: 35,
+                  width: 16,
+                  child: Text(
+                    '', // Prev Pos Icon Space
+                    style: TextStyle(
+                      fontSize: 9,
+                      fontWeight: FontWeight.w900,
+                      color: Colors.white.withValues(alpha: 0.3),
+                    ),
+                  ),
+                ),
+                SizedBox(
+                  width: 24,
                   child: Text(
                     'POS',
                     style: TextStyle(
@@ -982,7 +1270,7 @@ class _RaceDayScreenState extends State<RaceDayScreen>
                   ),
                 ),
                 Expanded(
-                  flex: 4,
+                  flex: 2,
                   child: Text(
                     'DRIVER',
                     style: TextStyle(
@@ -993,22 +1281,36 @@ class _RaceDayScreenState extends State<RaceDayScreen>
                     ),
                   ),
                 ),
-                Expanded(
-                  flex: 3,
+                SizedBox(
+                  width: 55,
                   child: Text(
-                    'TEAM',
+                    'LATEST',
                     style: TextStyle(
                       fontSize: 9,
                       fontWeight: FontWeight.w900,
                       letterSpacing: 1.0,
                       color: Colors.white.withValues(alpha: 0.3),
                     ),
+                    textAlign: TextAlign.center,
                   ),
                 ),
                 SizedBox(
-                  width: 100,
+                  width: 55,
                   child: Text(
-                    'LAP TIME',
+                    'BEST',
+                    style: TextStyle(
+                      fontSize: 9,
+                      fontWeight: FontWeight.w900,
+                      letterSpacing: 1.0,
+                      color: Colors.white.withValues(alpha: 0.3),
+                    ),
+                    textAlign: TextAlign.center,
+                  ),
+                ),
+                Expanded(
+                  flex: 1,
+                  child: Text(
+                    'INTERVAL',
                     style: TextStyle(
                       fontSize: 9,
                       fontWeight: FontWeight.w900,
@@ -1026,115 +1328,287 @@ class _RaceDayScreenState extends State<RaceDayScreen>
 
           // Rows
           Expanded(
-            child: ListView.builder(
-              controller: _leaderboardScroll,
-              itemCount: sorted.length,
-              itemBuilder: (context, index) {
-                final entry = sorted[index];
-                final driverId = entry.key;
-                final pos = (entry.value as num).toInt();
-                final lapTime = (_currentLapTimes[driverId] as num?)
-                    ?.toDouble();
-                final isPlayer = _isPlayerTeam(driverId);
-                final isDnf = lapTime == null || lapTime > 900;
+            child: Builder(
+              builder: (context) {
+                // Get leader's lap time for gap calculation
+                final leaderId = sorted.isNotEmpty ? sorted.first.key : null;
+                final leaderLapTime = leaderId != null
+                    ? (_currentLapTimes[leaderId] as num?)?.toDouble()
+                    : null;
 
-                return Container(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 16,
-                    vertical: 10,
-                  ),
-                  decoration: BoxDecoration(
-                    color: isPlayer
-                        ? Theme.of(
-                            context,
-                          ).colorScheme.secondary.withValues(alpha: 0.08)
-                        : null,
-                    border: Border(
-                      left: isPlayer
-                          ? BorderSide(
-                              color: Theme.of(context).colorScheme.secondary,
-                              width: 3,
-                            )
-                          : BorderSide.none,
-                      bottom: BorderSide(
-                        color: Colors.white.withValues(alpha: 0.04),
+                return ListView.builder(
+                  controller: _leaderboardScroll,
+                  itemCount: sorted.length,
+                  itemBuilder: (context, index) {
+                    final entry = sorted[index];
+                    final driverId = entry.key;
+                    final pos = (entry.value as num).toInt();
+                    final lapTime = (_currentLapTimes[driverId] as num?)
+                        ?.toDouble();
+                    final isPlayer = _isPlayerTeam(driverId);
+                    final isDnf = lapTime == null || lapTime > 900;
+                    final isFastestLap = driverId == _overallFastestDriverId;
+                    final isPitting = _allEvents.any(
+                      (e) =>
+                          e['driverId'] == driverId &&
+                          e['lap'] == _currentLapNumber &&
+                          e['type']?.toString().toUpperCase() == 'PIT',
+                    );
+
+                    // Compute Position Change
+                    IconData? changeIcon;
+                    Color? changeColor;
+                    if (_previousPositions.containsKey(driverId)) {
+                      final prevPos = (_previousPositions[driverId] as num)
+                          .toInt();
+                      if (pos < prevPos) {
+                        changeIcon = Icons.arrow_drop_up;
+                        changeColor = const Color(0xFF00C853); // Green
+                      } else if (pos > prevPos) {
+                        changeIcon = Icons.arrow_drop_down;
+                        changeColor = const Color(0xFFFF5252); // Red
+                      } else {
+                        changeIcon = Icons.remove;
+                        changeColor = Colors.white.withValues(
+                          alpha: 0.3,
+                        ); // Neutral
+                      }
+                    }
+
+                    // Compute interval text
+                    String intervalText;
+                    if (isDnf) {
+                      intervalText = 'RETIRED';
+                    } else if (index == 0) {
+                      intervalText = 'LEADER';
+                    } else if (leaderLapTime != null && leaderLapTime < 900) {
+                      final gap = lapTime - leaderLapTime;
+                      intervalText = '+${gap.toStringAsFixed(3)}s';
+                    } else {
+                      intervalText = _formatLapTime(lapTime);
+                    }
+
+                    // Compute times
+                    final latestLapText = isDnf ? '—' : _formatLapTime(lapTime);
+                    final bestLapNum = _bestLapTimes[driverId];
+                    final bestLapText = (bestLapNum != null && bestLapNum < 900)
+                        ? _formatLapTime(bestLapNum)
+                        : '—';
+
+                    return Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 16,
+                        vertical: 10,
                       ),
-                    ),
-                  ),
-                  child: Row(
-                    children: [
-                      // Position
-                      SizedBox(
-                        width: 35,
-                        child: Text(
-                          isDnf ? 'DNF' : '$pos',
-                          style: TextStyle(
-                            fontSize: 14,
-                            fontWeight: FontWeight.w900,
-                            color: isDnf
-                                ? const Color(0xFFFF5252)
-                                : (pos <= 3
-                                      ? const Color(0xFFFFB800)
-                                      : Colors.white.withValues(alpha: 0.7)),
+                      decoration: BoxDecoration(
+                        color: isPlayer
+                            ? Theme.of(
+                                context,
+                              ).colorScheme.secondary.withValues(alpha: 0.08)
+                            : null,
+                        border: Border(
+                          left: isPlayer
+                              ? BorderSide(
+                                  color: Theme.of(
+                                    context,
+                                  ).colorScheme.secondary,
+                                  width: 3,
+                                )
+                              : BorderSide.none,
+                          bottom: BorderSide(
+                            color: Colors.white.withValues(alpha: 0.04),
                           ),
                         ),
                       ),
-
-                      // Driver name
-                      Expanded(
-                        flex: 4,
-                        child: Text(
-                          _driverName(driverId),
-                          style: TextStyle(
-                            fontSize: 12,
-                            fontWeight: isPlayer
-                                ? FontWeight.w900
-                                : FontWeight.w500,
-                            color: isPlayer
-                                ? Theme.of(context).colorScheme.secondary
-                                : (isDnf
-                                      ? Colors.white.withValues(alpha: 0.3)
-                                      : Colors.white.withValues(alpha: 0.9)),
+                      child: Row(
+                        children: [
+                          // Change Icon
+                          SizedBox(
+                            width: 16,
+                            child: changeIcon != null
+                                ? Icon(changeIcon, size: 16, color: changeColor)
+                                : const SizedBox.shrink(),
                           ),
-                          overflow: TextOverflow.ellipsis,
-                        ),
-                      ),
 
-                      // Team name
-                      Expanded(
-                        flex: 3,
-                        child: Text(
-                          _driverTeamName(driverId),
-                          style: TextStyle(
-                            fontSize: 10,
-                            color: Colors.white.withValues(
-                              alpha: isDnf ? 0.2 : 0.4,
+                          // Position
+                          SizedBox(
+                            width: 24,
+                            child: Text(
+                              isDnf ? 'DNF' : '$pos',
+                              style: TextStyle(
+                                fontSize: 13,
+                                fontWeight: FontWeight.w900,
+                                color: isDnf
+                                    ? const Color(0xFFFF5252)
+                                    : (pos <= 3
+                                          ? const Color(0xFFFFB800)
+                                          : Colors.white.withValues(
+                                              alpha: 0.7,
+                                            )),
+                              ),
                             ),
                           ),
-                          overflow: TextOverflow.ellipsis,
-                        ),
-                      ),
 
-                      // Lap time
-                      SizedBox(
-                        width: 100,
-                        child: Text(
-                          isDnf ? 'RETIRED' : _formatLapTime(lapTime),
-                          style: TextStyle(
-                            fontFamily: 'monospace',
-                            fontSize: 11,
-                            fontWeight: FontWeight.bold,
-                            color: isDnf
-                                ? const Color(0xFFFF5252)
-                                : (index == 0
-                                      ? const Color(0xFFE040FB)
-                                      : Colors.white.withValues(alpha: 0.7)),
+                          // Driver name
+                          Expanded(
+                            flex: 2,
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Row(
+                                  children: [
+                                    // Tyre Compound Indicator
+                                    if (!isDnf &&
+                                        _currentTyres.containsKey(driverId))
+                                      Container(
+                                        margin: const EdgeInsets.only(right: 6),
+                                        padding: const EdgeInsets.all(3),
+                                        decoration: BoxDecoration(
+                                          shape: BoxShape.circle,
+                                          border: Border.all(
+                                            color: _getTyreColor(
+                                              _currentTyres[driverId]
+                                                  as TyreCompound?,
+                                            ),
+                                            width: 1.5,
+                                          ),
+                                        ),
+                                        child: Text(
+                                          _getTyreShorthand(
+                                            _currentTyres[driverId]
+                                                as TyreCompound?,
+                                          ),
+                                          style: TextStyle(
+                                            fontSize: 7,
+                                            fontWeight: FontWeight.bold,
+                                            color: _getTyreColor(
+                                              _currentTyres[driverId]
+                                                  as TyreCompound?,
+                                            ),
+                                          ),
+                                        ),
+                                      ),
+                                    Expanded(
+                                      child: Text(
+                                        _driverName(driverId),
+                                        style: TextStyle(
+                                          fontSize: 11,
+                                          fontWeight: isPlayer
+                                              ? FontWeight.w900
+                                              : FontWeight.w500,
+                                          color: isFastestLap && !isDnf
+                                              ? const Color(0xFFE040FB)
+                                              : (isPlayer
+                                                    ? Theme.of(
+                                                        context,
+                                                      ).colorScheme.secondary
+                                                    : (isDnf
+                                                          ? Colors.white
+                                                                .withValues(
+                                                                  alpha: 0.3,
+                                                                )
+                                                          : Colors.white
+                                                                .withValues(
+                                                                  alpha: 0.9,
+                                                                ))),
+                                        ),
+                                        overflow: TextOverflow.ellipsis,
+                                      ),
+                                    ),
+                                    if (isPitting && !isDnf) ...[
+                                      const SizedBox(width: 8),
+                                      const Icon(
+                                        Icons.local_gas_station,
+                                        size: 10,
+                                        color: Color(0xFFFFB800),
+                                      ),
+                                      const SizedBox(width: 4),
+                                      const Text(
+                                        'IN BOXES!',
+                                        style: TextStyle(
+                                          fontSize: 9,
+                                          fontWeight: FontWeight.w900,
+                                          color: Color(0xFFFFB800),
+                                          letterSpacing: 0.5,
+                                        ),
+                                      ),
+                                    ],
+                                  ],
+                                ),
+                                // Show team abbreviation below driver name to save space
+                                Text(
+                                  _driverTeamName(driverId),
+                                  style: TextStyle(
+                                    fontSize: 8,
+                                    color: Colors.white.withValues(
+                                      alpha: isDnf ? 0.2 : 0.4,
+                                    ),
+                                  ),
+                                  overflow: TextOverflow.ellipsis,
+                                ),
+                              ],
+                            ),
                           ),
-                          textAlign: TextAlign.right,
-                        ),
+
+                          // Latest Lap
+                          SizedBox(
+                            width: 55,
+                            child: Text(
+                              latestLapText,
+                              style: TextStyle(
+                                fontFamily: 'monospace',
+                                fontSize: 10,
+                                color: Colors.white.withValues(
+                                  alpha: isDnf ? 0.3 : 0.7,
+                                ),
+                              ),
+                              textAlign: TextAlign.center,
+                            ),
+                          ),
+
+                          // Best Lap
+                          SizedBox(
+                            width: 55,
+                            child: Text(
+                              bestLapText,
+                              style: TextStyle(
+                                fontFamily: 'monospace',
+                                fontSize: 10,
+                                color: isFastestLap
+                                    ? const Color(0xFFE040FB)
+                                    : Colors.white.withValues(alpha: 0.9),
+                                fontWeight: isFastestLap
+                                    ? FontWeight.bold
+                                    : FontWeight.normal,
+                              ),
+                              textAlign: TextAlign.center,
+                            ),
+                          ),
+
+                          // Interval (gap to leader)
+                          Expanded(
+                            flex: 1,
+                            child: Text(
+                              intervalText,
+                              style: TextStyle(
+                                fontFamily: 'monospace',
+                                fontSize: 11,
+                                fontWeight: FontWeight.bold,
+                                color: isDnf
+                                    ? const Color(0xFFFF5252)
+                                    : (isFastestLap
+                                          ? const Color(0xFFE040FB)
+                                          : Colors.white.withValues(
+                                              alpha: 0.7,
+                                            )),
+                              ),
+                              textAlign: TextAlign.right,
+                            ),
+                          ),
+                        ],
                       ),
-                    ],
-                  ),
+                    );
+                  },
                 );
               },
             ),
@@ -1183,7 +1657,7 @@ class _RaceDayScreenState extends State<RaceDayScreen>
                 ),
                 const Spacer(),
                 Text(
-                  '${_allEvents.length} EVENTS',
+                  '${_allEvents.where((e) => _isPlayerTeam(e['driverId'] ?? '')).length} EVENTS',
                   style: TextStyle(
                     fontSize: 10,
                     fontWeight: FontWeight.bold,
@@ -1194,43 +1668,48 @@ class _RaceDayScreenState extends State<RaceDayScreen>
             ),
           ),
 
-          // Events list
+          // Events list (filtered to player's drivers only)
           Expanded(
-            child: _allEvents.isEmpty
-                ? Center(
-                    child: Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Icon(
-                          Icons.radio_button_unchecked,
-                          size: 32,
-                          color: Colors.white.withValues(alpha: 0.1),
+            child: () {
+              final playerEvents = _allEvents
+                  .where((e) => _isPlayerTeam(e['driverId'] ?? ''))
+                  .toList();
+              if (playerEvents.isEmpty) {
+                return Center(
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Icon(
+                        Icons.radio_button_unchecked,
+                        size: 32,
+                        color: Colors.white.withValues(alpha: 0.1),
+                      ),
+                      const SizedBox(height: 12),
+                      Text(
+                        _currentLapNumber == 0
+                            ? 'LIGHTS OUT SOON...'
+                            : 'NO EVENTS YET',
+                        style: TextStyle(
+                          color: Colors.white.withValues(alpha: 0.2),
+                          fontSize: 11,
+                          fontWeight: FontWeight.bold,
+                          letterSpacing: 1.0,
                         ),
-                        const SizedBox(height: 12),
-                        Text(
-                          _currentLapNumber == 0
-                              ? 'LIGHTS OUT SOON...'
-                              : 'NO EVENTS YET',
-                          style: TextStyle(
-                            color: Colors.white.withValues(alpha: 0.2),
-                            fontSize: 11,
-                            fontWeight: FontWeight.bold,
-                            letterSpacing: 1.0,
-                          ),
-                        ),
-                      ],
-                    ),
-                  )
-                : ListView.builder(
-                    controller: _eventsScroll,
-                    reverse: true, // newest at top
-                    itemCount: _allEvents.length,
-                    itemBuilder: (context, index) {
-                      // Show in reverse order (newest first)
-                      final evt = _allEvents[_allEvents.length - 1 - index];
-                      return _buildEventItem(context, evt);
-                    },
+                      ),
+                    ],
                   ),
+                );
+              }
+              return ListView.builder(
+                controller: _eventsScroll,
+                reverse: true,
+                itemCount: playerEvents.length,
+                itemBuilder: (context, index) {
+                  final evt = playerEvents[playerEvents.length - 1 - index];
+                  return _buildEventItem(context, evt);
+                },
+              );
+            }(),
           ),
         ],
       ),
@@ -1336,6 +1815,239 @@ class _RaceDayScreenState extends State<RaceDayScreen>
     );
   }
 
+  // ─── COMMENTARY FEED (TV/Radio style) ───
+
+  String _generateCommentary(Map<String, dynamic> evt) {
+    final type = (evt['type'] as String?) ?? 'INFO';
+    final driverId = (evt['driverId'] as String?) ?? '';
+    final desc = (evt['desc'] as String?) ?? '';
+    final name = _driverName(driverId);
+    final team = _driverTeamName(driverId);
+    final lap = (evt['lap'] as num?)?.toInt() ?? 0;
+    final rng = Random(name.hashCode ^ lap);
+
+    switch (type.toUpperCase()) {
+      case 'OVERTAKE':
+        final phrases = [
+          "And $name makes a brilliant move! $desc What a display of racecraft from the $team driver!",
+          "Wheel to wheel action! $name goes for it — $desc Incredible bravery!",
+          "The crowd is on their feet! $name with an audacious overtake — $desc",
+          "What a move by $name of $team! $desc That's racing at its finest!",
+        ];
+        return phrases[rng.nextInt(phrases.length)];
+      case 'PIT':
+        final pos = (evt['position'] as num?)?.toInt() ?? 99;
+        if (pos <= 3 && pos > 0) {
+          final top3Phrases = [
+            "BOX BOX! The leader $name is in! $desc This is a critical moment for $team!",
+            "Strategy unfolding! $name from P$pos dives into the pits. $desc $team needs a perfect stop here!",
+            "Tension in the pit lane as $name brings it in! $desc Can $team keep them in the top 3?",
+            "Massive call! $name is pitting from P$pos. $desc Let's see how the $team crew handles the pressure!",
+          ];
+          return top3Phrases[rng.nextInt(top3Phrases.length)];
+        }
+        final phrases = [
+          "Box box box! $name dives into the pit lane. $desc The $team crew is ready!",
+          "$name heads for the pits — $desc Let's see how fast the $team crew can turn this around!",
+          "Strategic call from $team! $name comes in for a stop. $desc",
+        ];
+        return phrases[rng.nextInt(phrases.length)];
+      case 'DNF':
+        final phrases = [
+          "Oh no! Disaster strikes for $name! $desc The $team garage won't want to see this replay.",
+          "Heartbreak for $team — $name is OUT of the race. $desc What a cruel sport.",
+          "And that's the end of the day for $name. $desc Absolutely gutted.",
+        ];
+        return phrases[rng.nextInt(phrases.length)];
+      case 'FINISH':
+        final phrases = [
+          "🏁 CHECKERED FLAG! The race is over! What a grand prix! The podium: $desc",
+          "🏁 And that's the checkered flag! An incredible race comes to an end! Podium finishers: $desc",
+          "🏁 The flag is waved! What a spectacle! Your podium today: $desc",
+        ];
+        return phrases[rng.nextInt(phrases.length)];
+      case 'FASTEST_LAP':
+        final phrases = [
+          "⚡ FASTEST LAP! $name of $team sets the benchmark — $desc",
+          "⚡ Purple sector! $name goes fastest with $desc What pace!",
+          "⚡ NEW FASTEST LAP for $name! $desc The $team car is flying!",
+        ];
+        return phrases[rng.nextInt(phrases.length)];
+      default:
+        final phrases = [
+          "News from the pit wall — $name: $desc",
+          "Interesting development for $name of $team. $desc",
+          "The stewards take note — $name: $desc",
+        ];
+        return phrases[rng.nextInt(phrases.length)];
+    }
+  }
+
+  Widget _buildCommentaryFeed(BuildContext context) {
+    return Container(
+      decoration: BoxDecoration(
+        color: const Color(0xFF080810),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(
+          color: const Color(0xFF00BCD4).withValues(alpha: 0.15),
+        ),
+      ),
+      child: Column(
+        children: [
+          // Header — broadcast style
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                colors: [
+                  const Color(0xFF00BCD4).withValues(alpha: 0.12),
+                  const Color(0xFF080810),
+                ],
+              ),
+              borderRadius: const BorderRadius.vertical(
+                top: Radius.circular(12),
+              ),
+            ),
+            child: Row(
+              children: [
+                Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 6,
+                    vertical: 2,
+                  ),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFF00BCD4).withValues(alpha: 0.15),
+                    borderRadius: BorderRadius.circular(4),
+                    border: Border.all(
+                      color: const Color(0xFF00BCD4).withValues(alpha: 0.4),
+                    ),
+                  ),
+                  child: const Text(
+                    'ON AIR',
+                    style: TextStyle(
+                      fontSize: 8,
+                      fontWeight: FontWeight.w900,
+                      color: Color(0xFF00BCD4),
+                      letterSpacing: 1.5,
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 8),
+                const Icon(Icons.podcasts, color: Color(0xFF00BCD4), size: 14),
+                const SizedBox(width: 6),
+                const Expanded(
+                  child: Text(
+                    'LIVE COMMENTARY',
+                    style: TextStyle(
+                      fontSize: 10,
+                      fontWeight: FontWeight.w900,
+                      letterSpacing: 1.5,
+                      color: Color(0xFF00BCD4),
+                    ),
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ),
+                Icon(
+                  Icons.tv,
+                  color: Colors.white.withValues(alpha: 0.15),
+                  size: 14,
+                ),
+              ],
+            ),
+          ),
+
+          // Scan-line overlay + commentary list
+          Expanded(
+            child: Stack(
+              children: [
+                // Commentary content
+                Builder(
+                  builder: (context) {
+                    // Filter to important events only
+                    final importantEvents = _allEvents.where((evt) {
+                      final type = ((evt['type'] as String?) ?? '')
+                          .toUpperCase();
+                      final driverId = (evt['driverId'] as String?) ?? '';
+                      final position = (evt['position'] as num?)?.toInt() ?? 99;
+
+                      // Always show crashes, DNFs, FINISH, and FASTEST_LAP
+                      if (type == 'DNF' ||
+                          type == 'FINISH' ||
+                          type == 'FASTEST_LAP') {
+                        return true;
+                      }
+
+                      // Always show player team events
+                      if (_isPlayerTeam(driverId)) return true;
+
+                      // Show overtakes involving top-3 positions
+                      if (type == 'OVERTAKE' && position <= 3) return true;
+
+                      // Show PIT stops in top 5
+                      if (type == 'PIT' && position <= 5) return true;
+
+                      return false;
+                    }).toList();
+
+                    if (importantEvents.isEmpty) {
+                      return Center(
+                        child: Text(
+                          _currentLapNumber == 0
+                              ? 'Waiting for lights out...'
+                              : 'The commentators are standing by...',
+                          style: TextStyle(
+                            color: Colors.white.withValues(alpha: 0.15),
+                            fontStyle: FontStyle.italic,
+                            fontSize: 11,
+                          ),
+                        ),
+                      );
+                    }
+
+                    return ListView.builder(
+                      controller: _commentaryScroll,
+                      reverse: false,
+                      itemCount: importantEvents.length,
+                      itemBuilder: (context, index) {
+                        // index 0 = newest
+                        final chronologicalIndex =
+                            importantEvents.length - 1 - index;
+                        final evt = importantEvents[chronologicalIndex];
+                        final commentary = _generateCommentary(evt);
+                        final lap = (evt['lap'] as num?)?.toInt() ?? 0;
+                        final type = (evt['type'] as String?) ?? 'INFO';
+                        final isPlayer = _isPlayerTeam(evt['driverId'] ?? '');
+                        final isNewest = index == 0;
+
+                        return _CommentaryItem(
+                          key: ValueKey(
+                            'commentary_${lap}_${evt['driverId']}_${type}_$chronologicalIndex',
+                          ),
+                          commentary: commentary,
+                          lap: lap,
+                          type: type,
+                          isPlayer: isPlayer,
+                          isNewest: isNewest,
+                        );
+                      },
+                    );
+                  },
+                ),
+
+                // Subtle scan-line overlay effect
+                Positioned.fill(
+                  child: IgnorePointer(
+                    child: CustomPaint(painter: _ScanLinePainter()),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
   Widget _buildEmptyCard(
     BuildContext context,
     String title,
@@ -1390,4 +2102,188 @@ class _RaceDayScreenState extends State<RaceDayScreen>
       ),
     );
   }
+}
+
+/// A single commentary item. The newest item gets a typewriter text animation
+/// and a highlighted background. Older items render statically.
+class _CommentaryItem extends StatefulWidget {
+  final String commentary;
+  final int lap;
+  final String type;
+  final bool isPlayer;
+  final bool isNewest;
+
+  const _CommentaryItem({
+    super.key,
+    required this.commentary,
+    required this.lap,
+    required this.type,
+    required this.isPlayer,
+    this.isNewest = false,
+  });
+
+  @override
+  State<_CommentaryItem> createState() => _CommentaryItemState();
+}
+
+class _CommentaryItemState extends State<_CommentaryItem> {
+  int _visibleChars = 0;
+  Timer? _typewriterTimer;
+
+  @override
+  void initState() {
+    super.initState();
+    if (widget.isNewest) {
+      _visibleChars = 0;
+      _startTypewriter();
+    } else {
+      _visibleChars = widget.commentary.length;
+    }
+  }
+
+  void _startTypewriter() {
+    _typewriterTimer = Timer.periodic(const Duration(milliseconds: 18), (
+      timer,
+    ) {
+      if (!mounted) {
+        timer.cancel();
+        return;
+      }
+      if (_visibleChars >= widget.commentary.length) {
+        timer.cancel();
+        return;
+      }
+      setState(() {
+        _visibleChars += 2; // 2 chars at a time for speed
+        if (_visibleChars > widget.commentary.length) {
+          _visibleChars = widget.commentary.length;
+        }
+      });
+    });
+  }
+
+  @override
+  void dispose() {
+    _typewriterTimer?.cancel();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final type = widget.type.toUpperCase();
+    final displayText = widget.commentary.substring(0, _visibleChars);
+    final isTyping =
+        widget.isNewest && _visibleChars < widget.commentary.length;
+
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+      decoration: BoxDecoration(
+        border: Border(
+          bottom: BorderSide(
+            color: widget.isPlayer
+                ? const Color(0xFFFFD54F).withValues(alpha: 0.1)
+                : const Color(0xFF00BCD4).withValues(alpha: 0.06),
+          ),
+        ),
+        color: widget.isNewest
+            ? (widget.isPlayer
+                  ? const Color(0xFFFFD54F).withValues(alpha: 0.1)
+                  : const Color(0xFF00BCD4).withValues(alpha: 0.08))
+            : (widget.isPlayer
+                  ? const Color(0xFFFFD54F).withValues(alpha: 0.04)
+                  : Colors.transparent),
+      ),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // Lap indicator
+          Column(
+            children: [
+              Text(
+                'L${widget.lap}',
+                style: TextStyle(
+                  fontSize: 9,
+                  fontWeight: FontWeight.w900,
+                  color: widget.isPlayer
+                      ? const Color(0xFFFFD54F).withValues(alpha: 0.6)
+                      : const Color(0xFF00BCD4).withValues(alpha: 0.5),
+                ),
+              ),
+              const SizedBox(height: 2),
+              Icon(
+                type == 'DNF'
+                    ? Icons.warning_amber_rounded
+                    : type == 'PIT'
+                    ? Icons.local_gas_station
+                    : type == 'OVERTAKE'
+                    ? Icons.swap_vert
+                    : type == 'FINISH'
+                    ? Icons.flag
+                    : type == 'FASTEST_LAP'
+                    ? Icons.timer
+                    : Icons.mic,
+                size: 12,
+                color: type == 'FASTEST_LAP'
+                    ? const Color(0xFFE040FB).withValues(alpha: 0.6)
+                    : (widget.isPlayer
+                          ? const Color(0xFFFFD54F).withValues(alpha: 0.4)
+                          : const Color(0xFF00BCD4).withValues(alpha: 0.3)),
+              ),
+            ],
+          ),
+          const SizedBox(width: 10),
+          // Commentary text with typewriter effect for newest
+          Expanded(
+            child: RichText(
+              text: TextSpan(
+                text: displayText,
+                style: TextStyle(
+                  fontSize: 11,
+                  fontStyle: FontStyle.italic,
+                  color: widget.isPlayer
+                      ? const Color(
+                          0xFFFFD54F,
+                        ).withValues(alpha: widget.isNewest ? 1.0 : 0.7)
+                      : (widget.isNewest
+                            ? Colors.white.withValues(alpha: 0.95)
+                            : Colors.white.withValues(alpha: 0.5)),
+                  height: 1.4,
+                ),
+                children: [
+                  if (isTyping)
+                    TextSpan(
+                      text: '▌',
+                      style: TextStyle(
+                        color: widget.isPlayer
+                            ? const Color(0xFFFFD54F).withValues(alpha: 0.7)
+                            : const Color(0xFF00BCD4).withValues(alpha: 0.7),
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                ],
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+/// Draws subtle horizontal scan lines to simulate a vintage TV/CRT effect
+/// on the commentary feed.
+class _ScanLinePainter extends CustomPainter {
+  @override
+  void paint(Canvas canvas, Size size) {
+    final paint = Paint()
+      ..color = Colors.black.withValues(alpha: 0.04)
+      ..strokeWidth = 1;
+
+    for (double y = 0; y < size.height; y += 3) {
+      canvas.drawLine(Offset(0, y), Offset(size.width, y), paint);
+    }
+  }
+
+  @override
+  bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
 }

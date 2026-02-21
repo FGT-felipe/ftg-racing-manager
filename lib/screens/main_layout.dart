@@ -86,7 +86,13 @@ class _MainLayoutState extends State<MainLayout> {
       NavNode(
         id: 'hq',
         title: 'HQ',
-        screen: HQScreen(teamId: widget.teamId),
+        screen: HQScreen(
+          teamId: widget.teamId,
+          onNavigate: (id) {
+            final node = _findNodeById(id, _navTree);
+            if (node != null) _onNodeSelected(node);
+          },
+        ),
         children: [
           NavNode(
             id: 'hq_office',
@@ -906,6 +912,7 @@ class _SubNavbar extends StatelessWidget {
           final child = parentNode.children![index];
           final isSelected =
               child.id == selectedId || _isChildSelected(child, selectedId);
+          final isRaceDay = child.id == 'racing_day';
 
           return IntrinsicWidth(
             child: InkWell(
@@ -920,24 +927,53 @@ class _SubNavbar extends StatelessWidget {
                 padding: const EdgeInsets.symmetric(horizontal: 20),
                 alignment: Alignment.center,
                 decoration: BoxDecoration(
+                  color: isRaceDay && !isSelected
+                      ? const Color(0xFFFF5252).withValues(alpha: 0.06)
+                      : null,
                   border: Border(
                     bottom: BorderSide(
                       color: isSelected
-                          ? theme.primaryColor
-                          : Colors.transparent,
-                      width: 2,
+                          ? (isRaceDay
+                                ? const Color(0xFFFF5252)
+                                : theme.primaryColor)
+                          : (isRaceDay
+                                ? const Color(0xFFFF5252).withValues(alpha: 0.4)
+                                : Colors.transparent),
+                      width: isRaceDay ? 2 : 2,
                     ),
                   ),
                 ),
-                child: Text(
-                  child.title,
-                  style: GoogleFonts.raleway(
-                    color: isSelected ? Colors.white : Colors.white54,
-                    fontWeight: isSelected
-                        ? FontWeight.bold
-                        : FontWeight.normal,
-                    fontSize: 13,
-                  ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    if (isRaceDay)
+                      Padding(
+                        padding: const EdgeInsets.only(right: 6),
+                        child: Icon(
+                          Icons.flag,
+                          size: 14,
+                          color: isSelected
+                              ? const Color(0xFFFF5252)
+                              : const Color(0xFFFF5252).withValues(alpha: 0.7),
+                        ),
+                      ),
+                    Text(
+                      child.title,
+                      style: GoogleFonts.raleway(
+                        color: isRaceDay
+                            ? (isSelected
+                                  ? const Color(0xFFFF5252)
+                                  : const Color(
+                                      0xFFFF5252,
+                                    ).withValues(alpha: 0.8))
+                            : (isSelected ? Colors.white : Colors.white54),
+                        fontWeight: isSelected || isRaceDay
+                            ? FontWeight.bold
+                            : FontWeight.normal,
+                        fontSize: 13,
+                      ),
+                    ),
+                  ],
                 ),
               ),
             ),

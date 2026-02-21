@@ -28,8 +28,44 @@ El universo del juego se organiza en una serie de ligas jerárquicas en lugar de
 - **Identidad Visual**: Los avatares se seleccionan aleatoriamente de un pool de 12 imágenes por género desde las carpetas `drivers/male` y `drivers/female`.
 
 ### Academia de Jóvenes
-- El país por defecto para la generación de talentos en la academia es **Colombia (CO)**.
-
+- La el sistema debe generar nuevos pilotos por cada academia según las reglas que se explican aquí.
+- Cada equipo tiene una academia de jóvenes asociada. 
+- Esta se consigue comprando el nivel 1 en las instalaciones. 
+La academia se puede mejorar hasta el nivel 5 pero solo 1 nivel por temporada.
+- Si no se tiene la academia, no se pueden generar pilotos jóvenes.
+- Los pilotos jóvenes se generan con un nivel base de 7 en el nivel 1 de academia y aumentan hasta base 15 en el nivel máximo de la academia.
+- Los pilotos jóvenes tienen un potencial de crecimiento de entre 5 y 12 puntos según el nivel de la academia.
+- Los pilotos jóvenes tienen un contrato de 1 año.
+- Los pilotos jóvenes tienen un salario de $100,000.
+- Los pilotos jóvenes tienen un nivel de experiencia de 0.
+- La única forma de conseguir pilotos jóvenes y con potencial, es en la academia.
+- A mayor nivel de academia, mayor número de candidatos de alto potencial aparecerán.
+- Al comprar la academia aparecen 2 candidatos jóvenes a seguir.
+- Los candidatos no seleccionados expiran cada semana luego de la actualización del fin de semana y aparecen nuevos candidatos a seleccionar. Si se selecciona 1, entonces el no seleccionado expira y aparece 1, si no se selecciona ninguno, ambos expiran y aparecen 2 más a la semana.
+- La academia siempre debe dar la opción de un piloto hombre y una mujer con sus respectivos avatares.
+- Cuando se construye el primer nivel de la academia, el manager puede elegir el país de origen de los pilotos jóvenes. Este país será el país de origen de todos los pilotos jóvenes que se generen en la academia.
+- Cada nivel de academia permite tener 2 pilotos jóvenes más.
+- El manager puede seleccionar 1 solo piloto de los candidatos para seguirlo.
+- Entre más rápido seleccione al piloto, más entrenamiento tendrá durante toda la temporada.
+- la FTG Karting Championship es el campeonato donde los pilotos jóvenes pueden debutar.
+- El campeonato de jóvenes no requiere configuraciones de setup ni neumáticos. Simplemente se hace una simulación durante la carrera de las ligas principales para darle algo de experiencia y según el resultado mejorar algunos porcentajes de sus habilidades.
+- Solo Cuando termina la temporada, los pilotos jóvenes que no fueron seleccionados se eliminan.
+- Solo Cuando termina la temporada, los pilotos jóvenes que fueron seleccionados se pueden ascender al equipo principal. Si el piloto es ascendido, se elimina de la academia de jóvenes y se convierte en un piloto del equipo principal.
+- El manager puede elegir si el piloto joven reemplaza al piloto principal o al piloto secundario.
+- Si el piloto joven reemplaza al piloto principal o al piloto secundario, el piloto reemplazado queda como agente libre en el mercado de fichajes (no implementado aún).
+- Un piloto ascendido siempre cobrará menos por que ama a su equipo, su moral será del 100% y su salario será del 50% de lo que cobraría normalmente. El índice de disminución de moral será menor que cualquier otro piloto.
+- Los stats de los pilotos no aparecen con un valor fijo, sino un rango de valor según su potencial actual y su potencial máximo. Esto hace que el manager tome una decisión a consciencia de cuál pueden ser sus stats finales al alcanzar su pico.
+- Reglas sobre la UI de la academia de jóvenes:
+    - Los stats de los pilotos no aparecen con un valor fijo, sino un rango de valor según su potencial actual y su potencial máximo. Esto hace que el manager tome una decisión a consciencia de cuál pueden ser sus stats finales al alcanzar su pico.
+    - La pantalla de la academia muestra un banner tipo rules, explicando que cada semana llegan nuevos jóvenes promesas a la academia. 
+    -  La pantalla de la academia de jóvenes le permite al manager ver los pilotos jóvenes que tiene disponibles.
+    -  La pantalla de la academia de jóvenes le permite al manager seleccionar 1 solo piloto de los candidatos para seguirlo.
+    -  La pantalla de la academia de jóvenes le permite al manager mejorar la academia de jóvenes.
+    -  La pantalla de la academia de ver el progreso (por porcentajes) que está teniendo su joven piloto.
+    -  Cada semana habrá en una sección de informes dentro de la academia, saldrá un resumen de qué tanto mejoró el piloto y el potencial que tiene.
+    - Todos los gastos de academia y el contrato del piloto joven salen del presupuesto del equipo y se deben ver reflejados en los movimientos en Finances, con la categoría "Academy".
+    - El manager puede decidir dejar de entrenar al piloto en cualquier momento, pero no podrá recuperar el dinero invertido en la academia.
+    - Si el manager elimina a alguno de los 2 candidatos (sea el seleccionado o no), trae el número de candidatos disponibles a 2 si hay hueco disponible.
 ---
 
 ## 3. Patrocinios (Sponsorships)
@@ -80,6 +116,10 @@ El universo del juego se organiza en una serie de ligas jerárquicas en lugar de
 - **Oficina del Equipo (Team Office)**: Aumenta el presupuesto en un **5% por nivel**.
 - **Garage**: Aumenta la capacidad de reparación en un **2% por nivel**.
 - **Academia de Jóvenes (Youth Academy)**: Otorga **10 puntos de ojeo (scouting)** adicionales por nivel.
+
+### Visibilidad
+- **Roadmap Visible**: Todas las instalaciones definidas en el sistema son visibles en el HQ desde el inicio. Aquellas que no tienen funcionalidad implementada aún se muestran con la cintilla "COMING SOON" para informar al usuario de futuras mejoras.
+- **Instalaciones No Compradas**: Las instalaciones a Nivel 0 son plenamente visibles y permiten la compra inmediata si se dispone del presupuesto.
 
 ---
 

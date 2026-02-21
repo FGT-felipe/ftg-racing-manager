@@ -9,8 +9,9 @@ import '../widgets/common/instruction_card.dart';
 
 class HQScreen extends StatefulWidget {
   final String teamId;
+  final Function(String)? onNavigate;
 
-  const HQScreen({super.key, required this.teamId});
+  const HQScreen({super.key, required this.teamId, this.onNavigate});
 
   @override
   State<HQScreen> createState() => _HQScreenState();
@@ -51,6 +52,11 @@ class _HQScreenState extends State<HQScreen> {
             snapshot.data!.data() as Map<String, dynamic>,
           );
           final budgetM = (team.budget / 1000000).toStringAsFixed(1);
+
+          // Build a full list of facilities based on the enum to ensure all are shown
+          final allFacilities = FacilityType.values.map((type) {
+            return team.facilities[type.name] ?? Facility(type: type);
+          }).toList();
 
           return SingleChildScrollView(
             padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
@@ -98,68 +104,32 @@ class _HQScreenState extends State<HQScreen> {
                     color: theme.colorScheme.onSurface.withValues(alpha: 0.7),
                     fontSize: 16,
                     fontWeight: FontWeight.w900,
-                    letterSpacing: 1.5,
+                    letterSpacing: 1.2,
                   ),
                 ),
                 const SizedBox(height: 16),
 
-                GridView.count(
+                // 2. Facilities Grid
+                GridView.builder(
                   shrinkWrap: true,
                   physics: const NeverScrollableScrollPhysics(),
-                  crossAxisCount: screenWidth > 900
-                      ? 4
-                      : (screenWidth > 600 ? 3 : 2),
-                  mainAxisSpacing: 20,
-                  crossAxisSpacing: 20,
-                  childAspectRatio: 1.0,
-                  children: [
-                    _FacilityCard(
-                      facility:
-                          team.facilities[FacilityType.teamOffice.name] ??
-                          Facility(type: FacilityType.teamOffice, level: 1),
-                      teamId: widget.teamId,
-                      canUpgrade: false,
-                    ),
-                    _FacilityCard(
-                      facility:
-                          team.facilities[FacilityType.garage.name] ??
-                          Facility(type: FacilityType.garage, level: 1),
-                      teamId: widget.teamId,
-                      canUpgrade: false,
-                    ),
-                    _FacilityCard(
-                      facility:
-                          team.facilities[FacilityType.youthAcademy.name] ??
-                          Facility(type: FacilityType.youthAcademy, level: 0),
+                  gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                    crossAxisCount: screenWidth > 1200 ? 3 : 2,
+                    crossAxisSpacing: 16,
+                    mainAxisSpacing: 16,
+                    childAspectRatio:
+                        1.85, // More compact to reduce empty space
+                  ),
+                  itemCount: allFacilities.length,
+                  itemBuilder: (context, index) {
+                    final facility = allFacilities[index];
+                    return _FacilityCard(
+                      facility: facility,
                       teamId: widget.teamId,
                       canUpgrade: true,
-                    ),
-                    _FacilityCard(
-                      facility: Facility(type: FacilityType.pressRoom),
-                      teamId: widget.teamId,
-                      canUpgrade: false,
-                    ),
-                    _FacilityCard(
-                      facility: Facility(type: FacilityType.scoutingOffice),
-                      teamId: widget.teamId,
-                      canUpgrade: false,
-                    ),
-                    _FacilityCard(
-                      facility: Facility(type: FacilityType.racingSimulator),
-                      teamId: widget.teamId,
-                      canUpgrade: false,
-                    ),
-                    _FacilityCard(
-                      facility: Facility(type: FacilityType.gym),
-                      teamId: widget.teamId,
-                      canUpgrade: false,
-                    ),
-                    _FacilityCard(
-                      facility: Facility(type: FacilityType.rdOffice),
-                      teamId: widget.teamId,
-                      canUpgrade: false,
-                    ),
-                  ],
+                      onNavigate: widget.onNavigate,
+                    );
+                  },
                 ),
               ],
             ),
@@ -174,11 +144,13 @@ class _FacilityCard extends StatelessWidget {
   final Facility facility;
   final String teamId;
   final bool canUpgrade;
+  final Function(String)? onNavigate;
 
   const _FacilityCard({
     required this.facility,
     required this.teamId,
     required this.canUpgrade,
+    this.onNavigate,
   });
 
   IconData _getIcon() {
@@ -202,6 +174,25 @@ class _FacilityCard extends StatelessWidget {
     }
   }
 
+  void _onCardTap() {
+    if (onNavigate == null || facility.isSoon || facility.level == 0) return;
+
+    switch (facility.type) {
+      case FacilityType.teamOffice:
+        onNavigate!('hq_office');
+        break;
+      case FacilityType.garage:
+        onNavigate!('hq_garage');
+        break;
+      case FacilityType.youthAcademy:
+        onNavigate!('hq_academy');
+        break;
+      default:
+        // Other facilities don't have dedicated screens yet
+        break;
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
@@ -219,127 +210,162 @@ class _FacilityCard extends StatelessWidget {
 
     return Stack(
       children: [
-        Card(
-          clipBehavior: Clip.antiAlias,
-          elevation: isEnabled ? 2 : 0,
-          shape: RoundedRectangleBorder(
+        Container(
+          width: double.infinity,
+          decoration: BoxDecoration(
             borderRadius: BorderRadius.circular(12),
+            border: Border.all(
+              color: Colors.white.withValues(alpha: 0.1),
+              width: 1,
+            ),
+            gradient: const LinearGradient(
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+              colors: [Color(0xFF1E1E1E), Color(0xFF0A0A0A)],
+            ),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withValues(alpha: 0.4),
+                blurRadius: 12,
+                offset: const Offset(0, 6),
+              ),
+            ],
           ),
-          color: isEnabled
-              ? theme.cardTheme.color
-              : theme.cardTheme.color?.withValues(alpha: 0.5),
-          child: InkWell(
-            onTap: isSoon ? null : () {},
-            child: Container(
-              width: double.infinity,
-              padding: const EdgeInsets.all(16.0),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.center,
-                children: [
-                  if (isPurchased && !isSoon) ...[
-                    Text(
-                      "LEVEL ${facility.level}",
-                      style: GoogleFonts.raleway(
-                        fontSize: 9,
-                        fontWeight: FontWeight.bold,
-                        letterSpacing: 1.2,
-                        color: theme.colorScheme.secondary.withValues(
-                          alpha: 0.9,
+          child: Material(
+            color: Colors.transparent,
+            borderRadius: BorderRadius.circular(12),
+            child: InkWell(
+              onTap: isSoon ? null : _onCardTap,
+              borderRadius: BorderRadius.circular(12),
+              child: Padding(
+                padding: const EdgeInsets.all(16.0),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.center,
+                  children: [
+                    if (isPurchased && !isSoon) ...[
+                      Text(
+                        "LEVEL ${facility.level}",
+                        style: GoogleFonts.raleway(
+                          fontSize: 11,
+                          fontWeight: FontWeight.bold,
+                          letterSpacing: 1.5,
+                          color: theme.colorScheme.secondary,
                         ),
                       ),
+                      Divider(
+                        color: Colors.white.withValues(alpha: 0.1),
+                        thickness: 0.5,
+                        height: 12,
+                      ),
+                    ],
+                    Icon(
+                      _getIcon(),
+                      size: isPurchased ? 34 : 40,
+                      color: isEnabled
+                          ? theme.colorScheme.secondary
+                          : Colors.grey.withValues(alpha: 0.5),
                     ),
-                    Divider(
-                      color: Colors.white.withValues(alpha: 0.1),
-                      thickness: 0.5,
-                      height: 12,
+                    const SizedBox(height: 8),
+                    Text(
+                      facility.name,
+                      textAlign: TextAlign.center,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: GoogleFonts.poppins(
+                        fontWeight: FontWeight.w900,
+                        fontSize: 15,
+                        color: isEnabled ? Colors.white : Colors.grey,
+                      ),
                     ),
-                  ],
-                  Icon(
-                    _getIcon(),
-                    size: isPurchased ? 34 : 40,
-                    color: isEnabled
-                        ? theme.colorScheme.secondary
-                        : Colors.grey.withValues(alpha: 0.5),
-                  ),
-                  const SizedBox(height: 8),
-                  Text(
-                    facility.name,
-                    textAlign: TextAlign.center,
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: GoogleFonts.poppins(
-                      fontWeight: FontWeight.w900,
-                      fontSize: 14,
-                      color: isEnabled ? Colors.white : Colors.grey,
-                    ),
-                  ),
-                  const Spacer(),
-                  if (isEnabled) ...[
-                    // Separator
-                    Divider(
-                      color: Colors.white.withValues(alpha: 0.1),
-                      thickness: 0.5,
-                      height: 16,
-                    ),
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      crossAxisAlignment: CrossAxisAlignment.end,
-                      children: [
-                        Expanded(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              if (!isMaxLevel && canUpgrade)
-                                _DetailRow(
-                                  label: "Next level:",
-                                  value: nextLevelPrice,
-                                ),
-                              _DetailRow(
-                                label: "Maint cost:",
-                                value: maintenancePrice,
-                                isMuted: true,
-                              ),
-                              _DetailRow(
-                                label: "Bonus:",
-                                value: facility.bonusDescription,
-                                color: theme.colorScheme.secondary.withValues(
-                                  alpha: 0.7,
-                                ),
-                              ),
-                            ],
-                          ),
+                    const SizedBox(height: 4),
+                    Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 8),
+                      child: Text(
+                        facility.description,
+                        textAlign: TextAlign.center,
+                        style: GoogleFonts.raleway(
+                          fontSize: 10,
+                          fontWeight: FontWeight.w500,
+                          color: isEnabled
+                              ? Colors.white70
+                              : Colors.white.withValues(alpha: 0.3),
+                          height: 1.2,
                         ),
-                        if (canUpgrade && !isMaxLevel)
-                          ElevatedButton(
-                            onPressed: () => _handleUpgrade(context),
-                            style: ElevatedButton.styleFrom(
-                              backgroundColor: theme.colorScheme.secondary,
-                              foregroundColor: Colors.black,
-                              elevation: 0,
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: 10,
-                                vertical: 6,
-                              ),
-                              minimumSize: Size.zero,
-                              tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(6),
-                              ),
-                            ),
-                            child: Text(
-                              isPurchased ? "UPGRADE" : "BUY",
-                              style: GoogleFonts.raleway(
-                                fontSize: 9,
-                                fontWeight: FontWeight.bold,
-                              ),
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ),
+                    const Spacer(),
+                    if (isEnabled) ...[
+                      // Separator
+                      Divider(
+                        color: Colors.white.withValues(alpha: 0.1),
+                        thickness: 0.5,
+                        height: 16,
+                      ),
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        crossAxisAlignment: CrossAxisAlignment.end,
+                        children: [
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                if (!isMaxLevel && canUpgrade)
+                                  _DetailRow(
+                                    label: "Next level:",
+                                    value: nextLevelPrice,
+                                  ),
+                                _DetailRow(
+                                  label: "Maint cost:",
+                                  value: maintenancePrice,
+                                  isMuted: true,
+                                ),
+                                _DetailRow(
+                                  label: "Bonus:",
+                                  value: facility.bonusDescription,
+                                  color: theme.colorScheme.secondary,
+                                ),
+                              ],
                             ),
                           ),
-                      ],
-                    ),
-                  ] else ...[
-                    const SizedBox(height: 40),
+                          if (canUpgrade && !isMaxLevel)
+                            TextButton(
+                              onPressed: () => _handleUpgrade(context),
+                              style: TextButton.styleFrom(
+                                backgroundColor: const Color(0xFF141414),
+                                foregroundColor: theme.colorScheme.secondary,
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 18,
+                                  vertical: 11,
+                                ),
+                                minimumSize: Size.zero,
+                                tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                                shape: const StadiumBorder(
+                                  side: BorderSide(
+                                    color: Color(
+                                      0x4D00C853,
+                                    ), // 30% Success Green
+                                    width: 1,
+                                  ),
+                                ),
+                              ),
+                              child: Text(
+                                isPurchased ? "UPGRADE" : "BUY",
+                                style: GoogleFonts.poppins(
+                                  fontSize: 12,
+                                  fontWeight: FontWeight.w900,
+                                  letterSpacing: 1.3,
+                                ),
+                              ),
+                            ),
+                        ],
+                      ),
+                    ] else ...[
+                      const SizedBox(height: 48),
+                    ],
                   ],
-                ],
+                ),
               ),
             ),
           ),
@@ -355,13 +381,13 @@ class _FacilityCard extends StatelessWidget {
                 color: Colors.redAccent.withValues(alpha: 0.8),
                 padding: const EdgeInsets.symmetric(vertical: 4),
                 child: const Text(
-                  'SOON',
+                  'COMING SOON',
                   textAlign: TextAlign.center,
                   style: TextStyle(
                     color: Colors.white,
-                    fontSize: 8,
-                    fontWeight: FontWeight.bold,
-                    letterSpacing: 1.2,
+                    fontSize: 7, // Smaller font for ribbon
+                    fontWeight: FontWeight.w900,
+                    letterSpacing: 1.0,
                   ),
                 ),
               ),
@@ -413,17 +439,20 @@ class _DetailRow extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Padding(
-      padding: const EdgeInsets.only(bottom: 2.0),
+      padding: const EdgeInsets.only(bottom: 4.0),
       child: RichText(
         text: TextSpan(
           style: GoogleFonts.raleway(
-            fontSize: 8.5,
+            fontSize: 11.5,
             color: isMuted
-                ? Colors.white.withValues(alpha: 0.4)
-                : Colors.white.withValues(alpha: 0.6),
+                ? Colors.white.withValues(alpha: 0.45)
+                : Colors.white.withValues(alpha: 0.75),
           ),
           children: [
-            TextSpan(text: "$label "),
+            TextSpan(
+              text: "$label ",
+              style: const TextStyle(fontWeight: FontWeight.w500),
+            ),
             TextSpan(
               text: value,
               style: TextStyle(
@@ -431,8 +460,8 @@ class _DetailRow extends StatelessWidget {
                 color:
                     color ??
                     (isMuted
-                        ? Colors.white.withValues(alpha: 0.4)
-                        : Colors.white.withValues(alpha: 0.8)),
+                        ? Colors.white.withValues(alpha: 0.5)
+                        : Colors.white),
               ),
             ),
           ],

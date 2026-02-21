@@ -95,7 +95,7 @@ Utilizadas en hubs de gestión (ej. Personal Screen).
 
 #### 3. Tarjetas de Instalaciones (Facility Cards)
 Diseñadas para mostrar progresión y costos operativos.
-- **Relación de Aspecto**: 1.0 (Cuadrada).
+- **Relación de Aspecto**: 1.85 (Compacta, optimizada para reducir espacio vacío).
 - **Estructura Interna**:
   - **Nivel (Solo si está comprada)**: Texto "LEVEL X" en la parte superior (`Raleway Bold`, 9px, letter-spacing 1.2) seguido de un divisor tenue.
   - **Parte Superior**: Ícono centrado (34-40px) y Título (`Poppins Black`, 14-16px).
@@ -106,7 +106,7 @@ Diseñadas para mostrar progresión y costos operativos.
     - *Bonus*: Beneficio otorgado por el nivel actual.
 - **Interactividad**: Botón de acción (`ElevatedButton`) alineado a la derecha en la sección inferior.
 - **Estados**: 
-  - *Bloqueado/Soon*: Opacidad 50%, íconos grises, cinta "SOON".
+  - *Bloqueado/Soon*: Opacidad 50%, íconos grises, cinta "COMING SOON". Texto de descripción con opacidad adicional (30%) para indicar estado inactivo.
   - *Activo*: Colores vibrantes, detalles visibles.
 
 #### 4. Migas de Pan (Breadcrumbs)

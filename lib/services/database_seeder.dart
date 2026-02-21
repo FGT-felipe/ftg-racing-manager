@@ -1,4 +1,3 @@
-import 'dart:math';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/widgets.dart'; // Add widgets for Locale
 import '../l10n/app_localizations.dart'; // Import AppLocalizations
@@ -8,15 +7,12 @@ import '../config/game_config.dart';
 import 'universe_service.dart';
 import 'team_assignment_service.dart';
 import 'driver_assignment_service.dart';
-import 'driver_name_service.dart';
 import 'driver_status_service.dart';
 
 class DatabaseSeeder {
   static final FirebaseFirestore _db = FirebaseFirestore.instance;
 
-  /// Servicio centralizado de nombres (con anti-repetición)
   /// Contador para IDs únicos
-  static final DriverNameService _nameService = DriverNameService();
 
   static Future<void> nukeAndReseed({DateTime? startDate}) async {
     try {

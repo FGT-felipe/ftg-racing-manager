@@ -837,6 +837,12 @@ class RaceService {
             nextStyle = DriverStyle.normal;
           }
 
+          // Randomize style change for Demo Mode to test variety
+          if (isDemo && random.nextDouble() < 0.4) {
+            final styles = DriverStyle.values;
+            nextStyle = styles[random.nextInt(styles.length)];
+          }
+
           activeCompounds[driverId] = nextCompound;
           activeStyles[driverId] = nextStyle;
           stopsMade[driverId] = stopIdx + 1;
@@ -937,6 +943,7 @@ class RaceService {
           lapNumber: lap,
           driverLapTimes: currentLapTimes,
           positions: positions,
+          driverTyres: Map.from(activeCompounds),
           events: lapEvents,
         ),
       );

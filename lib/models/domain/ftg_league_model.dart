@@ -25,6 +25,9 @@ class FtgLeague {
   /// Nivel o jerarquía de la liga (1 = Principal, 2 = Secundaria, etc.)
   final int tier;
 
+  /// País por defecto de la academia de la liga
+  final Country academyCountry;
+
   /// Fábrica de pilotos jóvenes vinculada a esta liga
   late final YouthAcademyFactory academy;
 
@@ -36,12 +39,10 @@ class FtgLeague {
     required this.currentSeasonId,
     required this.tier,
     Country? academyDefaultCountry,
-  }) {
-    // Inicializar la academia. Por defecto Colombia para la academy si no se especifica.
-    academy = YouthAcademyFactory(
-      academyDefaultCountry ??
-          Country(code: 'CO', name: 'Colombia', flagEmoji: '🇨🇴'),
-    );
+  }) : academyCountry =
+           academyDefaultCountry ??
+           Country(code: 'CO', name: 'Colombia', flagEmoji: '🇨🇴') {
+    academy = YouthAcademyFactory();
   }
 
   /// Retorna el total de equipos en la liga

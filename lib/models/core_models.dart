@@ -574,6 +574,27 @@ class Facility {
     return level * 15000;
   }
 
+  String get description {
+    switch (type) {
+      case FacilityType.teamOffice:
+        return "Manage your team's budget and general operations.";
+      case FacilityType.garage:
+        return "Repair and maintain your cars between races.";
+      case FacilityType.youthAcademy:
+        return "Find and train next-generation driving talent.";
+      case FacilityType.pressRoom:
+        return "Improve your team's public image and media relations.";
+      case FacilityType.scoutingOffice:
+        return "Discover experienced staff and drivers for your team.";
+      case FacilityType.racingSimulator:
+        return "Boost your drivers' skill and performance levels.";
+      case FacilityType.gym:
+        return "Improve the physical conditioning of your drivers.";
+      case FacilityType.rdOffice:
+        return "Research new technologies to upgrade car parts.";
+    }
+  }
+
   String get bonusDescription {
     if (level == 0) return "Not purchased";
     switch (type) {
