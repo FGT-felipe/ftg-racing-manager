@@ -1,3 +1,4 @@
+import 'dart:math';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/foundation.dart';
 import '../models/core_models.dart';
@@ -49,6 +50,7 @@ class DriverAssignmentService {
   /// Puebla los equipos de una liga con pilotos
   Future<int> _populateLeagueDrivers(FtgLeague league) async {
     final factory = DriverFactory();
+    final random = Random();
     int driversCreated = 0;
 
     // Obtener equipos de esta liga
@@ -56,9 +58,13 @@ class DriverAssignmentService {
     final drivers = <Driver>[];
 
     for (final team in teams) {
+      final isMaleMain = random.nextBool();
+
       // Generar 1 Male y 1 Female driver per team as per new requirements
       for (int i = 0; i < 2; i++) {
-        final gender = i == 0 ? 'M' : 'F';
+        final gender = (i == 0)
+            ? (isMaleMain ? 'M' : 'F')
+            : (isMaleMain ? 'F' : 'M');
         final driver = factory.generateDriver(
           divisionTier: league.tier,
           forcedGender: gender,

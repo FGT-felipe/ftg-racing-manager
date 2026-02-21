@@ -20,7 +20,7 @@ El universo del juego se organiza en una serie de ligas jerárquicas en lugar de
 ## 2. Gestión de Pilotos
 
 ### Generación de Pilotos (Semilla)
-- **Balance de Género**: Cada equipo debe estar compuesto por **un hombre y una mujer** (Piloto Principal y Piloto Secundario).
+- **Balance de Género**: Cada equipo debe estar compuesto por **un hombre y una mujer**. La asignación del rol de Piloto Principal (Main) y Piloto Secundario (Secondary) se realiza de forma **aleatoria**, permitiendo equipos liderados por mujeres y otros por hombres.
 - **Distribución de Nacionalidades**: 
     - 40% de los pilotos son **Colombianos (CO)**.
     - 60% pertenecen al **Resto del Mundo** (Sudamérica, Europa, Asia, USA).
@@ -56,8 +56,14 @@ El universo del juego se organiza en una serie de ligas jerárquicas en lugar de
 
 ## 4. Gestión de Equipos
 
+### Generación de Nombres de Equipos
+- **Idioma**: Los nombres de los equipos deben estar en **inglés**.
+- **Restricciones**: No se deben utilizar nombres de ciudades.
+- **Formato**: Los nombres deben combinar cualidades (Velocidad, rapidez, etc.) y colores o animales/elementos.
+- **Ejemplos**: Rapid Blue, Green Panther, Crimson Velocity, Apex Predators, etc.
+
 ### Generación de Equipos
-- **Globalidad**: Los equipos no están atados a un país específico para la liga, pero pueden tener identidades temáticas.
+- **Globalidad**: Los equipos no están atados a un país específico para la liga, pero pueden tener identidades temáticas según las reglas de nombres.
 - **Presupuesto**: Los equipos bot se generan con presupuestos base estandarizados según su liga.
 - **IDs**: Siguen un contador global único para asegurar trazabilidad.
 

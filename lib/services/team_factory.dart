@@ -22,7 +22,7 @@ class TeamFactory {
 
     return Team(
       id: _generateId(country),
-      name: _generateTeamName(country),
+      name: _generateTeamName(),
       managerId: null, // Bot team sin manager
       isBot: true,
       budget: 5000000,
@@ -42,18 +42,26 @@ class TeamFactory {
     return 'team_${country.code.toLowerCase()}_${DateTime.now().millisecondsSinceEpoch}_${_globalCounter++}';
   }
 
-  /// Genera un nombre de equipo temático del país
-  String _generateTeamName(Country country) {
-    final prefixes = _teamPrefixesByCountry[country.code] ?? _defaultPrefixes;
-    final suffixes = _teamSuffixesByCountry[country.code] ?? _defaultSuffixes;
+  /// Genera un nombre de equipo combinando cualidades, colores y sustantivos
+  String _generateTeamName() {
+    final pattern = _random.nextInt(3);
 
-    final prefix = prefixes[_random.nextInt(prefixes.length)];
-    final suffix = suffixes[_random.nextInt(suffixes.length)];
+    final quality = _qualities[_random.nextInt(_qualities.length)];
+    final color = _colors[_random.nextInt(_colors.length)];
+    final noun = _nouns[_random.nextInt(_nouns.length)];
 
-    return '$prefix $suffix';
+    switch (pattern) {
+      case 0:
+        return '$quality $color';
+      case 1:
+        return '$color $noun';
+      case 2:
+      default:
+        return '$quality $noun';
+    }
   }
 
-  /// Pick a random country for team thematic
+  /// Pick a random country for team thematic (Keeping this if needed, but not used for names anymore)
   Country _pickRandomCountry() {
     final countryList = [
       Country(code: 'BR', name: 'Brasil', flagEmoji: '🇧🇷'),
@@ -81,104 +89,78 @@ class TeamFactory {
     };
   }
 
-  /// Prefijos de nombres de equipos por país
-  static const Map<String, List<String>> _teamPrefixesByCountry = {
-    'BR': [
-      'Escuderia',
-      'Racing Team',
-      'Motorsport',
-      'Fórmula',
-      'Sao Paulo',
-      'Rio',
-      'Interlagos',
-      'Copacabana',
-    ],
-    'AR': [
-      'Furia',
-      'Pampas',
-      'Buenos Aires',
-      'Termas',
-      'Velocidad',
-      'Racing',
-      'Gaucho',
-      'Tango',
-    ],
-    'CO': [
-      'Cafetera',
-      'Esmeralda',
-      'Bogotá',
-      'Medellín',
-      'Antioquia',
-      'Racing',
-      'Motorsport',
-      'Andina',
-    ],
-    'MX': [
-      'Azteca',
-      'Nacional',
-      'Ciudad de México',
-      'Guadalajara',
-      'Hermanos Rodríguez',
-      'Velocidad',
-      'Racing',
-      'Mariachi',
-    ],
-    'UY': [
-      'Celeste',
-      'Oriental',
-      'Montevideo',
-      'El Pinar',
-      'Racing',
-      'Motorsport',
-      'Charrúa',
-      'Rio de la Plata',
-    ],
-    'CL': [
-      'Cóndor',
-      'Andino',
-      'Santiago',
-      'Valparaíso',
-      'Racing',
-      'Velocidad',
-      'Motorsport',
-      'Cordillera',
-    ],
-  };
-
-  /// Sufijos de nombres de equipos por país
-  static const Map<String, List<String>> _teamSuffixesByCountry = {
-    'BR': ['Racing', 'Motorsport', 'Grand Prix', 'Team', 'F1', 'Velocity'],
-    'AR': ['Racing', 'Motorsport', 'Team', 'Velocidad', 'GP', 'Performance'],
-    'CO': [
-      'Racing',
-      'Motorsport',
-      'Team',
-      'Grand Prix',
-      'Speed',
-      'Performance',
-    ],
-    'MX': ['Racing', 'Motorsport', 'Team', 'Velocidad', 'GP', 'Performance'],
-    'UY': [
-      'Racing',
-      'Motorsport',
-      'Team',
-      'Grand Prix',
-      'Speed',
-      'Performance',
-    ],
-    'CL': ['Racing', 'Motorsport', 'Team', 'Velocidad', 'GP', 'Performance'],
-  };
-
-  static const List<String> _defaultPrefixes = [
-    'Racing',
-    'Motorsport',
-    'Grand Prix',
-    'Velocity',
+  static const List<String> _qualities = [
+    'Rapid',
+    'Swift',
+    'Dynamic',
+    'Furious',
+    'Apex',
+    'Neon',
+    'Turbo',
+    'Quantum',
+    'Cosmic',
+    'Savage',
+    'Iron',
+    'Royal',
+    'Shadow',
+    'Lightning',
+    'Extreme',
+    'Ultimate',
+    'Prime',
+    'Elite',
+    'Alpha',
+    'Omega',
+    'Phantom',
   ];
-  static const List<String> _defaultSuffixes = [
-    'Team',
+
+  static const List<String> _colors = [
+    'Red',
+    'Blue',
+    'Green',
+    'Black',
+    'White',
+    'Silver',
+    'Golden',
+    'Crimson',
+    'Cobalt',
+    'Sapphire',
+    'Ruby',
+    'Emerald',
+    'Onyx',
+    'Platinum',
+    'Cyan',
+    'Magenta',
+    'Violet',
+    'Scarlet',
+    'Amber',
+    'Jade',
+  ];
+
+  static const List<String> _nouns = [
+    'Panthers',
+    'Predators',
+    'Wolves',
+    'Eagles',
+    'Falcons',
+    'Tigers',
+    'Lions',
+    'Dragons',
+    'Vipers',
+    'Cobras',
+    'Titans',
+    'Arrows',
+    'Meteors',
+    'Strikers',
+    'Storm',
+    'Force',
+    'Velocity',
     'Racing',
-    'Motorsport',
-    'Performance',
+    'Motorsports',
+    'Syndicate',
+    'Knights',
+    'Spartans',
+    'Jets',
+    'Rockets',
+    'Machines',
   ];
 }

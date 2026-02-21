@@ -8,7 +8,6 @@ import '../../services/team_service.dart';
 import '../../services/universe_service.dart';
 import '../../services/league_notification_service.dart';
 import '../../models/user_models.dart';
-import '../main_layout.dart';
 
 class TeamSelectionScreen extends StatefulWidget {
   final String nationality;
@@ -112,6 +111,7 @@ class _TeamSelectionScreenState extends State<TeamSelectionScreen> {
     String leagueId,
     String leagueName,
   ) async {
+    final nav = Navigator.of(context); // Capture Navigator before async gaps
     try {
       showDialog(
         context: context,
@@ -150,23 +150,19 @@ class _TeamSelectionScreenState extends State<TeamSelectionScreen> {
       } catch (e) {
         debugPrint("Error sending press news notification: $e");
       }
-
-      if (mounted) {
-        Navigator.pop(context); // Close loading
-        Navigator.pushReplacement(
-          context,
-          MaterialPageRoute(builder: (context) => MainLayout(teamId: team.id)),
-        );
-      }
     } catch (e) {
       if (mounted) {
-        Navigator.pop(context); // Close loading
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text("Application failed: $e"),
             backgroundColor: Colors.red,
           ),
         );
+      }
+    } finally {
+      // Regardless of success or failure, we MUST pop the loading dialog.
+      if (nav.canPop()) {
+        nav.pop();
       }
     }
   }
@@ -295,7 +291,8 @@ class _TeamSelectionScreenState extends State<TeamSelectionScreen> {
           physics: const NeverScrollableScrollPhysics(),
           gridDelegate: const SliverGridDelegateWithMaxCrossAxisExtent(
             maxCrossAxisExtent: 400,
-            childAspectRatio: 1.1,
+            childAspectRatio:
+                1.5, // Increased logic to reduce card height vertically further.
             crossAxisSpacing: 16,
             mainAxisSpacing: 16,
           ),
@@ -455,16 +452,20 @@ class _TeamSelectionCard extends StatelessWidget {
                     child: Row(
                       children: [
                         Text(
+                          "$label: ",
+                          style: TextStyle(color: Colors.white70, fontSize: 12),
+                        ),
+                        Text(
                           _getFlagEmoji(driver.countryCode),
                           style: const TextStyle(fontSize: 12),
                         ),
-                        const SizedBox(width: 6),
+                        const SizedBox(width: 4),
                         Text(
-                          "$label: ${driver.name}",
+                          driver.name,
                           style: TextStyle(
-                            color: Colors.white70,
+                            color: Colors.white,
                             fontSize: 12,
-                            fontStyle: FontStyle.italic,
+                            fontWeight: FontWeight.bold,
                           ),
                         ),
                       ],
@@ -521,7 +522,7 @@ class _TeamSelectionCard extends StatelessWidget {
                 child: ElevatedButton(
                   onPressed: onApply,
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: Theme.of(context).colorScheme.secondary,
+                    backgroundColor: Colors.blue,
                     padding: const EdgeInsets.symmetric(vertical: 10),
                   ),
                   child: const Text(
