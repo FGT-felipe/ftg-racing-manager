@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 
@@ -29,10 +30,41 @@ class _TeamSelectionScreenState extends State<TeamSelectionScreen> {
   bool _isWorldFull = false;
   String? _errorMessage;
 
+  final List<String> _loadingPhrases = [
+    "Preparando instalaciones de fábrica...",
+    "Ajustando neumáticos...",
+    "Calibrando túnel de viento...",
+    "Revisando telemetría...",
+    "Negociando con patrocinadores...",
+    "Encendiendo motores...",
+    "Reclutando ingenieros expertos...",
+    "Limpiando la pista...",
+  ];
+  int _currentPhraseIndex = 0;
+  Timer? _loadingTimer;
+
   @override
   void initState() {
     super.initState();
+    _startLoadingPhrases();
     _loadLeagueData();
+  }
+
+  void _startLoadingPhrases() {
+    _loadingTimer = Timer.periodic(const Duration(seconds: 3), (timer) {
+      if (mounted && _isLoading) {
+        setState(() {
+          _currentPhraseIndex =
+              (_currentPhraseIndex + 1) % _loadingPhrases.length;
+        });
+      }
+    });
+  }
+
+  @override
+  void dispose() {
+    _loadingTimer?.cancel();
+    super.dispose();
   }
 
   Future<void> _loadLeagueData() async {
@@ -124,6 +156,8 @@ class _TeamSelectionScreenState extends State<TeamSelectionScreen> {
           _isLoading = false;
         });
       }
+    } finally {
+      _loadingTimer?.cancel();
     }
   }
 
@@ -138,8 +172,24 @@ class _TeamSelectionScreenState extends State<TeamSelectionScreen> {
         context: context,
         barrierDismissible: false,
         builder: (context) => Center(
-          child: CircularProgressIndicator(
-            color: Theme.of(context).colorScheme.secondary,
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              CircularProgressIndicator(
+                color: Theme.of(context).colorScheme.secondary,
+              ),
+              const SizedBox(height: 16),
+              Text(
+                "Fichando con ${team.name}...",
+                style: const TextStyle(
+                  color: Colors.white,
+                  fontSize: 14,
+                  fontWeight: FontWeight.bold,
+                  fontStyle: FontStyle.italic,
+                  letterSpacing: 1.2,
+                ),
+              ),
+            ],
           ),
         ),
       );
@@ -179,7 +229,7 @@ class _TeamSelectionScreenState extends State<TeamSelectionScreen> {
               "managerSurname": manager.surname,
               "teamName": team.name,
               "leagueName": leagueName,
-              "roleManager": "manager",
+              "roleManager": manager.role.title,
               "mainDriver": mainDriverName,
               "secondaryDriver": secondaryDriverName,
             },
@@ -208,7 +258,30 @@ class _TeamSelectionScreenState extends State<TeamSelectionScreen> {
   @override
   Widget build(BuildContext context) {
     if (_isLoading) {
-      return const Scaffold(body: Center(child: CircularProgressIndicator()));
+      return Scaffold(
+        body: Center(
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              const CircularProgressIndicator(),
+              const SizedBox(height: 24),
+              AnimatedSwitcher(
+                duration: const Duration(milliseconds: 500),
+                child: Text(
+                  _loadingPhrases[_currentPhraseIndex],
+                  key: ValueKey<int>(_currentPhraseIndex),
+                  style: TextStyle(
+                    color: Colors.white.withValues(alpha: 0.7),
+                    fontSize: 16,
+                    fontStyle: FontStyle.italic,
+                    letterSpacing: 1.2,
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+      );
     }
 
     if (_errorMessage != null) {
@@ -434,6 +507,11 @@ class _TeamSelectionCard extends StatelessWidget {
               padding: const EdgeInsets.all(16),
               decoration: BoxDecoration(
                 borderRadius: BorderRadius.circular(12),
+                image: const DecorationImage(
+                  image: AssetImage('blueprints/blueprintcars.png'),
+                  fit: BoxFit.cover,
+                  opacity: 0.15,
+                ),
                 gradient: LinearGradient(
                   begin: Alignment.topLeft,
                   end: Alignment.bottomRight,

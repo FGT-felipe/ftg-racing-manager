@@ -39,9 +39,23 @@ class FinancesScreen extends StatelessWidget {
               padding: const EdgeInsets.all(32),
               width: double.infinity,
               decoration: BoxDecoration(
-                color: Theme.of(context).cardTheme.color,
+                gradient: const LinearGradient(
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                  colors: [Color(0xFF1E1E1E), Color(0xFF0A0A0A)],
+                ),
                 borderRadius: BorderRadius.circular(12),
-                // Removed boxShadow for consistency with dashboard cards
+                border: Border.all(
+                  color: Colors.white.withValues(alpha: 0.1),
+                  width: 1,
+                ),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withValues(alpha: 0.4),
+                    blurRadius: 12,
+                    offset: const Offset(0, 6),
+                  ),
+                ],
               ),
               child: Column(
                 children: [
@@ -193,8 +207,12 @@ class FinancesScreen extends StatelessWidget {
     return Container(
       margin: const EdgeInsets.only(bottom: 12),
       decoration: BoxDecoration(
-        color: Theme.of(context).cardTheme.color,
+        color: const Color(0xFF121212),
         borderRadius: BorderRadius.circular(12),
+        border: Border.all(
+          color: Colors.white.withValues(alpha: 0.05),
+          width: 1,
+        ),
       ),
       child: ListTile(
         contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),

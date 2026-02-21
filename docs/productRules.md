@@ -14,6 +14,24 @@ El universo del juego se organiza en una serie de ligas jerárquicas en lugar de
 - Cada liga contiene exactamente **11 equipos**.
 - No existen las divisiones internas; los equipos y pilotos pertenecen directamente a la liga.
 - El sistema de IDs es global para evitar colisiones entre ligas.
+- **Visibilidad de Ligas**: La liga de **Nivel 3 (FTG Karting Championship)** está oculta de las tablas de clasificación (Standings) y selectores generales para evitar confusión al manager, ya que funciona como un simulador de trasfondo para la academia.
+
+### Calendario de Temporada
+- Cada temporada tiene exactamente **9 carreras**.
+- Las carreras se programan **1 por semana**, separadas por exactamente 7 días.
+- La primera carrera se programa 7 días después de la fecha de inicio de la temporada.
+- Los 9 circuitos son fijos para todas las ligas y se definen en `CircuitService`:
+  1. 🇲🇽 Autodromo Hermanos Rodriguez (Mexico)
+  2. 🇧🇷 Autódromo José Carlos Pace (Interlagos)
+  3. 🇺🇸 Miami International Autodrome
+  4. 🇧🇷 Sao Paulo Street Circuit
+  5. 🇺🇸 Indianapolis Motor Speedway
+  6. 🇨🇦 Circuit Gilles Villeneuve (Montreal)
+  7. 🇺🇸 Las Vegas Strip Circuit
+  8. 🇺🇸 Circuit of the Americas (Texas)
+  9. 🇦🇷 Autódromo Oscar y Juan Gálvez (Buenos Aires)
+- El calendario se genera en `database_seeder.dart` y **siempre debe usar los 9 circuitos**.
+- **NUNCA reducir el número de carreras** al modificar el seeder.
 
 ---
 
@@ -21,6 +39,7 @@ El universo del juego se organiza en una serie de ligas jerárquicas en lugar de
 
 ### Generación de Pilotos (Semilla)
 - **Balance de Género**: Cada equipo debe estar compuesto por **un hombre y una mujer**. La asignación del rol de Piloto Principal (Main) y Piloto Secundario (Secondary) se realiza de forma **aleatoria**, permitiendo equipos liderados por mujeres y otros por hombres.
+- **Exclusión de Nivel 3**: La generación automática de pilotos de la semilla **ignora la liga de Tier 3**. Los pilotos de esta liga solo se generan a través del sistema de la Academia de Jóvenes (graduados).
 - **Distribución de Nacionalidades**: 
     - 40% de los pilotos son **Colombianos (CO)**.
     - 60% pertenecen al **Resto del Mundo** (Sudamérica, Europa, Asia, USA).
@@ -102,6 +121,7 @@ La academia se puede mejorar hasta el nivel 5 pero solo 1 nivel por temporada.
 - **Globalidad**: Los equipos no están atados a un país específico para la liga, pero pueden tener identidades temáticas según las reglas de nombres.
 - **Presupuesto**: Los equipos bot se generan con presupuestos base estandarizados según su liga.
 - **IDs**: Siguen un contador global único para asegurar trazabilidad.
+- **Livery (Librea)**: El sistema de personalización de libreas está **temporalmente oculto** en la interfaz de equipo hasta que se defina un diseño visual más robusto.
 
 ---
 
@@ -193,3 +213,22 @@ Al crear un nuevo manager, el usuario debe seleccionar un contexto previo o perf
   - Cero buffs automáticos iniciales al llegar al equipo.
   - Reputación muy baja al entrar en la liga.
   - Mayor rango de error o "ruido" al ver los stats de telemetría reales.
+
+---
+
+## 8. Identidad Visual y UI
+
+### Diseño "Onyx" (Premium Dark)
+Todas las tarjetas (cards) de gestión (Team, Personal, Drivers, Engineering, Finances, Sponsors) deben adherirse al lenguaje de diseño estéticamente premium establecido en el HQ:
+- **Fondo**: Gradiente lineal de `#1E1E1E` (arriba-izquierda) a `#0A0A0A` (abajo-derecha).
+- **Bordes**: Grosor de `1px` con color `Colors.white.withValues(alpha: 0.1)`.
+- **Esquinas**: Radio de borde (BorderRadius) fijo de `12px`.
+- **Sombras**: BoxShadow profundo (`blurRadius: 12-16`, `offset: (0, 6-8)`) con color `Colors.black.withValues(alpha: 0.4)`.
+- **Estructura**: Se debe evitar el widget `Card` nativo de Flutter en favor de `Container` con la decoración descrita para mayor control visual.
+
+### Micro-interacciones
+- **Hover Effects**: Los elementos interactivos dentro de las tarjetas deben tener sutiles cambios de opacidad o escala.
+- **Coming Soon**: Los módulos en desarrollo deben usar el filtro de opacidad y una etiqueta "COMING SOON" con tipografía `900` de Google Fonts Poppins.
+
+### Onboarding (Team Selection)
+- **Background Tecnológico**: Las tarjetas de selección de equipo deben utilizar la imagen `blueprints/blueprintcars.png` como fondo con una opacidad reducida (`0.15`) para reforzar la estética técnica y de ingeniería del juego desde el primer contacto.

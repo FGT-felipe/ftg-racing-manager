@@ -238,7 +238,7 @@ class YouthAcademyService {
         throw Exception('Academy is already at maximum level (5)');
       }
 
-      final int upgradePrice = 100000 * (currentLevel + 1);
+      final int upgradePrice = 1000000 * currentLevel;
       if (team.budget < upgradePrice) {
         throw Exception('Insufficient budget for upgrade');
       }

@@ -14,20 +14,29 @@ class PersonalScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final screenWidth = MediaQuery.of(context).size.width;
 
     return Scaffold(
       backgroundColor: theme.scaffoldBackgroundColor,
       appBar: AppBar(
-        title: const Text('Personal Management'),
+        title: Text(
+          'Personal Management'.toUpperCase(),
+          style: GoogleFonts.poppins(
+            fontWeight: FontWeight.w900,
+            fontSize: 16,
+            letterSpacing: 1.2,
+          ),
+        ),
         centerTitle: true,
         backgroundColor: theme.scaffoldBackgroundColor,
         elevation: 0,
       ),
       body: GridView.count(
         padding: const EdgeInsets.all(20),
-        crossAxisCount: MediaQuery.of(context).size.width > 600 ? 3 : 2,
-        mainAxisSpacing: 20,
-        crossAxisSpacing: 20,
+        crossAxisCount: screenWidth > 1200 ? 3 : 2,
+        mainAxisSpacing: 16,
+        crossAxisSpacing: 16,
+        childAspectRatio: 1.85,
         children: [
           _PersonalCard(
             title: 'Drivers',
@@ -84,37 +93,58 @@ class _PersonalCard extends StatelessWidget {
 
     return Stack(
       children: [
-        Card(
-          clipBehavior: Clip.antiAlias,
-          color: isEnabled
-              ? theme.cardTheme.color
-              : theme.cardTheme.color?.withValues(alpha: 0.5),
-          child: InkWell(
-            onTap: isEnabled ? onTap : null,
-            child: Container(
-              width: double.infinity,
-              padding: const EdgeInsets.all(16),
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Icon(
-                    icon,
-                    size: 40,
-                    color: isEnabled
-                        ? theme.colorScheme.secondary
-                        : Colors.grey.withValues(alpha: 0.5),
-                  ),
-                  const SizedBox(height: 12),
-                  Text(
-                    title,
-                    textAlign: TextAlign.center,
-                    style: GoogleFonts.raleway(
-                      fontWeight: FontWeight.bold,
-                      fontSize: 14,
-                      color: isEnabled ? Colors.white : Colors.grey,
+        Container(
+          width: double.infinity,
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(
+              color: Colors.white.withValues(alpha: 0.1),
+              width: 1,
+            ),
+            gradient: const LinearGradient(
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+              colors: [Color(0xFF1E1E1E), Color(0xFF0A0A0A)],
+            ),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withValues(alpha: 0.4),
+                blurRadius: 12,
+                offset: const Offset(0, 6),
+              ),
+            ],
+          ),
+          child: Material(
+            color: Colors.transparent,
+            borderRadius: BorderRadius.circular(12),
+            child: InkWell(
+              onTap: isEnabled ? onTap : null,
+              borderRadius: BorderRadius.circular(12),
+              child: Padding(
+                padding: const EdgeInsets.all(16.0),
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Icon(
+                      icon,
+                      size: 34,
+                      color: isEnabled
+                          ? theme.colorScheme.secondary
+                          : Colors.grey.withValues(alpha: 0.5),
                     ),
-                  ),
-                ],
+                    const SizedBox(height: 12),
+                    Text(
+                      title.toUpperCase(),
+                      textAlign: TextAlign.center,
+                      style: GoogleFonts.poppins(
+                        fontWeight: FontWeight.w900,
+                        fontSize: 14,
+                        color: isEnabled ? Colors.white : Colors.grey,
+                        letterSpacing: 0.5,
+                      ),
+                    ),
+                  ],
+                ),
               ),
             ),
           ),
@@ -130,13 +160,13 @@ class _PersonalCard extends StatelessWidget {
                 color: Colors.redAccent.withValues(alpha: 0.8),
                 padding: const EdgeInsets.symmetric(vertical: 4),
                 child: const Text(
-                  'SOON',
+                  'COMING SOON',
                   textAlign: TextAlign.center,
                   style: TextStyle(
                     color: Colors.white,
-                    fontSize: 8,
-                    fontWeight: FontWeight.bold,
-                    letterSpacing: 1.2,
+                    fontSize: 7,
+                    fontWeight: FontWeight.w900,
+                    letterSpacing: 1.0,
                   ),
                 ),
               ),

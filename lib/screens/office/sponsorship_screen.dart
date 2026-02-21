@@ -88,11 +88,8 @@ class _SponsorshipScreenState extends State<SponsorshipScreen> {
 
         final managerData =
             managerSnapshot.data!.data() as Map<String, dynamic>?;
-        final managerRoleStr = managerData?['role'] ?? 'noExperience';
-        final managerRole = ManagerRole.values.firstWhere(
-          (e) => e.name == managerRoleStr,
-          orElse: () => ManagerRole.noExperience,
-        );
+        final profile = ManagerProfile.fromMap(managerData ?? {});
+        final managerRole = profile.role;
 
         return StreamBuilder<DocumentSnapshot>(
           stream: FirebaseFirestore.instance
@@ -158,7 +155,7 @@ class _SponsorshipScreenState extends State<SponsorshipScreen> {
               ),
               const SizedBox(width: 32),
               // Right Side: Details / Offers (70%)
-              Expanded(flex: 7, child: _buildDesktopRightPanel(team)),
+              Expanded(flex: 7, child: _buildDesktopRightPanel(team, role)),
             ],
           ),
         ],
@@ -166,7 +163,7 @@ class _SponsorshipScreenState extends State<SponsorshipScreen> {
     );
   }
 
-  Widget _buildDesktopRightPanel(Team team) {
+  Widget _buildDesktopRightPanel(Team team, ManagerRole role) {
     if (_selectedSlotDesktop == null) {
       return Center(
         child: Text(
@@ -269,8 +266,7 @@ class _SponsorshipScreenState extends State<SponsorshipScreen> {
                 offer: _desktopOffers![index],
                 teamId: widget.teamId,
                 slot: _selectedSlotDesktop!,
-                role: ManagerRole
-                    .noExperience, // Role logic handled in generation
+                role: role, // Use the actual role passed to the layout
                 sponsorService: _sponsorService,
                 financeService: _financeService,
                 onNegotiationComplete: () => setState(() {}),
@@ -398,15 +394,22 @@ class _SponsorshipScreenState extends State<SponsorshipScreen> {
         padding: const EdgeInsets.symmetric(vertical: 12),
         decoration: BoxDecoration(
           color: (hasContract || isSelected)
-              ? color.withValues(alpha: 0.05)
-              : Theme.of(context).cardTheme.color,
+              ? color.withValues(alpha: 0.08)
+              : const Color(0xFF121212),
           borderRadius: BorderRadius.circular(12),
           border: Border.all(
             color: isSelected
-                ? color.withValues(alpha: 0.5)
-                : Colors.white.withValues(alpha: 0.05),
+                ? color.withValues(alpha: 0.6)
+                : Colors.white.withValues(alpha: 0.1),
             width: 1,
           ),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withValues(alpha: 0.3),
+              blurRadius: 8,
+              offset: const Offset(0, 4),
+            ),
+          ],
         ),
         child: Stack(
           children: [
@@ -500,14 +503,21 @@ class _CommonInstructionCard extends StatelessWidget {
             begin: Alignment.topLeft,
             end: Alignment.bottomRight,
             colors: [
-              theme.colorScheme.primary.withValues(alpha: 0.15),
-              theme.colorScheme.surface,
+              theme.colorScheme.primary.withValues(alpha: 0.1),
+              const Color(0xFF0A0A0A),
             ],
           ),
           borderRadius: BorderRadius.circular(12),
           border: Border.all(
             color: theme.colorScheme.primary.withValues(alpha: 0.2),
           ),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withValues(alpha: 0.4),
+              blurRadius: 12,
+              offset: const Offset(0, 6),
+            ),
+          ],
         ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -616,6 +626,13 @@ class _SponsorOfferCardState extends State<_SponsorOfferCard> {
           end: Alignment.bottomRight,
           colors: [Color(0xFF1E1E1E), Color(0xFF0A0A0A)],
         ),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.4),
+            blurRadius: 12,
+            offset: const Offset(0, 6),
+          ),
+        ],
       ),
       child: widget.isDesktop
           ? _buildHorizontalContent(isLocked)

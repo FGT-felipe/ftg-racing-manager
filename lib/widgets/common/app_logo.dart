@@ -22,13 +22,7 @@ class AppLogo extends StatelessWidget {
       mainAxisSize: MainAxisSize.min,
       crossAxisAlignment: CrossAxisAlignment.center,
       children: [
-        Icon(
-          Icons.sports_motorsports,
-          size: size,
-          color: Theme.of(context).colorScheme.secondary,
-        ),
         if (withText) ...[
-          SizedBox(width: size * 0.3),
           Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             mainAxisSize: MainAxisSize.min,

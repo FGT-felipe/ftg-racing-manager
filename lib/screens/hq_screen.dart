@@ -37,12 +37,9 @@ class _HQScreenState extends State<HQScreen> {
         .doc(uid)
         .get();
     if (doc.exists && mounted) {
-      final roleStr = doc.data()?['role'] ?? 'noExperience';
       setState(() {
-        _managerRole = ManagerRole.values.firstWhere(
-          (e) => e.name == roleStr,
-          orElse: () => ManagerRole.noExperience,
-        );
+        final profile = ManagerProfile.fromMap(doc.data()!);
+        _managerRole = profile.role;
       });
     }
   }
@@ -146,10 +143,13 @@ class _HQScreenState extends State<HQScreen> {
                   itemCount: allFacilities.length,
                   itemBuilder: (context, index) {
                     final facility = allFacilities[index];
+                    final isFixed =
+                        facility.type == FacilityType.teamOffice ||
+                        facility.type == FacilityType.garage;
                     return _FacilityCard(
                       facility: facility,
                       teamId: widget.teamId,
-                      canUpgrade: true,
+                      canUpgrade: !isFixed,
                       onNavigate: widget.onNavigate,
                       managerRole: _managerRole,
                     );

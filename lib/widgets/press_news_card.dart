@@ -38,7 +38,6 @@ class PressNewsCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final isManagerJoin = notification.type == 'MANAGER_JOIN';
     final translatedMessage = _getTranslatedMessage(context);
 
     return Container(
@@ -66,16 +65,21 @@ class PressNewsCard extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Center(
-                  child: Text(
-                    "MOTORSPORT DAILY",
-                    style: GoogleFonts.playfairDisplay(
-                      fontSize: 10,
-                      fontWeight: FontWeight.bold,
-                      letterSpacing: 1.5,
-                      color: Colors.black87,
+                Stack(
+                  alignment: Alignment.center,
+                  children: [
+                    Center(
+                      child: Text(
+                        "MOTORSPORT DAILY",
+                        style: GoogleFonts.playfairDisplay(
+                          fontSize: 10,
+                          fontWeight: FontWeight.bold,
+                          letterSpacing: 1.5,
+                          color: Colors.black87,
+                        ),
+                      ),
                     ),
-                  ),
+                  ],
                 ),
                 Divider(
                   color: Colors.black.withValues(alpha: 0.3),
@@ -116,51 +120,31 @@ class PressNewsCard extends StatelessWidget {
                     height: 1.2,
                   ),
                 ),
-                const SizedBox(height: 8),
-                Expanded(
-                  child: Row(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Expanded(
-                        child: Text(
-                          translatedMessage,
-                          maxLines: isManagerJoin ? 3 : 4,
-                          overflow: TextOverflow.ellipsis,
-                          style: GoogleFonts.ptSerif(
-                            fontSize: 11,
-                            color: Colors.black87,
-                            height: 1.4,
-                          ),
+                const SizedBox(height: 12),
+                // Footer row with "Read full article" explicitly as a button-like text
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    const Spacer(),
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 8,
+                        vertical: 4,
+                      ),
+                      decoration: BoxDecoration(
+                        border: Border.all(color: Colors.black87),
+                        borderRadius: BorderRadius.circular(2),
+                      ),
+                      child: Text(
+                        "READ FULL ARTICLE",
+                        style: GoogleFonts.oswald(
+                          color: Colors.black87,
+                          fontSize: 10,
+                          fontWeight: FontWeight.bold,
                         ),
                       ),
-                      if (isManagerJoin) ...[
-                        const SizedBox(width: 8),
-                        Container(
-                          width: 60,
-                          height: 60,
-                          decoration: BoxDecoration(
-                            border: Border.all(color: Colors.black26),
-                            image: const DecorationImage(
-                              image: AssetImage('news/newManager.png'),
-                              fit: BoxFit.cover,
-                            ),
-                          ),
-                        ),
-                      ],
-                    ],
-                  ),
-                ),
-                Align(
-                  alignment: Alignment.centerRight,
-                  child: Text(
-                    "Read full article",
-                    style: GoogleFonts.oswald(
-                      color: Colors.black87,
-                      fontSize: 10,
-                      fontWeight: FontWeight.bold,
-                      decoration: TextDecoration.underline,
                     ),
-                  ),
+                  ],
                 ),
               ],
             ),
@@ -172,6 +156,70 @@ class PressNewsCard extends StatelessWidget {
 
   String _formatTimestamp(DateTime dt) {
     return DateFormat('MMM dd, yyyy').format(dt);
+  }
+
+  TextSpan _buildRichMessage(BuildContext context, TextStyle baseStyle) {
+    if (notification.payload == null) {
+      return TextSpan(text: notification.message, style: baseStyle);
+    }
+
+    final p = notification.payload!;
+    final loc = AppLocalizations.of(context);
+
+    if (notification.message == "pressNewsManagerJoin") {
+      // Create a map of values to bold
+      final Map<String, String> values = {
+        '#MGR#': '${p['managerName'] ?? ''} ${p['managerSurname'] ?? ''}',
+        '#TEAM#': p['teamName'] ?? '',
+        '#LEAGUE#': p['leagueName'] ?? '',
+        '#ROLE#': p['roleManager'] ?? '',
+        '#D1#': p['mainDriver'] ?? '',
+        '#D2#': p['secondaryDriver'] ?? '',
+      };
+
+      // Get the translated string with placeholders
+      String template = loc.pressNewsManagerJoin(
+        '#MGR#',
+        '', // We combined name and surname in #MGR#
+        '#TEAM#',
+        '#LEAGUE#',
+        '#ROLE#',
+        '#D1#',
+        '#D2#',
+      );
+
+      // Clean up adjacent placeholders if name/surname results in extra space
+      template = template.replaceAll('#MGR# ', '#MGR#');
+
+      List<InlineSpan> spans = [];
+      int lastIndex = 0;
+
+      // Simple parser to find placeholders and apply bold
+      final regex = RegExp(r'#MGR#|#TEAM#|#LEAGUE#|#ROLE#|#D1#|#D2#');
+      final matches = regex.allMatches(template);
+
+      for (final match in matches) {
+        if (match.start > lastIndex) {
+          spans.add(TextSpan(text: template.substring(lastIndex, match.start)));
+        }
+        final key = match.group(0)!;
+        spans.add(
+          TextSpan(
+            text: values[key],
+            style: const TextStyle(fontWeight: FontWeight.bold),
+          ),
+        );
+        lastIndex = match.end;
+      }
+
+      if (lastIndex < template.length) {
+        spans.add(TextSpan(text: template.substring(lastIndex)));
+      }
+
+      return TextSpan(children: spans, style: baseStyle);
+    }
+
+    return TextSpan(text: notification.message, style: baseStyle);
   }
 
   void _showDialog(BuildContext context, String translatedMessage) {
@@ -232,26 +280,29 @@ class PressNewsCard extends StatelessWidget {
               if (isManagerJoin)
                 Center(
                   child: Container(
-                    margin: const EdgeInsets.only(bottom: 16),
+                    margin: const EdgeInsets.only(bottom: 20),
                     width: double.infinity,
-                    height: 150,
+                    height: 220, // Taller image
                     decoration: BoxDecoration(
                       border: Border.all(color: Colors.black87, width: 2),
                       image: const DecorationImage(
                         image: AssetImage('news/newManager.png'),
-                        fit: BoxFit.cover,
+                        fit: BoxFit.contain, // Show full image without cropping
+                        alignment: Alignment.center,
                       ),
                     ),
                   ),
                 ),
               Expanded(
                 child: SingleChildScrollView(
-                  child: Text(
-                    translatedMessage,
-                    style: GoogleFonts.ptSerif(
-                      fontSize: 14,
-                      color: Colors.black87,
-                      height: 1.6,
+                  child: Text.rich(
+                    _buildRichMessage(
+                      context,
+                      GoogleFonts.ptSerif(
+                        fontSize: 14,
+                        color: Colors.black87,
+                        height: 1.6,
+                      ),
                     ),
                   ),
                 ),

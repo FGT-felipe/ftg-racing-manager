@@ -1,5 +1,6 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import '../models/domain/domain_models.dart';
+import '../models/core_models.dart';
 import 'universe_seeder.dart';
 
 /// Servicio para gestionar el GameUniverse global.
@@ -127,5 +128,36 @@ class UniverseService {
   /// Elimina todo el universo (útil para testing/debugging)
   Future<void> deleteUniverse() async {
     await _db.collection('universe').doc(_universeDocId).delete();
+  }
+
+  /// Actualiza los datos de un equipo en todo el universo (ligas y listas de equipos)
+  Future<void> updateTeamInUniverse(
+    String teamId, {
+    String? newName,
+    int? newBudget,
+    int? nameChangeCount,
+  }) async {
+    final universe = await getUniverse();
+    if (universe == null) return;
+
+    bool found = false;
+    final updatedLeagues = universe.leagues.map((league) {
+      final teamIndex = league.teams.indexWhere((t) => t.id == teamId);
+      if (teamIndex != -1) {
+        found = true;
+        final updatedTeams = List<Team>.from(league.teams);
+        updatedTeams[teamIndex] = updatedTeams[teamIndex].copyWith(
+          name: newName,
+          budget: newBudget,
+          nameChangeCount: nameChangeCount,
+        );
+        return league.copyWith(teams: updatedTeams);
+      }
+      return league;
+    }).toList();
+
+    if (found) {
+      await saveUniverse(universe.copyWith(leagues: updatedLeagues));
+    }
   }
 }

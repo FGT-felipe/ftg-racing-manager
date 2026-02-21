@@ -127,11 +127,8 @@ class _GarageScreenState extends State<GarageScreen>
             .doc(uid)
             .get();
         if (mgrDoc.exists) {
-          final roleStr = mgrDoc.data()?['role'] ?? 'noExperience';
-          _managerRole = ManagerRole.values.firstWhere(
-            (e) => e.name == roleStr,
-            orElse: () => ManagerRole.noExperience,
-          );
+          final profile = ManagerProfile.fromMap(mgrDoc.data()!);
+          _managerRole = profile.role;
         }
       }
 

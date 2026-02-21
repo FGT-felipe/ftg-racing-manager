@@ -30,6 +30,13 @@ class DriverAssignmentService {
     int totalDriversCreated = 0;
 
     for (final league in universe.leagues) {
+      if (league.tier == 3) {
+        debugPrint(
+          "DRIVER ASSIGNMENT: Skipping league ${league.name} (Tier 3) - Reserved for Youth Academy.",
+        );
+        continue;
+      }
+
       debugPrint("DRIVER ASSIGNMENT: Poblando liga ${league.name}...");
 
       // Verificar si la liga ya tiene pilotos

@@ -36,12 +36,9 @@ class _EngineeringScreenState extends State<EngineeringScreen> {
         .doc(uid)
         .get();
     if (doc.exists && mounted) {
-      final roleStr = doc.data()?['role'] ?? 'noExperience';
       setState(() {
-        _managerRole = ManagerRole.values.firstWhere(
-          (e) => e.name == roleStr,
-          orElse: () => ManagerRole.noExperience,
-        );
+        final profile = ManagerProfile.fromMap(doc.data()!);
+        _managerRole = profile.role;
       });
     }
   }
@@ -369,9 +366,23 @@ class _UpgradeTileState extends State<_UpgradeTile> {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: Theme.of(context).cardTheme.color,
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: Colors.white10),
+        border: Border.all(
+          color: Colors.white.withValues(alpha: 0.1),
+          width: 1,
+        ),
+        gradient: const LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [Color(0xFF1E1E1E), Color(0xFF0A0A0A)],
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.4),
+            blurRadius: 10,
+            offset: const Offset(0, 4),
+          ),
+        ],
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,

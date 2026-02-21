@@ -26,21 +26,58 @@ class DriverCard extends StatelessWidget {
     final theme = Theme.of(context);
     final isDesktop = MediaQuery.of(context).size.width > 900;
 
-    return Card(
-      elevation: 4,
+    return Container(
       margin: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-      clipBehavior: Clip.antiAlias,
-      child: Container(
-        decoration: BoxDecoration(
-          border: Border(
-            left: BorderSide(color: theme.colorScheme.secondary, width: 4),
-          ),
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(
+          color: Colors.white.withValues(alpha: 0.1),
+          width: 1,
         ),
-        padding: const EdgeInsets.all(24.0),
-        child: isDesktop
-            ? _buildDesktopLayout(context)
-            : _buildMobileLayout(context),
+        gradient: const LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [Color(0xFF1E1E1E), Color(0xFF0A0A0A)],
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.45),
+            blurRadius: 16,
+            offset: const Offset(0, 8),
+          ),
+        ],
+      ),
+      child: Stack(
+        children: [
+          // Left Accent Border
+          Positioned(
+            left: 0,
+            top: 20,
+            bottom: 20,
+            child: Container(
+              width: 3,
+              decoration: BoxDecoration(
+                color: theme.colorScheme.secondary,
+                borderRadius: const BorderRadius.horizontal(
+                  right: Radius.circular(3),
+                ),
+                boxShadow: [
+                  BoxShadow(
+                    color: theme.colorScheme.secondary.withValues(alpha: 0.3),
+                    blurRadius: 8,
+                    spreadRadius: 1,
+                  ),
+                ],
+              ),
+            ),
+          ),
+          Padding(
+            padding: const EdgeInsets.all(16.0),
+            child: isDesktop
+                ? _buildDesktopLayout(context)
+                : _buildMobileLayout(context),
+          ),
+        ],
       ),
     );
   }

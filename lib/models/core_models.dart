@@ -379,6 +379,7 @@ class Team {
   final int seasonWins;
   final int seasonPodiums;
   final int seasonPoles;
+  final int nameChangeCount;
 
   final Map<String, Map<String, int>> carStats;
   final Map<String, dynamic> weekStatus;
@@ -401,6 +402,7 @@ class Team {
     this.seasonWins = 0,
     this.seasonPodiums = 0,
     this.seasonPoles = 0,
+    this.nameChangeCount = 0,
     required this.carStats,
     required this.weekStatus,
     this.sponsors = const {},
@@ -433,6 +435,7 @@ class Team {
       'seasonWins': seasonWins,
       'seasonPodiums': seasonPodiums,
       'seasonPoles': seasonPoles,
+      'nameChangeCount': nameChangeCount,
       'carStats': carStats,
       'weekStatus': weekStatus,
       'sponsors': sponsors.map((k, v) => MapEntry(k, v.toMap())),
@@ -498,6 +501,7 @@ class Team {
       seasonWins: map['seasonWins'] ?? 0,
       seasonPodiums: map['seasonPodiums'] ?? 0,
       seasonPoles: map['seasonPoles'] ?? 0,
+      nameChangeCount: map['nameChangeCount'] ?? 0,
       carStats: carStatsMap,
       weekStatus: Map<String, dynamic>.from(map['weekStatus'] ?? {}),
       sponsors: (map['sponsors'] as Map<String, dynamic>? ?? {}).map(
@@ -507,6 +511,52 @@ class Team {
       facilities: (map['facilities'] as Map<String, dynamic>? ?? {}).map(
         (k, v) => MapEntry(k, Facility.fromMap(Map<String, dynamic>.from(v))),
       ),
+    );
+  }
+
+  Team copyWith({
+    String? id,
+    String? name,
+    String? managerId,
+    bool? isBot,
+    int? budget,
+    int? points,
+    int? races,
+    int? wins,
+    int? podiums,
+    int? poles,
+    int? seasonPoints,
+    int? seasonRaces,
+    int? seasonWins,
+    int? seasonPodiums,
+    int? seasonPoles,
+    int? nameChangeCount,
+    Map<String, Map<String, int>>? carStats,
+    Map<String, dynamic>? weekStatus,
+    Map<String, ActiveContract>? sponsors,
+    Map<String, Facility>? facilities,
+  }) {
+    return Team(
+      id: id ?? this.id,
+      name: name ?? this.name,
+      managerId: managerId ?? this.managerId,
+      isBot: isBot ?? this.isBot,
+      budget: budget ?? this.budget,
+      points: points ?? this.points,
+      races: races ?? this.races,
+      wins: wins ?? this.wins,
+      podiums: podiums ?? this.podiums,
+      poles: poles ?? this.poles,
+      seasonPoints: seasonPoints ?? this.seasonPoints,
+      seasonRaces: seasonRaces ?? this.seasonRaces,
+      seasonWins: seasonWins ?? this.seasonWins,
+      seasonPodiums: seasonPodiums ?? this.seasonPodiums,
+      seasonPoles: seasonPoles ?? this.seasonPoles,
+      nameChangeCount: nameChangeCount ?? this.nameChangeCount,
+      carStats: carStats ?? this.carStats,
+      weekStatus: weekStatus ?? this.weekStatus,
+      sponsors: sponsors ?? this.sponsors,
+      facilities: facilities ?? this.facilities,
     );
   }
 }

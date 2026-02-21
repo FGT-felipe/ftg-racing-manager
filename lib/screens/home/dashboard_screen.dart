@@ -403,8 +403,8 @@ class _DashboardScreenState extends State<DashboardScreen> {
                                               return SizedBox(
                                                 height: isWide
                                                     ? (news.length > 2
-                                                          ? 400
-                                                          : 130)
+                                                          ? 280
+                                                          : 140)
                                                     : null,
                                                 child: Scrollbar(
                                                   thumbVisibility: true,
@@ -421,7 +421,9 @@ class _DashboardScreenState extends State<DashboardScreen> {
                                                           crossAxisSpacing: 16,
                                                           mainAxisSpacing: 12,
                                                           childAspectRatio:
-                                                              1.25,
+                                                              isWide
+                                                              ? 2.5
+                                                              : 3.2,
                                                         ),
                                                     itemCount: news.length,
                                                     itemBuilder:

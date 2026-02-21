@@ -1,10 +1,4 @@
-enum ManagerRole {
-  exDriver,
-  businessAdmin,
-  bureaucrat,
-  exEngineer,
-  noExperience,
-}
+enum ManagerRole { exDriver, businessAdmin, bureaucrat, exEngineer }
 
 extension ManagerRoleExtension on ManagerRole {
   String get title {
@@ -17,8 +11,6 @@ extension ManagerRoleExtension on ManagerRole {
         return "Bureaucrat";
       case ManagerRole.exEngineer:
         return "Ex-Engineer";
-      case ManagerRole.noExperience:
-        return "No Experience";
     }
   }
 
@@ -32,8 +24,6 @@ extension ManagerRoleExtension on ManagerRole {
         return "Master of rules and politics.";
       case ManagerRole.exEngineer:
         return "Technical excellence is the only way.";
-      case ManagerRole.noExperience:
-        return "A fresh perspective on the sport.";
     }
   }
 
@@ -47,8 +37,6 @@ extension ManagerRoleExtension on ManagerRole {
         return "(+) -10% facility costs, +1 academy slot/level";
       case ManagerRole.exEngineer:
         return "(+) 2 simultaneous upgrades, -10% tyre wear";
-      case ManagerRole.noExperience:
-        return "(+) No bonuses";
     }
   }
 
@@ -62,8 +50,6 @@ extension ManagerRoleExtension on ManagerRole {
         return "(-) 2-week part upgrade cooldown";
       case ManagerRole.exEngineer:
         return "(-) -5% driver XP, double upgrade cost";
-      case ManagerRole.noExperience:
-        return "(-) No penalties";
     }
   }
 
@@ -92,8 +78,6 @@ extension ManagerRoleExtension on ManagerRole {
           "-10% tyre wear",
           "+5% Qualifying success probability",
         ];
-      case ManagerRole.noExperience:
-        return ["No bonuses or penalties"];
     }
   }
 
@@ -113,8 +97,6 @@ extension ManagerRoleExtension on ManagerRole {
         return ["Car part upgrade cooldown is 2 weeks (not 1)"];
       case ManagerRole.exEngineer:
         return ["-5% driver XP gain", "Car part upgrades cost double"];
-      case ManagerRole.noExperience:
-        return ["No bonuses or penalties"];
     }
   }
 }
@@ -143,8 +125,8 @@ class ManagerProfile {
   Map<String, dynamic> toMap() {
     return {
       'uid': uid,
-      'name': name,
-      'surname': surname,
+      'firstName': name,
+      'lastName': surname,
       'country': country,
       'birthDate': birthDate.toIso8601String(),
       'role': role.name,
@@ -154,18 +136,41 @@ class ManagerProfile {
   }
 
   factory ManagerProfile.fromMap(Map<String, dynamic> map) {
+    // Robust role parsing
+    final rawRole = map['role'] ?? map['backgroundId'] ?? '';
+    ManagerRole parsedRole;
+    switch (rawRole.toString().replaceAll('-', '_').toLowerCase()) {
+      case 'ex_driver':
+      case 'exdriver':
+        parsedRole = ManagerRole.exDriver;
+        break;
+      case 'business':
+      case 'business_admin':
+      case 'businessadmin':
+        parsedRole = ManagerRole.businessAdmin;
+        break;
+      case 'bureaucrat':
+        parsedRole = ManagerRole.bureaucrat;
+        break;
+      case 'engineer':
+      case 'ex_engineer':
+      case 'exengineer':
+        parsedRole = ManagerRole.exEngineer;
+        break;
+      default:
+        parsedRole =
+            ManagerRole.exDriver; // Default to ex-driver as per modern rules
+    }
+
     return ManagerProfile(
       uid: map['uid'] ?? '',
-      name: map['firstName'] ?? '',
-      surname: map['lastName'] ?? '',
-      country: map['nationality'] ?? 'Unknown',
+      name: map['firstName'] ?? map['name'] ?? '',
+      surname: map['lastName'] ?? map['surname'] ?? '',
+      country: map['nationality'] ?? map['country'] ?? 'Unknown',
       birthDate: map['birthDate'] != null
           ? DateTime.parse(map['birthDate'])
           : DateTime(2000),
-      role: ManagerRole.values.firstWhere(
-        (e) => e.name == map['role'],
-        orElse: () => ManagerRole.noExperience,
-      ),
+      role: parsedRole,
       reputation: map['reputation'] ?? 0,
       trophyCase: List<String>.from(map['trophyCase'] ?? []),
     );

@@ -475,7 +475,7 @@ class _YouthAcademyScreenState extends State<YouthAcademyScreen> {
     required Team team,
   }) {
     const green = Color(0xFF00C853);
-    final upgradePrice = 100000 * (level + 1);
+    final upgradePrice = 1000000 * level;
     final canUpgrade = level < 5 && team.budget >= upgradePrice;
 
     return Container(
