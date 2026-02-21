@@ -532,6 +532,25 @@ class _MainLayoutState extends State<MainLayout> {
         elevation: 0,
         centerTitle: false,
         actions: [
+          if (FirebaseAuth.instance.currentUser?.email ==
+              'felipe@firetower.games')
+            TextButton.icon(
+              onPressed: () {
+                Navigator.pushNamed(context, '/admin');
+              },
+              icon: const Icon(
+                Icons.admin_panel_settings,
+                color: Colors.tealAccent,
+              ),
+              label: Text(
+                'ADMIN',
+                style: GoogleFonts.poppins(
+                  fontSize: 12,
+                  fontWeight: FontWeight.bold,
+                  color: Colors.tealAccent,
+                ),
+              ),
+            ),
           CompositedTransformTarget(
             link: _accountLayerLink,
             child: TextButton.icon(

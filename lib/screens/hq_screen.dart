@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../l10n/app_localizations.dart';
 import '../models/core_models.dart';
+import '../models/user_models.dart';
 import '../services/facility_service.dart';
 import '../services/finance_service.dart';
 import '../widgets/common/instruction_card.dart';
@@ -18,10 +20,31 @@ class HQScreen extends StatefulWidget {
 }
 
 class _HQScreenState extends State<HQScreen> {
+  ManagerRole? _managerRole;
+
   @override
   void initState() {
     super.initState();
     FacilityService().ensureBaseFacilities(widget.teamId);
+    _loadManagerRole();
+  }
+
+  Future<void> _loadManagerRole() async {
+    final uid = FirebaseAuth.instance.currentUser?.uid;
+    if (uid == null) return;
+    final doc = await FirebaseFirestore.instance
+        .collection('managers')
+        .doc(uid)
+        .get();
+    if (doc.exists && mounted) {
+      final roleStr = doc.data()?['role'] ?? 'noExperience';
+      setState(() {
+        _managerRole = ManagerRole.values.firstWhere(
+          (e) => e.name == roleStr,
+          orElse: () => ManagerRole.noExperience,
+        );
+      });
+    }
   }
 
   @override
@@ -128,6 +151,7 @@ class _HQScreenState extends State<HQScreen> {
                       teamId: widget.teamId,
                       canUpgrade: true,
                       onNavigate: widget.onNavigate,
+                      managerRole: _managerRole,
                     );
                   },
                 ),
@@ -145,12 +169,14 @@ class _FacilityCard extends StatelessWidget {
   final String teamId;
   final bool canUpgrade;
   final Function(String)? onNavigate;
+  final ManagerRole? managerRole;
 
   const _FacilityCard({
     required this.facility,
     required this.teamId,
     required this.canUpgrade,
     this.onNavigate,
+    this.managerRole,
   });
 
   IconData _getIcon() {
@@ -399,7 +425,11 @@ class _FacilityCard extends StatelessWidget {
 
   void _handleUpgrade(BuildContext context) async {
     try {
-      await FacilityService().upgradeFacility(teamId, facility.type);
+      await FacilityService().upgradeFacility(
+        teamId,
+        facility.type,
+        role: managerRole,
+      );
       if (context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(

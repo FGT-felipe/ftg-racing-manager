@@ -188,7 +188,11 @@ const SimEngine = {
       sBonus = -0.01; accProb = 0.01;
     }
     df -= sBonus;
-    const crashed = Math.random() < accProb;
+    // Ex-Driver: +5% extra crash probability
+    const teamRole = p.teamRole || "";
+    let extraCrash = 0;
+    if (teamRole === "exDriver") extraCrash = 0.05;
+    const crashed = Math.random() < (accProb + extraCrash);
 
     let lap = circuit.baseLapTime * carFactor * df + penalty;
     lap += (Math.random() - 0.5) * 0.8;
@@ -202,7 +206,8 @@ const SimEngine = {
    * @return {Object} Full race result.
    */
   simulateRace(p) {
-    const { circuit, grid, teamsMap, driversMap, setupsMap } = p;
+    const { circuit, grid, teamsMap, driversMap, setupsMap, managerRoles } = p;
+    const roles = managerRoles || {};
     const totalLaps = circuit.laps;
 
     // Initialise state
@@ -243,6 +248,7 @@ const SimEngine = {
           driverStats: driver.stats || {},
           setup: { ...su, tyreCompound: compound[did] },
           style: style[did],
+          teamRole: roles[driver.teamId] || "",
         });
 
         if (res.isCrashed) {
@@ -255,6 +261,13 @@ const SimEngine = {
         }
 
         let lt = res.lapTime;
+
+        // ── Manager Role Modifiers ──
+        const teamRole = roles[driver.teamId] || "";
+        // Ex-Driver: +2% pace (faster = multiply by 0.98)
+        if (teamRole === "exDriver") lt *= 0.98;
+        // Business Admin: -2% pace (slower = multiply by 1.02)
+        if (teamRole === "businessAdmin") lt *= 1.02;
 
         // Tyre wear penalty
         lt += Math.pow(wear[did] / 100.0, 2) * 8.0;
@@ -314,7 +327,7 @@ const SimEngine = {
 
           lapEvents.push({
             lap, driverId: did,
-            desc: `Pit Stop (${nc.toUpperCase()})`, type: "PIT",
+            desc: `In for a stop! Swapping to ${nc.toUpperCase()}s.`, type: "PIT",
           });
         } else {
           // Tyre wear accumulation
@@ -326,6 +339,12 @@ const SimEngine = {
           wear[did] += 4.5 *
             (circuit.tyreWearMultiplier || 1) *
             cwMod * wMod + Math.random();
+
+          // Ex-Engineer: -10% tyre wear
+          const teamRoleW = roles[driversMap[did].teamId] || "";
+          if (teamRoleW === "exEngineer") {
+            wear[did] *= 0.9;
+          }
         }
 
         lapTimes[did] = lt;
@@ -345,9 +364,21 @@ const SimEngine = {
         if (dnfs.includes(newOrd[i])) continue;
         const old = curOrder.indexOf(newOrd[i]);
         if (old !== -1 && i < old) {
+          let flavor = "Overtake move!";
+          if (i + 1 < newOrd.length) {
+            const passedId = newOrd[i + 1];
+            const passedName = (driversMap[passedId] && driversMap[passedId].name) || "rival";
+            const phrases = [
+              `Dives down the inside of ${passedName}!`,
+              `Moves past ${passedName} for P${i + 1}!`,
+              `Great move on ${passedName}!`,
+              `Takes P${i + 1} from ${passedName}!`,
+            ];
+            flavor = phrases[newOrd.length % phrases.length];
+          }
           lapEvents.push({
             lap, driverId: newOrd[i],
-            desc: "Overtake", type: "OVERTAKE",
+            desc: flavor, type: "OVERTAKE",
           });
         }
       }
@@ -355,13 +386,19 @@ const SimEngine = {
 
       const pos = {};
       curOrder.forEach((id, i) => pos[id] = i + 1);
-      raceLog.push({ lap, lapTimes, positions: pos, events: lapEvents });
+      raceLog.push({ lap, lapTimes, positions: pos, tyres: { ...compound }, events: lapEvents });
     }
 
     // Hard compound penalty (35s)
     for (const did of curOrder) {
       if (!dnfs.includes(did) && !usedHard[did]) {
         total[did] = (total[did] || 0) + 35.0;
+        if (raceLog.length) {
+          raceLog[raceLog.length - 1].events.push({
+            lap: totalLaps, driverId: did,
+            desc: "35s PENALTY: Failed to use Hard compound", type: "INFO",
+          });
+        }
       }
     }
 
@@ -503,6 +540,18 @@ exports.scheduledQualifying = onSchedule({
       const teamDocs = await fetchTeams(teamIds);
       const qualyResults = [];
 
+      // Build manager roles map for qualifying modifiers
+      const managerRoles = {};
+      for (const tDoc of teamDocs) {
+        const t = tDoc.data();
+        if (t.managerId) {
+          const mgrDoc = await db.collection("managers").doc(t.managerId).get();
+          if (mgrDoc.exists) {
+            managerRoles[t.id] = mgrDoc.data().role || "";
+          }
+        }
+      }
+
       for (const tDoc of teamDocs) {
         const team = tDoc.data();
         const dSnap = await db.collection("drivers")
@@ -547,14 +596,21 @@ exports.scheduledQualifying = onSchedule({
             driverStats: driver.stats || {},
             setup,
             style: setup.qualifyingStyle || "normal",
+            teamRole: managerRoles[team.id] || "",
           });
+
+          // Ex-Engineer: +5% qualy success (5% faster lap)
+          let finalLapTime = res.lapTime;
+          if (!res.isCrashed && managerRoles[team.id] === "exEngineer") {
+            finalLapTime *= 0.95;
+          }
 
           qualyResults.push({
             driverId: driver.id,
             driverName: driver.name,
             teamName: team.name,
             teamId: team.id,
-            lapTime: res.lapTime,
+            lapTime: finalLapTime,
             isCrashed: res.isCrashed,
             tyreCompound: setup.tyreCompound || "medium",
             setupSubmitted: !!sent || team.isBot,
@@ -735,9 +791,21 @@ exports.scheduledRace = onSchedule({
         setupsMap[g.driverId] = su;
       }
 
+      // Build manager roles map (teamId -> role string)
+      const managerRoles = {};
+      for (const tid of teamIds) {
+        const t = teamsMap[tid];
+        if (t && t.managerId) {
+          const mgrDoc = await db.collection("managers").doc(t.managerId).get();
+          if (mgrDoc.exists) {
+            managerRoles[tid] = mgrDoc.data().role || "";
+          }
+        }
+      }
+
       // Run full race
       const result = SimEngine.simulateRace({
-        circuit, grid, teamsMap, driversMap, setupsMap,
+        circuit, grid, teamsMap, driversMap, setupsMap, managerRoles,
       });
 
       // Calculate live duration for frontend
@@ -977,12 +1045,20 @@ exports.postRaceProcessing = onSchedule({
 
       // Reset weekStatus and unlock
       for (const tid of teamIdsSet) {
+        // Read current weekStatus to preserve Bureaucrat cooldown
+        const tDoc = await db.collection("teams").doc(tid).get();
+        const curWs = (tDoc.exists && tDoc.data().weekStatus) || {};
+        let cooldown = curWs.upgradeCooldownWeeksLeft || 0;
+        if (cooldown > 0) cooldown--; // Decrement each week
+
         await db.collection("teams").doc(tid).update({
           "weekStatus": {
             practiceCompleted: false,
             strategySet: false,
             sponsorReviewed: false,
             hasUpgradedThisWeek: false,
+            upgradesThisWeek: 0,
+            upgradeCooldownWeeksLeft: cooldown,
             isLockedForProcessing: false,
           },
         });

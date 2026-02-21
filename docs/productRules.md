@@ -130,3 +130,66 @@ La academia se puede mejorar hasta el nivel 5 pero solo 1 nivel por temporada.
 - **Rango de Valores**: Todos los parámetros de reglaje se configuran en un rango de **0 a 100**.
 - **Neumáticos**: Existen 4 compuestos (Blando, Medio, Duro y Lluvia), cada uno con diferentes tasas de desgaste y rendimiento según la temperatura y clima.
 - **Estilo de Conducción**: Los pilotos pueden configurarse en 4 estilos (Defensivo, Normal, Ofensivo y Riesgo Máximo), afectando el ritmo y la probabilidad de error/accidente.
+
+---
+
+## 7. Perfiles de Manager (Backgrounds)
+
+Al crear un nuevo manager, el usuario debe seleccionar un contexto previo o perfil ("background"). Este perfil otorga bonificaciones (pros) y penalizaciones (contras) pasivas que impactan diferentes sistemas del juego.
+
+### Lista de Perfiles y Efectos
+
+#### 1. Ex-Driver (Ex-Piloto)
+*Using your racing intuition to lead.*
+- **Pros:**
+  - Bono técnico en sesiones de carrera (Mejores tiempos/ritmo).
+  - Mayor precisión en el feedback de los pilotos para el setup.
+  - Mayor motivación y menos errores en paradas en boxes (Pit crew respect).
+- **Contras:**
+  - Progresión lenta de atributos de gestión del manager.
+  - Salario necesario y expectativas financieras más altas.
+  - Sesgo hacia estrategias y estilos agresivos impulsados por IA (o desgaste de gomas).
+
+#### 2. Business Admin (Administrador)
+*Optimization and profit above all.*
+- **Pros:**
+  - Mejores tratos financieros y pagos en patrocinios (`+15%` base).
+  - Menores costos al mejorar instalaciones en el HQ (`-10%` o similar).
+  - Bonificación en ingresos de marketing semanales.
+- **Contras:**
+  - Tasa alta de recuperación de fatiga (los pilotos se cansan más rápido o se quejan más).
+  - Interacciones técnicas menos eficientes (desarrollo de R&D sufre un poco).
+  - Aversión al riesgo (moral afectada por tácticas arriesgadas).
+
+#### 3. Bureaucrat (Burócrata)
+*Master of rules and politics.*
+- **Pros:**
+  - Contratos de personal y salarios son más económicos (`-10%`).
+  - Reducción o inmunidad a ciertas penalizaciones menores (FIA).
+  - Estabilidad en la confianza de la directiva (Toleran mejor rachas de derrotas).
+- **Contras:**
+  - Armonía de equipo inestable y alta probabilidad de peleas de pilotos.
+  - Desarrollo de mejoras del coche más lento.
+  - Impacto negativo en moral si hay eventos mediáticos aburridos.
+
+#### 4. Ex-Engineer (Ex-Ingeniero)
+*Technical excellence is the only way.*
+- **Pros:**
+  - Aceleración en el setup del coche y en R&D.
+  - Mayor porcentaje base en la fiabilidad técnica del coche.
+  - Curva de mejora tecnológica más temprana.
+- **Contras:**
+  - Multiplicador menor de ganancia de Experiencia (XP) para los pilotos.
+  - Menos ingresos por patrocinios informales.
+  - Penalización a la moral por exceso de microgestión en pits.
+
+#### 5. No Experience (Sin Experiencia)
+*A fresh perspective on the sport.*
+- **Pros:**
+  - Potencial de máximo crecimiento en todos los stats del manager.
+  - Sin prejuicios ni rivalidades (relaciones neutras al nacer el universo).
+  - Balance perfecto como estilo de liderazgo por defecto.
+- **Contras:**
+  - Cero buffs automáticos iniciales al llegar al equipo.
+  - Reputación muy baja al entrar en la liga.
+  - Mayor rango de error o "ruido" al ver los stats de telemetría reales.

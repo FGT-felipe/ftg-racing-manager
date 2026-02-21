@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:math';
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import '../../services/season_service.dart';
 import '../../services/universe_service.dart';
 import '../../services/time_service.dart';
@@ -845,22 +846,24 @@ class _RaceDayScreenState extends State<RaceDayScreen>
             ),
           ),
           const SizedBox(height: 32),
-          TextButton.icon(
-            onPressed: _promptDemoMode,
-            icon: Icon(
-              Icons.bug_report,
-              size: 14,
-              color: Colors.white.withValues(alpha: 0.2),
-            ),
-            label: Text(
-              "QA DEMO",
-              style: TextStyle(
-                fontSize: 10,
+          if (FirebaseAuth.instance.currentUser?.email ==
+              'felipe@firetower.games')
+            TextButton.icon(
+              onPressed: _promptDemoMode,
+              icon: Icon(
+                Icons.bug_report,
+                size: 14,
                 color: Colors.white.withValues(alpha: 0.2),
-                letterSpacing: 1.5,
+              ),
+              label: Text(
+                "QA DEMO",
+                style: TextStyle(
+                  fontSize: 10,
+                  color: Colors.white.withValues(alpha: 0.2),
+                  letterSpacing: 1.5,
+                ),
               ),
             ),
-          ),
         ],
       ),
     );

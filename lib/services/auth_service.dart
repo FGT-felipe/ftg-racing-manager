@@ -7,7 +7,9 @@ import '../models/user_models.dart';
 
 class AuthService {
   final FirebaseAuth _auth = FirebaseAuth.instance;
-  static final GoogleSignIn _googleSignIn = GoogleSignIn();
+  static final GoogleSignIn _googleSignIn = GoogleSignIn(
+    scopes: const <String>['email', 'profile'],
+  );
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
 
   // Stream para detectar cambios de sesión

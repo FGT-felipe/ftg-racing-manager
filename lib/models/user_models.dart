@@ -40,30 +40,30 @@ extension ManagerRoleExtension on ManagerRole {
   String get buffText {
     switch (this) {
       case ManagerRole.exDriver:
-        return "(+) Technical bonus in sessions";
+        return "(+) +2% race pace, +10 morale during race";
       case ManagerRole.businessAdmin:
-        return "(+) Better financial deals & sponsors";
+        return "(+) +15% sponsor deals, -10% facility costs";
       case ManagerRole.bureaucrat:
-        return "(+) Cheaper personnel contracts";
+        return "(+) -10% facility costs, +1 academy slot/level";
       case ManagerRole.exEngineer:
-        return "(+) Faster car setup & R&D";
+        return "(+) 2 simultaneous upgrades, -10% tyre wear";
       case ManagerRole.noExperience:
-        return "(+) Balanced approach";
+        return "(+) No bonuses";
     }
   }
 
   String get debuffText {
     switch (this) {
       case ManagerRole.exDriver:
-        return "(-) Slower improvement in management stats";
+        return "(-) +20% driver salary, +5% crash risk";
       case ManagerRole.businessAdmin:
-        return "(-) High driver fatigue rate";
+        return "(-) -2% race pace, morale loss on sponsor fail";
       case ManagerRole.bureaucrat:
-        return "(-) Poor team harmony & rivalries";
+        return "(-) 2-week part upgrade cooldown";
       case ManagerRole.exEngineer:
-        return "(-) Drivers gain less XP";
+        return "(-) -5% driver XP, double upgrade cost";
       case ManagerRole.noExperience:
-        return "(-) No specialized bonuses";
+        return "(-) No penalties";
     }
   }
 
@@ -71,34 +71,29 @@ extension ManagerRoleExtension on ManagerRole {
     switch (this) {
       case ManagerRole.exDriver:
         return [
-          "Technical bonus in racing sessions",
-          "Better driver feedback accuracy",
-          "Respect from pit crew",
+          "+5 driver feedback for setup",
+          "+2% driver race pace",
+          "+10 driver morale during race",
+          "Unlocks Risky Driver Style",
         ];
       case ManagerRole.businessAdmin:
         return [
-          "Higher sponsor payouts (+15%)",
-          "Reduced interest on loans",
-          "Cheaper facility upgrades",
+          "+15% better financial sponsorship deals",
+          "-10% facility upgrade costs",
         ];
       case ManagerRole.bureaucrat:
         return [
-          "Lower personnel salary demands",
-          "Easier rule changes approval",
-          "Political influence in paddock",
+          "-10% facility purchase and upgrade costs",
+          "+1 extra youth academy driver per level",
         ];
       case ManagerRole.exEngineer:
         return [
-          "Faster car development (R&D)",
-          "Improved car reliability",
-          "Precise wind tunnel data",
+          "Can upgrade 2 car parts simultaneously",
+          "-10% tyre wear",
+          "+5% Qualifying success probability",
         ];
       case ManagerRole.noExperience:
-        return [
-          "Maximum growth potential",
-          "No pre-existing rivalries",
-          "Balanced leadership style",
-        ];
+        return ["No bonuses or penalties"];
     }
   }
 
@@ -106,34 +101,20 @@ extension ManagerRoleExtension on ManagerRole {
     switch (this) {
       case ManagerRole.exDriver:
         return [
-          "Slow management skill progression",
-          "Higher salary expectation",
-          "Aggressive strategy bias",
+          "Drivers salary is 20% higher",
+          "+5% higher risk of race crashes",
         ];
       case ManagerRole.businessAdmin:
         return [
-          "Strict focus on profits vs performance",
-          "High driver pressure/fatigue",
-          "Personnel feel undervalued",
+          "-2% driver race pace",
+          "-10% driver morale if sponsor goals fail",
         ];
       case ManagerRole.bureaucrat:
-        return [
-          "Slow decision making",
-          "Poor team harmony",
-          "Bureaucratic overhead",
-        ];
+        return ["Car part upgrade cooldown is 2 weeks (not 1)"];
       case ManagerRole.exEngineer:
-        return [
-          "Difficulty managing driver egos",
-          "Drivers gain experience slower",
-          "Perfectionism delays parts",
-        ];
+        return ["-5% driver XP gain", "Car part upgrades cost double"];
       case ManagerRole.noExperience:
-        return [
-          "No starting bonuses",
-          "Lower initial reputation",
-          "Learning curve for telemetry",
-        ];
+        return ["No bonuses or penalties"];
     }
   }
 }

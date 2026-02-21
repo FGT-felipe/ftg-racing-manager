@@ -49,12 +49,30 @@ class DriverAssignmentService {
 
   /// Puebla los equipos de una liga con pilotos
   Future<int> _populateLeagueDrivers(FtgLeague league) async {
+    final drivers = await generateAndSaveDriversForTeams(
+      league.teams,
+      league.tier,
+    );
+
+    // Actualizar liga con pilotos poblados
+    final updatedLeague = league.copyWith(drivers: drivers);
+    await UniverseService().updateLeague(updatedLeague);
+
+    debugPrint(
+      "DRIVER ASSIGNMENT: ${league.name}: ${drivers.length} pilotos creados",
+    );
+
+    return drivers.length;
+  }
+
+  /// Generates drivers for given teams independently of UniverseService
+  Future<List<Driver>> generateAndSaveDriversForTeams(
+    List<Team> teams,
+    int tier,
+  ) async {
     final factory = DriverFactory();
     final random = Random();
-    int driversCreated = 0;
 
-    // Obtener equipos de esta liga
-    final teams = league.teams;
     final drivers = <Driver>[];
 
     for (final team in teams) {
@@ -66,7 +84,7 @@ class DriverAssignmentService {
             ? (isMaleMain ? 'M' : 'F')
             : (isMaleMain ? 'F' : 'M');
         final driver = factory.generateDriver(
-          divisionTier: league.tier,
+          divisionTier: tier,
           forcedGender: gender,
         );
 
@@ -88,21 +106,11 @@ class DriverAssignmentService {
         );
 
         drivers.add(assignedDriver);
-        driversCreated++;
       }
     }
 
     await _saveDrivers(drivers);
-
-    // Actualizar liga con pilotos poblados
-    final updatedLeague = league.copyWith(drivers: drivers);
-    await UniverseService().updateLeague(updatedLeague);
-
-    debugPrint(
-      "DRIVER ASSIGNMENT: ${league.name}: $driversCreated pilotos creados",
-    );
-
-    return driversCreated;
+    return drivers;
   }
 
   /// Guarda múltiples pilotos en Firestore usando batch

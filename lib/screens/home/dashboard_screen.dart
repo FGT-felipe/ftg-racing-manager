@@ -147,6 +147,14 @@ class _DashboardScreenState extends State<DashboardScreen> {
                     final targetDate = timeService.nowBogota.add(
                       timeService.getTimeUntilNextEvent(currentStatus),
                     );
+                    final qualyDate = timeService.getCurrentWeekQualyDate(
+                      timeService.nowBogota,
+                      currentRace?.event.date,
+                    );
+                    final raceDate = timeService.getCurrentWeekRaceDate(
+                      timeService.nowBogota,
+                      currentRace?.event.date,
+                    );
 
                     // Calculate completed practice laps
                     final practiceLapsMap =
@@ -245,6 +253,8 @@ class _DashboardScreenState extends State<DashboardScreen> {
                               countryCode: countryCode,
                               flagEmoji: flagEmoji,
                               targetDate: targetDate,
+                              qualyDate: qualyDate,
+                              raceDate: raceDate,
                               onActionPressed: onHeroAction,
                               totalLaps: currentRace?.event.totalLaps ?? 50,
                               weatherPractice:

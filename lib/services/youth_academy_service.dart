@@ -1,6 +1,7 @@
 import 'package:cloud_firestore/cloud_firestore.dart' hide Transaction;
 import 'package:flutter/widgets.dart';
 import '../models/core_models.dart';
+import '../models/user_models.dart';
 import '../models/domain/domain_models.dart';
 
 /// Servicio para gestionar la Academia de Jóvenes de un equipo.
@@ -56,7 +57,11 @@ class YouthAcademyService {
   ///
   /// Creates the config doc, generates 2 initial candidates (1M + 1F),
   /// and records the transaction.
-  Future<void> purchaseAcademy(String teamId, Country country) async {
+  Future<void> purchaseAcademy(
+    String teamId,
+    Country country, {
+    ManagerRole? role,
+  }) async {
     final teamRef = _db.collection('teams').doc(teamId);
 
     await _db.runTransaction((txn) async {
@@ -70,13 +75,18 @@ class YouthAcademyService {
         throw Exception('Insufficient budget to purchase Youth Academy');
       }
 
+      int maxSlots = 2; // 2 × level 1
+      if (role == ManagerRole.bureaucrat) {
+        maxSlots += 1; // +1 extra slot per level for Bureaucrat
+      }
+
       // Create config doc
       txn.set(_configRef(teamId), {
         'countryCode': country.code,
         'countryName': country.name,
         'countryFlag': country.flagEmoji,
         'academyLevel': 1,
-        'maxSlots': 2, // 2 × level
+        'maxSlots': maxSlots,
       });
 
       // Update team budget and facility
@@ -210,7 +220,7 @@ class YouthAcademyService {
   // ── Academy Upgrade ─────────────────────────────────────────────────────
 
   /// Upgrade the academy level (+1). Max 5, 1 per season.
-  Future<void> upgradeAcademy(String teamId) async {
+  Future<void> upgradeAcademy(String teamId, {ManagerRole? role}) async {
     final teamRef = _db.collection('teams').doc(teamId);
 
     return _db.runTransaction((txn) async {
@@ -222,23 +232,28 @@ class YouthAcademyService {
       if (!configSnap.exists) throw Exception('Academy not purchased');
 
       final config = configSnap.data() as Map<String, dynamic>;
-      final currentLevel = config['academyLevel'] ?? 1;
+      final currentLevel = (config['academyLevel'] as num?)?.toInt() ?? 1;
 
       if (currentLevel >= 5) {
         throw Exception('Academy is already at maximum level (5)');
       }
 
-      final upgradePrice = (100000 * (currentLevel + 1)) as int;
+      final int upgradePrice = 100000 * (currentLevel + 1);
       if (team.budget < upgradePrice) {
         throw Exception('Insufficient budget for upgrade');
       }
 
-      final newLevel = currentLevel + 1;
+      final int newLevel = currentLevel + 1;
+      int maxSlots = newLevel * 2;
+
+      if (role == ManagerRole.bureaucrat) {
+        maxSlots += newLevel; // +1 extra slot per level
+      }
 
       // Update config
       txn.update(_configRef(teamId), {
         'academyLevel': newLevel,
-        'maxSlots': newLevel * 2,
+        'maxSlots': maxSlots,
       });
 
       // Update team budget and facility

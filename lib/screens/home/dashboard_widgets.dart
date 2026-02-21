@@ -378,6 +378,8 @@ class RaceStatusHero extends StatefulWidget {
   final String countryCode;
   final String flagEmoji;
   final DateTime targetDate;
+  final DateTime qualyDate;
+  final DateTime raceDate;
   final VoidCallback? onActionPressed;
 
   final int totalLaps;
@@ -396,6 +398,8 @@ class RaceStatusHero extends StatefulWidget {
     required this.countryCode,
     required this.flagEmoji,
     required this.targetDate,
+    required this.qualyDate,
+    required this.raceDate,
     this.onActionPressed,
     this.totalLaps = 50,
     this.weatherPractice = 'Sunny',
@@ -414,7 +418,8 @@ class RaceStatusHero extends StatefulWidget {
 class _RaceStatusHeroState extends State<RaceStatusHero>
     with SingleTickerProviderStateMixin {
   late Timer _timer;
-  Duration _timeLeft = Duration.zero;
+  Duration _timeLeftQualy = Duration.zero;
+  Duration _timeLeftRace = Duration.zero;
   late AnimationController _blinkingController;
 
   @override
@@ -434,15 +439,20 @@ class _RaceStatusHeroState extends State<RaceStatusHero>
   void _updateTimeLeft() {
     final now = TimeService().nowBogota;
     setState(() {
-      _timeLeft = widget.targetDate.difference(now);
-      if (_timeLeft.isNegative) _timeLeft = Duration.zero;
+      _timeLeftQualy = widget.qualyDate.difference(now);
+      if (_timeLeftQualy.isNegative) _timeLeftQualy = Duration.zero;
+
+      _timeLeftRace = widget.raceDate.difference(now);
+      if (_timeLeftRace.isNegative) _timeLeftRace = Duration.zero;
     });
   }
 
   @override
   void didUpdateWidget(covariant RaceStatusHero oldWidget) {
     super.didUpdateWidget(oldWidget);
-    if (oldWidget.targetDate != widget.targetDate) {
+    if (oldWidget.targetDate != widget.targetDate ||
+        oldWidget.qualyDate != widget.qualyDate ||
+        oldWidget.raceDate != widget.raceDate) {
       _updateTimeLeft();
     }
   }
@@ -456,10 +466,7 @@ class _RaceStatusHeroState extends State<RaceStatusHero>
 
   @override
   Widget build(BuildContext context) {
-    final days = _timeLeft.inDays;
-    final hours = _timeLeft.inHours % 24;
-    final minutes = _timeLeft.inMinutes % 60;
-    final seconds = _timeLeft.inSeconds % 60;
+    // We will compute days, hours, mins, secs dynamically for each countdown inline
 
     String statusText = "PADDOCK OPEN";
     Color statusColor = const Color(0xFF00C853);
@@ -606,35 +613,27 @@ class _RaceStatusHeroState extends State<RaceStatusHero>
                                   ),
                                 ),
                                 const SizedBox(height: 12),
-                                Wrap(
-                                  spacing: 4,
-                                  runSpacing: 4,
+                                Row(
                                   children: [
-                                    _buildTimeBlock(
-                                      context,
-                                      days.toString().padLeft(2, '0'),
-                                      "DAYS",
-                                    ),
-                                    _buildTimeSeparator(context),
-                                    _buildTimeBlock(
-                                      context,
-                                      hours.toString().padLeft(2, '0'),
-                                      "HRS",
-                                    ),
-                                    _buildTimeSeparator(context),
-                                    _buildTimeBlock(
-                                      context,
-                                      minutes.toString().padLeft(2, '0'),
-                                      "MIN",
-                                    ),
-                                    if (isWide) ...[
-                                      _buildTimeSeparator(context),
-                                      _buildTimeBlock(
+                                    Expanded(
+                                      child: _buildCountdownRow(
                                         context,
-                                        seconds.toString().padLeft(2, '0'),
-                                        "SEC",
+                                        "QUALIFYING",
+                                        widget.qualyDate,
+                                        _timeLeftQualy,
+                                        isWide,
                                       ),
-                                    ],
+                                    ),
+                                    const SizedBox(width: 12),
+                                    Expanded(
+                                      child: _buildCountdownRow(
+                                        context,
+                                        "RACE",
+                                        widget.raceDate,
+                                        _timeLeftRace,
+                                        isWide,
+                                      ),
+                                    ),
                                   ],
                                 ),
                               ],
@@ -914,32 +913,111 @@ class _RaceStatusHeroState extends State<RaceStatusHero>
     );
   }
 
+  Widget _buildCountdownRow(
+    BuildContext context,
+    String title,
+    DateTime targetDate,
+    Duration timeLeft,
+    bool isWide,
+  ) {
+    final days = timeLeft.inDays;
+    final hours = timeLeft.inHours % 24;
+    final minutes = timeLeft.inMinutes % 60;
+    final seconds = timeLeft.inSeconds % 60;
+
+    final monthNames = [
+      'JAN',
+      'FEB',
+      'MAR',
+      'APR',
+      'MAY',
+      'JUN',
+      'JUL',
+      'AUG',
+      'SEP',
+      'OCT',
+      'NOV',
+      'DEC',
+    ];
+    final dateStr = "${targetDate.day} ${monthNames[targetDate.month - 1]}";
+    final timeStr =
+        "${targetDate.hour.toString().padLeft(2, '0')}:${targetDate.minute.toString().padLeft(2, '0')}";
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          title,
+          style: TextStyle(
+            fontSize: 10,
+            fontWeight: FontWeight.w900,
+            color: Colors.white.withValues(alpha: 0.5),
+            letterSpacing: 1.5,
+          ),
+        ),
+        const SizedBox(height: 6),
+        Row(
+          children: [
+            _buildTimeBlock(context, days.toString().padLeft(2, '0'), "D"),
+            _buildTimeSeparator(context),
+            _buildTimeBlock(context, hours.toString().padLeft(2, '0'), "H"),
+            _buildTimeSeparator(context),
+            _buildTimeBlock(context, minutes.toString().padLeft(2, '0'), "M"),
+            if (isWide) ...[
+              _buildTimeSeparator(context),
+              _buildTimeBlock(context, seconds.toString().padLeft(2, '0'), "S"),
+            ],
+          ],
+        ),
+        const SizedBox(height: 6),
+        Row(
+          children: [
+            Icon(
+              Icons.calendar_today,
+              size: 10,
+              color: Colors.white.withValues(alpha: 0.3),
+            ),
+            const SizedBox(width: 4),
+            Text(
+              "$dateStr · $timeStr",
+              style: TextStyle(
+                fontSize: 10,
+                color: Colors.white.withValues(alpha: 0.4),
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+          ],
+        ),
+      ],
+    );
+  }
+
   Widget _buildTimeBlock(BuildContext context, String value, String label) {
     return Column(
       children: [
         Container(
-          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
           decoration: BoxDecoration(
             color: Colors.white.withValues(alpha: 0.05),
-            borderRadius: BorderRadius.circular(12),
+            borderRadius: BorderRadius.circular(8),
           ),
           child: Text(
             value,
             style: const TextStyle(
               fontFamily: 'monospace',
-              fontSize: 28,
+              fontSize: 20,
               fontWeight: FontWeight.w900,
               color: Colors.white,
             ),
           ),
         ),
-        const SizedBox(height: 4),
+        const SizedBox(height: 2),
         Text(
           label,
           style: TextStyle(
-            fontSize: 10,
+            fontSize: 8,
             fontWeight: FontWeight.bold,
-            letterSpacing: 1.2,
+            letterSpacing: 1.0,
             color: Theme.of(context).textTheme.bodyMedium?.color,
           ),
         ),
@@ -949,11 +1027,11 @@ class _RaceStatusHeroState extends State<RaceStatusHero>
 
   Widget _buildTimeSeparator(BuildContext context) {
     return Padding(
-      padding: const EdgeInsets.only(bottom: 16, left: 4, right: 4),
+      padding: const EdgeInsets.only(bottom: 12, left: 2, right: 2),
       child: Text(
         ":",
         style: TextStyle(
-          fontSize: 24,
+          fontSize: 18,
           fontWeight: FontWeight.bold,
           color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.3),
         ),

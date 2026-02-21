@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:google_fonts/google_fonts.dart';
 import 'team_selection_screen.dart';
-import '../../widgets/common/app_logo.dart';
 
 class CreateManagerScreen extends StatefulWidget {
   const CreateManagerScreen({super.key});
@@ -32,14 +32,14 @@ class _CreateManagerScreenState extends State<CreateManagerScreen> {
       'desc': 'Using your racing intuition to lead.',
       'icon': Icons.sports_motorsports,
       'pros': [
-        'Technical bonus in racing sessions',
-        'Better driver feedback accuracy',
-        'Respect from pit crew',
+        '+5 driver feedback for setup',
+        '+2% driver race pace',
+        '+10 driver morale during race',
+        'Unlocks Risky Driver Style',
       ],
       'cons': [
-        'Slow management skill progression',
-        'Higher salary expectation',
-        'Aggressive strategy bias',
+        'Drivers salary is 20% higher',
+        '+5% higher risk of race crashes',
       ],
     },
     {
@@ -48,14 +48,12 @@ class _CreateManagerScreenState extends State<CreateManagerScreen> {
       'desc': 'Optimization and profit above all.',
       'icon': Icons.pie_chart,
       'pros': [
-        'Better financial deals & sponsors',
-        'Lower facility upgrade costs',
-        'Marketing bonus',
+        '+15% better financial sponsorship deals',
+        '-10% facility upgrade costs',
       ],
       'cons': [
-        'High driver fatigue rate',
-        'Poor relationship with engineers',
-        'Risk aversion',
+        '-2% driver race pace',
+        '-10% driver morale if sponsor goals fail',
       ],
     },
     {
@@ -64,15 +62,10 @@ class _CreateManagerScreenState extends State<CreateManagerScreen> {
       'desc': 'Master of rules and politics.',
       'icon': Icons.gavel,
       'pros': [
-        'Cheaper personnel contracts',
-        'Avoids FIA penalties',
-        'Stable board confidence',
+        '-10% facility purchase and upgrade costs',
+        '+1 extra youth academy driver per level',
       ],
-      'cons': [
-        'Poor team harmony & rivalries',
-        'Slower car development',
-        'Boring press conferences',
-      ],
+      'cons': ['Car part upgrade cooldown is 2 weeks (not 1)'],
     },
     {
       'id': 'engineer',
@@ -80,31 +73,11 @@ class _CreateManagerScreenState extends State<CreateManagerScreen> {
       'desc': 'Technical excellence is the only way.',
       'icon': Icons.build,
       'pros': [
-        'Faster car setup & R&D',
-        'Reliability bonuses',
-        'Unlock tech upgrades faster',
+        'Can upgrade 2 car parts simultaneously',
+        '-10% tyre wear',
+        '+5% Qualifying success probability',
       ],
-      'cons': [
-        'Drivers gain less XP',
-        'Ignoring commercial opportunities',
-        'Micro-management penalty',
-      ],
-    },
-    {
-      'id': 'none',
-      'title': 'No Experience',
-      'desc': 'A fresh perspective on the sport.',
-      'icon': Icons.person_outline,
-      'pros': [
-        'Maximum growth potential',
-        'No pre-existing rivalries',
-        'Balanced leadership style',
-      ],
-      'cons': [
-        'No starting bonuses',
-        'Lower initial reputation',
-        'Learning curve for telemetry',
-      ],
+      'cons': ['-5% driver XP gain', 'Car part upgrades cost double'],
     },
   ];
 
@@ -178,13 +151,11 @@ class _CreateManagerScreenState extends State<CreateManagerScreen> {
                         Row(
                           mainAxisAlignment: MainAxisAlignment.center,
                           children: [
-                            const AppLogo(size: 40, withText: false),
-                            const SizedBox(width: 16),
                             Text(
                               "CREATE MANAGER PROFILE",
-                              style: TextStyle(
+                              style: GoogleFonts.poppins(
                                 fontSize: 20,
-                                fontWeight: FontWeight.w800,
+                                fontWeight: FontWeight.w900,
                                 color: textColor.withValues(alpha: 0.8),
                                 letterSpacing: 1.5,
                               ),
@@ -223,23 +194,32 @@ class _CreateManagerScreenState extends State<CreateManagerScreen> {
                                   child: DropdownButtonFormField<String>(
                                     isExpanded: true,
                                     initialValue: _selectedCountry,
-                                    hint: const Text(
+                                    style: GoogleFonts.raleway(
+                                      color: Colors.white,
+                                      fontWeight: FontWeight.w600,
+                                      fontSize: 16,
+                                    ),
+                                    hint: Text(
                                       "Country",
-                                      style: TextStyle(
-                                        color: Colors.black54,
+                                      style: GoogleFonts.raleway(
+                                        color: Colors.white.withValues(
+                                          alpha: 0.5,
+                                        ),
                                         fontWeight: FontWeight.w600,
                                       ),
                                     ),
                                     decoration: _inputDeco(null),
-                                    dropdownColor: Colors.white,
+                                    dropdownColor: const Color(0xFF292A33),
                                     items: [
-                                      const DropdownMenuItem<String>(
+                                      DropdownMenuItem<String>(
                                         value: null,
                                         enabled: false,
                                         child: Text(
                                           "Country",
-                                          style: TextStyle(
-                                            color: Colors.grey,
+                                          style: GoogleFonts.raleway(
+                                            color: Colors.white.withValues(
+                                              alpha: 0.5,
+                                            ),
                                             fontWeight: FontWeight.w400,
                                           ),
                                         ),
@@ -256,8 +236,8 @@ class _CreateManagerScreenState extends State<CreateManagerScreen> {
                                           value: c,
                                           child: Text(
                                             c,
-                                            style: const TextStyle(
-                                              color: Colors.black87,
+                                            style: GoogleFonts.raleway(
+                                              color: Colors.white,
                                               fontWeight: FontWeight.w600,
                                             ),
                                           ),
@@ -275,23 +255,32 @@ class _CreateManagerScreenState extends State<CreateManagerScreen> {
                                   child: DropdownButtonFormField<String>(
                                     isExpanded: true,
                                     initialValue: _selectedGender,
-                                    hint: const Text(
+                                    style: GoogleFonts.raleway(
+                                      color: Colors.white,
+                                      fontWeight: FontWeight.w600,
+                                      fontSize: 16,
+                                    ),
+                                    hint: Text(
                                       "Gender",
-                                      style: TextStyle(
-                                        color: Colors.black54,
+                                      style: GoogleFonts.raleway(
+                                        color: Colors.white.withValues(
+                                          alpha: 0.5,
+                                        ),
                                         fontWeight: FontWeight.w600,
                                       ),
                                     ),
                                     decoration: _inputDeco(null),
-                                    dropdownColor: Colors.white,
+                                    dropdownColor: const Color(0xFF292A33),
                                     items: [
-                                      const DropdownMenuItem<String>(
+                                      DropdownMenuItem<String>(
                                         value: null,
                                         enabled: false,
                                         child: Text(
                                           "Gender",
-                                          style: TextStyle(
-                                            color: Colors.grey,
+                                          style: GoogleFonts.raleway(
+                                            color: Colors.white.withValues(
+                                              alpha: 0.5,
+                                            ),
                                             fontWeight: FontWeight.w400,
                                           ),
                                         ),
@@ -301,8 +290,8 @@ class _CreateManagerScreenState extends State<CreateManagerScreen> {
                                           value: g,
                                           child: Text(
                                             g,
-                                            style: const TextStyle(
-                                              color: Colors.black87,
+                                            style: GoogleFonts.raleway(
+                                              color: Colors.white,
                                               fontWeight: FontWeight.w600,
                                             ),
                                           ),
@@ -366,29 +355,69 @@ class _CreateManagerScreenState extends State<CreateManagerScreen> {
                           },
                         ),
 
-                        const SizedBox(height: 40),
+                        const Divider(color: Colors.white10, height: 40),
 
-                        SizedBox(
-                          height: 60,
-                          child: ElevatedButton(
-                            onPressed: _establishCareer,
-                            style: ElevatedButton.styleFrom(
-                              backgroundColor: accentHighlight,
-                              foregroundColor: Colors.black,
-                              elevation: 4,
-                              shape: RoundedRectangleBorder(
+                        Row(
+                          children: [
+                            Expanded(
+                              child: Text(
+                                "You are about to create the manager who will lead your team to glory.",
+                                style: GoogleFonts.raleway(
+                                  fontSize: 14,
+                                  color: Colors.white.withValues(alpha: 0.5),
+                                  fontStyle: FontStyle.italic,
+                                ),
+                              ),
+                            ),
+                            const SizedBox(width: 24),
+                            Container(
+                              height: 60,
+                              width: 240,
+                              decoration: BoxDecoration(
+                                gradient: const LinearGradient(
+                                  begin: Alignment.topLeft,
+                                  end: Alignment.bottomRight,
+                                  colors: [
+                                    Color(0xFF2A2A2A),
+                                    Color(0xFF000000),
+                                  ],
+                                ),
                                 borderRadius: BorderRadius.circular(100),
+                                border: Border.all(
+                                  color: const Color(
+                                    0xFF00C853,
+                                  ).withValues(alpha: 0.3),
+                                  width: 1,
+                                ),
+                                boxShadow: [
+                                  BoxShadow(
+                                    color: Colors.black.withValues(alpha: 0.3),
+                                    blurRadius: 8,
+                                    offset: const Offset(0, 4),
+                                  ),
+                                ],
+                              ),
+                              child: ElevatedButton(
+                                onPressed: _establishCareer,
+                                style: ElevatedButton.styleFrom(
+                                  backgroundColor: Colors.transparent,
+                                  shadowColor: Colors.transparent,
+                                  shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(100),
+                                  ),
+                                ),
+                                child: Text(
+                                  "ESTABLISH CAREER",
+                                  style: GoogleFonts.poppins(
+                                    fontWeight: FontWeight.w900,
+                                    fontSize: 15,
+                                    color: const Color(0xFF00C853),
+                                    letterSpacing: 1.2,
+                                  ),
+                                ),
                               ),
                             ),
-                            child: const Text(
-                              "ESTABLISH CAREER",
-                              style: TextStyle(
-                                fontWeight: FontWeight.w900,
-                                fontSize: 18,
-                                letterSpacing: 1.2,
-                              ),
-                            ),
-                          ),
+                          ],
                         ),
                       ],
                     ),
@@ -402,7 +431,7 @@ class _CreateManagerScreenState extends State<CreateManagerScreen> {
   Widget _buildSectionTitle(String title) {
     return Text(
       title,
-      style: TextStyle(
+      style: GoogleFonts.poppins(
         fontSize: 14,
         fontWeight: FontWeight.w900,
         color: Theme.of(context).colorScheme.secondary,
@@ -419,9 +448,9 @@ class _CreateManagerScreenState extends State<CreateManagerScreen> {
     return TextFormField(
       controller: controller,
       keyboardType: keyboardType,
-      style: const TextStyle(
+      style: GoogleFonts.raleway(
         fontWeight: FontWeight.w600,
-        color: Colors.black87,
+        color: Colors.white,
       ),
       decoration: _inputDeco(label),
       validator: (v) => v == null || v.isEmpty ? "Required" : null,
@@ -434,34 +463,34 @@ class _CreateManagerScreenState extends State<CreateManagerScreen> {
           ? Container(
               padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
               decoration: BoxDecoration(
-                color: Colors.white,
+                color: const Color(0xFF292A33),
                 borderRadius: BorderRadius.circular(12),
               ),
               child: Text(label),
             )
           : null,
-      labelStyle: TextStyle(
-        color: Colors.grey.shade600,
+      labelStyle: GoogleFonts.raleway(
+        color: Colors.white.withValues(alpha: 0.7),
         fontWeight: FontWeight.w500,
       ),
-      floatingLabelStyle: TextStyle(
+      floatingLabelStyle: GoogleFonts.raleway(
         color: Theme.of(context).colorScheme.secondary,
         fontWeight: FontWeight.bold,
       ),
       floatingLabelBehavior: FloatingLabelBehavior.auto,
       contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 20),
       filled: true,
-      fillColor: Colors.white,
+      fillColor: const Color(0xFF292A33),
       border: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(100),
+        borderRadius: BorderRadius.circular(12),
         borderSide: BorderSide.none,
       ),
       enabledBorder: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(100),
+        borderRadius: BorderRadius.circular(12),
         borderSide: BorderSide(color: Colors.white.withValues(alpha: 0.1)),
       ),
       focusedBorder: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(100),
+        borderRadius: BorderRadius.circular(12),
         borderSide: BorderSide(
           color: Theme.of(context).colorScheme.secondary,
           width: 2,
@@ -484,12 +513,17 @@ class _CreateManagerScreenState extends State<CreateManagerScreen> {
             width: 180,
             padding: const EdgeInsets.all(16),
             decoration: BoxDecoration(
+              gradient: const LinearGradient(
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+                colors: [Color(0xFF1E1E1E), Color(0xFF0A0A0A)],
+              ),
+              borderRadius: BorderRadius.circular(12),
               color: isSelected
                   ? Theme.of(
                       context,
                     ).colorScheme.secondary.withValues(alpha: 0.1)
-                  : Theme.of(context).cardTheme.color,
-              borderRadius: BorderRadius.circular(100),
+                  : null,
               border: Border.all(
                 color: isSelected
                     ? Theme.of(context).colorScheme.secondary
@@ -506,7 +540,10 @@ class _CreateManagerScreenState extends State<CreateManagerScreen> {
                 const SizedBox(height: 8),
                 Text(
                   role['title'],
-                  style: const TextStyle(fontWeight: FontWeight.bold),
+                  style: GoogleFonts.raleway(
+                    fontWeight: FontWeight.bold,
+                    color: Colors.white,
+                  ),
                 ),
               ],
             ),
@@ -519,10 +556,18 @@ class _CreateManagerScreenState extends State<CreateManagerScreen> {
   Widget _buildDesktopRoles() {
     var selectedRole = _roles[_selectedRoleIndex];
     return Container(
-      height: 400,
+      height: 350,
       decoration: BoxDecoration(
-        color: Theme.of(context).cardTheme.color,
-        borderRadius: BorderRadius.circular(100),
+        gradient: const LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [Color(0xFF1E1E1E), Color(0xFF0A0A0A)],
+        ),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(
+          color: Colors.white.withValues(alpha: 0.1),
+          width: 1,
+        ),
       ),
       clipBehavior: Clip.antiAlias,
       child: Row(
@@ -530,8 +575,10 @@ class _CreateManagerScreenState extends State<CreateManagerScreen> {
           Container(
             width: 250,
             decoration: BoxDecoration(
-              color: Colors.grey.shade50,
-              border: Border(right: BorderSide(color: Colors.grey.shade200)),
+              color: Colors.white.withValues(alpha: 0.03),
+              border: Border(
+                right: BorderSide(color: Colors.white.withValues(alpha: 0.1)),
+              ),
             ),
             child: ListView.builder(
               itemCount: _roles.length,
@@ -546,13 +593,13 @@ class _CreateManagerScreenState extends State<CreateManagerScreen> {
                   ),
                   title: Text(
                     _roles[index]['title'],
-                    style: TextStyle(
+                    style: GoogleFonts.raleway(
                       fontWeight: isSelected
                           ? FontWeight.bold
                           : FontWeight.normal,
                       color: isSelected
-                          ? const Color(0xFF10B981)
-                          : Colors.black,
+                          ? Theme.of(context).colorScheme.secondary
+                          : Colors.white.withValues(alpha: 0.7),
                     ),
                   ),
                   onTap: () => setState(() => _selectedRoleIndex = index),
@@ -584,16 +631,17 @@ class _CreateManagerScreenState extends State<CreateManagerScreen> {
                           children: [
                             Text(
                               selectedRole['title'].toUpperCase(),
-                              style: const TextStyle(
+                              style: GoogleFonts.poppins(
                                 fontSize: 24,
                                 fontWeight: FontWeight.w900,
+                                color: Colors.white,
                                 letterSpacing: -0.5,
                               ),
                             ),
                             Text(
                               selectedRole['desc'],
-                              style: TextStyle(
-                                color: Colors.grey.shade600,
+                              style: GoogleFonts.raleway(
+                                color: Colors.white.withValues(alpha: 0.7),
                                 fontStyle: FontStyle.italic,
                               ),
                             ),
@@ -611,12 +659,13 @@ class _CreateManagerScreenState extends State<CreateManagerScreen> {
                             children: [
                               Text(
                                 "ADVANTAGES",
-                                style: TextStyle(
+                                style: GoogleFonts.poppins(
                                   color: Theme.of(
                                     context,
                                   ).colorScheme.secondary,
-                                  fontWeight: FontWeight.bold,
+                                  fontWeight: FontWeight.w900,
                                   fontSize: 12,
+                                  letterSpacing: 1.2,
                                 ),
                               ),
                               const SizedBox(height: 12),
@@ -636,9 +685,12 @@ class _CreateManagerScreenState extends State<CreateManagerScreen> {
                                       Expanded(
                                         child: Text(
                                           p,
-                                          style: const TextStyle(
+                                          style: GoogleFonts.raleway(
                                             fontSize: 13,
                                             fontWeight: FontWeight.w500,
+                                            color: Colors.white.withValues(
+                                              alpha: 0.9,
+                                            ),
                                           ),
                                         ),
                                       ),
@@ -654,12 +706,13 @@ class _CreateManagerScreenState extends State<CreateManagerScreen> {
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              const Text(
+                              Text(
                                 "DISADVANTAGES",
-                                style: TextStyle(
+                                style: GoogleFonts.poppins(
                                   color: Colors.redAccent,
-                                  fontWeight: FontWeight.bold,
+                                  fontWeight: FontWeight.w900,
                                   fontSize: 12,
+                                  letterSpacing: 1.2,
                                 ),
                               ),
                               const SizedBox(height: 12),
@@ -677,9 +730,12 @@ class _CreateManagerScreenState extends State<CreateManagerScreen> {
                                       Expanded(
                                         child: Text(
                                           c,
-                                          style: const TextStyle(
+                                          style: GoogleFonts.raleway(
                                             fontSize: 13,
                                             fontWeight: FontWeight.w500,
+                                            color: Colors.white.withValues(
+                                              alpha: 0.9,
+                                            ),
                                           ),
                                         ),
                                       ),

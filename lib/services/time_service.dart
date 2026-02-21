@@ -208,4 +208,38 @@ class TimeService {
     if (days > 0) return "${days}d ${hours}h ${minutes}m";
     return "${hours.toString().padLeft(2, '0')}:${minutes.toString().padLeft(2, '0')}:${seconds.toString().padLeft(2, '0')}";
   }
+
+  DateTime getCurrentWeekQualyDate(DateTime now, DateTime? raceDate) {
+    if (raceDate != null) {
+      return DateTime(
+        raceDate.year,
+        raceDate.month,
+        raceDate.day,
+      ).subtract(const Duration(days: 1)).add(const Duration(hours: 14));
+    }
+    int daysFromMon = now.weekday - 1;
+    DateTime monday = DateTime(
+      now.year,
+      now.month,
+      now.day,
+    ).subtract(Duration(days: daysFromMon));
+    return monday.add(const Duration(days: 5, hours: 14));
+  }
+
+  DateTime getCurrentWeekRaceDate(DateTime now, DateTime? raceDate) {
+    if (raceDate != null) {
+      return DateTime(
+        raceDate.year,
+        raceDate.month,
+        raceDate.day,
+      ).add(const Duration(hours: 14));
+    }
+    int daysFromMon = now.weekday - 1;
+    DateTime monday = DateTime(
+      now.year,
+      now.month,
+      now.day,
+    ).subtract(Duration(days: daysFromMon));
+    return monday.add(const Duration(days: 6, hours: 14));
+  }
 }

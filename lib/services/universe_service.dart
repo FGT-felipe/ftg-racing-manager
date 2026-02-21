@@ -102,6 +102,28 @@ class UniverseService {
     await saveUniverse(updatedUniverse);
   }
 
+  /// Agrega una nueva liga al universo actual sin sobreescribirlo completamente
+  Future<void> addLeague(FtgLeague newLeague) async {
+    final universe = await getUniverse();
+    if (universe == null) {
+      throw Exception('Universe not initialized. Cannot add league.');
+    }
+
+    // Verificar si ya existe para evitar duplicados por ID
+    final exists = universe.leagues.any((l) => l.id == newLeague.id);
+    if (exists) {
+      throw Exception(
+        'League with ID ${newLeague.id} already exists in the Universe.',
+      );
+    }
+
+    final updatedLeagues = List<FtgLeague>.from(universe.leagues)
+      ..add(newLeague);
+    final updatedUniverse = universe.copyWith(leagues: updatedLeagues);
+
+    await saveUniverse(updatedUniverse);
+  }
+
   /// Elimina todo el universo (útil para testing/debugging)
   Future<void> deleteUniverse() async {
     await _db.collection('universe').doc(_universeDocId).delete();

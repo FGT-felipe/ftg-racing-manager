@@ -1,7 +1,9 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart' hide Transaction;
+import 'package:firebase_auth/firebase_auth.dart';
 import '../../models/core_models.dart';
+import '../../models/user_models.dart';
 import '../../models/simulation_models.dart';
 import '../../services/driver_assignment_service.dart';
 import '../../services/race_service.dart';
@@ -89,6 +91,9 @@ class _GarageScreenState extends State<GarageScreen>
   final Set<String> _practiceDnfs = {};
   final Set<String> _qualifyingDnfs = {};
 
+  // Manager Role
+  ManagerRole? _managerRole;
+
   // Setup tab: 0=Practice, 1=Qualifying, 2=Race
   late TabController _tabController;
   AnimationController? _blinkingController;
@@ -114,6 +119,22 @@ class _GarageScreenState extends State<GarageScreen>
   Future<void> _loadInitialData() async {
     setState(() => _isLoading = true);
     try {
+      // 0. Load manager role
+      final uid = FirebaseAuth.instance.currentUser?.uid;
+      if (uid != null) {
+        final mgrDoc = await FirebaseFirestore.instance
+            .collection('managers')
+            .doc(uid)
+            .get();
+        if (mgrDoc.exists) {
+          final roleStr = mgrDoc.data()?['role'] ?? 'noExperience';
+          _managerRole = ManagerRole.values.firstWhere(
+            (e) => e.name == roleStr,
+            orElse: () => ManagerRole.noExperience,
+          );
+        }
+      }
+
       // 1. Fetch Drivers first so we can map setups
       _drivers = await DriverAssignmentService().getDriversByTeam(
         widget.teamId,
@@ -2956,6 +2977,11 @@ class _GarageScreenState extends State<GarageScreen>
       ),
     ];
 
+    // Filter: mostRisky only available for Ex-Driver managers
+    final filteredStyles = _managerRole == ManagerRole.exDriver
+        ? styles
+        : styles.where((s) => s.$1 != DriverStyle.mostRisky).toList();
+
     final isPractice = lapsToRun != null;
 
     return Container(
@@ -3001,7 +3027,7 @@ class _GarageScreenState extends State<GarageScreen>
                 opacity: editable ? 1.0 : 0.5,
                 child: Row(
                   mainAxisAlignment: MainAxisAlignment.start,
-                  children: styles.map((entry) {
+                  children: filteredStyles.map((entry) {
                     final style = entry.$1;
                     final icon = entry.$2;
                     final color = entry.$3;
@@ -3209,7 +3235,7 @@ class _GarageScreenState extends State<GarageScreen>
       DriverStyle currentStyle,
       void Function(DriverStyle) onStyleChanged,
     ) {
-      final styles = [
+      final allStyles = [
         (
           DriverStyle.defensive,
           Icons.keyboard_arrow_down,
@@ -3227,6 +3253,11 @@ class _GarageScreenState extends State<GarageScreen>
           const Color(0xFFFF3D3D),
         ),
       ];
+
+      // Filter: mostRisky only available for Ex-Driver managers
+      final styles = _managerRole == ManagerRole.exDriver
+          ? allStyles
+          : allStyles.where((s) => s.$1 != DriverStyle.mostRisky).toList();
 
       return Row(
         mainAxisSize: MainAxisSize.min,
