@@ -912,10 +912,10 @@ class AppLocalizationsEn extends AppLocalizations {
   String get qHeader => 'Q Header';
 
   @override
-  String get rHeader => 'R Header';
+  String get rHeader => 'R';
 
   @override
-  String get pHeader => 'P Header';
+  String get pHeader => 'P';
 
   @override
   String get careerHistoryTitle => 'Career History';
@@ -930,7 +930,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get seriesHeader => 'Series Header';
 
   @override
-  String get wHeader => 'W Header';
+  String get wHeader => 'W';
 
   @override
   String get historyIndividual => 'History Individual';
@@ -1591,10 +1591,10 @@ class AppLocalizationsEn extends AppLocalizations {
   String get raceResults => 'Race Results';
 
   @override
-  String get standingsTeam => 'Standings Team';
+  String get standingsTeam => 'Team';
 
   @override
-  String get standingsPoints => 'Standings Points';
+  String get standingsPoints => 'Points';
 
   @override
   String get insufficientBudgetForNameChange =>

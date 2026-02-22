@@ -1715,13 +1715,13 @@ abstract class AppLocalizations {
   /// No description provided for @rHeader.
   ///
   /// In en, this message translates to:
-  /// **'R Header'**
+  /// **'R'**
   String get rHeader;
 
   /// No description provided for @pHeader.
   ///
   /// In en, this message translates to:
-  /// **'P Header'**
+  /// **'P'**
   String get pHeader;
 
   /// No description provided for @careerHistoryTitle.
@@ -1751,7 +1751,7 @@ abstract class AppLocalizations {
   /// No description provided for @wHeader.
   ///
   /// In en, this message translates to:
-  /// **'W Header'**
+  /// **'W'**
   String get wHeader;
 
   /// No description provided for @historyIndividual.
@@ -3005,13 +3005,13 @@ abstract class AppLocalizations {
   /// No description provided for @standingsTeam.
   ///
   /// In en, this message translates to:
-  /// **'Standings Team'**
+  /// **'Team'**
   String get standingsTeam;
 
   /// No description provided for @standingsPoints.
   ///
   /// In en, this message translates to:
-  /// **'Standings Points'**
+  /// **'Points'**
   String get standingsPoints;
 
   /// No description provided for @insufficientBudgetForNameChange.
