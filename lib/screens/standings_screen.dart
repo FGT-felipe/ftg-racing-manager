@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:ftg_racing_manager/l10n/app_localizations.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import '../models/core_models.dart';
@@ -93,8 +94,12 @@ class _StandingsScreenState extends State<StandingsScreen> {
             }
 
             if (selectedLeague == null) {
-              return const Center(child: Text("No leagues available."));
+              return Center(
+                child: Text(AppLocalizations.of(context).noTeamsAvailable),
+              );
             }
+
+            final l10n = AppLocalizations.of(context);
 
             return Padding(
               padding: const EdgeInsets.all(16.0),
@@ -117,7 +122,8 @@ class _StandingsScreenState extends State<StandingsScreen> {
                                 final seasonYear =
                                     seasonSnapshot.data?.year ?? 2026;
                                 return Text(
-                                  "STANDINGS SEASON $seasonYear".toUpperCase(),
+                                  "${l10n.standingsTitle} $seasonYear"
+                                      .toUpperCase(),
                                   style: GoogleFonts.poppins(
                                     fontSize: 24,
                                     fontWeight: FontWeight.w900,
@@ -205,10 +211,14 @@ class _StandingsScreenState extends State<StandingsScreen> {
                                 fontWeight: FontWeight.bold,
                                 letterSpacing: 1.2,
                               ),
-                              tabs: const [
-                                Tab(text: "DRIVERS"),
-                                Tab(text: "CONSTRUCTORS"),
-                                Tab(text: "LAST RACE"),
+                              tabs: [
+                                Tab(text: l10n.navDrivers.toUpperCase()),
+                                Tab(
+                                  text: l10n.standingsConstructorTitle
+                                      .split(' ')[0]
+                                      .toUpperCase(),
+                                ),
+                                Tab(text: l10n.raceResults.toUpperCase()),
                               ],
                             ),
                             Divider(
@@ -258,7 +268,7 @@ class _DriversStandingsTab extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     if (league.teams.isEmpty) {
-      return const Center(child: Text("No teams in this league."));
+      return Center(child: Text(AppLocalizations.of(context).noTeamsAvailable));
     }
 
     final drivers = List<Driver>.from(league.drivers);
@@ -276,9 +286,20 @@ class _DriversStandingsTab extends StatelessWidget {
       ranks[drivers[i].id] = i + 1;
     }
 
+    final l10n = AppLocalizations.of(context);
+
     return _StandingsTable(
       flexValues: const [1, 4, 4, 1, 1, 1, 1, 2],
-      columns: const ["Pos", "Driver", "Team", "R", "W", "P", "Pl", "Pts"],
+      columns: [
+        l10n.standingsPos,
+        l10n.standingsDriver,
+        l10n.standingsTeam,
+        l10n.rHeader,
+        l10n.wHeader,
+        l10n.pHeader,
+        "Pl", // Pole
+        l10n.standingsPoints,
+      ],
       highlightIndices: drivers
           .asMap()
           .entries
@@ -382,7 +403,7 @@ class _ConstructorsStandingsTabState extends State<_ConstructorsStandingsTab> {
   @override
   Widget build(BuildContext context) {
     if (widget.league.teams.isEmpty) {
-      return const Center(child: Text("No teams in this league."));
+      return Center(child: Text(AppLocalizations.of(context).noTeamsAvailable));
     }
 
     final teams = List<Team>.from(widget.league.teams);
@@ -399,9 +420,19 @@ class _ConstructorsStandingsTabState extends State<_ConstructorsStandingsTab> {
       ranks[teams[i].id] = i + 1;
     }
 
+    final l10n = AppLocalizations.of(context);
+
     return _StandingsTable(
       flexValues: const [1, 7, 1, 1, 1, 1, 2],
-      columns: const ["Pos", "Team", "R", "W", "P", "Pl", "Pts"],
+      columns: [
+        l10n.standingsPos,
+        l10n.standingsTeam,
+        l10n.rHeader,
+        l10n.wHeader,
+        l10n.pHeader,
+        "Pl",
+        l10n.standingsPoints,
+      ],
       highlightIndices: teams
           .asMap()
           .entries
@@ -480,10 +511,13 @@ class _LastRaceStandingsTab extends StatelessWidget {
               (r) => r.isCompleted,
             );
             if (lastRaceIndex == -1) {
-              return const Center(
+              return Center(
                 child: Text(
-                  "The season hasn't started yet.",
-                  style: TextStyle(fontSize: 16, fontStyle: FontStyle.italic),
+                  AppLocalizations.of(context).noDataAvailableYet,
+                  style: const TextStyle(
+                    fontSize: 16,
+                    fontStyle: FontStyle.italic,
+                  ),
                 ),
               );
             }
@@ -503,8 +537,10 @@ class _LastRaceStandingsTab extends StatelessWidget {
                 final raceData =
                     raceSnapshot.data!.data() as Map<String, dynamic>?;
                 if (raceData == null || raceData['qualifyingResults'] == null) {
-                  return const Center(
-                    child: Text("No data available for the last race."),
+                  return Center(
+                    child: Text(
+                      AppLocalizations.of(context).noDataAvailableYet,
+                    ),
                   );
                 }
 
@@ -512,11 +548,13 @@ class _LastRaceStandingsTab extends StatelessWidget {
                   raceData['qualifyingResults'] ?? [],
                 );
 
+                final l10n = AppLocalizations.of(context);
+
                 return ListView(
                   padding: const EdgeInsets.all(16),
                   children: [
                     Text(
-                      "RESULTS: ${lastRaceEvent.trackName}",
+                      "${l10n.raceResults}: ${lastRaceEvent.trackName}",
                       style: TextStyle(
                         fontWeight: FontWeight.bold,
                         fontSize: 16,
@@ -524,16 +562,21 @@ class _LastRaceStandingsTab extends StatelessWidget {
                       ),
                     ),
                     const SizedBox(height: 16),
-                    const Text(
-                      "DRIVER RESULTS",
-                      style: TextStyle(
+                    Text(
+                      l10n.raceDayRacePositions.toUpperCase(),
+                      style: const TextStyle(
                         fontWeight: FontWeight.bold,
                         fontSize: 13,
                       ),
                     ),
                     _StandingsTable(
                       flexValues: const [1, 4, 4, 2],
-                      columns: const ["Pos", "Driver", "Team", "Pts"],
+                      columns: [
+                        l10n.standingsPos,
+                        l10n.standingsDriver,
+                        l10n.standingsTeam,
+                        l10n.standingsPoints,
+                      ],
                       highlightIndices: results
                           .take(10)
                           .toList()
@@ -569,9 +612,9 @@ class _LastRaceStandingsTab extends StatelessWidget {
                       }).toList(),
                     ),
                     const SizedBox(height: 24),
-                    const Text(
-                      "CONSTRUCTOR RESULTS",
-                      style: TextStyle(
+                    Text(
+                      l10n.standingsConstructorTitle.toUpperCase(),
+                      style: const TextStyle(
                         fontWeight: FontWeight.bold,
                         fontSize: 13,
                       ),
@@ -593,7 +636,11 @@ class _LastRaceStandingsTab extends StatelessWidget {
 
                         return _StandingsTable(
                           flexValues: const [1, 7, 2],
-                          columns: const ["Pos", "Team", "Pts"],
+                          columns: [
+                            l10n.standingsPos,
+                            l10n.standingsTeam,
+                            l10n.standingsPoints,
+                          ],
                           highlightIndices: constructorResults
                               .asMap()
                               .entries

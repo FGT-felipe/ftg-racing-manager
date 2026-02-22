@@ -3,6 +3,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../../services/auth_service.dart';
+import '../../l10n/app_localizations.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -34,7 +35,9 @@ class _LoginScreenState extends State<LoginScreen> {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text("Google Auth Error: ${e.toString()}"),
+            content: Text(
+              AppLocalizations.of(context).googleAuthError(e.toString()),
+            ),
             backgroundColor: Colors.red,
           ),
         );
@@ -76,9 +79,9 @@ class _LoginScreenState extends State<LoginScreen> {
         );
       }
     } on FirebaseAuthException catch (e) {
-      String message = "Auth Error: ${e.message}";
+      String message = AppLocalizations.of(context).authError(e.message ?? '');
       if (e.code == 'email-already-in-use') {
-        message = "This email is already registered. Please log in instead.";
+        message = AppLocalizations.of(context).emailAlreadyRegistered;
       }
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -89,7 +92,9 @@ class _LoginScreenState extends State<LoginScreen> {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text("An unexpected error occurred: ${e.toString()}"),
+            content: Text(
+              AppLocalizations.of(context).unexpectedError(e.toString()),
+            ),
             backgroundColor: Colors.red,
           ),
         );
@@ -163,7 +168,7 @@ class _LoginScreenState extends State<LoginScreen> {
 
                     // ── "Formula Track Glory" ──
                     Text(
-                      "Formula Track Glory",
+                      AppLocalizations.of(context).formulaTrackGlory,
                       style: GoogleFonts.montserrat(
                         fontWeight: FontWeight.w300,
                         fontSize: 14,
@@ -175,7 +180,7 @@ class _LoginScreenState extends State<LoginScreen> {
 
                     // ── Slogan ──
                     Text(
-                      "Your Strategy, Your Team, Your Glory",
+                      AppLocalizations.of(context).ftgSlogan,
                       textAlign: TextAlign.center,
                       style: GoogleFonts.montserrat(
                         fontWeight: FontWeight.w600,
@@ -206,8 +211,8 @@ class _LoginScreenState extends State<LoginScreen> {
                       },
                       child: Text(
                         _isRegistering
-                            ? "Already have an account? Sign In"
-                            : "New manager? Join the Paddock",
+                            ? AppLocalizations.of(context).alreadyHaveAccount
+                            : AppLocalizations.of(context).newManagerJoin,
                         style: TextStyle(
                           color: Colors.white.withValues(alpha: 0.7),
                           fontWeight: FontWeight.w600,
@@ -219,7 +224,7 @@ class _LoginScreenState extends State<LoginScreen> {
 
                     // ── Footer ──
                     Text(
-                      "v3.0.0  ·  FIRETOWER GAMES STUDIO",
+                      AppLocalizations.of(context).versionFooter,
                       style: TextStyle(
                         fontSize: 9,
                         color: Colors.white.withValues(alpha: 0.25),
@@ -245,9 +250,9 @@ class _LoginScreenState extends State<LoginScreen> {
       child: OutlinedButton.icon(
         onPressed: _isLoading ? null : _signInWithGoogle,
         icon: const Icon(Icons.g_mobiledata, size: 28),
-        label: const Text(
-          "CONTINUE WITH GOOGLE",
-          style: TextStyle(
+        label: Text(
+          AppLocalizations.of(context).continueWithGoogle,
+          style: const TextStyle(
             fontWeight: FontWeight.w800,
             letterSpacing: 1.2,
             fontSize: 13,
@@ -285,7 +290,7 @@ class _LoginScreenState extends State<LoginScreen> {
         Padding(
           padding: const EdgeInsets.symmetric(horizontal: 16),
           child: Text(
-            "OR USE EMAIL",
+            AppLocalizations.of(context).orUseEmail,
             style: TextStyle(
               fontSize: 10,
               color: Colors.white.withValues(alpha: 0.35),
@@ -323,7 +328,7 @@ class _LoginScreenState extends State<LoginScreen> {
                 Expanded(
                   child: _buildTextField(
                     controller: _nameCtrl,
-                    label: "First Name",
+                    label: AppLocalizations.of(context).firstNameLabel,
                     icon: Icons.person_outline,
                   ),
                 ),
@@ -331,7 +336,7 @@ class _LoginScreenState extends State<LoginScreen> {
                 Expanded(
                   child: _buildTextField(
                     controller: _lastNameCtrl,
-                    label: "Last Name",
+                    label: AppLocalizations.of(context).lastNameLabel,
                     icon: Icons.person_outline,
                   ),
                 ),
@@ -341,14 +346,14 @@ class _LoginScreenState extends State<LoginScreen> {
           ],
           _buildTextField(
             controller: _emailCtrl,
-            label: "Email Address",
+            label: AppLocalizations.of(context).emailAddressLabel,
             keyboardType: TextInputType.emailAddress,
             icon: Icons.email_outlined,
           ),
           const SizedBox(height: 14),
           _buildTextField(
             controller: _passCtrl,
-            label: "Password",
+            label: AppLocalizations.of(context).passwordLabel,
             obscureText: true,
             icon: Icons.lock_outline,
           ),
@@ -381,7 +386,9 @@ class _LoginScreenState extends State<LoginScreen> {
                       ),
                     )
                   : Text(
-                      _isRegistering ? "CREATE ACCOUNT" : "SIGN IN",
+                      _isRegistering
+                          ? AppLocalizations.of(context).createAccountBtn
+                          : AppLocalizations.of(context).signInBtn,
                       style: const TextStyle(
                         fontWeight: FontWeight.w900,
                         letterSpacing: 1.5,

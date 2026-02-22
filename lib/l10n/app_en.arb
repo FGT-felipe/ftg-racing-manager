@@ -1,173 +1,333 @@
 {
-  "appTitle": "FireTower Racing",
+  "@@locale": "en",
+  "appTitle": "FTG Racing Manager",
   "@appTitle": {
     "description": "The title of the application"
   },
-  "jobMarketTitle": "Open Contracts",
-  "signContract": "Sign Contract",
-  "budgetLabel": "Budget",
-  "availableLabel": "Available",
-  "takenLabel": "Taken",
-  "driversLabel": "Drivers",
-  "initializeWorld": "Initialize Universe",
-  "currencySymbol": "$",
-  "millionsSuffix": "M",
-  "signContractError": "Error signing contract",
-  "teamDetails": "Team Details",
-  "hqTitle": "Headquarters",
-  "activeDrivers": "Active Drivers",
-  "driverStats": "Stats",
-  "speed": "Speed",
-  "cornering": "Cornering",
-  "nextRace": "Next Race",
-  "gpPlaceholder": "GP Sao Paulo (Coming Soon)",
-  "ageLabel": "{age} yo",
-  "@ageLabel": {
+  "loading": "Loading...",
+  "error": "Error: {message}",
+  "@error": {
     "placeholders": {
-      "age": {
-        "type": "int"
-      }
+      "message": { "type": "String" }
     }
   },
-  "potentialLabel": "Pot: {value}",
-  "@potentialLabel": {
+  "save": "Save",
+  "cancel": "Cancel",
+  "delete": "Delete",
+  "edit": "Edit",
+  "add": "Add",
+  "name": "Name",
+  "description": "Description",
+  "paddockTitle": "PADDOCK",
+  "garageTitle": "GARAGE",
+  "hqTitle": "HEADQUARTERS",
+  "standingsTitle": "STANDINGS",
+  "newsTitle": "PRESS NEWS",
+  "officeTitle": "OFFICE",
+  "settingsTitle": "SETTINGS",
+  "nextRace": "NEXT RACE",
+  "raceDaySundayTime": "SUNDAY, 14:00 LOCAL",
+  "raceDayRaceTime": "RACE: {time}",
+  "raceDaySunday": "SUNDAY",
+  "raceDayLive": "LIVE",
+  "raceDayLoadingData": "Loading race data...",
+  "raceDayTitle": "RACE DAY",
+  "raceDayLap": "LAP",
+  "raceDayFastestLap": "FASTEST LAP",
+  "raceDayRacePositions": "RACE POSITIONS",
+  "raceDayInBoxes": "IN BOXES",
+  "raceDayRaceLabel": "RACE",
+  "raceDayPitBoard": "PIT BOARD",
+  "raceDayCommentary": "COMMENTARY",
+  "raceCompletedResults": "RACE COMPLETED — RESULTS",
+  "raceFinished": "FINISHED",
+  "racePreRace": "PRE-RACE",
+  "raceLightsOutSoon": "LIGHTS OUT SOON",
+  "noEventsYet": "No events recorded yet. Stand by for lights out.",
+  "raceWaitingStart": "Waiting for race start...",
+  "retired": "RETIRED",
+  "leader": "LEADER",
+  "standingsInterval": "INTERVAL",
+  "standingsPos": "POS",
+  "standingsDriver": "DRIVER",
+  "navDrivers": "DRIVERS",
+  "navEvents": "EVENTS",
+  "garageEvents": "GARAGE EVENTS",
+  "waitingForLightsOut": "Waiting for lights out...",
+  "commentatorsStandingBy": "Commentators standing by for the start...",
+  "practiceTab": "PRACTICE",
+  "qualifyingTab": "QUALIFYING",
+  "raceTab": "RACE",
+  "garageRaceSetupSubmitted": "Race setup submitted ✓",
+  "garageError": "Error: {message}",
+  "@garageError": {
     "placeholders": {
-      "value": {
-        "type": "int"
-      }
+      "message": { "type": "String" }
     }
   },
-  "starMaterial": "Star Material",
-  "veteran": "Veteran",
-  "rookie": "Rookie",
-  "engineeringTitle": "R&D Lab",
-  "aero": "Aerodynamics",
-  "engine": "Powertrain",
-  "reliability": "Reliability",
-  "upgradeBtn": "Develop (+1)",
-  "costLabel": "Cost: {symbol}{cost}",
-  "@costLabel": {
+  "garageDriverCrashedSessionOver": "This driver has crashed and cannot run again this session.",
+  "garageDriverCrashedSessionOverDetails": "Repair and medical costs have been applied. This driver cannot run again this qualifying session.",
+  "garageOutLap": "OUT LAP...",
+  "garagePushing": "PUSHING...",
+  "garageCrashAccident": "CRASH! {name} HAS HAD AN ACCIDENT!",
+  "@garageCrashAccident": {
     "placeholders": {
-      "symbol": {
-        "type": "String"
-      },
-      "cost": {
-        "type": "String"
-      }
+      "name": { "type": "String" }
     }
   },
-  "insufficientFunds": "Insufficient Funds",
-  "simulateBtn": "Simulate Race",
-  "raceResults": "Race Results",
-  "winner": "Winner",
-  "podium": "Podium",
-  "financialReport": "Financial Report",
-  "earnings": "Earnings",
-  "noDriverAssigned": "No driver assigned",
-  "engineeringWelcome": "Welcome to the R&D Lab",
-  "engineeringDescription": "Improve your cars' performance by developing specific parts. Remember that you can only perform ONE upgrade each week. Use your resources wisely to stay ahead of the competition!",
-  "circuitMexico": "Autodromo Hermanos Rodriguez",
-  "circuitVegas": "Las Vegas Strip Circuit",
-  "circuitInterlagos": "Autódromo José Carlos Pace",
-  "circuitMiami": "Miami International Autodrome",
-  "circuitSanPabloStreet": "Sao Paulo Street Circuit",
-  "circuitIndianapolis": "Indianapolis Motor Speedway",
-  "circuitMontreal": "Circuit Gilles Villeneuve",
-  "circuitTexas": "Circuit of the Americas",
-  "circuitBuenosAires": "Autódromo Oscar y Juan Gálvez",
-  "pitBoardTitle": "PIT BOARD",
-  "pitBoardLeftPits": "{name} left the pits",
-  "@pitBoardLeftPits": {
+  "garageCrashedQualifying": "CRASHED! QUALIFYING OVER",
+  "garageInLap": "IN LAP...",
+  "garageImprovedTime": "✓ {time} — New PB! (Attempt {current}/{total})",
+  "@garageImprovedTime": {
     "placeholders": {
-      "name": {
-        "type": "String"
-      }
+      "time": { "type": "String" },
+      "current": { "type": "int" },
+      "total": { "type": "int" }
     }
   },
-  "pitBoardStartingPractice": "{name} is starting practice series",
-  "@pitBoardStartingPractice": {
+  "garageNoImprovement": "⏱ {time} — No improvement (Attempt {current}/{total})",
+  "@garageNoImprovement": {
     "placeholders": {
-      "name": {
-        "type": "String"
-      }
+      "time": { "type": "String" },
+      "current": { "type": "int" },
+      "total": { "type": "int" }
     }
   },
-  "pitBoardOnLap": "{name} is on lap {current}/{total}",
-  "@pitBoardOnLap": {
+  "garageTabPractice": "PRACTICE",
+  "garageTabQualifying": "QUALIFYING",
+  "garageTabRace": "RACE",
+  "garageSelectDriver": "Select a driver to configure setup",
+  "garageCircuitIntel": "CIRCUIT INTEL",
+  "garageSetupPractice": "PRACTICE SETUP",
+  "garageSetupQualifying": "QUALIFYING SETUP",
+  "garageSetupRace": "RACE SETUP",
+  "garageDriverStyle": "DRIVER STYLE",
+  "garageStartSeries": "START SERIES",
+  "garageRunQualyAttempt": "RUN QUALIFYING ATTEMPT ({current}/{total})",
+  "@garageRunQualyAttempt": {
     "placeholders": {
-      "name": {
-        "type": "String"
-      },
-      "current": {
-        "type": "int"
-      },
-      "total": {
-        "type": "int"
-      }
+      "current": { "type": "int" },
+      "total": { "type": "int" }
     }
   },
-  "pitBoardReturningPits": "{name} is returning to pits",
-  "@pitBoardReturningPits": {
+  "garageParcFermeLabel": "PARC FERMÉ",
+  "garageParcFerme": "PARC FERMÉ: Only front wing and tyres can be changed. (Attempt {current}/{total})",
+  "@garageParcFerme": {
     "placeholders": {
-      "name": {
-        "type": "String"
-      }
+      "current": { "type": "int" },
+      "total": { "type": "int" }
     }
   },
-  "pitBoardInGarage": "{name} is back in the garage",
-  "@pitBoardInGarage": {
+  "garageQualyAttempts": "Attempts: {current}/{total}",
+  "@garageQualyAttempts": {
     "placeholders": {
-      "name": {
-        "type": "String"
-      }
+      "current": { "type": "int" },
+      "total": { "type": "int" }
     }
   },
-  "pitBoardNewPB": "{name} NEW PERSONAL BEST: {time}",
-  "@pitBoardNewPB": {
+  "garageAllAttemptsUsed": "ALL ATTEMPTS USED",
+  "garageMaxQualifyingAttemptsReached": "Max qualifying attempts reached for this session.",
+  "garageBestTime": "BEST: {time}",
+  "@garageBestTime": {
     "placeholders": {
-      "name": {
-        "type": "String"
-      },
-      "time": {
-        "type": "String"
-      }
+      "time": { "type": "String" }
     }
   },
-  "pitBoardNewTeamRecord": "{name} NEW TEAM RECORD: {time}",
+  "garageLastLap": "LAST LAP",
+  "garagePos": "POS",
+  "garageGap": "GAP",
+  "garageTyre": "TYRE",
+  "garageTime": "TIME",
+  "garageLaps": "LAPS",
+  "garageLoadingParticipants": "Loading participants...",
+  "garageQualySessionOpen": "QUALIFYING SESSION OPEN",
+  "garageQualySessionClosed": "QUALIFYING SESSION CLOSED",
+  "garageRaceStrategyDesc": "Configure your complete race strategy and driving styles. This setup will be used during the race itself.",
+  "garageRaceRegulationTyre": "Rule: Hard compound tyres MUST be used at least once during the race.",
+  "garageSubmitRaceSetup": "SUBMIT RACE SETUP",
+  "garageCarConfiguration": "CAR CONFIGURATION",
+  "garageRaceStrategy": "RACE STRATEGY",
+  "garageRaceStart": "RACE START",
+  "garagePitStop": "STOP {number}",
+  "@garagePitStop": {
+    "placeholders": {
+      "number": { "type": "int" }
+    }
+  },
+  "garageAddPitStop": "ADD PIT STOP",
+  "garageFitness": "FITNESS: {value}%",
+  "@garageFitness": {
+    "placeholders": {
+      "value": { "type": "int" }
+    }
+  },
+  "garageDnf": "DNF",
+  "garageRepairMedicalCosts": "Repair and medical costs have been applied. This driver cannot run again this qualifying session.",
+  "garageConfidence": "CONFIDENCE",
+  "garageRestoreSetup": "RESTORE THIS SETUP",
+  "garageSetupRestored": "Setup restored to current session",
+  "garageLapTimes": "LAP TIMES — {name}",
+  "@garageLapTimes": {
+    "placeholders": {
+      "name": { "type": "String" }
+    }
+  },
+  "garageNoLapsYet": "No laps recorded yet",
+  "garageNoFeedbackYet": "No feedback gathered yet",
+  "garageSetQualy": "SET QUALY",
+  "garageSetRace": "SET RACE",
+  "setupFrontWing": "Front Wing",
+  "setupRearWing": "Rear Wing",
+  "setupSuspension": "Suspension",
+  "setupGearRatio": "Gear Ratio",
+  "styleRisky": "RISKY",
+  "styleAttack": "ATTACK",
+  "styleNormal": "NORMAL",
+  "styleConserve": "CONSERVE",
+  "tipRisky": "Most aggressive push — highest risk, highest reward",
+  "tipAttack": "Offensive style — push hard for lap time",
+  "tipNormal": "Balanced driving — default style",
+  "tipConserve": "Defensive / tyre saving style",
+  "tipRegulationStartTyres": "REGULATION: Start tyres are fixed. Drivers must start on the same compound used for their best qualifying lap.",
+  "pitBoardMessageInBox": "IN BOX",
+  "pitBoardMessageReady": "READY",
+  "pitBoardNewTeamRecord": "{name}: NEW TEAM RECORD — {time}!",
   "@pitBoardNewTeamRecord": {
     "placeholders": {
-      "name": {
-        "type": "String"
-      },
-      "time": {
-        "type": "String"
-      }
+      "name": { "type": "String" },
+      "time": { "type": "String" }
     }
   },
-  "pressNewsManagerJoin": "{managerName} has been hired by {teamName} to lead the team to glory in the {leagueName}. Fans believe their background as {roleManager} will not be enough and they will need to make several adjustments to achieve the goals. {mainDriver} thinks {managerSurname} has what it takes at this level, while {secondaryDriver} hopes to prove that with their arrival, many things can change in their favor.",
-  "@pressNewsManagerJoin": {
+  "pitBoardNewPB": "{name}: New Personal Best — {time}",
+  "@pitBoardNewPB": {
     "placeholders": {
-      "managerName": {
-        "type": "String"
-      },
-      "managerSurname": {
-        "type": "String"
-      },
-      "teamName": {
-        "type": "String"
-      },
-      "leagueName": {
-        "type": "String"
-      },
-      "roleManager": {
-        "type": "String"
-      },
-      "mainDriver": {
-        "type": "String"
-      },
-      "secondaryDriver": {
-        "type": "String"
-      }
+      "name": { "type": "String" },
+      "time": { "type": "String" }
+    }
+  },
+  "pitBoardReturningPits": "{name} is returning to the pits...",
+  "@pitBoardReturningPits": {
+    "placeholders": {
+      "name": { "type": "String" }
+    }
+  },
+  "pitBoardInGarage": "{name} is back in the garage.",
+  "@pitBoardInGarage": {
+    "placeholders": {
+      "name": { "type": "String" }
+    }
+  },
+  "pitBoardLeftPits": "{name} IS LEAVING THE PITS",
+  "@pitBoardLeftPits": {
+    "placeholders": {
+      "name": { "type": "String" }
+    }
+  },
+  "pitBoardStartingPractice": "{name} IS STARTING PRACTICE SERIES",
+  "@pitBoardStartingPractice": {
+    "placeholders": {
+      "name": { "type": "String" }
+    }
+  },
+  "pitBoardOnLap": "{name}: LAP {current}/{total}",
+  "@pitBoardOnLap": {
+    "placeholders": {
+      "name": { "type": "String" },
+      "current": { "type": "int" },
+      "total": { "type": "int" }
+    }
+  },
+  "bestPb": "BEST PB",
+  "fastest": "FASTEST",
+  "garagePracticeClosedRace": "PRACTICE CLOSED: Race setup has been submitted.",
+  "garagePracticeClosedQualy": "PRACTICE CLOSED: Qualifying session has started.",
+  "garageQualyIntro": "Configure your qualifying setup and run attempts to set the best lap time. Max attempts: {total}",
+  "@garageQualyIntro": {
+    "placeholders": {
+      "total": { "type": "int" }
+    }
+  },
+  "garageRaceStrategyStintTips": "Optimize fuel load, tyre choices, and driving aggression for each stint.",
+  "setupTyreCompound": "Tyre Compound",
+  "labelFuel": "FUEL",
+  "labelDriveStyle": "DRIVE STYLE",
+  "labelTyres": "TYRES",
+  "labelLaps": "LAPS",
+  "labelLapTime": "LAP TIME",
+  "labelGap": "GAP",
+  "weatherLabel": "WEATHER",
+  "trackTempLabel": "TRACK",
+  "airTempLabel": "AIR",
+  "humidityLabel": "HUMIDITY",
+  "garageMaxLapsReached": "Driver reached max practice laps ({max}). Reducing series to {remaining} laps.",
+  "garageCrashAlert": "CRASH! {name} HAS HAD AN ACCIDENT!",
+  "garageSeriesCompletedConfidence": "Series completed. Setup confidence: {value}%",
+  "garageQualySetupSavedDraft": "Qualifying setup saved (Draft)",
+  "garageRaceSetupSavedDraft": "Race setup draft saved.",
+  "garageDriver": "DRIVER",
+  "garageConstructor": "CONSTRUCTOR",
+  "garageLapsIntel": "LAPS",
+  "garageTyresIntel": "TYRES",
+  "garageWeatherIntel": "WEATHER",
+  "garageEngineIntel": "ENGINE",
+  "garageFuelIntel": "FUEL",
+  "garageAeroIntel": "AERO",
+  "garageWeatherSunny": "SUNNY",
+  "garageWeatherExtremeHigh": "EXTREME",
+  "garageWeatherExtremeLow": "EXTREME LOW",
+  "garageImportant": "IMPORTANT",
+  "garageCrucial": "CRUCIAL",
+  "garageCritical": "CRITICAL",
+  "garageVeryHigh": "VERY HIGH",
+  "garageMaximum": "MAXIMUM",
+  "garageFocus": "FOCUS",
+  "garageQualifyingResults": "QUALIFYING RESULTS",
+  "garageLocked": "LOCKED",
+  "garageLowPriority": "LOW PRIORITY",
+  "garageLapsCount": "Attempts: {current}/{total}",
+  "@garageLapsCount": {
+    "placeholders": {
+      "current": { "type": "int" },
+      "total": { "type": "int" }
+    }
+  },
+  "garageLapsCountShort": "Laps: {count}",
+  "@garageLapsCountShort": {
+    "placeholders": {
+      "count": { "type": "int" }
+    }
+  },
+  "garageDnfSessionOver": "DNF — SESSION OVER",
+  "garageBestPersonal": "PERSONAL BEST",
+  "garageBestLapTimeShort": "PB: {time}",
+  "@garageBestLapTimeShort": {
+    "placeholders": {
+      "time": { "type": "String" }
+    }
+  },
+  "garageLapSetup": "LAP SETUP — {time}",
+  "@garageLapSetup": {
+    "placeholders": {
+      "time": { "type": "String" }
+    }
+  },
+  "garageClose": "CLOSE",
+  "garagePitStopStrategyTooltip": "Plan your pit strategy and tyre compounds.",
+  "garageParcFermeLockedTooltip": "Parc Fermé: This setting cannot be changed.",
+  "garageConfidenceShort": "CONF.",
+  "garagePitBoard": "PIT BOARD",
+  "garageReady": "READY",
+  "garageDriverFeedback": "DRIVER FEEDBACK",
+  "garageNoLapsRecordedYet": "No laps recorded yet",
+  "garageRaceStartTyreRegulation": "Regulation: Must start on best qualifying tyres.",
+  "garageLapsIntelShort": "{count} LAPS",
+  "garageNoFeedbackGatheredYet": "No feedback gathered yet",
+  "garageSetupRestored": "Setup restored to current session",
+  "garageRestoreSetup": "RESTORE THIS SETUP",
+  "garageFitnessPercentage": "FITNESS: {percent}%",
+  "@garageFitnessPercentage": {
+    "placeholders": {
+      "percent": { "type": "int" }
     }
   }
 }

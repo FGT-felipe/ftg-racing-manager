@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
 import '../../services/time_service.dart';
+import '../../l10n/app_localizations.dart';
 
 class TeamHeader extends StatelessWidget {
   final String managerName;
@@ -36,7 +37,7 @@ class TeamHeader extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  "Welcome back, $managerName",
+                  AppLocalizations.of(context).welcomeBackManager(managerName),
                   style: Theme.of(context).textTheme.bodyMedium,
                 ),
                 Text(
@@ -109,7 +110,9 @@ class StatusCard extends StatelessWidget {
           ),
           const SizedBox(height: 12),
           Text(
-            isRaceWeekend ? "SESSION IN PROGRESS" : "TIME UNTIL NEXT SESSION",
+            isRaceWeekend
+                ? AppLocalizations.of(context).sessionInProgress
+                : AppLocalizations.of(context).timeUntilNextSession,
             style: Theme.of(context).textTheme.bodyLarge?.copyWith(
               fontWeight: FontWeight.bold,
               fontSize: 18,
@@ -182,7 +185,7 @@ class FinanceCard extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  "TEAM BUDGET",
+                  AppLocalizations.of(context).teamBudget,
                   style: TextStyle(
                     fontSize: 9,
                     fontWeight: FontWeight.bold,
@@ -207,7 +210,9 @@ class FinanceCard extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.end,
               children: [
                 Text(
-                  isNegative ? "DEFICIT" : "SURPLUS",
+                  isNegative
+                      ? AppLocalizations.of(context).deficit
+                      : AppLocalizations.of(context).surplus,
                   style: TextStyle(
                     color: color,
                     fontSize: 9,
@@ -217,7 +222,7 @@ class FinanceCard extends StatelessWidget {
                 ),
                 const SizedBox(height: 4),
                 Text(
-                  "EST. +\$1.2M",
+                  "${AppLocalizations.of(context).estimatedAbbr} +\$1.2M",
                   style: TextStyle(
                     color: Colors.white.withValues(alpha: 0.5),
                     fontSize: 10,
@@ -312,7 +317,7 @@ class UpcomingCircuitCard extends StatelessWidget {
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
                 Text(
-                  "NEXT GRAND PRIX",
+                  AppLocalizations.of(context).nextGrandPrix,
                   style: Theme.of(context).textTheme.labelSmall?.copyWith(
                     color: Colors.orangeAccent,
                     letterSpacing: 1.2,
@@ -359,7 +364,9 @@ class UpcomingCircuitCard extends StatelessWidget {
                 const Icon(Icons.route, color: Colors.white70, size: 20),
                 const SizedBox(width: 8),
                 Text(
-                  "4.309 km | 71 Laps",
+                  AppLocalizations.of(
+                    context,
+                  ).circuitLengthAndLaps("4.309", "71"),
                   style: const TextStyle(color: Colors.white70),
                 ),
               ],
@@ -468,40 +475,40 @@ class _RaceStatusHeroState extends State<RaceStatusHero>
   Widget build(BuildContext context) {
     // We will compute days, hours, mins, secs dynamically for each countdown inline
 
-    String statusText = "PADDOCK OPEN";
+    String statusText = AppLocalizations.of(context).paddockOpen;
     Color statusColor = const Color(0xFF00C853);
-    String buttonLabel = "ENTER PADDOCK";
+    String buttonLabel = AppLocalizations.of(context).weekendSetupBtn;
     IconData buttonIcon = Icons.speed;
 
     switch (widget.currentStatus) {
       case RaceWeekStatus.practice:
-        statusText = "PADDOCK OPEN";
+        statusText = AppLocalizations.of(context).paddockOpen;
         statusColor = const Color(0xFF00C853);
-        buttonLabel = "WEEKEND SETUP";
+        buttonLabel = AppLocalizations.of(context).weekendSetupBtn;
         buttonIcon = Icons.settings;
         break;
       case RaceWeekStatus.qualifying:
-        statusText = "QUALIFYING";
+        statusText = AppLocalizations.of(context).qualifyingStatus;
         statusColor = const Color(0xFFFFB800);
-        buttonLabel = "VIEW QUALIFYING";
+        buttonLabel = AppLocalizations.of(context).viewQualifyingBtn;
         buttonIcon = Icons.list_alt;
         break;
       case RaceWeekStatus.raceStrategy:
-        statusText = "RACE STRATEGY";
+        statusText = AppLocalizations.of(context).raceStrategyStatus;
         statusColor = const Color(0xFFFF6D00);
-        buttonLabel = "SET RACE STRATEGY";
+        buttonLabel = AppLocalizations.of(context).setRaceStrategyBtn;
         buttonIcon = Icons.tune;
         break;
       case RaceWeekStatus.race:
-        statusText = "RACE WEEKEND";
+        statusText = AppLocalizations.of(context).raceWeekendStatus;
         statusColor = const Color(0xFFFF5252);
-        buttonLabel = "GO TO RACE";
+        buttonLabel = AppLocalizations.of(context).goToRaceBtn;
         buttonIcon = Icons.flag;
         break;
       case RaceWeekStatus.postRace:
-        statusText = "RACE FINISHED";
+        statusText = AppLocalizations.of(context).raceFinishedStatus;
         statusColor = const Color(0xFF9E9E9E);
-        buttonLabel = "VIEW RESULTS";
+        buttonLabel = AppLocalizations.of(context).viewResultsBtn;
         buttonIcon = Icons.emoji_events;
         break;
     }
@@ -618,7 +625,9 @@ class _RaceStatusHeroState extends State<RaceStatusHero>
                                     Expanded(
                                       child: _buildCountdownRow(
                                         context,
-                                        "QUALIFYING",
+                                        AppLocalizations.of(
+                                          context,
+                                        ).qualifyingStatus,
                                         widget.qualyDate,
                                         _timeLeftQualy,
                                         isWide,
@@ -628,7 +637,9 @@ class _RaceStatusHeroState extends State<RaceStatusHero>
                                     Expanded(
                                       child: _buildCountdownRow(
                                         context,
-                                        "RACE",
+                                        AppLocalizations.of(
+                                          context,
+                                        ).raceWeekendStatus,
                                         widget.raceDate,
                                         _timeLeftRace,
                                         isWide,
@@ -648,10 +659,14 @@ class _RaceStatusHeroState extends State<RaceStatusHero>
                             child: Column(
                               crossAxisAlignment: CrossAxisAlignment.end,
                               children: [
-                                _buildIntelHeader("CIRCUIT INTEL"),
+                                _buildIntelHeader(
+                                  AppLocalizations.of(
+                                    context,
+                                  ).circuitIntelTitle,
+                                ),
                                 const SizedBox(height: 8),
                                 _buildIntelRow(
-                                  "LAPS",
+                                  AppLocalizations.of(context).lapsIntel,
                                   "${widget.totalLaps}",
                                   Colors.white,
                                 ),
@@ -682,21 +697,27 @@ class _RaceStatusHeroState extends State<RaceStatusHero>
                                   runSpacing: 4,
                                   children: [
                                     if (widget.aeroWeight >= 0.4)
-                                      _buildCompactChip("AERO", "HIGH"),
+                                      _buildCompactChip(
+                                        AppLocalizations.of(context).aeroIntel,
+                                        AppLocalizations.of(context).highIntel,
+                                      ),
                                     if (widget.powertrainWeight >= 0.4)
-                                      _buildCompactChip("POWER", "HIGH"),
+                                      _buildCompactChip(
+                                        AppLocalizations.of(context).powerIntel,
+                                        AppLocalizations.of(context).highIntel,
+                                      ),
                                     if (widget.characteristics.containsKey(
                                       'Top Speed',
                                     ))
                                       _buildCompactChip(
-                                        "SPEED",
+                                        AppLocalizations.of(context).speedIntel,
                                         widget.characteristics['Top Speed']!,
                                       ),
                                     if (widget.characteristics.containsKey(
                                       'Tyre Wear',
                                     ))
                                       _buildCompactChip(
-                                        "TYRE",
+                                        AppLocalizations.of(context).tyreIntel,
                                         widget.characteristics['Tyre Wear']!,
                                       ),
                                   ],
@@ -898,7 +919,9 @@ class _RaceStatusHeroState extends State<RaceStatusHero>
             ),
           const SizedBox(width: 8),
           Text(
-            isLive ? "ON LIVE" : "OFF LIVE",
+            isLive
+                ? AppLocalizations.of(context).onLive
+                : AppLocalizations.of(context).offLive,
             style: TextStyle(
               fontSize: 10,
               fontWeight: FontWeight.w900,
@@ -1079,7 +1102,7 @@ class PreparationChecklist extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
-            "PRE-RACE CHECKLIST",
+            AppLocalizations.of(context).preRaceChecklist,
             style: TextStyle(
               color: Colors.white.withValues(alpha: 0.4),
               fontSize: 9,
@@ -1090,22 +1113,28 @@ class PreparationChecklist extends StatelessWidget {
           const SizedBox(height: 16),
           _buildItem(
             context,
-            "Practice Program",
-            "$completedLaps/$totalLaps LAPS",
+            AppLocalizations.of(context).practiceProgram,
+            AppLocalizations.of(
+              context,
+            ).completedLapsOf(completedLaps.toString(), totalLaps.toString()),
             completedLaps >= totalLaps,
           ),
           Divider(color: Colors.white.withValues(alpha: 0.05), height: 20),
           _buildItem(
             context,
-            "Qualifying Setup",
-            setupSubmitted ? "READY" : "PENDING",
+            AppLocalizations.of(context).qualifyingSetup,
+            setupSubmitted
+                ? AppLocalizations.of(context).readyStatus
+                : AppLocalizations.of(context).pendingStatus,
             setupSubmitted,
           ),
           Divider(color: Colors.white.withValues(alpha: 0.05), height: 20),
           _buildItem(
             context,
-            "Race Strategy",
-            strategySubmitted ? "READY" : "PENDING",
+            AppLocalizations.of(context).raceStrategyStatus,
+            strategySubmitted
+                ? AppLocalizations.of(context).readyStatus
+                : AppLocalizations.of(context).pendingStatus,
             strategySubmitted,
           ),
         ],

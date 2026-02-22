@@ -8,6 +8,7 @@ import '../../services/auth_service.dart';
 import '../../services/driver_assignment_service.dart';
 import '../../services/universe_service.dart';
 import '../../widgets/car_selector.dart';
+import '../../l10n/app_localizations.dart';
 
 class TeamScreen extends StatefulWidget {
   final String teamId;
@@ -88,9 +89,9 @@ class _TeamScreenState extends State<TeamScreen> {
       if (!isFirstChange && budget < nameChangeCost) {
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
+            SnackBar(
               content: Text(
-                'Insufficient budget! Name change costs \$500,000.',
+                AppLocalizations.of(context).insufficientBudgetForNameChange,
               ),
               backgroundColor: Colors.red,
             ),
@@ -132,8 +133,8 @@ class _TeamScreenState extends State<TeamScreen> {
         });
 
         final message = isFirstChange
-            ? 'Team renamed to "$newName". First change is free!'
-            : 'Team renamed to "$newName". \$500,000 deducted.';
+            ? AppLocalizations.of(context).teamRenamedFree(newName)
+            : AppLocalizations.of(context).teamRenamedPaid(newName);
 
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text(message), backgroundColor: Colors.green),
@@ -202,7 +203,7 @@ class _TeamScreenState extends State<TeamScreen> {
         children: [
           // Section title
           Text(
-            'TEAM IDENTITY',
+            AppLocalizations.of(context).teamIdentityTitle,
             style: GoogleFonts.poppins(
               fontSize: 12,
               fontWeight: FontWeight.w900,
@@ -214,7 +215,7 @@ class _TeamScreenState extends State<TeamScreen> {
 
           // Team Name Display / Edit
           Text(
-            'Team Name',
+            AppLocalizations.of(context).teamNameLabel,
             style: GoogleFonts.raleway(
               fontSize: 11,
               fontWeight: FontWeight.bold,
@@ -260,7 +261,7 @@ class _TeamScreenState extends State<TeamScreen> {
                       setState(() => _isEditing = false);
                     },
                     child: Text(
-                      'CANCEL',
+                      AppLocalizations.of(context).cancelBtn,
                       style: GoogleFonts.poppins(
                         fontSize: 11,
                         fontWeight: FontWeight.w700,
@@ -301,7 +302,7 @@ class _TeamScreenState extends State<TeamScreen> {
                               ),
                             )
                           : Text(
-                              'CONFIRM',
+                              AppLocalizations.of(context).confirmBtn,
                               style: GoogleFonts.poppins(
                                 fontSize: 11,
                                 fontWeight: FontWeight.w900,
@@ -360,7 +361,7 @@ class _TeamScreenState extends State<TeamScreen> {
                     ),
                     const SizedBox(width: 8),
                     Text(
-                      'REGULATIONS',
+                      AppLocalizations.of(context).regulationsTitle,
                       style: GoogleFonts.poppins(
                         fontSize: 10,
                         fontWeight: FontWeight.w900,
@@ -373,13 +374,15 @@ class _TeamScreenState extends State<TeamScreen> {
                 const SizedBox(height: 12),
                 _buildRegulationRow(
                   Icons.card_giftcard_outlined,
-                  'First change: ${_nameChangeCount > 0 ? 'USED' : 'FREE'}',
+                  _nameChangeCount > 0
+                      ? AppLocalizations.of(context).firstChangeUsed
+                      : AppLocalizations.of(context).firstChangeFree,
                   color: _nameChangeCount > 0 ? Colors.white24 : Colors.green,
                 ),
                 const SizedBox(height: 8),
                 _buildRegulationRow(
                   Icons.monetization_on_outlined,
-                  'Next changes: \$500,000 each',
+                  AppLocalizations.of(context).nextChangesCost,
                   color: _nameChangeCount > 0 ? Colors.amber : Colors.white38,
                 ),
               ],
@@ -407,7 +410,9 @@ class _TeamScreenState extends State<TeamScreen> {
                   ),
                   const SizedBox(width: 8),
                   Text(
-                    'RENAMED $_nameChangeCount TIME${_nameChangeCount == 1 ? '' : 'S'}',
+                    AppLocalizations.of(
+                      context,
+                    ).renamedTimesLabel(_nameChangeCount.toString()),
                     style: GoogleFonts.poppins(
                       fontSize: 10,
                       fontWeight: FontWeight.w700,
@@ -496,7 +501,7 @@ class _TeamScreenState extends State<TeamScreen> {
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
                   Text(
-                    'TEAM CAREER STATS',
+                    AppLocalizations.of(context).teamCareerStatsTitle,
                     style: GoogleFonts.poppins(
                       fontSize: 12,
                       fontWeight: FontWeight.w900,
@@ -517,7 +522,7 @@ class _TeamScreenState extends State<TeamScreen> {
                       ),
                     ),
                     child: Text(
-                      'COMBINED DRIVERS',
+                      AppLocalizations.of(context).combinedDriversLabel,
                       style: GoogleFonts.poppins(
                         fontSize: 9,
                         fontWeight: FontWeight.w700,
@@ -543,25 +548,25 @@ class _TeamScreenState extends State<TeamScreen> {
                   children: [
                     _buildCareerStatCircle(
                       context,
-                      'TITLES',
+                      AppLocalizations.of(context).titlesStat,
                       '$totalTitles',
                       Icons.emoji_events_rounded,
                     ),
                     _buildCareerStatCircle(
                       context,
-                      'WINS',
+                      AppLocalizations.of(context).winsStat,
                       '$totalWins',
                       Icons.military_tech_rounded,
                     ),
                     _buildCareerStatCircle(
                       context,
-                      'PODIUMS',
+                      AppLocalizations.of(context).podiumsStat,
                       '$totalPodiums',
                       Icons.star_rounded,
                     ),
                     _buildCareerStatCircle(
                       context,
-                      'RACES',
+                      AppLocalizations.of(context).racesStat,
                       '$totalRaces',
                       Icons.flag_rounded,
                     ),
@@ -647,7 +652,7 @@ class _TeamScreenState extends State<TeamScreen> {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
-          'DRIVER BREAKDOWN',
+          AppLocalizations.of(context).driverBreakdownTitle,
           style: GoogleFonts.poppins(
             fontSize: 10,
             fontWeight: FontWeight.w900,
@@ -672,7 +677,7 @@ class _TeamScreenState extends State<TeamScreen> {
               Expanded(
                 flex: 3,
                 child: Text(
-                  'DRIVER',
+                  AppLocalizations.of(context).driverHeader,
                   style: GoogleFonts.poppins(
                     fontSize: 9,
                     fontWeight: FontWeight.w700,
@@ -681,7 +686,12 @@ class _TeamScreenState extends State<TeamScreen> {
                   ),
                 ),
               ),
-              ...['TITLES', 'WINS', 'PODIUMS', 'RACES'].map(
+              ...[
+                AppLocalizations.of(context).titlesStat,
+                AppLocalizations.of(context).winsStat,
+                AppLocalizations.of(context).podiumsStat,
+                AppLocalizations.of(context).racesStat,
+              ].map(
                 (h) => Expanded(
                   flex: 2,
                   child: Text(
@@ -805,7 +815,7 @@ class _TeamScreenState extends State<TeamScreen> {
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               Text(
-                'TEAM LIVERY',
+                AppLocalizations.of(context).teamLiveryTitle,
                 style: GoogleFonts.poppins(
                   fontSize: 12,
                   fontWeight: FontWeight.w900,
@@ -824,7 +834,7 @@ class _TeamScreenState extends State<TeamScreen> {
                   border: Border.all(color: accentColor.withValues(alpha: 0.2)),
                 ),
                 child: Text(
-                  'SELECT YOUR COLORS',
+                  AppLocalizations.of(context).selectYourColors,
                   style: GoogleFonts.poppins(
                     fontSize: 9,
                     fontWeight: FontWeight.w700,
@@ -867,7 +877,7 @@ class _TeamScreenState extends State<TeamScreen> {
               ),
               const SizedBox(width: 8),
               Text(
-                'Your livery will be shown in race replays and standings.',
+                AppLocalizations.of(context).liveryDescription,
                 style: GoogleFonts.raleway(
                   fontSize: 11,
                   fontWeight: FontWeight.w500,
@@ -947,7 +957,7 @@ class _TeamScreenState extends State<TeamScreen> {
         children: [
           // Section title
           Text(
-            'MANAGER PROFILE',
+            AppLocalizations.of(context).managerProfileSectionTitle,
             style: GoogleFonts.poppins(
               fontSize: 12,
               fontWeight: FontWeight.w900,
@@ -1056,7 +1066,7 @@ class _TeamScreenState extends State<TeamScreen> {
 
           // Advantages
           Text(
-            'ADVANTAGES',
+            AppLocalizations.of(context).advantagesTitle,
             style: GoogleFonts.poppins(
               fontSize: 10,
               fontWeight: FontWeight.w900,
@@ -1092,7 +1102,7 @@ class _TeamScreenState extends State<TeamScreen> {
 
           // Disadvantages
           Text(
-            'DISADVANTAGES',
+            AppLocalizations.of(context).disadvantagesTitle,
             style: GoogleFonts.poppins(
               fontSize: 10,
               fontWeight: FontWeight.w900,

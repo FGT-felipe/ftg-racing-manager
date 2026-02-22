@@ -70,7 +70,7 @@ class PressNewsCard extends StatelessWidget {
                   children: [
                     Center(
                       child: Text(
-                        "MOTORSPORT DAILY",
+                        AppLocalizations.of(context).motorsportDaily,
                         style: GoogleFonts.playfairDisplay(
                           fontSize: 10,
                           fontWeight: FontWeight.bold,
@@ -136,7 +136,7 @@ class PressNewsCard extends StatelessWidget {
                         borderRadius: BorderRadius.circular(2),
                       ),
                       child: Text(
-                        "READ FULL ARTICLE",
+                        AppLocalizations.of(context).readFullArticle,
                         style: GoogleFonts.oswald(
                           color: Colors.black87,
                           fontSize: 10,
@@ -241,7 +241,7 @@ class PressNewsCard extends StatelessWidget {
                 child: Column(
                   children: [
                     Text(
-                      "MOTORSPORT DAILY",
+                      AppLocalizations.of(context).motorsportDaily,
                       style: GoogleFonts.playfairDisplay(
                         fontSize: 18,
                         fontWeight: FontWeight.bold,
@@ -314,7 +314,7 @@ class PressNewsCard extends StatelessWidget {
                 child: TextButton(
                   onPressed: () => Navigator.pop(context),
                   child: Text(
-                    "CLOSE",
+                    AppLocalizations.of(context).closeBtn,
                     style: GoogleFonts.oswald(
                       color: Colors.black87,
                       fontWeight: FontWeight.bold,

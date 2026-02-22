@@ -1,4 +1,6 @@
 import '../models/core_models.dart';
+import 'package:flutter/material.dart';
+import '../l10n/app_localizations.dart';
 
 class DriverStatusService {
   static String calculateTitle(Driver driver) {
@@ -73,40 +75,81 @@ class DriverStatusService {
     return driver.gender == 'F' ? "Journeywoman" : "Journeyman";
   }
 
-  static String getDescription(String title) {
+  static String getLocalizedTitle(BuildContext context, String title) {
+    final l10n = AppLocalizations.of(context);
     switch (title) {
       case "Living Legend":
-        return "Multiple champion with nothing left to prove; their presence defines the era.";
+        return l10n.statusLivingLegend;
       case "Era Dominator":
-        return "A driver in their prime who makes the rest of the field look a class below.";
+        return l10n.statusEraDominator;
+      case "The Heir":
+        return l10n.statusTheHeir;
+      case "The Heiress":
+        return l10n.statusTheHeiress;
+      case "Elite Veteran":
+        return l10n.statusEliteVeteran;
+      case "Last Dance":
+        return l10n.statusLastDance;
+      case "Solid Specialist":
+        return l10n.statusSolidSpecialist;
+      case "Young Wonder":
+        return l10n.statusYoungWonder;
+      case "Rising Star":
+        return l10n.statusRisingStar;
+      case "Stuck Promise":
+        return l10n.statusStuckPromise;
+      case "Journeyman":
+        return l10n.statusJourneyman;
+      case "Journeywoman":
+        return l10n.statusJourneywoman;
+      case "Unsung Driver":
+        return l10n.statusUnsungDriver;
+      case "Midfield Spark":
+        return l10n.statusMidfieldSpark;
+      case "Past Glory":
+        return l10n.statusPastGlory;
+      case "Grid Filler":
+        return l10n.statusGridFiller;
+      default:
+        return l10n.statusUnknown;
+    }
+  }
+
+  static String getLocalizedDescription(BuildContext context, String title) {
+    final l10n = AppLocalizations.of(context);
+    switch (title) {
+      case "Living Legend":
+        return l10n.descLivingLegend;
+      case "Era Dominator":
+        return l10n.descEraDominator;
       case "The Heir":
       case "The Heiress":
-        return "The driver everyone knows will be champion as soon as they have the right car.";
+        return l10n.descTheHeir;
       case "Elite Veteran":
-        return "Many years at the top, consistent, but has passed their peak pure speed.";
+        return l10n.descEliteVeteran;
       case "Last Dance":
-        return "A driver clearly in their farewell season, whether official or not.";
+        return l10n.descLastDance;
       case "Solid Specialist":
-        return "A grid staple for 10 years, guaranteed points, but likely never to be champion.";
+        return l10n.descSolidSpecialist;
       case "Young Wonder":
-        return "A rookie or second-year driver breaking records for their age.";
+        return l10n.descYoungWonder;
       case "Rising Star":
-        return "No longer a rookie, winning races and climbing the ranks quickly.";
+        return l10n.descRisingStar;
       case "Stuck Promise":
-        return "Someone who entered with high expectations but whose results have flattened.";
+        return l10n.descStuckPromise;
       case "Journeyman":
       case "Journeywoman":
-        return "Does the job, avoids errors, but rarely makes the headlines.";
+        return l10n.descJourneyman;
       case "Unsung Driver":
-        return "A driver who spends years in the category without leaving a statistical mark.";
+        return l10n.descUnsungDriver;
       case "Midfield Spark":
-        return "Consistently pulls results above what the car allows, waiting for a big break.";
+        return l10n.descMidfieldSpark;
       case "Past Glory":
-        return "A former winner now struggling to even make it into the points.";
+        return l10n.descPastGlory;
       case "Grid Filler":
-        return "Present due to circumstances like open seats or sponsorships rather than talent.";
+        return l10n.descGridFiller;
       default:
-        return "A professional driver competing at the highest level.";
+        return l10n.descUnknown;
     }
   }
 

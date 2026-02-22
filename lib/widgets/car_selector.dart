@@ -2,6 +2,7 @@ import 'dart:ui' as ui;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart';
+import '../l10n/app_localizations.dart';
 
 /// A widget that displays a single car from a sprite sheet and allows
 /// the user to navigate between liveries using arrow buttons.
@@ -101,7 +102,7 @@ class _CarSelectorState extends State<CarSelector> {
     if (_spriteSheet == null) {
       return Center(
         child: Text(
-          'Failed to load liveries',
+          AppLocalizations.of(context).failedToLoadLiveries,
           style: GoogleFonts.raleway(color: Colors.white38),
         ),
       );
@@ -152,7 +153,10 @@ class _CarSelectorState extends State<CarSelector> {
 
         // Index indicator
         Text(
-          'LIVERY ${_currentIndex + 1} / $_totalSprites',
+          AppLocalizations.of(context).liveryIndexLabel(
+            (_currentIndex + 1).toString(),
+            _totalSprites.toString(),
+          ),
           style: GoogleFonts.poppins(
             fontSize: 11,
             fontWeight: FontWeight.w700,

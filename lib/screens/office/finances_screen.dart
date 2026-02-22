@@ -3,6 +3,7 @@ import 'package:cloud_firestore/cloud_firestore.dart' hide Transaction;
 import '../../models/core_models.dart';
 import '../../services/finance_service.dart';
 import 'package:intl/intl.dart';
+import '../../l10n/app_localizations.dart';
 
 class FinancesScreen extends StatelessWidget {
   final String teamId;
@@ -59,8 +60,8 @@ class FinancesScreen extends StatelessWidget {
               ),
               child: Column(
                 children: [
-                  const Text(
-                    "CURRENT BALANCE",
+                  Text(
+                    AppLocalizations.of(context).currentBalanceTitle,
                     style: TextStyle(
                       color: Colors.grey,
                       fontSize: 12,
@@ -91,7 +92,7 @@ class FinancesScreen extends StatelessWidget {
               child: Row(
                 children: [
                   Text(
-                    "RECENT MOVEMENTS",
+                    AppLocalizations.of(context).recentMovementsTitle,
                     style: TextStyle(
                       color: Theme.of(context).colorScheme.secondary,
                       fontSize: 14,
@@ -138,8 +139,8 @@ class FinancesScreen extends StatelessWidget {
                             ).colorScheme.onSurface.withValues(alpha: 0.1),
                           ),
                           const SizedBox(height: 16),
-                          const Text(
-                            "No financial activity yet",
+                          Text(
+                            AppLocalizations.of(context).noFinancialActivity,
                             style: TextStyle(color: Colors.grey),
                           ),
                         ],

@@ -86,9 +86,8 @@ class _HQScreenState extends State<HQScreen> {
                 // 1. Instruction Card with Budget
                 InstructionCard(
                   icon: Icons.business_center_rounded,
-                  title: "HEADQUARTERS",
-                  description:
-                      "Buy and upgrade facilities to unlock powerful benefits and strategic advantages for your team. Be mindful of your investments, as advanced facilities will incur weekly maintenance costs as your empire grows.",
+                  title: l10n.hqTitle.toUpperCase(),
+                  description: l10n.hqDescription,
                   extraContent: Column(
                     children: [
                       const Divider(height: 32),
@@ -119,7 +118,7 @@ class _HQScreenState extends State<HQScreen> {
                 const SizedBox(height: 32),
 
                 Text(
-                  "FACILITIES",
+                  l10n.facilitiesSectionTitle,
                   style: GoogleFonts.poppins(
                     color: theme.colorScheme.onSurface.withValues(alpha: 0.7),
                     fontSize: 16,
@@ -221,6 +220,7 @@ class _FacilityCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
     final theme = Theme.of(context);
     final isSoon = facility.isSoon;
     final isMaxLevel = facility.level >= 5;
@@ -270,7 +270,7 @@ class _FacilityCard extends StatelessWidget {
                   children: [
                     if (isPurchased && !isSoon) ...[
                       Text(
-                        "LEVEL ${facility.level}",
+                        l10n.levelLabel(facility.level),
                         style: GoogleFonts.raleway(
                           fontSize: 11,
                           fontWeight: FontWeight.bold,
@@ -293,7 +293,7 @@ class _FacilityCard extends StatelessWidget {
                     ),
                     const SizedBox(height: 8),
                     Text(
-                      facility.name,
+                      facility.getLocalizedName(context),
                       textAlign: TextAlign.center,
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
@@ -307,7 +307,7 @@ class _FacilityCard extends StatelessWidget {
                     Padding(
                       padding: const EdgeInsets.symmetric(horizontal: 8),
                       child: Text(
-                        facility.description,
+                        facility.getLocalizedDescription(context),
                         textAlign: TextAlign.center,
                         style: GoogleFonts.raleway(
                           fontSize: 10,
@@ -339,17 +339,17 @@ class _FacilityCard extends StatelessWidget {
                               children: [
                                 if (!isMaxLevel && canUpgrade)
                                   _DetailRow(
-                                    label: "Next level:",
+                                    label: l10n.nextLevelLabel,
                                     value: nextLevelPrice,
                                   ),
                                 _DetailRow(
-                                  label: "Maint cost:",
+                                  label: l10n.maintCostLabel,
                                   value: maintenancePrice,
                                   isMuted: true,
                                 ),
                                 _DetailRow(
-                                  label: "Bonus:",
-                                  value: facility.bonusDescription,
+                                  label: l10n.bonusLabel,
+                                  value: facility.getLocalizedBonus(context),
                                   color: theme.colorScheme.secondary,
                                 ),
                               ],
@@ -377,7 +377,9 @@ class _FacilityCard extends StatelessWidget {
                                 ),
                               ),
                               child: Text(
-                                isPurchased ? "UPGRADE" : "BUY",
+                                isPurchased
+                                    ? l10n.upgradeBtn.toUpperCase()
+                                    : l10n.buyBtn.toUpperCase(),
                                 style: GoogleFonts.poppins(
                                   fontSize: 12,
                                   fontWeight: FontWeight.w900,
@@ -406,8 +408,8 @@ class _FacilityCard extends StatelessWidget {
                 width: 100,
                 color: Colors.redAccent.withValues(alpha: 0.8),
                 padding: const EdgeInsets.symmetric(vertical: 4),
-                child: const Text(
-                  'COMING SOON',
+                child: Text(
+                  l10n.comingSoonBanner,
                   textAlign: TextAlign.center,
                   style: TextStyle(
                     color: Colors.white,
@@ -424,6 +426,7 @@ class _FacilityCard extends StatelessWidget {
   }
 
   void _handleUpgrade(BuildContext context) async {
+    final l10n = AppLocalizations.of(context);
     try {
       await FacilityService().upgradeFacility(
         teamId,
@@ -433,7 +436,9 @@ class _FacilityCard extends StatelessWidget {
       if (context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text("${facility.name} improved!"),
+            content: Text(
+              l10n.facilityImproved(facility.getLocalizedName(context)),
+            ),
             backgroundColor: Colors.green,
             behavior: SnackBarBehavior.floating,
           ),

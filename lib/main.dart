@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_auth/firebase_auth.dart';
@@ -18,6 +19,10 @@ import 'config/game_config.dart';
 import 'services/database_seeder.dart';
 
 void main() async {
+  if (kReleaseMode) {
+    debugPrint = (String? message, {int? wrapWidth}) {};
+  }
+
   WidgetsFlutterBinding.ensureInitialized();
   usePathUrlStrategy();
   tz_data.initializeTimeZones();

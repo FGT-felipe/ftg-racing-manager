@@ -3,6 +3,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'team_selection_screen.dart';
+import '../../l10n/app_localizations.dart';
 
 class CreateManagerScreen extends StatefulWidget {
   const CreateManagerScreen({super.key});
@@ -25,11 +26,11 @@ class _CreateManagerScreenState extends State<CreateManagerScreen> {
   bool _isLoading = false;
 
   // DATOS DE ROLES
-  final List<Map<String, dynamic>> _roles = [
+  List<Map<String, dynamic>> get _roles => [
     {
       'id': 'ex_driver',
-      'title': 'Ex-Driver',
-      'desc': 'Using your racing intuition to lead.',
+      'title': AppLocalizations.of(context).roleExDriverTitle,
+      'desc': AppLocalizations.of(context).roleExDriverDesc,
       'icon': Icons.sports_motorsports,
       'pros': [
         '+5 driver feedback for setup',
@@ -44,8 +45,8 @@ class _CreateManagerScreenState extends State<CreateManagerScreen> {
     },
     {
       'id': 'business',
-      'title': 'Business Admin',
-      'desc': 'Optimization and profit above all.',
+      'title': AppLocalizations.of(context).roleBusinessTitle,
+      'desc': AppLocalizations.of(context).roleBusinessDesc,
       'icon': Icons.pie_chart,
       'pros': [
         '+15% better financial sponsorship deals',
@@ -58,8 +59,8 @@ class _CreateManagerScreenState extends State<CreateManagerScreen> {
     },
     {
       'id': 'bureaucrat',
-      'title': 'Bureaucrat',
-      'desc': 'Master of rules and politics.',
+      'title': AppLocalizations.of(context).roleBureaucratTitle,
+      'desc': AppLocalizations.of(context).roleBureaucratDesc,
       'icon': Icons.gavel,
       'pros': [
         '-10% facility purchase and upgrade costs',
@@ -69,8 +70,8 @@ class _CreateManagerScreenState extends State<CreateManagerScreen> {
     },
     {
       'id': 'engineer',
-      'title': 'Ex-Engineer',
-      'desc': 'Technical excellence is the only way.',
+      'title': AppLocalizations.of(context).roleEngineerTitle,
+      'desc': AppLocalizations.of(context).roleEngineerDesc,
       'icon': Icons.build,
       'pros': [
         'Can upgrade 2 car parts simultaneously',
@@ -152,7 +153,7 @@ class _CreateManagerScreenState extends State<CreateManagerScreen> {
                           mainAxisAlignment: MainAxisAlignment.center,
                           children: [
                             Text(
-                              "CREATE MANAGER PROFILE",
+                              AppLocalizations.of(context).createManagerProfile,
                               style: GoogleFonts.poppins(
                                 fontSize: 20,
                                 fontWeight: FontWeight.w900,
@@ -165,7 +166,9 @@ class _CreateManagerScreenState extends State<CreateManagerScreen> {
 
                         const SizedBox(height: 40),
 
-                        _buildSectionTitle("PERSONAL INFO"),
+                        _buildSectionTitle(
+                          AppLocalizations.of(context).personalInfoTitle,
+                        ),
                         const SizedBox(height: 20),
 
                         Column(
@@ -200,11 +203,9 @@ class _CreateManagerScreenState extends State<CreateManagerScreen> {
                                       fontSize: 16,
                                     ),
                                     hint: Text(
-                                      "Country",
+                                      AppLocalizations.of(context).countryLabel,
                                       style: GoogleFonts.raleway(
-                                        color: Colors.white.withValues(
-                                          alpha: 0.5,
-                                        ),
+                                        color: Colors.white.withOpacity(0.5),
                                         fontWeight: FontWeight.w600,
                                       ),
                                     ),
@@ -215,10 +216,12 @@ class _CreateManagerScreenState extends State<CreateManagerScreen> {
                                         value: null,
                                         enabled: false,
                                         child: Text(
-                                          "Country",
+                                          AppLocalizations.of(
+                                            context,
+                                          ).countryLabel,
                                           style: GoogleFonts.raleway(
-                                            color: Colors.white.withValues(
-                                              alpha: 0.5,
+                                            color: Colors.white.withOpacity(
+                                              0.5,
                                             ),
                                             fontWeight: FontWeight.w400,
                                           ),
@@ -246,8 +249,11 @@ class _CreateManagerScreenState extends State<CreateManagerScreen> {
                                     ],
                                     onChanged: (v) =>
                                         setState(() => _selectedCountry = v),
-                                    validator: (v) =>
-                                        v == null ? "Select Country" : null,
+                                    validator: (v) => v == null
+                                        ? AppLocalizations.of(
+                                            context,
+                                          ).selectCountryError
+                                        : null,
                                   ),
                                 ),
                                 const SizedBox(width: 16),
@@ -261,11 +267,9 @@ class _CreateManagerScreenState extends State<CreateManagerScreen> {
                                       fontSize: 16,
                                     ),
                                     hint: Text(
-                                      "Gender",
+                                      AppLocalizations.of(context).genderLabel,
                                       style: GoogleFonts.raleway(
-                                        color: Colors.white.withValues(
-                                          alpha: 0.5,
-                                        ),
+                                        color: Colors.white.withOpacity(0.5),
                                         fontWeight: FontWeight.w600,
                                       ),
                                     ),
@@ -276,10 +280,12 @@ class _CreateManagerScreenState extends State<CreateManagerScreen> {
                                         value: null,
                                         enabled: false,
                                         child: Text(
-                                          "Gender",
+                                          AppLocalizations.of(
+                                            context,
+                                          ).genderLabel,
                                           style: GoogleFonts.raleway(
-                                            color: Colors.white.withValues(
-                                              alpha: 0.5,
+                                            color: Colors.white.withOpacity(
+                                              0.5,
                                             ),
                                             fontWeight: FontWeight.w400,
                                           ),
@@ -289,7 +295,17 @@ class _CreateManagerScreenState extends State<CreateManagerScreen> {
                                         (g) => DropdownMenuItem(
                                           value: g,
                                           child: Text(
-                                            g,
+                                            g == 'Male'
+                                                ? AppLocalizations.of(
+                                                    context,
+                                                  ).maleGender
+                                                : g == 'Female'
+                                                ? AppLocalizations.of(
+                                                    context,
+                                                  ).femaleGender
+                                                : AppLocalizations.of(
+                                                    context,
+                                                  ).nonBinaryGender,
                                             style: GoogleFonts.raleway(
                                               color: Colors.white,
                                               fontWeight: FontWeight.w600,
@@ -300,8 +316,11 @@ class _CreateManagerScreenState extends State<CreateManagerScreen> {
                                     ],
                                     onChanged: (v) =>
                                         setState(() => _selectedGender = v),
-                                    validator: (v) =>
-                                        v == null ? "Select Gender" : null,
+                                    validator: (v) => v == null
+                                        ? AppLocalizations.of(
+                                            context,
+                                          ).selectGenderError
+                                        : null,
                                   ),
                                 ),
                               ],
@@ -312,7 +331,7 @@ class _CreateManagerScreenState extends State<CreateManagerScreen> {
                                 Expanded(
                                   flex: 2,
                                   child: _buildTextField(
-                                    "Day",
+                                    AppLocalizations.of(context).dayLabel,
                                     _dayCtrl,
                                     keyboardType: TextInputType.number,
                                   ),
@@ -321,7 +340,7 @@ class _CreateManagerScreenState extends State<CreateManagerScreen> {
                                 Expanded(
                                   flex: 2,
                                   child: _buildTextField(
-                                    "Month",
+                                    AppLocalizations.of(context).monthLabel,
                                     _monthCtrl,
                                     keyboardType: TextInputType.number,
                                   ),
@@ -330,7 +349,7 @@ class _CreateManagerScreenState extends State<CreateManagerScreen> {
                                 Expanded(
                                   flex: 3,
                                   child: _buildTextField(
-                                    "Year",
+                                    AppLocalizations.of(context).yearLabel,
                                     _yearCtrl,
                                     keyboardType: TextInputType.number,
                                   ),
@@ -342,7 +361,9 @@ class _CreateManagerScreenState extends State<CreateManagerScreen> {
 
                         const SizedBox(height: 40),
 
-                        _buildSectionTitle("SELECT BACKGROUND"),
+                        _buildSectionTitle(
+                          AppLocalizations.of(context).selectBackgroundTitle,
+                        ),
                         const SizedBox(height: 20),
 
                         LayoutBuilder(
@@ -361,10 +382,10 @@ class _CreateManagerScreenState extends State<CreateManagerScreen> {
                           children: [
                             Expanded(
                               child: Text(
-                                "You are about to create the manager who will lead your team to glory.",
+                                AppLocalizations.of(context).createManagerDesc,
                                 style: GoogleFonts.raleway(
                                   fontSize: 14,
-                                  color: Colors.white.withValues(alpha: 0.5),
+                                  color: Colors.white.withOpacity(0.5),
                                   fontStyle: FontStyle.italic,
                                 ),
                               ),
@@ -386,12 +407,12 @@ class _CreateManagerScreenState extends State<CreateManagerScreen> {
                                 border: Border.all(
                                   color: const Color(
                                     0xFF00C853,
-                                  ).withValues(alpha: 0.3),
+                                  ).withOpacity(0.3),
                                   width: 1,
                                 ),
                                 boxShadow: [
                                   BoxShadow(
-                                    color: Colors.black.withValues(alpha: 0.3),
+                                    color: Colors.black.withOpacity(0.3),
                                     blurRadius: 8,
                                     offset: const Offset(0, 4),
                                   ),
@@ -407,7 +428,9 @@ class _CreateManagerScreenState extends State<CreateManagerScreen> {
                                   ),
                                 ),
                                 child: Text(
-                                  "ESTABLISH CAREER",
+                                  AppLocalizations.of(
+                                    context,
+                                  ).establishCareerBtn,
                                   style: GoogleFonts.poppins(
                                     fontWeight: FontWeight.w900,
                                     fontSize: 15,
@@ -453,7 +476,9 @@ class _CreateManagerScreenState extends State<CreateManagerScreen> {
         color: Colors.white,
       ),
       decoration: _inputDeco(label),
-      validator: (v) => v == null || v.isEmpty ? "Required" : null,
+      validator: (v) => v == null || v.isEmpty
+          ? AppLocalizations.of(context).requiredError
+          : null,
     );
   }
 
@@ -470,7 +495,7 @@ class _CreateManagerScreenState extends State<CreateManagerScreen> {
             )
           : null,
       labelStyle: GoogleFonts.raleway(
-        color: Colors.white.withValues(alpha: 0.7),
+        color: Colors.white.withOpacity(0.7),
         fontWeight: FontWeight.w500,
       ),
       floatingLabelStyle: GoogleFonts.raleway(
@@ -487,7 +512,7 @@ class _CreateManagerScreenState extends State<CreateManagerScreen> {
       ),
       enabledBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(12),
-        borderSide: BorderSide(color: Colors.white.withValues(alpha: 0.1)),
+        borderSide: BorderSide(color: Colors.white.withOpacity(0.1)),
       ),
       focusedBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(12),
@@ -520,14 +545,12 @@ class _CreateManagerScreenState extends State<CreateManagerScreen> {
               ),
               borderRadius: BorderRadius.circular(12),
               color: isSelected
-                  ? Theme.of(
-                      context,
-                    ).colorScheme.secondary.withValues(alpha: 0.1)
+                  ? Theme.of(context).colorScheme.secondary.withOpacity(0.1)
                   : null,
               border: Border.all(
                 color: isSelected
                     ? Theme.of(context).colorScheme.secondary
-                    : Colors.white.withValues(alpha: 0.1),
+                    : Colors.white.withOpacity(0.1),
                 width: 2,
               ),
             ),
@@ -564,10 +587,7 @@ class _CreateManagerScreenState extends State<CreateManagerScreen> {
           colors: [Color(0xFF1E1E1E), Color(0xFF0A0A0A)],
         ),
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(
-          color: Colors.white.withValues(alpha: 0.1),
-          width: 1,
-        ),
+        border: Border.all(color: Colors.white.withOpacity(0.1), width: 1),
       ),
       clipBehavior: Clip.antiAlias,
       child: Row(
@@ -575,9 +595,9 @@ class _CreateManagerScreenState extends State<CreateManagerScreen> {
           Container(
             width: 250,
             decoration: BoxDecoration(
-              color: Colors.white.withValues(alpha: 0.03),
+              color: Colors.white.withOpacity(0.03),
               border: Border(
-                right: BorderSide(color: Colors.white.withValues(alpha: 0.1)),
+                right: BorderSide(color: Colors.white.withOpacity(0.1)),
               ),
             ),
             child: ListView.builder(
@@ -599,14 +619,14 @@ class _CreateManagerScreenState extends State<CreateManagerScreen> {
                           : FontWeight.normal,
                       color: isSelected
                           ? Theme.of(context).colorScheme.secondary
-                          : Colors.white.withValues(alpha: 0.7),
+                          : Colors.white.withOpacity(0.7),
                     ),
                   ),
                   onTap: () => setState(() => _selectedRoleIndex = index),
                   selected: isSelected,
                   selectedTileColor: Theme.of(
                     context,
-                  ).colorScheme.secondary.withValues(alpha: 0.05),
+                  ).colorScheme.secondary.withOpacity(0.05),
                 );
               },
             ),
@@ -630,7 +650,7 @@ class _CreateManagerScreenState extends State<CreateManagerScreen> {
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             Text(
-                              selectedRole['title'].toUpperCase(),
+                              (selectedRole['title'] as String).toUpperCase(),
                               style: GoogleFonts.poppins(
                                 fontSize: 24,
                                 fontWeight: FontWeight.w900,
@@ -641,7 +661,7 @@ class _CreateManagerScreenState extends State<CreateManagerScreen> {
                             Text(
                               selectedRole['desc'],
                               style: GoogleFonts.raleway(
-                                color: Colors.white.withValues(alpha: 0.7),
+                                color: Colors.white.withOpacity(0.7),
                                 fontStyle: FontStyle.italic,
                               ),
                             ),
@@ -658,7 +678,7 @@ class _CreateManagerScreenState extends State<CreateManagerScreen> {
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
                               Text(
-                                "ADVANTAGES",
+                                AppLocalizations.of(context).advantagesTitle,
                                 style: GoogleFonts.poppins(
                                   color: Theme.of(
                                     context,
@@ -688,8 +708,8 @@ class _CreateManagerScreenState extends State<CreateManagerScreen> {
                                           style: GoogleFonts.raleway(
                                             fontSize: 13,
                                             fontWeight: FontWeight.w500,
-                                            color: Colors.white.withValues(
-                                              alpha: 0.9,
+                                            color: Colors.white.withOpacity(
+                                              0.9,
                                             ),
                                           ),
                                         ),
@@ -707,7 +727,7 @@ class _CreateManagerScreenState extends State<CreateManagerScreen> {
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
                               Text(
-                                "DISADVANTAGES",
+                                AppLocalizations.of(context).disadvantagesTitle,
                                 style: GoogleFonts.poppins(
                                   color: Colors.redAccent,
                                   fontWeight: FontWeight.w900,

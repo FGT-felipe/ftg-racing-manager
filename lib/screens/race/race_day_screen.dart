@@ -10,6 +10,7 @@ import '../../services/circuit_service.dart';
 import '../../services/race_service.dart';
 import '../../models/core_models.dart';
 import '../../models/simulation_models.dart';
+import 'package:ftg_racing_manager/l10n/app_localizations.dart';
 
 /// Race Day "Live" Viewer
 ///
@@ -742,6 +743,7 @@ class _RaceDayScreenState extends State<RaceDayScreen>
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final l10n = AppLocalizations.of(context);
     final timeService = TimeService();
 
     // Check race status
@@ -756,7 +758,7 @@ class _RaceDayScreenState extends State<RaceDayScreen>
                 CircularProgressIndicator(color: theme.primaryColor),
                 const SizedBox(height: 16),
                 Text(
-                  'LOADING RACE DATA...',
+                  l10n.raceDayLoadingData.toUpperCase(),
                   style: TextStyle(
                     color: Colors.white.withValues(alpha: 0.4),
                     fontSize: 12,
@@ -796,6 +798,7 @@ class _RaceDayScreenState extends State<RaceDayScreen>
   }
 
   Widget _buildLockedState(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
     return Center(
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
@@ -807,7 +810,7 @@ class _RaceDayScreenState extends State<RaceDayScreen>
           ),
           const SizedBox(height: 16),
           Text(
-            'RACE DAY',
+            l10n.raceDayTitle.toUpperCase(),
             style: TextStyle(
               color: Colors.white.withValues(alpha: 0.5),
               fontSize: 22,
@@ -819,7 +822,7 @@ class _RaceDayScreenState extends State<RaceDayScreen>
           Text(
             _circuitName.isNotEmpty
                 ? '$_flagEmoji $_circuitName'
-                : 'Waiting for race data...',
+                : l10n.raceDayLoadingData,
             style: TextStyle(
               color: Colors.white.withValues(alpha: 0.3),
               fontSize: 14,
@@ -834,9 +837,7 @@ class _RaceDayScreenState extends State<RaceDayScreen>
               border: Border.all(color: Colors.white.withValues(alpha: 0.08)),
             ),
             child: Text(
-              _isFinished
-                  ? 'RACE COMPLETED — VIEW RESULTS'
-                  : 'RACE STARTS SUNDAY 2:00 PM',
+              _isFinished ? l10n.raceCompletedResults : l10n.raceDaySundayTime,
               style: TextStyle(
                 color: Colors.white.withValues(alpha: 0.4),
                 fontSize: 11,
@@ -912,6 +913,7 @@ class _RaceDayScreenState extends State<RaceDayScreen>
         ? (_currentLapNumber / _totalLaps).clamp(0.0, 1.0)
         : 0.0;
 
+    final l10n = AppLocalizations.of(context);
     final bool isLive = !_isFinished && _currentLapNumber > 0;
 
     return Container(
@@ -953,7 +955,7 @@ class _RaceDayScreenState extends State<RaceDayScreen>
                         color: const Color(0xFFFF5252).withValues(alpha: 0.5),
                       ),
                     ),
-                    child: const Row(
+                    child: Row(
                       mainAxisSize: MainAxisSize.min,
                       children: [
                         Icon(
@@ -961,10 +963,10 @@ class _RaceDayScreenState extends State<RaceDayScreen>
                           color: Color(0xFFFF5252),
                           size: 10,
                         ),
-                        SizedBox(width: 6),
+                        const SizedBox(width: 6),
                         Text(
-                          'LIVE',
-                          style: TextStyle(
+                          l10n.raceDayLive,
+                          style: const TextStyle(
                             color: Color(0xFFFF5252),
                             fontWeight: FontWeight.w900,
                             fontSize: 11,
@@ -993,7 +995,7 @@ class _RaceDayScreenState extends State<RaceDayScreen>
                     ),
                   ),
                   child: Text(
-                    _isFinished ? 'FINISHED' : 'PRE-RACE',
+                    _isFinished ? l10n.raceFinished : l10n.racePreRace,
                     style: TextStyle(
                       color: _isFinished
                           ? const Color(0xFF00C853)
@@ -1034,7 +1036,7 @@ class _RaceDayScreenState extends State<RaceDayScreen>
                 child: Row(
                   children: [
                     Text(
-                      'LAP',
+                      l10n.raceDayLap,
                       style: TextStyle(
                         color: Colors.white.withValues(alpha: 0.4),
                         fontSize: 10,
@@ -1103,7 +1105,7 @@ class _RaceDayScreenState extends State<RaceDayScreen>
                         ),
                         const SizedBox(width: 6),
                         Text(
-                          'FASTEST LAP',
+                          l10n.raceDayFastestLap,
                           style: TextStyle(
                             fontSize: 9,
                             fontWeight: FontWeight.w900,
@@ -1147,7 +1149,7 @@ class _RaceDayScreenState extends State<RaceDayScreen>
                       ),
                       const SizedBox(width: 6),
                       Text(
-                        'RACE TIME',
+                        l10n.raceDayRaceLabel,
                         style: TextStyle(
                           fontSize: 9,
                           fontWeight: FontWeight.w900,
@@ -1181,12 +1183,13 @@ class _RaceDayScreenState extends State<RaceDayScreen>
   // ─── LEADERBOARD ───
 
   Widget _buildLeaderboard(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
     if (_currentPositions.isEmpty) {
       return _buildEmptyCard(
         context,
-        'POSITIONS',
+        l10n.raceDayRacePositions,
         Icons.format_list_numbered,
-        'Waiting for race to start...',
+        l10n.raceWaitingStart,
       );
     }
 
@@ -1221,9 +1224,9 @@ class _RaceDayScreenState extends State<RaceDayScreen>
                   size: 16,
                 ),
                 const SizedBox(width: 8),
-                const Text(
-                  'RACE POSITIONS',
-                  style: TextStyle(
+                Text(
+                  l10n.raceDayRacePositions,
+                  style: const TextStyle(
                     fontSize: 11,
                     fontWeight: FontWeight.w900,
                     letterSpacing: 1.5,
@@ -1232,7 +1235,7 @@ class _RaceDayScreenState extends State<RaceDayScreen>
                 ),
                 const Spacer(),
                 Text(
-                  '${sorted.length} DRIVERS',
+                  '${sorted.length} ${l10n.navDrivers.toUpperCase()}',
                   style: TextStyle(
                     fontSize: 10,
                     fontWeight: FontWeight.bold,
@@ -1263,7 +1266,7 @@ class _RaceDayScreenState extends State<RaceDayScreen>
                 SizedBox(
                   width: 24,
                   child: Text(
-                    'POS',
+                    l10n.standingsPos.toUpperCase(),
                     style: TextStyle(
                       fontSize: 9,
                       fontWeight: FontWeight.w900,
@@ -1275,7 +1278,7 @@ class _RaceDayScreenState extends State<RaceDayScreen>
                 Expanded(
                   flex: 2,
                   child: Text(
-                    'DRIVER',
+                    l10n.standingsDriver.toUpperCase(),
                     style: TextStyle(
                       fontSize: 9,
                       fontWeight: FontWeight.w900,
@@ -1313,7 +1316,7 @@ class _RaceDayScreenState extends State<RaceDayScreen>
                 Expanded(
                   flex: 1,
                   child: Text(
-                    'INTERVAL',
+                    l10n.standingsInterval.toUpperCase(),
                     style: TextStyle(
                       fontSize: 9,
                       fontWeight: FontWeight.w900,
@@ -1381,9 +1384,9 @@ class _RaceDayScreenState extends State<RaceDayScreen>
                     // Compute interval text
                     String intervalText;
                     if (isDnf) {
-                      intervalText = 'RETIRED';
+                      intervalText = l10n.retired.toUpperCase();
                     } else if (index == 0) {
-                      intervalText = 'LEADER';
+                      intervalText = l10n.leader.toUpperCase();
                     } else if (leaderLapTime != null && leaderLapTime < 900) {
                       final gap = lapTime - leaderLapTime;
                       intervalText = '+${gap.toStringAsFixed(3)}s';
@@ -1437,7 +1440,7 @@ class _RaceDayScreenState extends State<RaceDayScreen>
                           SizedBox(
                             width: 24,
                             child: Text(
-                              isDnf ? 'DNF' : '$pos',
+                              isDnf ? l10n.garageDnf : '$pos',
                               style: TextStyle(
                                 fontSize: 13,
                                 fontWeight: FontWeight.w900,
@@ -1526,9 +1529,9 @@ class _RaceDayScreenState extends State<RaceDayScreen>
                                         color: Color(0xFFFFB800),
                                       ),
                                       const SizedBox(width: 4),
-                                      const Text(
-                                        'IN BOXES!',
-                                        style: TextStyle(
+                                      Text(
+                                        l10n.raceDayInBoxes.toUpperCase(),
+                                        style: const TextStyle(
                                           fontSize: 9,
                                           fontWeight: FontWeight.w900,
                                           color: Color(0xFFFFB800),
@@ -1624,6 +1627,7 @@ class _RaceDayScreenState extends State<RaceDayScreen>
   // ─── EVENT FEED / PIT BOARD ───
 
   Widget _buildEventFeed(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
     return Container(
       decoration: BoxDecoration(
         color: const Color(0xFF0A0A0A),
@@ -1649,9 +1653,9 @@ class _RaceDayScreenState extends State<RaceDayScreen>
                   size: 16,
                 ),
                 const SizedBox(width: 8),
-                const Text(
-                  'PIT BOARD',
-                  style: TextStyle(
+                Text(
+                  l10n.raceDayPitBoard,
+                  style: const TextStyle(
                     fontSize: 11,
                     fontWeight: FontWeight.w900,
                     letterSpacing: 1.5,
@@ -1660,7 +1664,7 @@ class _RaceDayScreenState extends State<RaceDayScreen>
                 ),
                 const Spacer(),
                 Text(
-                  '${_allEvents.where((e) => _isPlayerTeam(e['driverId'] ?? '')).length} EVENTS',
+                  '${_allEvents.where((e) => _isPlayerTeam(e['driverId'] ?? '')).length} ${l10n.garageEvents.toUpperCase()}',
                   style: TextStyle(
                     fontSize: 10,
                     fontWeight: FontWeight.bold,
@@ -1674,6 +1678,7 @@ class _RaceDayScreenState extends State<RaceDayScreen>
           // Events list (filtered to player's drivers only)
           Expanded(
             child: () {
+              final l10n = AppLocalizations.of(context);
               final playerEvents = _allEvents
                   .where((e) => _isPlayerTeam(e['driverId'] ?? ''))
                   .toList();
@@ -1690,8 +1695,8 @@ class _RaceDayScreenState extends State<RaceDayScreen>
                       const SizedBox(height: 12),
                       Text(
                         _currentLapNumber == 0
-                            ? 'LIGHTS OUT SOON...'
-                            : 'NO EVENTS YET',
+                            ? l10n.raceLightsOutSoon.toUpperCase()
+                            : l10n.noEventsYet.toUpperCase(),
                         style: TextStyle(
                           color: Colors.white.withValues(alpha: 0.2),
                           fontSize: 11,
@@ -1887,6 +1892,7 @@ class _RaceDayScreenState extends State<RaceDayScreen>
   }
 
   Widget _buildCommentaryFeed(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
     return Container(
       decoration: BoxDecoration(
         color: const Color(0xFF080810),
@@ -1938,10 +1944,10 @@ class _RaceDayScreenState extends State<RaceDayScreen>
                 const SizedBox(width: 8),
                 const Icon(Icons.podcasts, color: Color(0xFF00BCD4), size: 14),
                 const SizedBox(width: 6),
-                const Expanded(
+                Expanded(
                   child: Text(
-                    'LIVE COMMENTARY',
-                    style: TextStyle(
+                    l10n.raceDayCommentary.toUpperCase(),
+                    style: const TextStyle(
                       fontSize: 10,
                       fontWeight: FontWeight.w900,
                       letterSpacing: 1.5,
@@ -1966,6 +1972,7 @@ class _RaceDayScreenState extends State<RaceDayScreen>
                 // Commentary content
                 Builder(
                   builder: (context) {
+                    final l10n = AppLocalizations.of(context);
                     // Filter to important events only
                     final importantEvents = _allEvents.where((evt) {
                       final type = ((evt['type'] as String?) ?? '')
@@ -1996,8 +2003,8 @@ class _RaceDayScreenState extends State<RaceDayScreen>
                       return Center(
                         child: Text(
                           _currentLapNumber == 0
-                              ? 'Waiting for lights out...'
-                              : 'The commentators are standing by...',
+                              ? l10n.waitingForLightsOut
+                              : l10n.commentatorsStandingBy,
                           style: TextStyle(
                             color: Colors.white.withValues(alpha: 0.15),
                             fontStyle: FontStyle.italic,

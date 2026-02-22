@@ -56,17 +56,16 @@ class JobMarketScreen extends StatelessWidget {
   }
 
   void _showResetDialog(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text("⚠️ RESET WORLD?"),
-        content: const Text(
-          "This will delete all teams, drivers and leagues. This action cannot be undone.",
-        ),
+        title: Text(l10n.confirmResetWorldTitle),
+        content: Text(l10n.confirmResetWorldDesc),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
-            child: const Text("CANCEL"),
+            child: Text(l10n.cancelBtn.toUpperCase()),
           ),
           TextButton(
             onPressed: () async {
@@ -84,11 +83,9 @@ class JobMarketScreen extends StatelessWidget {
               try {
                 await DatabaseSeeder.nukeAndReseed();
                 if (context.mounted) {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(
-                      content: Text("Universo Reseteado con Éxito"),
-                    ),
-                  );
+                  ScaffoldMessenger.of(
+                    context,
+                  ).showSnackBar(SnackBar(content: Text(l10n.resetSuccess)));
                 }
               } catch (e) {
                 if (context.mounted) {
@@ -105,7 +102,10 @@ class JobMarketScreen extends StatelessWidget {
                 }
               }
             },
-            child: const Text("RESET", style: TextStyle(color: Colors.red)),
+            child: Text(
+              l10n.resetBtn.toUpperCase(),
+              style: const TextStyle(color: Colors.red),
+            ),
           ),
         ],
       ),

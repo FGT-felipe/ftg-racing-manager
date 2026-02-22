@@ -9,6 +9,8 @@ import '../../services/team_service.dart';
 import '../../services/universe_service.dart';
 import '../../services/league_notification_service.dart';
 import '../../models/user_models.dart';
+import '../../widgets/common/dynamic_loading_indicator.dart';
+import '../../l10n/app_localizations.dart';
 
 class TeamSelectionScreen extends StatefulWidget {
   final String nationality;
@@ -30,40 +32,14 @@ class _TeamSelectionScreenState extends State<TeamSelectionScreen> {
   bool _isWorldFull = false;
   String? _errorMessage;
 
-  final List<String> _loadingPhrases = [
-    "Preparando instalaciones de fábrica...",
-    "Ajustando neumáticos...",
-    "Calibrando túnel de viento...",
-    "Revisando telemetría...",
-    "Negociando con patrocinadores...",
-    "Encendiendo motores...",
-    "Reclutando ingenieros expertos...",
-    "Limpiando la pista...",
-  ];
-  int _currentPhraseIndex = 0;
-  Timer? _loadingTimer;
-
   @override
   void initState() {
     super.initState();
-    _startLoadingPhrases();
     _loadLeagueData();
-  }
-
-  void _startLoadingPhrases() {
-    _loadingTimer = Timer.periodic(const Duration(seconds: 3), (timer) {
-      if (mounted && _isLoading) {
-        setState(() {
-          _currentPhraseIndex =
-              (_currentPhraseIndex + 1) % _loadingPhrases.length;
-        });
-      }
-    });
   }
 
   @override
   void dispose() {
-    _loadingTimer?.cancel();
     super.dispose();
   }
 
@@ -157,7 +133,7 @@ class _TeamSelectionScreenState extends State<TeamSelectionScreen> {
         });
       }
     } finally {
-      _loadingTimer?.cancel();
+      // Clean up if needed
     }
   }
 
@@ -180,7 +156,7 @@ class _TeamSelectionScreenState extends State<TeamSelectionScreen> {
               ),
               const SizedBox(height: 16),
               Text(
-                "Fichando con ${team.name}...",
+                AppLocalizations.of(context).signingWithTeam(team.name),
                 style: const TextStyle(
                   color: Colors.white,
                   fontSize: 14,
@@ -242,7 +218,9 @@ class _TeamSelectionScreenState extends State<TeamSelectionScreen> {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text("Application failed: $e"),
+            content: Text(
+              AppLocalizations.of(context).applicationFailed(e.toString()),
+            ),
             backgroundColor: Colors.red,
           ),
         );
@@ -258,30 +236,7 @@ class _TeamSelectionScreenState extends State<TeamSelectionScreen> {
   @override
   Widget build(BuildContext context) {
     if (_isLoading) {
-      return Scaffold(
-        body: Center(
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              const CircularProgressIndicator(),
-              const SizedBox(height: 24),
-              AnimatedSwitcher(
-                duration: const Duration(milliseconds: 500),
-                child: Text(
-                  _loadingPhrases[_currentPhraseIndex],
-                  key: ValueKey<int>(_currentPhraseIndex),
-                  style: TextStyle(
-                    color: Colors.white.withValues(alpha: 0.7),
-                    fontSize: 16,
-                    fontStyle: FontStyle.italic,
-                    letterSpacing: 1.2,
-                  ),
-                ),
-              ),
-            ],
-          ),
-        ),
-      );
+      return const Scaffold(body: DynamicLoadingIndicator());
     }
 
     if (_errorMessage != null) {
@@ -291,7 +246,7 @@ class _TeamSelectionScreenState extends State<TeamSelectionScreen> {
     return Scaffold(
       backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       appBar: AppBar(
-        title: const Text("SELECT TEAM"),
+        title: Text(AppLocalizations.of(context).selectTeamTitle),
         centerTitle: true,
         backgroundColor: Colors.transparent,
         elevation: 0,
@@ -301,7 +256,7 @@ class _TeamSelectionScreenState extends State<TeamSelectionScreen> {
         child: Column(
           children: [
             Text(
-              "Choose a team to manage. Teams with fewer human managers are recommended.",
+              AppLocalizations.of(context).selectTeamDesc,
               textAlign: TextAlign.center,
               style: TextStyle(
                 color: Theme.of(
@@ -314,7 +269,8 @@ class _TeamSelectionScreenState extends State<TeamSelectionScreen> {
 
             if (_worldTeams.isNotEmpty) ...[
               _buildDivisionSection(
-                _worldLeague?.name ?? "World Championship",
+                _worldLeague?.name ??
+                    AppLocalizations.of(context).worldChampionship,
                 _worldTeams,
                 leagueId: _worldLeague?.id ?? '',
               ),
@@ -323,7 +279,8 @@ class _TeamSelectionScreenState extends State<TeamSelectionScreen> {
 
             if (_secondTeams.isNotEmpty) ...[
               _buildDivisionSection(
-                _secondLeague?.name ?? "2th Series",
+                _secondLeague?.name ??
+                    AppLocalizations.of(context).secondSeries,
                 _secondTeams,
                 leagueId: _secondLeague?.id ?? '',
                 isLocked: !_isWorldFull,
@@ -331,7 +288,9 @@ class _TeamSelectionScreenState extends State<TeamSelectionScreen> {
             ],
 
             if (_worldTeams.isEmpty && _secondTeams.isEmpty)
-              const Center(child: Text("No teams available.")),
+              Center(
+                child: Text(AppLocalizations.of(context).noTeamsAvailable),
+              ),
           ],
         ),
       ),
@@ -373,9 +332,9 @@ class _TeamSelectionScreenState extends State<TeamSelectionScreen> {
                   borderRadius: BorderRadius.circular(12),
                   border: Border.all(color: Colors.green),
                 ),
-                child: const Text(
-                  "RECOMMENDED",
-                  style: TextStyle(
+                child: Text(
+                  AppLocalizations.of(context).recommendedTag,
+                  style: const TextStyle(
                     color: Colors.green,
                     fontSize: 10,
                     fontWeight: FontWeight.bold,
@@ -389,7 +348,7 @@ class _TeamSelectionScreenState extends State<TeamSelectionScreen> {
           Padding(
             padding: const EdgeInsets.only(top: 8.0, bottom: 16.0),
             child: Text(
-              "Complete the World Championship entries to unlock this league.",
+              AppLocalizations.of(context).unlockLeagueDesc,
               style: TextStyle(
                 color: Colors.orange.withValues(alpha: 0.8),
                 fontSize: 13,
@@ -545,7 +504,11 @@ class _TeamSelectionCard extends StatelessWidget {
                         ...drivers.asMap().entries.map((entry) {
                           final idx = entry.key;
                           final driver = entry.value;
-                          final label = idx == 0 ? "Main" : "Secondary";
+                          final label = idx == 0
+                              ? AppLocalizations.of(context).mainDriverLabel
+                              : AppLocalizations.of(
+                                  context,
+                                ).secondaryDriverLabel;
                           return Padding(
                             padding: const EdgeInsets.only(bottom: 4.0),
                             child: Row(
@@ -633,9 +596,9 @@ class _TeamSelectionCard extends StatelessWidget {
                             backgroundColor: Colors.blue,
                             padding: const EdgeInsets.symmetric(vertical: 10),
                           ),
-                          child: const Text(
-                            "SELECT TEAM",
-                            style: TextStyle(fontWeight: FontWeight.bold),
+                          child: Text(
+                            AppLocalizations.of(context).selectTeamBtn,
+                            style: const TextStyle(fontWeight: FontWeight.bold),
                           ),
                         ),
                       ),
@@ -655,8 +618,8 @@ class _TeamSelectionCard extends StatelessWidget {
                   width: 120,
                   color: Colors.amber.withValues(alpha: 0.9),
                   padding: const EdgeInsets.symmetric(vertical: 4),
-                  child: const Text(
-                    'SELECTED',
+                  child: Text(
+                    AppLocalizations.of(context).selectedTag,
                     textAlign: TextAlign.center,
                     style: TextStyle(
                       color: Colors.black,

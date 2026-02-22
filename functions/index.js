@@ -1108,3 +1108,65 @@ exports.postRaceProcessing = onSchedule({
     logger.error("Error in postRaceProcessing", err);
   }
 });
+
+// ─────────────────────────────────────────────
+// 8. SCHEDULED DAILY FITNESS RECOVERY (Midnight COT)
+// ─────────────────────────────────────────────
+exports.scheduledDailyFitnessRecovery = onSchedule({
+  schedule: "0 0 * * *",
+  timeZone: "America/Bogota",
+  memory: "512MiB",
+  timeoutSeconds: 300,
+}, async () => {
+  logger.info("=== DAILY FITNESS RECOVERY START ===");
+
+  try {
+    const driversRef = db.collection("drivers");
+    const snapshot = await driversRef.get();
+
+    if (snapshot.empty) {
+      logger.info("No drivers found. Skipping.");
+      return;
+    }
+
+    // Firestore matches have a limit of 500 writes per batch
+    const batches = [];
+    let currentBatch = db.batch();
+    let opCount = 0;
+
+    snapshot.docs.forEach((doc) => {
+      const driver = doc.data();
+      const stats = driver.stats || {};
+
+      const currentFitness = stats.fitness || 50;
+
+      if (currentFitness < 100) {
+        const newFitness = Math.min(100, currentFitness + 2);
+
+        currentBatch.update(doc.ref, {
+          "stats.fitness": newFitness,
+        });
+
+        opCount++;
+
+        // If batch is full (500 limit), push and start a new one
+        if (opCount === 500) {
+          batches.push(currentBatch.commit());
+          currentBatch = db.batch();
+          opCount = 0;
+        }
+      }
+    });
+
+    // Commit any remaining operations in the last batch
+    if (opCount > 0) {
+      batches.push(currentBatch.commit());
+    }
+
+    await Promise.all(batches);
+
+    logger.info(`=== DAILY FITNESS RECOVERY COMPLETE. Batches: ${batches.length} ===`);
+  } catch (error) {
+    logger.error("Error in scheduledDailyFitnessRecovery:", error);
+  }
+});

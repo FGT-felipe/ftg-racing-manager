@@ -91,7 +91,7 @@ class _EngineeringScreenState extends State<EngineeringScreen> {
                   // R&D Lab Info Header (Shared Instruction Card)
                   InstructionCard(
                     icon: Icons.biotech_rounded,
-                    title: "GARAGE",
+                    title: l10n.garageTitle.toUpperCase(),
                     description: l10n.engineeringDescription,
                     extraContent: Column(
                       children: [
@@ -140,7 +140,7 @@ class _EngineeringScreenState extends State<EngineeringScreen> {
                           const SizedBox(width: 12),
                           Expanded(
                             child: Text(
-                              "Weekly upgrade limit reached. Wait for the next race to upgrade again.",
+                              l10n.upgradeLimitReached,
                               style: TextStyle(
                                 color: Theme.of(context).colorScheme.onSurface,
                                 fontSize: 13,
@@ -156,7 +156,7 @@ class _EngineeringScreenState extends State<EngineeringScreen> {
                     children: [
                       Expanded(
                         child: _CarUpgradesColumn(
-                          carLabel: "CAR A",
+                          carLabel: l10n.carLabelA,
                           driverName: driverA?.name ?? l10n.noDriverAssigned,
                           carIndex: 0,
                           stats:
@@ -176,7 +176,7 @@ class _EngineeringScreenState extends State<EngineeringScreen> {
                       const SizedBox(width: 20),
                       Expanded(
                         child: _CarUpgradesColumn(
-                          carLabel: "CAR B",
+                          carLabel: l10n.carLabelB,
                           driverName: driverB?.name ?? l10n.noDriverAssigned,
                           carIndex: 1,
                           stats:
@@ -261,7 +261,7 @@ class _CarUpgradesColumn extends StatelessWidget {
         Center(
           child: CarSchematicWidget(
             stats: stats,
-            carLabel: "$carLabel PERFORMANCE",
+            carLabel: l10n.carPerformanceTitle(carLabel),
           ),
         ),
         const SizedBox(height: 20),
@@ -288,7 +288,7 @@ class _CarUpgradesColumn extends StatelessWidget {
         ),
         const SizedBox(height: 16),
         _UpgradeTile(
-          title: "Chassis",
+          title: l10n.chassisPart,
           partKey: 'chassis',
           carIndex: carIndex,
           level: stats['chassis'] ?? 1,

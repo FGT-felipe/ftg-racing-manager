@@ -6,6 +6,7 @@ import '../../services/sponsor_service.dart';
 import '../../services/auth_service.dart';
 import '../../services/finance_service.dart';
 import '../../utils/responsive_layout.dart';
+import '../../l10n/app_localizations.dart';
 
 class SponsorshipScreen extends StatefulWidget {
   final String teamId;
@@ -167,7 +168,7 @@ class _SponsorshipScreenState extends State<SponsorshipScreen> {
     if (_selectedSlotDesktop == null) {
       return Center(
         child: Text(
-          "Select a car part to manage sponsorships",
+          AppLocalizations.of(context).selectCarPartToManage,
           style: TextStyle(
             color: Theme.of(
               context,
@@ -186,7 +187,9 @@ class _SponsorshipScreenState extends State<SponsorshipScreen> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
-            "ACTIVE CONTRACT: ${_selectedSlotDesktop!.name.toUpperCase()}",
+            AppLocalizations.of(
+              context,
+            ).activeContractTitle(_selectedSlotDesktop!.name.toUpperCase()),
             style: TextStyle(
               color: Theme.of(context).colorScheme.secondary,
               letterSpacing: 1.5,
@@ -224,13 +227,13 @@ class _SponsorshipScreenState extends State<SponsorshipScreen> {
                   mainAxisAlignment: MainAxisAlignment.spaceAround,
                   children: [
                     _DetailItem(
-                      label: "Weekly Pay",
+                      label: AppLocalizations.of(context).weeklyPayLabel,
                       value: _financeService.formatCurrency(
                         activeContract.weeklyBasePayment,
                       ),
                     ),
                     _DetailItem(
-                      label: "Races Left",
+                      label: AppLocalizations.of(context).racesLeftLabel,
                       value: "${activeContract.racesRemaining}",
                     ),
                   ],
@@ -246,7 +249,9 @@ class _SponsorshipScreenState extends State<SponsorshipScreen> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
-            "AVAILABLE OFFERS: ${_selectedSlotDesktop!.name.toUpperCase()}",
+            AppLocalizations.of(
+              context,
+            ).availableOffersTitle(_selectedSlotDesktop!.name.toUpperCase()),
             style: TextStyle(
               color: Theme.of(context).colorScheme.secondary,
               letterSpacing: 1.5,
@@ -289,7 +294,7 @@ class _SponsorshipScreenState extends State<SponsorshipScreen> {
     return Column(
       children: [
         _buildSlotItem(
-          "Rear Wing",
+          AppLocalizations.of(context).rearWingPart,
           SponsorSlot.rearWing,
           team.sponsors[SponsorSlot.rearWing.name],
           role,
@@ -301,7 +306,7 @@ class _SponsorshipScreenState extends State<SponsorshipScreen> {
           children: [
             Expanded(
               child: _buildSlotItem(
-                "Sidepod (L)",
+                AppLocalizations.of(context).sidepodLPart,
                 SponsorSlot.sidepods,
                 team.sponsors[SponsorSlot.sidepods.name],
                 role,
@@ -312,7 +317,7 @@ class _SponsorshipScreenState extends State<SponsorshipScreen> {
             const SizedBox(width: 12),
             Expanded(
               child: _buildSlotItem(
-                "Sidepod (R)",
+                AppLocalizations.of(context).sidepodRPart,
                 SponsorSlot.sidepods,
                 team.sponsors[SponsorSlot.sidepods.name],
                 role,
@@ -324,7 +329,7 @@ class _SponsorshipScreenState extends State<SponsorshipScreen> {
         ),
         const SizedBox(height: 12),
         _buildSlotItem(
-          "Halo",
+          AppLocalizations.of(context).haloPart,
           SponsorSlot.halo,
           team.sponsors[SponsorSlot.halo.name],
           role,
@@ -333,7 +338,7 @@ class _SponsorshipScreenState extends State<SponsorshipScreen> {
         ),
         const SizedBox(height: 12),
         _buildSlotItem(
-          "Front Wing",
+          AppLocalizations.of(context).frontWingPart,
           SponsorSlot.frontWing,
           team.sponsors[SponsorSlot.frontWing.name],
           role,
@@ -342,7 +347,7 @@ class _SponsorshipScreenState extends State<SponsorshipScreen> {
         ),
         const SizedBox(height: 12),
         _buildSlotItem(
-          "Nose",
+          AppLocalizations.of(context).nosePart,
           SponsorSlot.nose,
           team.sponsors[SponsorSlot.nose.name],
           role,
@@ -448,7 +453,9 @@ class _SponsorshipScreenState extends State<SponsorshipScreen> {
                   Text(
                     hasContract
                         ? contract.sponsorName
-                        : (isDesktop ? "MANAGE" : "+ SELECT SPONSOR"),
+                        : (isDesktop
+                              ? AppLocalizations.of(context).manageBtn
+                              : AppLocalizations.of(context).selectSponsorBtn),
                     style: TextStyle(
                       color: hasContract
                           ? Theme.of(context).colorScheme.onSurface
@@ -468,11 +475,10 @@ class _SponsorshipScreenState extends State<SponsorshipScreen> {
   }
 
   Widget _buildNegotiationLegend() {
-    return const _CommonInstructionCard(
+    return _CommonInstructionCard(
       icon: Icons.handshake_rounded,
-      title: "NEGOTIATION RULES",
-      description:
-          "Choose a strategy that matches the sponsor's personality. Remember you have 3 attempts total; if you fail, the sponsor will leave for 7 days.",
+      title: AppLocalizations.of(context).negotiationRulesTitle,
+      description: AppLocalizations.of(context).negotiationRulesDesc,
     );
   }
 }
@@ -682,33 +688,35 @@ class _SponsorOfferCardState extends State<_SponsorOfferCard> {
         const SizedBox(height: 16),
         _infoRow(
           Icons.monetization_on_outlined,
-          "Signing Bonus",
+          AppLocalizations.of(context).signingBonusLabel,
           widget.financeService.formatCurrency(widget.offer.signingBonus),
           Colors.green,
         ),
         _infoRow(
           Icons.calendar_today_outlined,
-          "Weekly Payment",
+          AppLocalizations.of(context).weeklyPaymentLabel,
           widget.financeService.formatCurrency(widget.offer.weeklyBasePayment),
           Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.7),
         ),
         _infoRow(
           Icons.timer_outlined,
-          "Duration",
-          "${widget.offer.contractDuration} Races",
+          AppLocalizations.of(context).durationLabel,
+          AppLocalizations.of(
+            context,
+          ).durationRaces(widget.offer.contractDuration.toString()),
           Colors.blue,
         ),
         _infoRow(
           Icons.emoji_events_outlined,
-          "Objective",
+          AppLocalizations.of(context).objectiveLabel,
           widget.offer.objectiveDescription,
           Colors.orangeAccent,
         ),
         const SizedBox(height: 16),
         if (isLocked)
-          const Center(
+          Center(
             child: Text(
-              "SUSPENDED",
+              AppLocalizations.of(context).suspendedStatus,
               style: TextStyle(
                 color: Colors.redAccent,
                 fontWeight: FontWeight.bold,
@@ -724,7 +732,9 @@ class _SponsorOfferCardState extends State<_SponsorOfferCard> {
         else ...[
           Center(
             child: Text(
-              "CHOOSE TACTIC (${3 - widget.offer.attemptsMade} left)",
+              AppLocalizations.of(
+                context,
+              ).chooseTacticLabel((3 - widget.offer.attemptsMade).toString()),
               style: TextStyle(
                 color: Colors.white.withValues(alpha: 0.4),
                 fontSize: 9,
@@ -737,15 +747,24 @@ class _SponsorOfferCardState extends State<_SponsorOfferCard> {
           Row(
             children: [
               Expanded(
-                child: _tacticBtn("PERSUASIVE", const Color(0xFFFF5733)),
+                child: _tacticBtn(
+                  AppLocalizations.of(context).persuasiveTactic,
+                  const Color(0xFFFF5733),
+                ),
               ),
               const SizedBox(width: 8),
               Expanded(
-                child: _tacticBtn("NEGOTIATOR", const Color(0xFFF1C40F)),
+                child: _tacticBtn(
+                  AppLocalizations.of(context).negotiatorTactic,
+                  const Color(0xFFF1C40F),
+                ),
               ),
               const SizedBox(width: 8),
               Expanded(
-                child: _tacticBtn("COLLABORATIVE", const Color(0xFFE9967A)),
+                child: _tacticBtn(
+                  AppLocalizations.of(context).collaborativeTactic,
+                  const Color(0xFFE9967A),
+                ),
               ),
             ],
           ),
@@ -819,7 +838,9 @@ class _SponsorOfferCardState extends State<_SponsorOfferCard> {
                   ),
                   _infoChip(
                     Icons.timer_outlined,
-                    "${widget.offer.contractDuration} Races",
+                    AppLocalizations.of(
+                      context,
+                    ).durationRaces(widget.offer.contractDuration.toString()),
                     Colors.blue,
                   ),
                   _infoChip(
@@ -843,9 +864,9 @@ class _SponsorOfferCardState extends State<_SponsorOfferCard> {
                   ),
                 )
               : isLocked
-              ? const Center(
+              ? Center(
                   child: Text(
-                    "SUSPENDED",
+                    AppLocalizations.of(context).suspendedStatus,
                     style: TextStyle(
                       color: Colors.redAccent,
                       fontWeight: FontWeight.bold,
@@ -856,7 +877,9 @@ class _SponsorOfferCardState extends State<_SponsorOfferCard> {
                   mainAxisSize: MainAxisSize.min,
                   children: [
                     Text(
-                      "CHOOSE TACTIC (${3 - widget.offer.attemptsMade} left)",
+                      AppLocalizations.of(context).chooseTacticLabel(
+                        (3 - widget.offer.attemptsMade).toString(),
+                      ),
                       style: TextStyle(
                         color: Colors.white.withValues(alpha: 0.4),
                         fontSize: 9,
@@ -869,21 +892,21 @@ class _SponsorOfferCardState extends State<_SponsorOfferCard> {
                       children: [
                         Expanded(
                           child: _tacticBtn(
-                            "PERSUASIVE",
+                            AppLocalizations.of(context).persuasiveTactic,
                             const Color(0xFFFF5733),
                           ),
                         ),
                         const SizedBox(width: 8),
                         Expanded(
                           child: _tacticBtn(
-                            "NEGOTIATOR",
+                            AppLocalizations.of(context).negotiatorTactic,
                             const Color(0xFFF1C40F),
                           ),
                         ),
                         const SizedBox(width: 8),
                         Expanded(
                           child: _tacticBtn(
-                            "COLLABORATIVE",
+                            AppLocalizations.of(context).collaborativeTactic,
                             const Color(0xFFE9967A),
                           ),
                         ),
@@ -1078,7 +1101,7 @@ class _SponsorCarouselModalState extends State<_SponsorCarouselModal> {
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
                 Text(
-                  "AVAILABLE SPONSORS",
+                  AppLocalizations.of(context).availableSponsorsTitle,
                   style: TextStyle(
                     color: Theme.of(context).colorScheme.onSurface,
                     fontSize: 18,

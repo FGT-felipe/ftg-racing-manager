@@ -25,14 +25,20 @@ import '../services/auth_service.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:intl/intl.dart';
 import 'dart:async';
+import '../l10n/app_localizations.dart';
 
 class NavNode {
-  final String title;
+  final String Function(BuildContext) titleBuilder;
   final Widget? screen;
   final List<NavNode>? children;
   final String id;
 
-  NavNode({required this.title, this.screen, this.children, required this.id});
+  NavNode({
+    required this.titleBuilder,
+    this.screen,
+    this.children,
+    required this.id,
+  });
 }
 
 class MainLayout extends StatefulWidget {
@@ -74,7 +80,7 @@ class _MainLayoutState extends State<MainLayout> {
     _navTree = [
       NavNode(
         id: 'dashboard',
-        title: 'Dashboard',
+        titleBuilder: (context) => AppLocalizations.of(context).navDashboard,
         screen: DashboardScreen(
           teamId: widget.teamId,
           onNavigate: (id) {
@@ -85,7 +91,7 @@ class _MainLayoutState extends State<MainLayout> {
       ),
       NavNode(
         id: 'hq',
-        title: 'HQ',
+        titleBuilder: (context) => AppLocalizations.of(context).navHQ,
         screen: HQScreen(
           teamId: widget.teamId,
           onNavigate: (id) {
@@ -96,44 +102,47 @@ class _MainLayoutState extends State<MainLayout> {
         children: [
           NavNode(
             id: 'hq_office',
-            title: 'Team office',
+            titleBuilder: (context) =>
+                AppLocalizations.of(context).navTeamOffice,
             screen: TeamScreen(teamId: widget.teamId),
           ),
           NavNode(
             id: 'hq_garage',
-            title: 'Garage',
+            titleBuilder: (context) => AppLocalizations.of(context).navGarage,
             screen: EngineeringScreen(teamId: widget.teamId),
           ),
           NavNode(
             id: 'hq_academy',
-            title: 'Youth Academy',
+            titleBuilder: (context) =>
+                AppLocalizations.of(context).navYouthAcademy,
             screen: YouthAcademyScreen(teamId: widget.teamId),
           ),
         ],
       ),
       NavNode(
         id: 'racing',
-        title: 'Racing',
+        titleBuilder: (context) => AppLocalizations.of(context).navRacing,
         children: [
           NavNode(
             id: 'racing_setup',
-            title: 'Weekend Setup',
+            titleBuilder: (context) =>
+                AppLocalizations.of(context).navWeekendSetup,
             screen: PaddockScreen(teamId: widget.teamId),
           ),
           NavNode(
             id: 'racing_day',
-            title: 'Race day',
+            titleBuilder: (context) => AppLocalizations.of(context).navRaceDay,
             screen: RaceDayScreen(teamId: widget.teamId),
           ),
         ],
       ),
       NavNode(
         id: 'management',
-        title: 'Management',
+        titleBuilder: (context) => AppLocalizations.of(context).navManagement,
         children: [
           NavNode(
             id: 'mgmt_personal',
-            title: 'Personal',
+            titleBuilder: (context) => AppLocalizations.of(context).navPersonal,
             screen: PersonalScreen(
               teamId: widget.teamId,
               onDriversTap: () {
@@ -144,35 +153,37 @@ class _MainLayoutState extends State<MainLayout> {
             children: [
               NavNode(
                 id: 'mgmt_drivers',
-                title: 'Drivers',
+                titleBuilder: (context) =>
+                    AppLocalizations.of(context).navDrivers,
                 screen: DriversScreen(teamId: widget.teamId),
               ),
             ],
           ),
           NavNode(
             id: 'mgmt_finances',
-            title: 'Finances',
+            titleBuilder: (context) => AppLocalizations.of(context).navFinances,
             screen: FinancesScreen(teamId: widget.teamId),
           ),
           NavNode(
             id: 'mgmt_sponsors',
-            title: 'Sponsors',
+            titleBuilder: (context) => AppLocalizations.of(context).navSponsors,
             screen: SponsorshipScreen(teamId: widget.teamId),
           ),
         ],
       ),
       NavNode(
         id: 'season',
-        title: 'Season',
+        titleBuilder: (context) => AppLocalizations.of(context).navSeason,
         children: [
           NavNode(
             id: 'season_standings',
-            title: 'Standings',
+            titleBuilder: (context) =>
+                AppLocalizations.of(context).navStandings,
             screen: const StandingsScreen(),
           ),
           NavNode(
             id: 'season_calendar',
-            title: 'Calendar',
+            titleBuilder: (context) => AppLocalizations.of(context).navCalendar,
             screen: CalendarScreen(teamId: widget.teamId),
           ),
         ],
@@ -262,7 +273,7 @@ class _MainLayoutState extends State<MainLayout> {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        'ACCOUNT INFO',
+                        AppLocalizations.of(context).accountInfo,
                         style: GoogleFonts.poppins(
                           fontSize: 12,
                           fontWeight: FontWeight.w900,
@@ -272,23 +283,23 @@ class _MainLayoutState extends State<MainLayout> {
                       ),
                       const SizedBox(height: 16),
                       _buildInfoRow(
-                        'Email',
+                        AppLocalizations.of(context).emailLabel,
                         _appUser?.email ??
                             FirebaseAuth.instance.currentUser?.email ??
-                            'N/A',
+                            AppLocalizations.of(context).notAvailable,
                       ),
                       const SizedBox(height: 12),
                       _buildInfoRow(
-                        'Registered',
+                        AppLocalizations.of(context).registeredLabel,
                         _appUser != null
                             ? DateFormat(
                                 'MMM dd, yyyy',
                               ).format(_appUser!.registrationDate)
-                            : 'N/A',
+                            : AppLocalizations.of(context).notAvailable,
                       ),
                       const SizedBox(height: 12),
                       _buildInfoRow(
-                        'Last Session',
+                        AppLocalizations.of(context).lastSession,
                         FirebaseAuth
                                     .instance
                                     .currentUser
@@ -302,7 +313,7 @@ class _MainLayoutState extends State<MainLayout> {
                                     .metadata
                                     .lastSignInTime!,
                               )
-                            : 'N/A',
+                            : AppLocalizations.of(context).notAvailable,
                       ),
                     ],
                   ),
@@ -543,7 +554,7 @@ class _MainLayoutState extends State<MainLayout> {
                 color: Colors.tealAccent,
               ),
               label: Text(
-                'ADMIN',
+                AppLocalizations.of(context).adminBtn,
                 style: GoogleFonts.poppins(
                   fontSize: 12,
                   fontWeight: FontWeight.bold,
@@ -562,7 +573,7 @@ class _MainLayoutState extends State<MainLayout> {
                     : Colors.white,
               ),
               label: Text(
-                'ACCOUNT',
+                AppLocalizations.of(context).accountBtn,
                 style: GoogleFonts.poppins(
                   fontSize: 12,
                   fontWeight: FontWeight.bold,
@@ -597,14 +608,14 @@ class _MainLayoutState extends State<MainLayout> {
                     borderRadius: BorderRadius.circular(12),
                   ),
                   title: Text(
-                    'LOG OUT',
+                    AppLocalizations.of(context).logOutConfirmTitle,
                     style: GoogleFonts.poppins(fontWeight: FontWeight.w900),
                   ),
-                  content: const Text('Are you sure you want to log out?'),
+                  content: Text(AppLocalizations.of(context).logOutConfirmDesc),
                   actions: [
                     TextButton(
                       onPressed: () => Navigator.pop(context),
-                      child: const Text('CANCEL'),
+                      child: Text(AppLocalizations.of(context).cancelBtn),
                     ),
                     TextButton(
                       onPressed: () {
@@ -612,7 +623,7 @@ class _MainLayoutState extends State<MainLayout> {
                         _logout();
                       },
                       child: Text(
-                        'LOG OUT',
+                        AppLocalizations.of(context).logOutBtn,
                         style: TextStyle(color: theme.colorScheme.error),
                       ),
                     ),
@@ -622,7 +633,7 @@ class _MainLayoutState extends State<MainLayout> {
             },
             icon: const Icon(Icons.logout), // Color handled by foregroundColor
             label: Text(
-              'LOG OUT',
+              AppLocalizations.of(context).logOutBtn,
               style: GoogleFonts.poppins(
                 fontSize: 12,
                 fontWeight: FontWeight.bold,
@@ -678,7 +689,7 @@ class _MainLayoutState extends State<MainLayout> {
                                   items: _getPathToNode(_selectedId, _navTree)
                                       .map(
                                         (node) => BreadcrumbItem(
-                                          label: node.title,
+                                          label: node.titleBuilder(context),
                                           onTap: () => _onNodeSelected(node),
                                         ),
                                       )
@@ -751,7 +762,7 @@ class _MainLayoutState extends State<MainLayout> {
               items: _navTree.map((node) {
                 return BottomNavigationBarItem(
                   icon: const SizedBox.shrink(), // No icons
-                  label: node.title.toUpperCase(),
+                  label: node.titleBuilder(context).toUpperCase(),
                 );
               }).toList(),
               currentIndex: _navTree.indexWhere((n) => n.id == _activeParentId),
@@ -802,7 +813,9 @@ class _Sidebar extends StatelessWidget {
           Expanded(
             child: ListView(
               padding: EdgeInsets.zero,
-              children: navTree.map((node) => _buildNode(node, 0)).toList(),
+              children: navTree
+                  .map((node) => _buildNode(context, node, 0))
+                  .toList(),
             ),
           ),
         ],
@@ -810,7 +823,7 @@ class _Sidebar extends StatelessWidget {
     );
   }
 
-  Widget _buildNode(NavNode node, int depth) {
+  Widget _buildNode(BuildContext context, NavNode node, int depth) {
     final bool isSelected = selectedId == node.id;
     final bool hasChildren = node.children != null && node.children!.isNotEmpty;
     final theme = ThemeData.dark(); // Or inherit if needed, but sidebar is dark
@@ -834,6 +847,7 @@ class _Sidebar extends StatelessWidget {
     // Level 1 items (depth 0) are the only ones shown in the sidebar now
     if (depth == 0) {
       return _buildTile(
+        context: context,
         node: node,
         depth: depth,
         isSelected: isSelected,
@@ -849,6 +863,7 @@ class _Sidebar extends StatelessWidget {
   }
 
   Widget _buildTile({
+    required BuildContext context,
     required NavNode node,
     required int depth,
     required bool isSelected,
@@ -862,7 +877,7 @@ class _Sidebar extends StatelessWidget {
       title: isCollapsed
           ? null
           : Text(
-              node.title.toUpperCase(),
+              node.titleBuilder(context).toUpperCase(),
               style: depth == 0
                   ? GoogleFonts.poppins(
                       color: contentColor,
@@ -977,7 +992,7 @@ class _SubNavbar extends StatelessWidget {
                         ),
                       ),
                     Text(
-                      child.title,
+                      child.titleBuilder(context),
                       style: GoogleFonts.raleway(
                         color: isRaceDay
                             ? (isSelected

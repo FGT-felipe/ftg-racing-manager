@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import '../../l10n/app_localizations.dart';
 
 class PersonalScreen extends StatelessWidget {
   final String teamId;
@@ -20,7 +21,7 @@ class PersonalScreen extends StatelessWidget {
       backgroundColor: theme.scaffoldBackgroundColor,
       appBar: AppBar(
         title: Text(
-          'Personal Management'.toUpperCase(),
+          AppLocalizations.of(context).personalManagement.toUpperCase(),
           style: GoogleFonts.poppins(
             fontWeight: FontWeight.w900,
             fontSize: 16,
@@ -39,31 +40,31 @@ class PersonalScreen extends StatelessWidget {
         childAspectRatio: 1.85,
         children: [
           _PersonalCard(
-            title: 'Drivers',
+            title: AppLocalizations.of(context).driversTitle,
             icon: Icons.people_alt_rounded,
             onTap: onDriversTap,
             isEnabled: true,
           ),
           _PersonalCard(
-            title: 'Fitness Trainer',
+            title: AppLocalizations.of(context).fitnessTrainerTitle,
             icon: Icons.fitness_center_rounded,
             onTap: () {},
             isEnabled: false,
           ),
           _PersonalCard(
-            title: 'Chief Engineer',
+            title: AppLocalizations.of(context).chiefEngineerTitle,
             icon: Icons.engineering_rounded,
             onTap: () {},
             isEnabled: false,
           ),
           _PersonalCard(
-            title: 'HR Manager',
+            title: AppLocalizations.of(context).hrManagerTitle,
             icon: Icons.badge_rounded,
             onTap: () {},
             isEnabled: false,
           ),
           _PersonalCard(
-            title: 'Marketing Manager',
+            title: AppLocalizations.of(context).marketingManagerTitle,
             icon: Icons.campaign_rounded,
             onTap: () {},
             isEnabled: false,
@@ -159,8 +160,8 @@ class _PersonalCard extends StatelessWidget {
                 width: 100,
                 color: Colors.redAccent.withValues(alpha: 0.8),
                 padding: const EdgeInsets.symmetric(vertical: 4),
-                child: const Text(
-                  'COMING SOON',
+                child: Text(
+                  AppLocalizations.of(context).comingSoonBanner,
                   textAlign: TextAlign.center,
                   style: TextStyle(
                     color: Colors.white,

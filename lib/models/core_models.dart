@@ -1,4 +1,6 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:flutter/material.dart';
+import '../l10n/app_localizations.dart';
 
 class League {
   final String id;
@@ -624,38 +626,62 @@ class Facility {
     return level * 15000;
   }
 
-  String get description {
+  String getLocalizedName(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
     switch (type) {
       case FacilityType.teamOffice:
-        return "Manage your team's budget and general operations.";
+        return l10n.facTeamOffice;
       case FacilityType.garage:
-        return "Repair and maintain your cars between races.";
+        return l10n.facGarage;
       case FacilityType.youthAcademy:
-        return "Find and train next-generation driving talent.";
+        return l10n.facYouthAcademy;
       case FacilityType.pressRoom:
-        return "Improve your team's public image and media relations.";
+        return l10n.facPressRoom;
       case FacilityType.scoutingOffice:
-        return "Discover experienced staff and drivers for your team.";
+        return l10n.facScoutingOffice;
       case FacilityType.racingSimulator:
-        return "Boost your drivers' skill and performance levels.";
+        return l10n.facRacingSimulator;
       case FacilityType.gym:
-        return "Improve the physical conditioning of your drivers.";
+        return l10n.facGym;
       case FacilityType.rdOffice:
-        return "Research new technologies to upgrade car parts.";
+        return l10n.facRDOffice;
     }
   }
 
-  String get bonusDescription {
-    if (level == 0) return "Not purchased";
+  String getLocalizedDescription(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
     switch (type) {
       case FacilityType.teamOffice:
-        return "Budget +${level * 5}%";
+        return l10n.descTeamOffice;
       case FacilityType.garage:
-        return "Repair +${level * 2}%";
+        return l10n.descGarage;
       case FacilityType.youthAcademy:
-        return "Scouting +${level * 10}";
+        return l10n.descYouthAcademy;
+      case FacilityType.pressRoom:
+        return l10n.descPressRoom;
+      case FacilityType.scoutingOffice:
+        return l10n.descScoutingOffice;
+      case FacilityType.racingSimulator:
+        return l10n.descRacingSimulator;
+      case FacilityType.gym:
+        return l10n.descGym;
+      case FacilityType.rdOffice:
+        return l10n.descRDOffice;
+    }
+  }
+
+  String getLocalizedBonus(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
+    if (level == 0) return l10n.notPurchased;
+    switch (type) {
+      case FacilityType.teamOffice:
+        return l10n.bonusBudget(level * 5);
+      case FacilityType.garage:
+        return l10n.bonusRepair(level * 2);
+      case FacilityType.youthAcademy:
+        return l10n.bonusScouting(level * 10);
       default:
-        return "TBD";
+        return l10n.bonusTBD;
     }
   }
 

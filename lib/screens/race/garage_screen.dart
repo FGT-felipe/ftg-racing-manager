@@ -411,15 +411,14 @@ class _GarageScreenState extends State<GarageScreen>
 
   Future<void> _runPracticeSeries() async {
     if (_circuit == null || _selectedDriverId == null) return;
+    final l10n = AppLocalizations.of(context);
 
     // Block if driver has DNF'd in practice
     if (_practiceDnfs.contains(_selectedDriverId)) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text(
-              "This driver has crashed and cannot run again this session.",
-            ),
+          SnackBar(
+            content: Text(l10n.garageDriverCrashedSessionOver),
             backgroundColor: Colors.red,
           ),
         );
@@ -432,7 +431,10 @@ class _GarageScreenState extends State<GarageScreen>
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text(
-            "Driver reached max practice laps ($kMaxPracticeLapsPerDriver). Reducing series to ${kMaxPracticeLapsPerDriver - currentLaps} laps.",
+            l10n.garageMaxLapsReached(
+              kMaxPracticeLapsPerDriver.toString(),
+              (kMaxPracticeLapsPerDriver - currentLaps).toString(),
+            ),
           ),
           backgroundColor: Colors.orange,
         ),
@@ -450,7 +452,6 @@ class _GarageScreenState extends State<GarageScreen>
     setState(() => _isLoading = true);
 
     final defaultTextColor = Theme.of(context).colorScheme.onSurface;
-    final l10n = AppLocalizations.of(context);
 
     // Charge practice cost
     await RaceService().chargeActionCost(
@@ -505,8 +506,7 @@ class _GarageScreenState extends State<GarageScreen>
           _practiceDnfs.add(_selectedDriverId!);
 
           setState(() {
-            _pitBoardMessage =
-                "CRASH! ${driver.name.toUpperCase()} HAS HAD AN ACCIDENT!";
+            _pitBoardMessage = l10n.garageCrashAlert(driver.name.toUpperCase());
           });
 
           await RaceService().chargeCrashPenalty(
@@ -519,7 +519,7 @@ class _GarageScreenState extends State<GarageScreen>
           _driverLapHistory[_selectedDriverId!]!.insert(0, {
             'lapTime': 999.0, // DNF Marker
             'confidence': result.setupConfidence,
-            'feedback': "CRASHED - SESSION OVER",
+            'feedback': l10n.garageDriverCrashedSessionOver,
             'setup': setup.copyWith(),
             'seriesIndex': i + 1,
             'totalInSeries': actualLaps,
@@ -616,7 +616,9 @@ class _GarageScreenState extends State<GarageScreen>
         }
         if (feedbackToShow.isEmpty) {
           feedbackToShow.add(
-            "Series completed. Setup confidence: ${(lastLapResult.setupConfidence * 100).toStringAsFixed(0)}%",
+            l10n.garageSeriesCompletedConfidence(
+              ((lastLapResult.setupConfidence * 100).toStringAsFixed(0)),
+            ),
           );
         }
 
@@ -736,7 +738,7 @@ class _GarageScreenState extends State<GarageScreen>
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text("Error: ${e.toString()}"),
+            content: Text(l10n.garageError(e.toString())),
             backgroundColor: Colors.red,
           ),
         );
@@ -748,6 +750,7 @@ class _GarageScreenState extends State<GarageScreen>
 
   Future<void> _saveQualifyingSetupDraft() async {
     if (_selectedDriverId == null) return;
+    final l10n = AppLocalizations.of(context);
     setState(() => _isLoading = true);
     try {
       // Copy practice setup to qualifying setup for the selected driver
@@ -765,9 +768,9 @@ class _GarageScreenState extends State<GarageScreen>
 
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text("Qualifying setup saved (Draft)"),
-            duration: Duration(seconds: 1),
+          SnackBar(
+            content: Text(l10n.garageQualySetupSavedDraft),
+            duration: const Duration(seconds: 1),
           ),
         );
       }
@@ -775,7 +778,7 @@ class _GarageScreenState extends State<GarageScreen>
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text("Error: ${e.toString()}"),
+            content: Text(l10n.garageError(e.toString())),
             backgroundColor: Colors.red,
           ),
         );
@@ -787,6 +790,7 @@ class _GarageScreenState extends State<GarageScreen>
 
   Future<void> _saveRaceSetupDraft() async {
     if (_selectedDriverId == null) return;
+    final l10n = AppLocalizations.of(context);
     setState(() => _isLoading = true);
     try {
       // Copy practice setup to race setup for the selected driver
@@ -804,9 +808,9 @@ class _GarageScreenState extends State<GarageScreen>
 
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text("Race setup saved (Draft)"),
-            duration: Duration(seconds: 1),
+          SnackBar(
+            content: Text(l10n.garageRaceSetupSavedDraft),
+            duration: const Duration(seconds: 1),
           ),
         );
       }
@@ -814,7 +818,7 @@ class _GarageScreenState extends State<GarageScreen>
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text("Error: ${e.toString()}"),
+            content: Text(l10n.garageError(e.toString())),
             backgroundColor: Colors.red,
           ),
         );
@@ -908,15 +912,14 @@ class _GarageScreenState extends State<GarageScreen>
   /// Run a qualifying attempt for the selected driver
   Future<void> _runQualifyingAttempt() async {
     if (_selectedDriverId == null || _circuit == null) return;
+    final l10n = AppLocalizations.of(context);
 
     // Block if driver has DNF'd in qualifying
     if (_qualifyingDnfs.contains(_selectedDriverId)) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text(
-              "This driver has crashed and cannot run again this session.",
-            ),
+          SnackBar(
+            content: Text(l10n.garageDriverCrashedSessionOver),
             backgroundColor: Colors.red,
           ),
         );
@@ -930,10 +933,8 @@ class _GarageScreenState extends State<GarageScreen>
     if (currentAttempts >= kMaxQualifyingAttempts) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text(
-              "Maximum qualifying attempts (6) reached for this driver.",
-            ),
+          SnackBar(
+            content: Text(l10n.garageMaxQualifyingAttemptsReached),
             backgroundColor: Colors.orange,
           ),
         );
@@ -943,7 +944,7 @@ class _GarageScreenState extends State<GarageScreen>
 
     setState(() {
       _isLoading = true;
-      _pitBoardMessage = "OUT LAP...";
+      _pitBoardMessage = l10n.garageOutLap;
     });
 
     // Charge qualifying entry fee on first attempt
@@ -981,7 +982,7 @@ class _GarageScreenState extends State<GarageScreen>
       if (!mounted) return;
 
       // 2. Flying Lap
-      setState(() => _pitBoardMessage = "PUSHING...");
+      setState(() => _pitBoardMessage = l10n.garagePushing);
       final result = RaceService().simulatePracticeRun(
         circuit: _circuit!,
         team: team,
@@ -998,8 +999,9 @@ class _GarageScreenState extends State<GarageScreen>
         _qualifyingLastLaps[driverId] = 999.0;
 
         setState(() {
-          _pitBoardMessage =
-              "CRASH! ${driver.name.toUpperCase()} HAS HAD AN ACCIDENT!";
+          _pitBoardMessage = l10n.garageCrashAccident(
+            driver.name.toUpperCase(),
+          );
           _qualifyingLaps[driverId] = startLaps + 2;
         });
 
@@ -1047,9 +1049,7 @@ class _GarageScreenState extends State<GarageScreen>
           setState(() => _pitBoardMessage = null);
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
-              content: Text(
-                "💥 ${driver.name} crashed during qualifying! Session over. Repair costs applied.",
-              ),
+              content: Text(l10n.garageCrashedQualifying),
               backgroundColor: Colors.red,
               duration: const Duration(seconds: 4),
             ),
@@ -1060,7 +1060,7 @@ class _GarageScreenState extends State<GarageScreen>
 
       // 3. In Lap
       setState(() {
-        _pitBoardMessage = "IN LAP...";
+        _pitBoardMessage = l10n.garageInLap;
         _qualifyingLaps[driverId] = startLaps + 3;
       });
       await Future.delayed(const Duration(milliseconds: 1000));
@@ -1138,8 +1138,16 @@ class _GarageScreenState extends State<GarageScreen>
           SnackBar(
             content: Text(
               isImproved
-                  ? "✓ ${_formatLapTime(result.lapTime)} — New best! (Attempt $newAttempts/$kMaxQualifyingAttempts)"
-                  : "⏱ ${_formatLapTime(result.lapTime)} — No improvement (Attempt $newAttempts/$kMaxQualifyingAttempts)",
+                  ? l10n.garageImprovedTime(
+                      _formatLapTime(result.lapTime),
+                      newAttempts,
+                      kMaxQualifyingAttempts,
+                    )
+                  : l10n.garageNoImprovement(
+                      _formatLapTime(result.lapTime),
+                      newAttempts,
+                      kMaxQualifyingAttempts,
+                    ),
             ),
             backgroundColor: isImproved ? Colors.green : Colors.blueGrey,
           ),
@@ -1149,7 +1157,7 @@ class _GarageScreenState extends State<GarageScreen>
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text("Error: ${e.toString()}"),
+            content: Text(l10n.garageError(e.toString())),
             backgroundColor: Colors.red,
           ),
         );
@@ -1172,6 +1180,7 @@ class _GarageScreenState extends State<GarageScreen>
   }
 
   Future<void> _saveRaceSetup() async {
+    final l10n = AppLocalizations.of(context);
     if (_selectedDriverId == null) return;
     setState(() => _isLoading = true);
     try {
@@ -1194,8 +1203,8 @@ class _GarageScreenState extends State<GarageScreen>
       });
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text("✓ Race setup submitted!"),
+          SnackBar(
+            content: Text(l10n.garageRaceSetupSubmitted),
             backgroundColor: Colors.green,
           ),
         );
@@ -1204,7 +1213,7 @@ class _GarageScreenState extends State<GarageScreen>
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text("Error: ${e.toString()}"),
+            content: Text(l10n.garageError(e.toString())),
             backgroundColor: Colors.red,
           ),
         );
@@ -1219,6 +1228,7 @@ class _GarageScreenState extends State<GarageScreen>
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final l10n = AppLocalizations.of(context);
 
     if (_isLoading && _circuit == null) {
       final loadingIndicator = Center(
@@ -1236,13 +1246,28 @@ class _GarageScreenState extends State<GarageScreen>
 
     final content = Column(
       children: [
-        TabBar(
-          controller: _tabController,
-          tabs: const [
-            Tab(text: "PRACTICE"),
-            Tab(text: "QUALIFYING"),
-            Tab(text: "RACE"),
-          ],
+        Container(
+          padding: const EdgeInsets.symmetric(horizontal: 12),
+          decoration: BoxDecoration(
+            color: theme.appBarTheme.backgroundColor,
+            border: Border(
+              bottom: BorderSide(
+                color: Colors.white.withValues(alpha: 0.1),
+                width: 1,
+              ),
+            ),
+          ),
+          child: TabBar(
+            controller: _tabController,
+            labelColor: theme.primaryColor,
+            unselectedLabelColor: Colors.white24,
+            indicatorWeight: 4,
+            tabs: [
+              Tab(text: l10n.practiceTab.toUpperCase()),
+              Tab(text: l10n.qualifyingTab.toUpperCase()),
+              Tab(text: l10n.raceTab.toUpperCase()),
+            ],
+          ),
         ),
         Expanded(
           child: TabBarView(
@@ -1265,7 +1290,7 @@ class _GarageScreenState extends State<GarageScreen>
       backgroundColor: theme.scaffoldBackgroundColor,
       appBar: AppBar(
         title: Text(
-          _circuit?.name ?? 'Paddock',
+          _circuit?.name ?? l10n.paddockTitle,
           style: theme.appBarTheme.titleTextStyle?.copyWith(fontSize: 16),
         ),
         backgroundColor: theme.appBarTheme.backgroundColor,
@@ -1284,9 +1309,9 @@ class _GarageScreenState extends State<GarageScreen>
                   border: Border.all(color: Colors.redAccent),
                   borderRadius: BorderRadius.circular(12),
                 ),
-                child: const Text(
-                  "PARC FERMÉ",
-                  style: TextStyle(
+                child: Text(
+                  l10n.garageParcFermeLabel.toUpperCase(),
+                  style: const TextStyle(
                     color: Colors.redAccent,
                     fontWeight: FontWeight.bold,
                     fontSize: 11,
@@ -1303,6 +1328,7 @@ class _GarageScreenState extends State<GarageScreen>
   // ─── PRACTICE TAB ───
 
   Widget _buildPracticeTab(ThemeData theme, bool isPaddockOpen) {
+    final l10n = AppLocalizations.of(context);
     return Row(
       children: [
         // LEFT: Setup + Controls
@@ -1353,8 +1379,8 @@ class _GarageScreenState extends State<GarageScreen>
                           Expanded(
                             child: Text(
                               isRaceSent
-                                  ? "PRACTICE CLOSED: Race setup has been submitted."
-                                  : "PRACTICE CLOSED: Qualifying session has started.",
+                                  ? l10n.garagePracticeClosedRace
+                                  : l10n.garagePracticeClosedQualy,
                               style: TextStyle(
                                 color: theme.primaryColor,
                                 fontWeight: FontWeight.bold,
@@ -1377,7 +1403,7 @@ class _GarageScreenState extends State<GarageScreen>
                   // Setup sliders (compact)
                   _buildSetupCard(
                     theme,
-                    "PRACTICE SETUP",
+                    l10n.garageSetupPractice.toUpperCase(),
                     _currentDriverPracticeSetup,
                     canEdit,
                     (field, val) {
@@ -1477,6 +1503,7 @@ class _GarageScreenState extends State<GarageScreen>
     final isParcFerme = _qualifyingParcFerme[driverId] == true;
     final attempts = _qualifyingAttempts[driverId] ?? 0;
     final hasAttemptsLeft = attempts < kMaxQualifyingAttempts;
+    final l10n = AppLocalizations.of(context);
 
     return Row(
       children: [
@@ -1499,10 +1526,10 @@ class _GarageScreenState extends State<GarageScreen>
               const SizedBox(height: 12),
 
               if (driverId == null)
-                const Center(
+                Center(
                   child: Padding(
-                    padding: EdgeInsets.all(32.0),
-                    child: Text("Select a driver to configure setup"),
+                    padding: const EdgeInsets.all(32.0),
+                    child: Text(l10n.garageSelectDriver),
                   ),
                 )
               else if (_qualifyingDnfs.contains(driverId)) ...[
@@ -1528,9 +1555,9 @@ class _GarageScreenState extends State<GarageScreen>
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            const Text(
-                              "DRIVER CRASHED — SESSION OVER",
-                              style: TextStyle(
+                            Text(
+                              l10n.garageDriverCrashedSessionOver.toUpperCase(),
+                              style: const TextStyle(
                                 color: Colors.red,
                                 fontWeight: FontWeight.w900,
                                 fontSize: 13,
@@ -1539,7 +1566,7 @@ class _GarageScreenState extends State<GarageScreen>
                             ),
                             const SizedBox(height: 4),
                             Text(
-                              "Repair and medical costs have been applied. This driver cannot run again this qualifying session.",
+                              l10n.garageDriverCrashedSessionOverDetails,
                               style: TextStyle(
                                 color: Colors.white.withValues(alpha: 0.6),
                                 fontSize: 11,
@@ -1561,7 +1588,7 @@ class _GarageScreenState extends State<GarageScreen>
                   child: ElevatedButton.icon(
                     onPressed: null,
                     icon: const Icon(Icons.warning_amber_rounded, size: 18),
-                    label: const Text("CRASHED — SESSION OVER"),
+                    label: Text(l10n.garageCrashedQualifying.toUpperCase()),
                     style: ElevatedButton.styleFrom(
                       padding: const EdgeInsets.symmetric(vertical: 14),
                       backgroundColor: Colors.red[900],
@@ -1603,10 +1630,11 @@ class _GarageScreenState extends State<GarageScreen>
                       Expanded(
                         child: Text(
                           isParcFerme
-                              ? "PARC FERMÉ: Only front wing and tyres can be changed. "
-                                    "Attempts: $attempts/$kMaxQualifyingAttempts"
-                              : "Configure your qualifying setup and run attempts to set the best lap time. "
-                                    "You have $kMaxQualifyingAttempts attempts per driver.",
+                              ? l10n.garageParcFerme(
+                                  attempts,
+                                  kMaxQualifyingAttempts,
+                                )
+                              : l10n.garageQualyIntro(kMaxQualifyingAttempts),
                           style: theme.textTheme.bodySmall?.copyWith(
                             fontSize: 11,
                           ),
@@ -1645,7 +1673,9 @@ class _GarageScreenState extends State<GarageScreen>
                         ),
                         const SizedBox(width: 10),
                         Text(
-                          "BEST: ${_formatLapTime(_qualifyingBestTimes[driverId]!)}",
+                          l10n.garageBestTime(
+                            _formatLapTime(_qualifyingBestTimes[driverId]!),
+                          ),
                           style: const TextStyle(
                             color: Colors.greenAccent,
                             fontWeight: FontWeight.w900,
@@ -1655,7 +1685,10 @@ class _GarageScreenState extends State<GarageScreen>
                         ),
                         const Spacer(),
                         Text(
-                          "$attempts/$kMaxQualifyingAttempts ATTEMPTS",
+                          l10n.garageQualyAttempts(
+                            attempts,
+                            kMaxQualifyingAttempts,
+                          ),
                           style: TextStyle(
                             color: Colors.white.withValues(alpha: 0.5),
                             fontSize: 10,
@@ -1705,8 +1738,11 @@ class _GarageScreenState extends State<GarageScreen>
                     ),
                     label: Text(
                       hasAttemptsLeft
-                          ? "RUN QUALIFYING ATTEMPT (${attempts + 1}/$kMaxQualifyingAttempts)"
-                          : "ALL ATTEMPTS USED",
+                          ? l10n.garageRunQualyAttempt(
+                              attempts + 1,
+                              kMaxQualifyingAttempts,
+                            )
+                          : l10n.garageAllAttemptsUsed.toUpperCase(),
                     ),
                     style: ElevatedButton.styleFrom(
                       padding: const EdgeInsets.symmetric(vertical: 14),
@@ -1749,6 +1785,7 @@ class _GarageScreenState extends State<GarageScreen>
     final bestTime = _qualifyingBestTimes[driverId] ?? 0.0;
     final lastTime = _qualifyingLastLaps[driverId] ?? 0.0;
     final laps = _qualifyingLaps[driverId] ?? 0;
+    final l10n = AppLocalizations.of(context);
 
     final status = TimeService().currentStatus;
     final isSessionOpen =
@@ -1771,7 +1808,8 @@ class _GarageScreenState extends State<GarageScreen>
     }
 
     final displayStatus =
-        _pitBoardMessage ?? (bestTime > 0 ? "IN BOX" : "READY");
+        _pitBoardMessage ??
+        (bestTime > 0 ? l10n.pitBoardMessageInBox : l10n.pitBoardMessageReady);
 
     return Container(
       margin: const EdgeInsets.only(left: 12, right: 12, top: 12),
@@ -1783,10 +1821,10 @@ class _GarageScreenState extends State<GarageScreen>
           color: Colors.white.withValues(alpha: 0.1),
           width: 1,
         ),
-        gradient: LinearGradient(
+        gradient: const LinearGradient(
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
-          colors: [const Color(0xFF1E1E1E), const Color(0xFF0A0A0A)],
+          colors: [Color(0xFF1E1E1E), Color(0xFF0A0A0A)],
         ),
         boxShadow: [
           BoxShadow(
@@ -1811,9 +1849,9 @@ class _GarageScreenState extends State<GarageScreen>
                       );
                     },
                     child: Text(
-                      "QUALIFYING SESSION OPEN",
-                      style: TextStyle(
-                        color: const Color(0xFF00E676),
+                      l10n.garageQualySessionOpen.toUpperCase(),
+                      style: const TextStyle(
+                        color: Color(0xFF00E676),
                         fontSize: 12,
                         fontWeight: FontWeight.w900,
                         letterSpacing: 2.5,
@@ -1822,8 +1860,8 @@ class _GarageScreenState extends State<GarageScreen>
                   )
                 : Text(
                     isSessionOpen
-                        ? "QUALIFYING SESSION OPEN"
-                        : "QUALIFYING SESSION CLOSED",
+                        ? l10n.garageQualySessionOpen.toUpperCase()
+                        : l10n.garageQualySessionClosed.toUpperCase(),
                     style: TextStyle(
                       color: isSessionOpen
                           ? const Color(0xFF00E676)
@@ -1858,7 +1896,7 @@ class _GarageScreenState extends State<GarageScreen>
                 child: Text(
                   displayStatus.toUpperCase(),
                   style: TextStyle(
-                    color: displayStatus.contains("CRASH")
+                    color: displayStatus.contains(l10n.garageDnf)
                         ? Colors.red
                         : _isLoading
                         ? const Color(0xFFFF5252)
@@ -1873,7 +1911,7 @@ class _GarageScreenState extends State<GarageScreen>
               Row(
                 children: [
                   Text(
-                    "LAPS ",
+                    l10n.garageLaps.toUpperCase(),
                     style: TextStyle(
                       color: Colors.white.withValues(alpha: 0.5),
                       fontSize: 10,
@@ -1909,7 +1947,7 @@ class _GarageScreenState extends State<GarageScreen>
                         // Position
                         Expanded(
                           child: _buildPitBoardField(
-                            "POS",
+                            l10n.garagePos.toUpperCase(),
                             pos > 0 ? pos.toString().padLeft(2, '0') : "--",
                           ),
                         ),
@@ -1917,7 +1955,7 @@ class _GarageScreenState extends State<GarageScreen>
                         // Gap
                         Expanded(
                           child: _buildPitBoardField(
-                            "GAP",
+                            l10n.garageGap.toUpperCase(),
                             pos > 1
                                 ? "+${gap.toStringAsFixed(3)}"
                                 : (pos == 1 ? "P1" : "---"),
@@ -1935,7 +1973,7 @@ class _GarageScreenState extends State<GarageScreen>
                         // Last Lap
                         Expanded(
                           child: _buildPitBoardField(
-                            "LAST LAP",
+                            l10n.garageLastLap.toUpperCase(),
                             lastTime > 0
                                 ? _formatLapTime(lastTime)
                                 : "--:---.---",
@@ -1945,7 +1983,7 @@ class _GarageScreenState extends State<GarageScreen>
                         // Best Time
                         Expanded(
                           child: _buildPitBoardField(
-                            "BEST LAP",
+                            l10n.garageBestTime("").toUpperCase(),
                             bestTime > 0
                                 ? _formatLapTime(bestTime)
                                 : "--:---.---",
@@ -2008,9 +2046,10 @@ class _GarageScreenState extends State<GarageScreen>
     VoidCallback? onCopyToRace,
   }) {
     final setup = _currentDriverQualifyingSetup;
+    final l10n = AppLocalizations.of(context);
     return _buildSetupCard(
       theme,
-      "QUALIFYING SETUP",
+      l10n.garageSetupQualifying.toUpperCase(),
       setup,
       true,
       (field, val) {
@@ -2045,6 +2084,7 @@ class _GarageScreenState extends State<GarageScreen>
 
   /// Qualifying Results panel (right column)
   Widget _buildQualifyingResultsPanel(ThemeData theme) {
+    final l10n = AppLocalizations.of(context);
     return Container(
       margin: const EdgeInsets.all(12),
       decoration: BoxDecoration(
@@ -2072,9 +2112,9 @@ class _GarageScreenState extends State<GarageScreen>
                   size: 18,
                 ),
                 const SizedBox(width: 8),
-                const Text(
-                  "QUALIFYING RESULTS",
-                  style: TextStyle(
+                Text(
+                  l10n.garageQualifyingResults.toUpperCase(),
+                  style: const TextStyle(
                     fontWeight: FontWeight.w900,
                     fontSize: 13,
                     letterSpacing: 1.5,
@@ -2097,24 +2137,33 @@ class _GarageScreenState extends State<GarageScreen>
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
             color: Colors.white.withValues(alpha: 0.05),
-            child: const Row(
+            child: Row(
               children: [
                 SizedBox(
                   width: 35,
-                  child: Text("POS", style: _qualyHeaderStyle),
+                  child: Text(
+                    l10n.garagePos.toUpperCase(),
+                    style: _qualyHeaderStyle,
+                  ),
                 ),
                 Expanded(
                   flex: 4,
-                  child: Text("DRIVER", style: _qualyHeaderStyle),
+                  child: Text(
+                    l10n.garageDriver.toUpperCase(),
+                    style: _qualyHeaderStyle,
+                  ),
                 ),
                 Expanded(
                   flex: 3,
-                  child: Text("CONSTRUCTOR", style: _qualyHeaderStyle),
+                  child: Text(
+                    l10n.garageConstructor.toUpperCase(),
+                    style: _qualyHeaderStyle,
+                  ),
                 ),
                 SizedBox(
                   width: 30,
                   child: Text(
-                    "TYRE",
+                    l10n.garageTyre.toUpperCase(),
                     style: _qualyHeaderStyle,
                     textAlign: TextAlign.center,
                   ),
@@ -2122,7 +2171,7 @@ class _GarageScreenState extends State<GarageScreen>
                 Expanded(
                   flex: 2,
                   child: Text(
-                    "TIME",
+                    l10n.garageTime.toUpperCase(),
                     style: _qualyHeaderStyle,
                     textAlign: TextAlign.right,
                   ),
@@ -2130,7 +2179,7 @@ class _GarageScreenState extends State<GarageScreen>
                 SizedBox(
                   width: 40,
                   child: Text(
-                    "LAPS",
+                    l10n.garageLaps.toUpperCase(),
                     style: _qualyHeaderStyle,
                     textAlign: TextAlign.center,
                   ),
@@ -2144,7 +2193,7 @@ class _GarageScreenState extends State<GarageScreen>
             child: _qualifyingResultsTable.isEmpty
                 ? Center(
                     child: Text(
-                      "Loading participants...",
+                      l10n.garageLoadingParticipants,
                       style: TextStyle(
                         color: Colors.white.withValues(alpha: 0.5),
                       ),
@@ -2303,6 +2352,7 @@ class _GarageScreenState extends State<GarageScreen>
 
   Widget _buildRaceTab(ThemeData theme, bool isPaddockOpen) {
     final isSubmitted = _raceSetupsSubmitted[_selectedDriverId] == true;
+    final l10n = AppLocalizations.of(context);
 
     return ListView(
       padding: const EdgeInsets.all(16),
@@ -2321,10 +2371,10 @@ class _GarageScreenState extends State<GarageScreen>
         const SizedBox(height: 12),
 
         if (_selectedDriverId == null)
-          const Center(
+          Center(
             child: Padding(
-              padding: EdgeInsets.all(32.0),
-              child: Text("Select a driver to configure setup"),
+              padding: const EdgeInsets.all(32.0),
+              child: Text(l10n.garageSelectDriver),
             ),
           )
         else ...[
@@ -2344,9 +2394,7 @@ class _GarageScreenState extends State<GarageScreen>
                 const SizedBox(width: 12),
                 Expanded(
                   child: Text(
-                    "Configure your complete race strategy and driving styles. This setup will be used during the race itself. "
-                    "Rule: Hard compound tyres MUST be used at least once during the race. "
-                    "Optimize fuel load, tyre choices, and driving aggression for each stint.",
+                    l10n.garageRaceStrategyDesc,
                     style: theme.textTheme.bodyMedium,
                   ),
                 ),
@@ -2363,13 +2411,13 @@ class _GarageScreenState extends State<GarageScreen>
                 borderRadius: BorderRadius.circular(8),
                 border: Border.all(color: Colors.green.withValues(alpha: 0.3)),
               ),
-              child: const Row(
+              child: Row(
                 children: [
-                  Icon(Icons.check_circle, color: Colors.green),
-                  SizedBox(width: 12),
+                  const Icon(Icons.check_circle, color: Colors.green),
+                  const SizedBox(width: 12),
                   Text(
-                    "Race setup submitted ✓",
-                    style: TextStyle(
+                    l10n.garageRaceSetupSubmitted,
+                    style: const TextStyle(
                       color: Colors.green,
                       fontWeight: FontWeight.bold,
                     ),
@@ -2442,7 +2490,7 @@ class _GarageScreenState extends State<GarageScreen>
                     ? _saveRaceSetup
                     : null,
                 icon: const Icon(Icons.check_circle_outline, size: 18),
-                label: const Text("SUBMIT RACE SETUP"),
+                label: Text(l10n.garageSubmitRaceSetup.toUpperCase()),
                 style: ElevatedButton.styleFrom(
                   padding: const EdgeInsets.symmetric(vertical: 16),
                   backgroundColor: const Color(0xFFFF5252),
@@ -2462,6 +2510,7 @@ class _GarageScreenState extends State<GarageScreen>
   // ─── REUSABLE WIDGETS ───
 
   Widget _buildDriverSelector(ThemeData theme) {
+    final l10n = AppLocalizations.of(context);
     return SizedBox(
       height: 110,
       child: ListView.builder(
@@ -2608,7 +2657,10 @@ class _GarageScreenState extends State<GarageScreen>
                                     ),
                                     const SizedBox(width: 4),
                                     Text(
-                                      "$laps / $kMaxPracticeLapsPerDriver LAPS",
+                                      l10n.garageLapsCount(
+                                        laps,
+                                        kMaxPracticeLapsPerDriver,
+                                      ),
                                       style: TextStyle(
                                         fontSize: 9,
                                         fontWeight: FontWeight.w900,
@@ -2635,10 +2687,10 @@ class _GarageScreenState extends State<GarageScreen>
                             color: Colors.red.withValues(alpha: 0.55),
                             borderRadius: BorderRadius.circular(10),
                           ),
-                          child: const Center(
+                          child: Center(
                             child: Text(
-                              "DNF",
-                              style: TextStyle(
+                              l10n.garageDnf.toUpperCase(),
+                              style: const TextStyle(
                                 color: Colors.white,
                                 fontSize: 28,
                                 fontWeight: FontWeight.w900,
@@ -2683,8 +2735,9 @@ class _GarageScreenState extends State<GarageScreen>
 
   Widget _buildCircuitIntel(ThemeData theme) {
     if (_circuit == null) return const SizedBox.shrink();
+    final l10n = AppLocalizations.of(context);
 
-    String weather = "Sunny";
+    String weather = l10n.garageWeatherSunny;
     if (_currentEvent != null) {
       if (_tabController.index == 0) {
         weather = _currentEvent!.weatherPractice;
@@ -2775,9 +2828,9 @@ class _GarageScreenState extends State<GarageScreen>
                       children: [
                         Icon(Icons.info_outline, size: 11, color: accentColor),
                         const SizedBox(width: 5),
-                        const Text(
-                          "CIRCUIT INTEL",
-                          style: TextStyle(
+                        Text(
+                          l10n.garageCircuitIntel.toUpperCase(),
+                          style: const TextStyle(
                             color: Colors.white,
                             fontWeight: FontWeight.w900,
                             letterSpacing: 1.5,
@@ -2801,24 +2854,34 @@ class _GarageScreenState extends State<GarageScreen>
                       runSpacing: 4,
                       children: [
                         _buildCircuitChip(
-                          "Laps",
-                          "${_currentEvent?.totalLaps ?? _circuit!.laps} LAPS",
+                          l10n.garageLapsIntel,
+                          "${_currentEvent?.totalLaps ?? _circuit!.laps} ${l10n.garageLapsIntel.toUpperCase()}",
                         ),
-                        _buildCircuitChip("Weather", weather, isWeather: true),
+                        _buildCircuitChip(
+                          l10n.garageWeatherIntel,
+                          weather,
+                          isWeather: true,
+                        ),
                         if (_circuit!.aeroWeight >= 0.4)
-                          _buildCircuitChip("Aero", "High"),
+                          _buildCircuitChip(
+                            l10n.garageAeroIntel,
+                            l10n.garageWeatherExtremeHigh,
+                          ),
                         if (_circuit!.powertrainWeight >= 0.4)
-                          _buildCircuitChip("Engine", "High"),
+                          _buildCircuitChip(
+                            l10n.garageEngineIntel,
+                            l10n.garageWeatherExtremeHigh,
+                          ),
                         if (_circuit!.characteristics.containsKey('Tyre Wear'))
                           _buildCircuitChip(
-                            "Tyres",
+                            l10n.garageTyresIntel,
                             _circuit!.characteristics['Tyre Wear']!,
                           ),
                         if (_circuit!.characteristics.containsKey(
                           'Fuel Consumption',
                         ))
                           _buildCircuitChip(
-                            "Fuel",
+                            l10n.garageFuelIntel,
                             _circuit!.characteristics['Fuel Consumption']!,
                           ),
                       ],
@@ -2836,21 +2899,23 @@ class _GarageScreenState extends State<GarageScreen>
   Widget _buildCircuitChip(String key, String value, {bool isWeather = false}) {
     Color bg, text;
     IconData? icon;
+    final l10n = AppLocalizations.of(context);
 
     if (isWeather) {
       text = _getWeatherColor(value);
       bg = text.withValues(alpha: 0.1);
       icon = _getWeatherIcon(value);
-    } else if (value == 'High' ||
-        value == 'Important' ||
-        value == 'Crucial' ||
-        value == 'Critical' ||
-        value == 'Very High' ||
-        value == 'Maximum' ||
-        key == 'Focus') {
+    } else if (value == l10n.garageWeatherExtremeHigh ||
+        value == l10n.garageImportant ||
+        value == l10n.garageCrucial ||
+        value == l10n.garageCritical ||
+        value == l10n.garageVeryHigh ||
+        value == l10n.garageMaximum ||
+        key == l10n.garageFocus) {
       bg = const Color(0xFFFF5252).withValues(alpha: 0.1);
       text = const Color(0xFFFF5252);
-    } else if (value == 'Low' || value == 'Low Priority') {
+    } else if (value == l10n.garageWeatherExtremeLow ||
+        value == l10n.garageLowPriority) {
       bg = const Color(0xFF00C853).withValues(alpha: 0.1);
       text = const Color(0xFF00C853);
     } else {
@@ -2942,35 +3007,36 @@ class _GarageScreenState extends State<GarageScreen>
     bool isPracticeDnf = false,
     VoidCallback? onStartSeries,
   }) {
+    final l10n = AppLocalizations.of(context);
     // Each style: (style, chevron icon stacking, color, label, tooltip)
     final styles = [
       (
         DriverStyle.mostRisky,
         Icons.keyboard_double_arrow_up,
         const Color(0xFFFF3D3D), // red
-        'RISKY',
-        'Most aggressive push — highest risk, highest reward',
+        l10n.styleRisky,
+        l10n.tipRisky,
       ),
       (
         DriverStyle.offensive,
         Icons.keyboard_arrow_up,
         const Color(0xFFFF9800), // orange
-        'ATTACK',
-        'Offensive style — push hard for lap time',
+        l10n.styleAttack,
+        l10n.tipAttack,
       ),
       (
         DriverStyle.normal,
         Icons.remove, // single horizontal — "balanced"
         const Color(0xFF00C853), // green
-        'NORMAL',
-        'Balanced driving — default style',
+        l10n.styleNormal,
+        l10n.tipNormal,
       ),
       (
         DriverStyle.defensive,
         Icons.keyboard_arrow_down,
         const Color(0xFF42A5F5), // blue
-        'CONSERVE',
-        'Defensive / tyre saving style',
+        l10n.styleConserve,
+        l10n.tipConserve,
       ),
     ];
 
@@ -3004,9 +3070,9 @@ class _GarageScreenState extends State<GarageScreen>
               children: [
                 const Icon(Icons.tune, size: 12, color: Colors.white38),
                 const SizedBox(width: 6),
-                const Text(
-                  'DRIVER STYLE',
-                  style: TextStyle(
+                Text(
+                  l10n.garageDriverStyle.toUpperCase(),
+                  style: const TextStyle(
                     color: Colors.white,
                     fontSize: 11,
                     fontWeight: FontWeight.w900,
@@ -3074,7 +3140,7 @@ class _GarageScreenState extends State<GarageScreen>
                                 ),
                                 const SizedBox(height: 2),
                                 Text(
-                                  label,
+                                  label.toUpperCase(),
                                   style: TextStyle(
                                     fontSize: 7,
                                     fontWeight: FontWeight.w900,
@@ -3129,7 +3195,7 @@ class _GarageScreenState extends State<GarageScreen>
                         items: [1, 2, 3, 5, 8, 10, 15].map((v) {
                           return DropdownMenuItem<int>(
                             value: v,
-                            child: Text('$v Laps'),
+                            child: Text(l10n.garageLapsCountShort(v)),
                           );
                         }).toList(),
                         onChanged: onLapsChanged != null
@@ -3152,10 +3218,10 @@ class _GarageScreenState extends State<GarageScreen>
                           : const Icon(Icons.lock, size: 16),
                       label: Text(
                         isPracticeDnf
-                            ? 'DNF — SESSION OVER'
+                            ? l10n.garageDnfSessionOver.toUpperCase()
                             : editable
-                            ? 'START SERIES'
-                            : 'LOCKED',
+                            ? l10n.garageStartSeries.toUpperCase()
+                            : l10n.garageLocked.toUpperCase(),
                         style: const TextStyle(
                           fontWeight: FontWeight.w900,
                           letterSpacing: 1.1,
@@ -3211,6 +3277,7 @@ class _GarageScreenState extends State<GarageScreen>
     )
     onPitStopsChanged,
   }) {
+    final l10n = AppLocalizations.of(context);
     Widget buildSlider(String label, int value, String fieldId) {
       return _buildCompactSlider(
         theme,
@@ -3350,9 +3417,9 @@ class _GarageScreenState extends State<GarageScreen>
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            const Text(
-                              "CAR CONFIGURATION",
-                              style: TextStyle(
+                            Text(
+                              l10n.garageCarConfiguration.toUpperCase(),
+                              style: const TextStyle(
                                 color: Colors.white,
                                 fontSize: 13,
                                 fontWeight: FontWeight.w900,
@@ -3361,22 +3428,22 @@ class _GarageScreenState extends State<GarageScreen>
                             ),
                             const SizedBox(height: 20),
                             buildSlider(
-                              "Front Wing",
+                              l10n.setupFrontWing,
                               setup.frontWing,
                               'frontWing',
                             ),
                             buildSlider(
-                              "Rear Wing",
+                              l10n.setupRearWing,
                               setup.rearWing,
                               'rearWing',
                             ),
                             buildSlider(
-                              "Suspension",
+                              l10n.setupSuspension,
                               setup.suspension,
                               'suspension',
                             ),
                             buildSlider(
-                              "Gear Ratio",
+                              l10n.setupGearRatio,
                               setup.gearRatio,
                               'gearRatio',
                             ),
@@ -3390,9 +3457,9 @@ class _GarageScreenState extends State<GarageScreen>
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            const Text(
-                              "RACE STRATEGY",
-                              style: TextStyle(
+                            Text(
+                              l10n.garageRaceStrategy.toUpperCase(),
+                              style: const TextStyle(
                                 color: Colors.white,
                                 fontSize: 13,
                                 fontWeight: FontWeight.w900,
@@ -3405,11 +3472,11 @@ class _GarageScreenState extends State<GarageScreen>
                               0,
                               Row(
                                 children: [
-                                  const SizedBox(
+                                  SizedBox(
                                     width: 75,
                                     child: Text(
-                                      "RACE START",
-                                      style: TextStyle(
+                                      l10n.garageRaceStart.toUpperCase(),
+                                      style: const TextStyle(
                                         fontSize: 9,
                                         fontWeight: FontWeight.w900,
                                         color: Colors.white54,
@@ -3460,10 +3527,9 @@ class _GarageScreenState extends State<GarageScreen>
                                     onStyleChanged,
                                   ),
                                   const SizedBox(width: 8),
-                                  const Tooltip(
-                                    message:
-                                        "REGULATION: Start tyres are fixed. Drivers must start on the same compound used for their best qualifying lap.",
-                                    child: Icon(
+                                  Tooltip(
+                                    message: l10n.garageRaceStartTyreRegulation,
+                                    child: const Icon(
                                       Icons.lock_outline,
                                       size: 10,
                                       color: Colors.orangeAccent,
@@ -3488,7 +3554,7 @@ class _GarageScreenState extends State<GarageScreen>
                                     SizedBox(
                                       width: 70,
                                       child: Text(
-                                        "STOP ${idx + 1}",
+                                        l10n.garagePitStop(idx + 1),
                                         style: const TextStyle(
                                           fontSize: 9,
                                           fontWeight: FontWeight.w900,
@@ -3591,10 +3657,10 @@ class _GarageScreenState extends State<GarageScreen>
                                       },
                                     ),
                                     const SizedBox(width: 8),
-                                    const Tooltip(
+                                    Tooltip(
                                       message:
-                                          "Strategy for this pit stop stint. Define tyres, fuel and style.",
-                                      child: Icon(
+                                          l10n.garagePitStopStrategyTooltip,
+                                      child: const Icon(
                                         Icons.info_outline,
                                         size: 10,
                                         color: Colors.white24,
@@ -3654,9 +3720,9 @@ class _GarageScreenState extends State<GarageScreen>
                                     );
                                   },
                                   icon: const Icon(Icons.add, size: 14),
-                                  label: const Text(
-                                    "ADD PIT STOP",
-                                    style: TextStyle(
+                                  label: Text(
+                                    l10n.garageAddPitStop.toUpperCase(),
+                                    style: const TextStyle(
                                       fontSize: 10,
                                       fontWeight: FontWeight.w900,
                                     ),
@@ -3701,6 +3767,7 @@ class _GarageScreenState extends State<GarageScreen>
     VoidCallback? onCopyToQualifying,
     VoidCallback? onCopyToRace,
   }) {
+    final l10n = AppLocalizations.of(context);
     Widget buildSlider(String label, int value, String fieldId) {
       final isLocked = parcFermeFields?.contains(fieldId) ?? false;
       return Opacity(
@@ -3718,9 +3785,16 @@ class _GarageScreenState extends State<GarageScreen>
                 ),
               ),
               if (isLocked)
-                const Padding(
-                  padding: EdgeInsets.only(left: 4),
-                  child: Icon(Icons.lock, size: 12, color: Colors.orange),
+                Padding(
+                  padding: const EdgeInsets.only(left: 4),
+                  child: Tooltip(
+                    message: l10n.garageParcFermeLockedTooltip,
+                    child: const Icon(
+                      Icons.lock,
+                      size: 12,
+                      color: Colors.orange,
+                    ),
+                  ),
                 ),
             ],
           ),
@@ -3785,7 +3859,7 @@ class _GarageScreenState extends State<GarageScreen>
                           const Spacer(),
                           if (onCopyToQualifying != null)
                             _buildCopyBadge(
-                              label: 'SET QUALY',
+                              label: l10n.garageSetQualy.toUpperCase(),
                               icon: Icons.timer_outlined,
                               color: theme.primaryColor,
                               onTap: onCopyToQualifying,
@@ -3795,7 +3869,7 @@ class _GarageScreenState extends State<GarageScreen>
                             const SizedBox(width: 6),
                           if (onCopyToRace != null)
                             _buildCopyBadge(
-                              label: 'SET RACE',
+                              label: l10n.garageSetRace.toUpperCase(),
                               icon: Icons.flag_outlined,
                               color: Colors.redAccent,
                               onTap: onCopyToRace,
@@ -3803,14 +3877,30 @@ class _GarageScreenState extends State<GarageScreen>
                         ],
                       ),
                       const SizedBox(height: 20),
-                      buildSlider("Front Wing", setup.frontWing, 'frontWing'),
-                      buildSlider("Rear Wing", setup.rearWing, 'rearWing'),
-                      buildSlider("Suspension", setup.suspension, 'suspension'),
-                      buildSlider("Gear Ratio", setup.gearRatio, 'gearRatio'),
+                      buildSlider(
+                        l10n.setupFrontWing,
+                        setup.frontWing,
+                        'frontWing',
+                      ),
+                      buildSlider(
+                        l10n.setupRearWing,
+                        setup.rearWing,
+                        'rearWing',
+                      ),
+                      buildSlider(
+                        l10n.setupSuspension,
+                        setup.suspension,
+                        'suspension',
+                      ),
+                      buildSlider(
+                        l10n.setupGearRatio,
+                        setup.gearRatio,
+                        'gearRatio',
+                      ),
                       const SizedBox(height: 20),
-                      const Text(
-                        "TYRE COMPOUND",
-                        style: TextStyle(
+                      Text(
+                        l10n.setupTyreCompound.toUpperCase(),
+                        style: const TextStyle(
                           fontSize: 9,
                           fontWeight: FontWeight.w900,
                           color: Colors.white54,
@@ -3866,9 +3956,9 @@ class _GarageScreenState extends State<GarageScreen>
                       ),
                       if (onPitStopsChanged != null) ...[
                         const SizedBox(height: 20),
-                        const Text(
-                          "STRATEGY: PIT STOPS",
-                          style: TextStyle(
+                        Text(
+                          l10n.garageRaceStrategy.toUpperCase(),
+                          style: const TextStyle(
                             fontSize: 9,
                             fontWeight: FontWeight.w900,
                             color: Colors.white54,
@@ -3889,7 +3979,7 @@ class _GarageScreenState extends State<GarageScreen>
                                       child: Row(
                                         children: [
                                           Text(
-                                            "STOP ${index + 1}:",
+                                            l10n.garagePitStop(index + 1),
                                             style: const TextStyle(
                                               fontSize: 10,
                                               fontWeight: FontWeight.w900,
@@ -4000,9 +4090,9 @@ class _GarageScreenState extends State<GarageScreen>
                                     onPitStopsChanged(newStops);
                                   },
                                   icon: const Icon(Icons.add, size: 16),
-                                  label: const Text(
-                                    "ADD PIT STOP",
-                                    style: TextStyle(
+                                  label: Text(
+                                    l10n.garageAddPitStop.toUpperCase(),
+                                    style: const TextStyle(
                                       fontSize: 10,
                                       fontWeight: FontWeight.bold,
                                     ),
@@ -4100,6 +4190,7 @@ class _GarageScreenState extends State<GarageScreen>
     final personalBest = _bestPersonalLaps[_selectedDriverId];
     final globalBest = _fastestGlobalLap;
     final lastTime = _lastResult?.lapTime;
+    final l10n = AppLocalizations.of(context);
 
     // Help determine if last lap is PB or Global Best
     final isPB =
@@ -4117,10 +4208,10 @@ class _GarageScreenState extends State<GarageScreen>
           color: Colors.white.withValues(alpha: 0.1),
           width: 1,
         ),
-        gradient: LinearGradient(
+        gradient: const LinearGradient(
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
-          colors: [const Color(0xFF1E1E1E), const Color(0xFF0A0A0A)],
+          colors: [Color(0xFF1E1E1E), Color(0xFF0A0A0A)],
         ),
       ),
       child: IntrinsicHeight(
@@ -4130,7 +4221,7 @@ class _GarageScreenState extends State<GarageScreen>
             // 1. Last Lap
             _buildStatColumn(
               theme,
-              "LAST LAP",
+              l10n.garageLastLap.toUpperCase(),
               lastTime != null ? _formatLapTime(lastTime) : "-:---.---",
               isGlobal
                   ? const Color(0xFFE040FB)
@@ -4138,12 +4229,13 @@ class _GarageScreenState extends State<GarageScreen>
                         ? const Color(0xFF00C853)
                         : theme.colorScheme.onSurface),
               CrossAxisAlignment.start,
+              isLarge: true,
             ),
             _buildDivider(theme),
             // 2. Best Personal (PB)
             _buildStatColumn(
               theme,
-              "BEST PB",
+              l10n.garageBestPersonal.toUpperCase(),
               personalBest != null ? _formatLapTime(personalBest) : "-:---.---",
               const Color(0xFF00C853),
               CrossAxisAlignment.start,
@@ -4152,7 +4244,7 @@ class _GarageScreenState extends State<GarageScreen>
             // 3. Fastest Lap (Overall)
             _buildStatColumn(
               theme,
-              "FASTEST",
+              l10n.fastest.toUpperCase(),
               globalBest != null ? _formatLapTime(globalBest) : "-:---.---",
               const Color(0xFFE040FB),
               CrossAxisAlignment.start,
@@ -4168,12 +4260,13 @@ class _GarageScreenState extends State<GarageScreen>
             // 4. Confidence
             _buildStatColumn(
               theme,
-              "CONFIDENCE",
+              l10n.garageConfidence.toUpperCase(),
               _lastResult != null
                   ? "${(_lastResult!.setupConfidence * 100).toStringAsFixed(0)}%"
                   : "--%",
               _getConfidenceColor(_lastResult?.setupConfidence ?? 0),
               CrossAxisAlignment.end,
+              isLarge: true,
             ),
           ],
         ),
@@ -4188,6 +4281,7 @@ class _GarageScreenState extends State<GarageScreen>
     Color color,
     CrossAxisAlignment alignment, {
     String? subValue,
+    bool isLarge = false,
   }) {
     return Column(
       crossAxisAlignment: alignment,
@@ -4206,7 +4300,7 @@ class _GarageScreenState extends State<GarageScreen>
         Text(
           value,
           style: TextStyle(
-            fontSize: label == "CONFIDENCE" || label == "LAST LAP" ? 22 : 16,
+            fontSize: isLarge ? 22 : 16,
             fontWeight: FontWeight.w900,
             color: color,
             fontFamily: 'monospace',
@@ -4240,6 +4334,7 @@ class _GarageScreenState extends State<GarageScreen>
     final selectedDriver = _drivers
         .where((d) => d.id == _selectedDriverId)
         .firstOrNull;
+    final l10n = AppLocalizations.of(context);
 
     return Container(
       margin: const EdgeInsets.fromLTRB(0, 4, 12, 4),
@@ -4266,7 +4361,9 @@ class _GarageScreenState extends State<GarageScreen>
                 Icon(Icons.timer, color: theme.primaryColor, size: 16),
                 const SizedBox(width: 8),
                 Text(
-                  "LAP TIMES — ${selectedDriver?.name.split(' ').last.toUpperCase() ?? ''}",
+                  l10n.garageLapTimes(
+                    selectedDriver?.name.split(' ').last.toUpperCase() ?? '',
+                  ),
                   style: TextStyle(
                     fontSize: 11,
                     fontWeight: FontWeight.w900,
@@ -4285,7 +4382,7 @@ class _GarageScreenState extends State<GarageScreen>
                   Padding(
                     padding: const EdgeInsets.symmetric(vertical: 24),
                     child: Text(
-                      "No laps recorded yet",
+                      l10n.garageNoLapsRecordedYet,
                       style: TextStyle(
                         color: Colors.white.withValues(alpha: 0.2),
                         fontStyle: FontStyle.italic,
@@ -4316,7 +4413,7 @@ class _GarageScreenState extends State<GarageScreen>
                         ),
                         Expanded(
                           child: Text(
-                            "LAP TIME",
+                            l10n.labelLapTime.toUpperCase(),
                             style: TextStyle(
                               fontSize: 10,
                               fontWeight: FontWeight.w900,
@@ -4329,7 +4426,7 @@ class _GarageScreenState extends State<GarageScreen>
                         SizedBox(
                           width: 50,
                           child: Text(
-                            "CONF",
+                            l10n.garageConfidenceShort.toUpperCase(),
                             style: TextStyle(
                               fontSize: 10,
                               fontWeight: FontWeight.w900,
@@ -4439,6 +4536,7 @@ class _GarageScreenState extends State<GarageScreen>
     if (_selectedDriverId == null) return const SizedBox.shrink();
 
     final totalLaps = _driverLaps[_selectedDriverId] ?? 0;
+    final l10n = AppLocalizations.of(context);
 
     return Container(
       margin: const EdgeInsets.fromLTRB(0, 4, 12, 4),
@@ -4471,7 +4569,7 @@ class _GarageScreenState extends State<GarageScreen>
               Icon(Icons.developer_board, color: theme.primaryColor, size: 16),
               const SizedBox(width: 8),
               Text(
-                "PIT BOARD",
+                l10n.garagePitBoard.toUpperCase(),
                 style: TextStyle(
                   color: theme.primaryColor,
                   fontSize: 11,
@@ -4481,7 +4579,7 @@ class _GarageScreenState extends State<GarageScreen>
               ),
               const Spacer(),
               Text(
-                "LAPS: $totalLaps",
+                l10n.garageLapsCountShort(totalLaps).toUpperCase(),
                 style: TextStyle(
                   color: Colors.white.withValues(alpha: 0.5),
                   fontSize: 10,
@@ -4506,10 +4604,10 @@ class _GarageScreenState extends State<GarageScreen>
               ),
               child: Center(
                 child: Text(
-                  _pitBoardMessage ?? "READY",
+                  _pitBoardMessage ?? l10n.garageReady.toUpperCase(),
                   style: TextStyle(
                     color: _pitBoardMessage != null
-                        ? (_pitBoardMessage!.contains("CRASH")
+                        ? (_pitBoardMessage!.contains(l10n.garageDnf)
                               ? Colors.red
                               : theme.primaryColor)
                         : Colors.white24,
@@ -4528,6 +4626,7 @@ class _GarageScreenState extends State<GarageScreen>
   }
 
   Widget _buildFeedbackCard(ThemeData theme) {
+    final l10n = AppLocalizations.of(context);
     return Container(
       margin: const EdgeInsets.fromLTRB(0, 4, 12, 12),
       decoration: BoxDecoration(
@@ -4556,7 +4655,7 @@ class _GarageScreenState extends State<GarageScreen>
                 ),
                 const SizedBox(width: 8),
                 Text(
-                  "DRIVER FEEDBACK",
+                  l10n.garageDriverFeedback.toUpperCase(),
                   style: TextStyle(
                     color: Colors.white.withValues(alpha: 0.5),
                     fontSize: 11,
@@ -4617,7 +4716,9 @@ class _GarageScreenState extends State<GarageScreen>
                             const Spacer(),
                             if (bestLap != null)
                               Text(
-                                "BEST: ${_formatLapTime(bestLap)}",
+                                l10n.garageBestLapTimeShort(
+                                  _formatLapTime(bestLap),
+                                ),
                                 style: TextStyle(
                                   fontSize: 10,
                                   fontWeight: FontWeight.w900,
@@ -4629,12 +4730,12 @@ class _GarageScreenState extends State<GarageScreen>
                               ),
                           ],
                         ),
-                        const Padding(
-                          padding: EdgeInsets.symmetric(vertical: 8),
+                        Padding(
+                          padding: const EdgeInsets.symmetric(vertical: 8),
                           child: Divider(
                             height: 1,
                             thickness: 0.5,
-                            color: Colors.white10,
+                            color: Colors.white.withValues(alpha: 0.1),
                           ),
                         ),
                         ...messages.map((m) {
@@ -4674,7 +4775,7 @@ class _GarageScreenState extends State<GarageScreen>
             Expanded(
               child: Center(
                 child: Text(
-                  "No feedback gathered yet",
+                  l10n.garageNoFeedbackGatheredYet,
                   style: TextStyle(
                     color: Colors.white.withValues(alpha: 0.2),
                     fontStyle: FontStyle.italic,
@@ -4690,6 +4791,7 @@ class _GarageScreenState extends State<GarageScreen>
   void _showLapSetupDialog(Map<String, dynamic> lap) {
     final setup = lap['setup'] as CarSetup?;
     if (setup == null) return;
+    final l10n = AppLocalizations.of(context);
 
     showDialog(
       context: context,
@@ -4698,21 +4800,21 @@ class _GarageScreenState extends State<GarageScreen>
         return AlertDialog(
           backgroundColor: theme.colorScheme.surface,
           title: Text(
-            "LAP SETUP — ${_formatLapTime(lap['lapTime'])}",
+            l10n.garageLapSetup(_formatLapTime(lap['lapTime'])),
             style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
           ),
           content: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              _buildSetupDetailRow("Front Wing", setup.frontWing),
-              _buildSetupDetailRow("Rear Wing", setup.rearWing),
-              _buildSetupDetailRow("Suspension", setup.suspension),
-              _buildSetupDetailRow("Gear Ratio", setup.gearRatio),
+              _buildSetupDetailRow(l10n.setupFrontWing, setup.frontWing),
+              _buildSetupDetailRow(l10n.setupRearWing, setup.rearWing),
+              _buildSetupDetailRow(l10n.setupSuspension, setup.suspension),
+              _buildSetupDetailRow(l10n.setupGearRatio, setup.gearRatio),
               const Divider(height: 24),
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  const Text("Confidence"),
+                  Text(l10n.garageConfidence),
                   Text(
                     "${((lap['confidence'] ?? 0) * 100).toStringAsFixed(0)}%",
                     style: TextStyle(
@@ -4739,19 +4841,17 @@ class _GarageScreenState extends State<GarageScreen>
           actions: [
             TextButton(
               onPressed: () => Navigator.pop(context),
-              child: const Text("CLOSE"),
+              child: Text(l10n.garageClose.toUpperCase()),
             ),
             ElevatedButton(
               onPressed: () {
                 _updateCurrentDriverSetup(setup.copyWith());
                 Navigator.pop(context);
                 ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(
-                    content: Text("Setup restored to current session"),
-                  ),
+                  SnackBar(content: Text(l10n.garageSetupRestored)),
                 );
               },
-              child: const Text("RESTORE THIS SETUP"),
+              child: Text(l10n.garageRestoreSetup.toUpperCase()),
             ),
           ],
         );
@@ -4826,6 +4926,7 @@ class _GarageScreenState extends State<GarageScreen>
   Widget _buildFitnessBar(ThemeData theme, Driver driver) {
     final fitness = driver.stats[DriverStats.fitness] ?? 100;
     final progress = (fitness / 100.0).clamp(0.01, 1.0);
+    final l10n = AppLocalizations.of(context);
 
     Color barColor = const Color(0xFF00C853); // High
     if (fitness < 40) {
@@ -4870,7 +4971,7 @@ class _GarageScreenState extends State<GarageScreen>
             Icon(Icons.bolt, size: 8, color: barColor),
             const SizedBox(width: 2),
             Text(
-              "FITNESS: $fitness%",
+              l10n.garageFitness(fitness),
               style: TextStyle(
                 fontSize: 8.5,
                 fontWeight: FontWeight.w900,
