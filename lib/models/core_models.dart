@@ -675,11 +675,11 @@ class Facility {
     if (level == 0) return l10n.notPurchased;
     switch (type) {
       case FacilityType.teamOffice:
-        return l10n.bonusBudget(level * 5);
+        return l10n.bonusBudget((level * 5).toString());
       case FacilityType.garage:
-        return l10n.bonusRepair(level * 2);
+        return l10n.bonusRepair((level * 2).toString());
       case FacilityType.youthAcademy:
-        return l10n.bonusScouting(level * 10);
+        return l10n.bonusScouting((level * 10).toString());
       default:
         return l10n.bonusTBD;
     }

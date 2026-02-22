@@ -270,7 +270,7 @@ class _FacilityCard extends StatelessWidget {
                   children: [
                     if (isPurchased && !isSoon) ...[
                       Text(
-                        l10n.levelLabel(facility.level),
+                        l10n.levelLabel(facility.level.toString()),
                         style: GoogleFonts.raleway(
                           fontSize: 11,
                           fontWeight: FontWeight.bold,

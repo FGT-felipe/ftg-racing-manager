@@ -1225,6 +1225,2294 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'FITNESS: {percent}%'**
   String garageFitnessPercentage(int percent);
+
+  /// No description provided for @facTeamOffice.
+  ///
+  /// In en, this message translates to:
+  /// **'Team Office'**
+  String get facTeamOffice;
+
+  /// No description provided for @facGarage.
+  ///
+  /// In en, this message translates to:
+  /// **'Garage'**
+  String get facGarage;
+
+  /// No description provided for @facYouthAcademy.
+  ///
+  /// In en, this message translates to:
+  /// **'Youth Academy'**
+  String get facYouthAcademy;
+
+  /// No description provided for @facPressRoom.
+  ///
+  /// In en, this message translates to:
+  /// **'Press Room'**
+  String get facPressRoom;
+
+  /// No description provided for @facScoutingOffice.
+  ///
+  /// In en, this message translates to:
+  /// **'Scouting Office'**
+  String get facScoutingOffice;
+
+  /// No description provided for @facRacingSimulator.
+  ///
+  /// In en, this message translates to:
+  /// **'Racing Simulator'**
+  String get facRacingSimulator;
+
+  /// No description provided for @facGym.
+  ///
+  /// In en, this message translates to:
+  /// **'Gym'**
+  String get facGym;
+
+  /// No description provided for @facRDOffice.
+  ///
+  /// In en, this message translates to:
+  /// **'R&D Office'**
+  String get facRDOffice;
+
+  /// No description provided for @descTeamOffice.
+  ///
+  /// In en, this message translates to:
+  /// **'Administrative hub and contract management.'**
+  String get descTeamOffice;
+
+  /// No description provided for @descGarage.
+  ///
+  /// In en, this message translates to:
+  /// **'Vehicle maintenance and technical tuning.'**
+  String get descGarage;
+
+  /// No description provided for @descYouthAcademy.
+  ///
+  /// In en, this message translates to:
+  /// **'Training future talents for the team.'**
+  String get descYouthAcademy;
+
+  /// No description provided for @descPressRoom.
+  ///
+  /// In en, this message translates to:
+  /// **'Media relations and public image management.'**
+  String get descPressRoom;
+
+  /// No description provided for @descScoutingOffice.
+  ///
+  /// In en, this message translates to:
+  /// **'Global talent search for drivers and engineers.'**
+  String get descScoutingOffice;
+
+  /// No description provided for @descRacingSimulator.
+  ///
+  /// In en, this message translates to:
+  /// **'Precision training in a virtual environment.'**
+  String get descRacingSimulator;
+
+  /// No description provided for @descGym.
+  ///
+  /// In en, this message translates to:
+  /// **'Physical preparation and driver endurance.'**
+  String get descGym;
+
+  /// No description provided for @descRDOffice.
+  ///
+  /// In en, this message translates to:
+  /// **'Constant innovation and technical development.'**
+  String get descRDOffice;
+
+  /// No description provided for @notPurchased.
+  ///
+  /// In en, this message translates to:
+  /// **'Not Purchased'**
+  String get notPurchased;
+
+  /// No description provided for @bonusBudget.
+  ///
+  /// In en, this message translates to:
+  /// **'Bonus Budget {arg0}'**
+  String bonusBudget(String arg0);
+
+  /// No description provided for @bonusRepair.
+  ///
+  /// In en, this message translates to:
+  /// **'Bonus Repair {arg0}'**
+  String bonusRepair(String arg0);
+
+  /// No description provided for @bonusScouting.
+  ///
+  /// In en, this message translates to:
+  /// **'Bonus Scouting {arg0}'**
+  String bonusScouting(String arg0);
+
+  /// No description provided for @bonusTBD.
+  ///
+  /// In en, this message translates to:
+  /// **'Bonus T B D'**
+  String get bonusTBD;
+
+  /// No description provided for @accountSettingsTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Account Settings'**
+  String get accountSettingsTitle;
+
+  /// No description provided for @userProfileTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'User Profile'**
+  String get userProfileTitle;
+
+  /// No description provided for @nameLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Name'**
+  String get nameLabel;
+
+  /// No description provided for @emailLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Email'**
+  String get emailLabel;
+
+  /// No description provided for @registeredLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Registered'**
+  String get registeredLabel;
+
+  /// No description provided for @userDataNotFound.
+  ///
+  /// In en, this message translates to:
+  /// **'User Data Not Found'**
+  String get userDataNotFound;
+
+  /// No description provided for @managerProfileTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Manager Profile'**
+  String get managerProfileTitle;
+
+  /// No description provided for @managerNameLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Manager Name'**
+  String get managerNameLabel;
+
+  /// No description provided for @roleLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Role'**
+  String get roleLabel;
+
+  /// No description provided for @countryLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Country'**
+  String get countryLabel;
+
+  /// No description provided for @noManagerProfile.
+  ///
+  /// In en, this message translates to:
+  /// **'No Manager Profile'**
+  String get noManagerProfile;
+
+  /// No description provided for @logOutBtn.
+  ///
+  /// In en, this message translates to:
+  /// **'Log Out'**
+  String get logOutBtn;
+
+  /// No description provided for @googleAuthError.
+  ///
+  /// In en, this message translates to:
+  /// **'Google Auth Error {arg0}'**
+  String googleAuthError(String arg0);
+
+  /// No description provided for @authError.
+  ///
+  /// In en, this message translates to:
+  /// **'Auth Error {arg0}'**
+  String authError(String arg0);
+
+  /// No description provided for @emailAlreadyRegistered.
+  ///
+  /// In en, this message translates to:
+  /// **'Email Already Registered'**
+  String get emailAlreadyRegistered;
+
+  /// No description provided for @unexpectedError.
+  ///
+  /// In en, this message translates to:
+  /// **'Unexpected Error {arg0}'**
+  String unexpectedError(String arg0);
+
+  /// No description provided for @formulaTrackGlory.
+  ///
+  /// In en, this message translates to:
+  /// **'Formula Track Glory'**
+  String get formulaTrackGlory;
+
+  /// No description provided for @ftgSlogan.
+  ///
+  /// In en, this message translates to:
+  /// **'Ftg Slogan'**
+  String get ftgSlogan;
+
+  /// No description provided for @alreadyHaveAccount.
+  ///
+  /// In en, this message translates to:
+  /// **'Already Have Account'**
+  String get alreadyHaveAccount;
+
+  /// No description provided for @newManagerJoin.
+  ///
+  /// In en, this message translates to:
+  /// **'New Manager Join'**
+  String get newManagerJoin;
+
+  /// No description provided for @versionFooter.
+  ///
+  /// In en, this message translates to:
+  /// **'Version Footer'**
+  String get versionFooter;
+
+  /// No description provided for @continueWithGoogle.
+  ///
+  /// In en, this message translates to:
+  /// **'Continue With Google'**
+  String get continueWithGoogle;
+
+  /// No description provided for @orUseEmail.
+  ///
+  /// In en, this message translates to:
+  /// **'Or Use Email'**
+  String get orUseEmail;
+
+  /// No description provided for @firstNameLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'First Name'**
+  String get firstNameLabel;
+
+  /// No description provided for @lastNameLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Last Name'**
+  String get lastNameLabel;
+
+  /// No description provided for @emailAddressLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Email Address'**
+  String get emailAddressLabel;
+
+  /// No description provided for @passwordLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Password'**
+  String get passwordLabel;
+
+  /// No description provided for @createAccountBtn.
+  ///
+  /// In en, this message translates to:
+  /// **'Create Account'**
+  String get createAccountBtn;
+
+  /// No description provided for @signInBtn.
+  ///
+  /// In en, this message translates to:
+  /// **'Sign In'**
+  String get signInBtn;
+
+  /// No description provided for @calendarNoEvents.
+  ///
+  /// In en, this message translates to:
+  /// **'Calendar No Events'**
+  String get calendarNoEvents;
+
+  /// No description provided for @calendarTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Calendar'**
+  String get calendarTitle;
+
+  /// No description provided for @lapsIntel.
+  ///
+  /// In en, this message translates to:
+  /// **'Laps Intel'**
+  String get lapsIntel;
+
+  /// No description provided for @calendarStatusScheduled.
+  ///
+  /// In en, this message translates to:
+  /// **'Calendar Status Scheduled'**
+  String get calendarStatusScheduled;
+
+  /// No description provided for @driversManagementTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Drivers Management'**
+  String get driversManagementTitle;
+
+  /// No description provided for @errorLoadingDrivers.
+  ///
+  /// In en, this message translates to:
+  /// **'Error Loading Drivers'**
+  String get errorLoadingDrivers;
+
+  /// No description provided for @noDriversFound.
+  ///
+  /// In en, this message translates to:
+  /// **'No Drivers Found'**
+  String get noDriversFound;
+
+  /// No description provided for @renewingContractSimulated.
+  ///
+  /// In en, this message translates to:
+  /// **'Renewing Contract Simulated {arg0}'**
+  String renewingContractSimulated(String arg0);
+
+  /// No description provided for @firingDriverSimulated.
+  ///
+  /// In en, this message translates to:
+  /// **'Firing Driver Simulated {arg0}'**
+  String firingDriverSimulated(String arg0);
+
+  /// No description provided for @ageLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Age {arg0}'**
+  String ageLabel(int arg0);
+
+  /// No description provided for @contractDetailsTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Contract Details'**
+  String get contractDetailsTitle;
+
+  /// No description provided for @contractStatusLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Contract Status'**
+  String get contractStatusLabel;
+
+  /// No description provided for @salaryPerRaceLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Salary per Race'**
+  String get salaryPerRaceLabel;
+
+  /// No description provided for @terminationLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Termination'**
+  String get terminationLabel;
+
+  /// No description provided for @remainingLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Remaining'**
+  String get remainingLabel;
+
+  /// No description provided for @seasonsRemaining.
+  ///
+  /// In en, this message translates to:
+  /// **'Seasons Remaining: {arg0}'**
+  String seasonsRemaining(String arg0);
+
+  /// No description provided for @moraleLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Morale'**
+  String get moraleLabel;
+
+  /// No description provided for @marketabilityLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Marketability'**
+  String get marketabilityLabel;
+
+  /// No description provided for @fireBtn.
+  ///
+  /// In en, this message translates to:
+  /// **'Fire'**
+  String get fireBtn;
+
+  /// No description provided for @renewContractBtn.
+  ///
+  /// In en, this message translates to:
+  /// **'Renew'**
+  String get renewContractBtn;
+
+  /// No description provided for @driverStatsSectionTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Driver Stats Section'**
+  String get driverStatsSectionTitle;
+
+  /// No description provided for @careerStatsTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Career Stats'**
+  String get careerStatsTitle;
+
+  /// No description provided for @titlesStat.
+  ///
+  /// In en, this message translates to:
+  /// **'Titles'**
+  String get titlesStat;
+
+  /// No description provided for @winsStat.
+  ///
+  /// In en, this message translates to:
+  /// **'Wins'**
+  String get winsStat;
+
+  /// No description provided for @podiumsStat.
+  ///
+  /// In en, this message translates to:
+  /// **'Podiums'**
+  String get podiumsStat;
+
+  /// No description provided for @racesStat.
+  ///
+  /// In en, this message translates to:
+  /// **'Races'**
+  String get racesStat;
+
+  /// No description provided for @championshipFormTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Championship Form'**
+  String get championshipFormTitle;
+
+  /// No description provided for @standingsBtn.
+  ///
+  /// In en, this message translates to:
+  /// **'Standings'**
+  String get standingsBtn;
+
+  /// No description provided for @posLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Pos'**
+  String get posLabel;
+
+  /// No description provided for @eventHeader.
+  ///
+  /// In en, this message translates to:
+  /// **'Event Header'**
+  String get eventHeader;
+
+  /// No description provided for @qHeader.
+  ///
+  /// In en, this message translates to:
+  /// **'Q Header'**
+  String get qHeader;
+
+  /// No description provided for @rHeader.
+  ///
+  /// In en, this message translates to:
+  /// **'R Header'**
+  String get rHeader;
+
+  /// No description provided for @pHeader.
+  ///
+  /// In en, this message translates to:
+  /// **'P Header'**
+  String get pHeader;
+
+  /// No description provided for @careerHistoryTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Career History'**
+  String get careerHistoryTitle;
+
+  /// No description provided for @yearHeader.
+  ///
+  /// In en, this message translates to:
+  /// **'Year Header'**
+  String get yearHeader;
+
+  /// No description provided for @teamHeader.
+  ///
+  /// In en, this message translates to:
+  /// **'Team Header'**
+  String get teamHeader;
+
+  /// No description provided for @seriesHeader.
+  ///
+  /// In en, this message translates to:
+  /// **'Series Header'**
+  String get seriesHeader;
+
+  /// No description provided for @wHeader.
+  ///
+  /// In en, this message translates to:
+  /// **'W Header'**
+  String get wHeader;
+
+  /// No description provided for @historyIndividual.
+  ///
+  /// In en, this message translates to:
+  /// **'History Individual'**
+  String get historyIndividual;
+
+  /// No description provided for @noDataAvailableYet.
+  ///
+  /// In en, this message translates to:
+  /// **'No Data Available Yet'**
+  String get noDataAvailableYet;
+
+  /// No description provided for @historyLowerDivision.
+  ///
+  /// In en, this message translates to:
+  /// **'History Lower Division'**
+  String get historyLowerDivision;
+
+  /// No description provided for @historyChampionBadge.
+  ///
+  /// In en, this message translates to:
+  /// **'CHAMPION'**
+  String get historyChampionBadge;
+
+  /// No description provided for @statBraking.
+  ///
+  /// In en, this message translates to:
+  /// **'Braking'**
+  String get statBraking;
+
+  /// No description provided for @statCornering.
+  ///
+  /// In en, this message translates to:
+  /// **'Cornering'**
+  String get statCornering;
+
+  /// No description provided for @statSmoothness.
+  ///
+  /// In en, this message translates to:
+  /// **'Smoothness'**
+  String get statSmoothness;
+
+  /// No description provided for @statOvertaking.
+  ///
+  /// In en, this message translates to:
+  /// **'Overtaking'**
+  String get statOvertaking;
+
+  /// No description provided for @statConsistency.
+  ///
+  /// In en, this message translates to:
+  /// **'Consistency'**
+  String get statConsistency;
+
+  /// No description provided for @statAdaptability.
+  ///
+  /// In en, this message translates to:
+  /// **'Adaptability'**
+  String get statAdaptability;
+
+  /// No description provided for @statFitness.
+  ///
+  /// In en, this message translates to:
+  /// **'Fitness'**
+  String get statFitness;
+
+  /// No description provided for @statFeedback.
+  ///
+  /// In en, this message translates to:
+  /// **'Feedback'**
+  String get statFeedback;
+
+  /// No description provided for @statFocus.
+  ///
+  /// In en, this message translates to:
+  /// **'Focus'**
+  String get statFocus;
+
+  /// No description provided for @statMorale.
+  ///
+  /// In en, this message translates to:
+  /// **'Morale'**
+  String get statMorale;
+
+  /// No description provided for @statMarketability.
+  ///
+  /// In en, this message translates to:
+  /// **'Marketability'**
+  String get statMarketability;
+
+  /// No description provided for @roleMain.
+  ///
+  /// In en, this message translates to:
+  /// **'Role Main'**
+  String get roleMain;
+
+  /// No description provided for @roleSecond.
+  ///
+  /// In en, this message translates to:
+  /// **'Role Second'**
+  String get roleSecond;
+
+  /// No description provided for @roleEqual.
+  ///
+  /// In en, this message translates to:
+  /// **'Role Equal'**
+  String get roleEqual;
+
+  /// No description provided for @roleReserve.
+  ///
+  /// In en, this message translates to:
+  /// **'Role Reserve'**
+  String get roleReserve;
+
+  /// No description provided for @engineeringDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'Engineering Description'**
+  String get engineeringDescription;
+
+  /// No description provided for @budgetLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Budget'**
+  String get budgetLabel;
+
+  /// No description provided for @currencySymbol.
+  ///
+  /// In en, this message translates to:
+  /// **'\$'**
+  String get currencySymbol;
+
+  /// No description provided for @millionsSuffix.
+  ///
+  /// In en, this message translates to:
+  /// **'M'**
+  String get millionsSuffix;
+
+  /// No description provided for @upgradeLimitReached.
+  ///
+  /// In en, this message translates to:
+  /// **'Upgrade Limit Reached'**
+  String get upgradeLimitReached;
+
+  /// No description provided for @carLabelA.
+  ///
+  /// In en, this message translates to:
+  /// **'Car Label A'**
+  String get carLabelA;
+
+  /// No description provided for @noDriverAssigned.
+  ///
+  /// In en, this message translates to:
+  /// **'No Driver Assigned'**
+  String get noDriverAssigned;
+
+  /// No description provided for @carLabelB.
+  ///
+  /// In en, this message translates to:
+  /// **'Car Label B'**
+  String get carLabelB;
+
+  /// No description provided for @carPerformanceTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Car Performance Title {arg0}'**
+  String carPerformanceTitle(String arg0);
+
+  /// No description provided for @aero.
+  ///
+  /// In en, this message translates to:
+  /// **'Aero'**
+  String get aero;
+
+  /// No description provided for @engine.
+  ///
+  /// In en, this message translates to:
+  /// **'Engine'**
+  String get engine;
+
+  /// No description provided for @chassisPart.
+  ///
+  /// In en, this message translates to:
+  /// **'Chassis Part'**
+  String get chassisPart;
+
+  /// No description provided for @reliability.
+  ///
+  /// In en, this message translates to:
+  /// **'Reliability'**
+  String get reliability;
+
+  /// No description provided for @costLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Cost Label {arg0} {arg1}'**
+  String costLabel(String arg0, String arg1);
+
+  /// No description provided for @upgradeBtn.
+  ///
+  /// In en, this message translates to:
+  /// **'Upgrade'**
+  String get upgradeBtn;
+
+  /// No description provided for @managerError.
+  ///
+  /// In en, this message translates to:
+  /// **'Manager Error {arg0}'**
+  String managerError(String arg0);
+
+  /// No description provided for @managerProfileNotFound.
+  ///
+  /// In en, this message translates to:
+  /// **'Manager Profile Not Found'**
+  String get managerProfileNotFound;
+
+  /// No description provided for @teamError.
+  ///
+  /// In en, this message translates to:
+  /// **'Team Error {arg0}'**
+  String teamError(String arg0);
+
+  /// No description provided for @teamDataNotFound.
+  ///
+  /// In en, this message translates to:
+  /// **'Team Data Not Found'**
+  String get teamDataNotFound;
+
+  /// No description provided for @seasonError.
+  ///
+  /// In en, this message translates to:
+  /// **'Season Error {arg0}'**
+  String seasonError(String arg0);
+
+  /// No description provided for @quickView.
+  ///
+  /// In en, this message translates to:
+  /// **'Quick View'**
+  String get quickView;
+
+  /// No description provided for @pressNewsTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'PRESS NEWS'**
+  String get pressNewsTitle;
+
+  /// No description provided for @errorLoadingNews.
+  ///
+  /// In en, this message translates to:
+  /// **'Error Loading News'**
+  String get errorLoadingNews;
+
+  /// No description provided for @officeNewsTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'OFFICE NEWS'**
+  String get officeNewsTitle;
+
+  /// No description provided for @notificationsUnavailable.
+  ///
+  /// In en, this message translates to:
+  /// **'Notifications Unavailable'**
+  String get notificationsUnavailable;
+
+  /// No description provided for @noNewNotifications.
+  ///
+  /// In en, this message translates to:
+  /// **'No New Notifications'**
+  String get noNewNotifications;
+
+  /// No description provided for @noNewsFromPaddockYet.
+  ///
+  /// In en, this message translates to:
+  /// **'No News From Paddock Yet'**
+  String get noNewsFromPaddockYet;
+
+  /// No description provided for @welcomeBackManager.
+  ///
+  /// In en, this message translates to:
+  /// **'Welcome back, Manager {arg0}'**
+  String welcomeBackManager(String arg0);
+
+  /// No description provided for @sessionInProgress.
+  ///
+  /// In en, this message translates to:
+  /// **'Session In Progress'**
+  String get sessionInProgress;
+
+  /// No description provided for @timeUntilNextSession.
+  ///
+  /// In en, this message translates to:
+  /// **'Time Until Next Session'**
+  String get timeUntilNextSession;
+
+  /// No description provided for @teamBudget.
+  ///
+  /// In en, this message translates to:
+  /// **'Team Budget'**
+  String get teamBudget;
+
+  /// No description provided for @deficit.
+  ///
+  /// In en, this message translates to:
+  /// **'Deficit'**
+  String get deficit;
+
+  /// No description provided for @surplus.
+  ///
+  /// In en, this message translates to:
+  /// **'Surplus'**
+  String get surplus;
+
+  /// No description provided for @estimatedAbbr.
+  ///
+  /// In en, this message translates to:
+  /// **'Estimated Abbr'**
+  String get estimatedAbbr;
+
+  /// No description provided for @nextGrandPrix.
+  ///
+  /// In en, this message translates to:
+  /// **'Next Grand Prix'**
+  String get nextGrandPrix;
+
+  /// No description provided for @circuitLengthAndLaps.
+  ///
+  /// In en, this message translates to:
+  /// **'Distance: {arg0} km | Laps: {arg1}'**
+  String circuitLengthAndLaps(String arg0, String arg1);
+
+  /// No description provided for @paddockOpen.
+  ///
+  /// In en, this message translates to:
+  /// **'Paddock Open'**
+  String get paddockOpen;
+
+  /// No description provided for @weekendSetupBtn.
+  ///
+  /// In en, this message translates to:
+  /// **'Weekend Setup'**
+  String get weekendSetupBtn;
+
+  /// No description provided for @qualifyingStatus.
+  ///
+  /// In en, this message translates to:
+  /// **'Qualifying'**
+  String get qualifyingStatus;
+
+  /// No description provided for @viewQualifyingBtn.
+  ///
+  /// In en, this message translates to:
+  /// **'View Qualifying'**
+  String get viewQualifyingBtn;
+
+  /// No description provided for @raceStrategyStatus.
+  ///
+  /// In en, this message translates to:
+  /// **'Race Strategy'**
+  String get raceStrategyStatus;
+
+  /// No description provided for @setRaceStrategyBtn.
+  ///
+  /// In en, this message translates to:
+  /// **'Set Race Strategy'**
+  String get setRaceStrategyBtn;
+
+  /// No description provided for @raceWeekendStatus.
+  ///
+  /// In en, this message translates to:
+  /// **'Race'**
+  String get raceWeekendStatus;
+
+  /// No description provided for @goToRaceBtn.
+  ///
+  /// In en, this message translates to:
+  /// **'Go To Race'**
+  String get goToRaceBtn;
+
+  /// No description provided for @raceFinishedStatus.
+  ///
+  /// In en, this message translates to:
+  /// **'Race Finished Status'**
+  String get raceFinishedStatus;
+
+  /// No description provided for @viewResultsBtn.
+  ///
+  /// In en, this message translates to:
+  /// **'View Results'**
+  String get viewResultsBtn;
+
+  /// No description provided for @circuitIntelTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Circuit Intel'**
+  String get circuitIntelTitle;
+
+  /// No description provided for @aeroIntel.
+  ///
+  /// In en, this message translates to:
+  /// **'Aero Intel'**
+  String get aeroIntel;
+
+  /// No description provided for @highIntel.
+  ///
+  /// In en, this message translates to:
+  /// **'High Intel'**
+  String get highIntel;
+
+  /// No description provided for @powerIntel.
+  ///
+  /// In en, this message translates to:
+  /// **'Power Intel'**
+  String get powerIntel;
+
+  /// No description provided for @speedIntel.
+  ///
+  /// In en, this message translates to:
+  /// **'Speed Intel'**
+  String get speedIntel;
+
+  /// No description provided for @tyreIntel.
+  ///
+  /// In en, this message translates to:
+  /// **'Tyre Intel'**
+  String get tyreIntel;
+
+  /// No description provided for @onLive.
+  ///
+  /// In en, this message translates to:
+  /// **'On Live'**
+  String get onLive;
+
+  /// No description provided for @offLive.
+  ///
+  /// In en, this message translates to:
+  /// **'Off Live'**
+  String get offLive;
+
+  /// No description provided for @preRaceChecklist.
+  ///
+  /// In en, this message translates to:
+  /// **'Pre-Race Checklist'**
+  String get preRaceChecklist;
+
+  /// No description provided for @practiceProgram.
+  ///
+  /// In en, this message translates to:
+  /// **'Practice Program'**
+  String get practiceProgram;
+
+  /// No description provided for @completedLapsOf.
+  ///
+  /// In en, this message translates to:
+  /// **'Laps: {arg0} / {arg1}'**
+  String completedLapsOf(String arg0, String arg1);
+
+  /// No description provided for @qualifyingSetup.
+  ///
+  /// In en, this message translates to:
+  /// **'Qualifying Setup'**
+  String get qualifyingSetup;
+
+  /// No description provided for @readyStatus.
+  ///
+  /// In en, this message translates to:
+  /// **'Ready Status'**
+  String get readyStatus;
+
+  /// No description provided for @pendingStatus.
+  ///
+  /// In en, this message translates to:
+  /// **'Pending Status'**
+  String get pendingStatus;
+
+  /// No description provided for @hqDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'Hq Description'**
+  String get hqDescription;
+
+  /// No description provided for @facilitiesSectionTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Facilities Section'**
+  String get facilitiesSectionTitle;
+
+  /// No description provided for @levelLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Level Label {arg0}'**
+  String levelLabel(String arg0);
+
+  /// No description provided for @nextLevelLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Next Level'**
+  String get nextLevelLabel;
+
+  /// No description provided for @maintCostLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Maint Cost'**
+  String get maintCostLabel;
+
+  /// No description provided for @bonusLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Bonus'**
+  String get bonusLabel;
+
+  /// No description provided for @buyBtn.
+  ///
+  /// In en, this message translates to:
+  /// **'Buy'**
+  String get buyBtn;
+
+  /// No description provided for @comingSoonBanner.
+  ///
+  /// In en, this message translates to:
+  /// **'Coming Soon Banner'**
+  String get comingSoonBanner;
+
+  /// No description provided for @facilityImproved.
+  ///
+  /// In en, this message translates to:
+  /// **'Facility Improved {arg0}'**
+  String facilityImproved(String arg0);
+
+  /// No description provided for @signContractError.
+  ///
+  /// In en, this message translates to:
+  /// **'Sign Contract'**
+  String get signContractError;
+
+  /// No description provided for @confirmResetWorldTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Confirm Reset World'**
+  String get confirmResetWorldTitle;
+
+  /// No description provided for @confirmResetWorldDesc.
+  ///
+  /// In en, this message translates to:
+  /// **'Confirm Reset World'**
+  String get confirmResetWorldDesc;
+
+  /// No description provided for @cancelBtn.
+  ///
+  /// In en, this message translates to:
+  /// **'Cancel'**
+  String get cancelBtn;
+
+  /// No description provided for @resetSuccess.
+  ///
+  /// In en, this message translates to:
+  /// **'Reset Successful!'**
+  String get resetSuccess;
+
+  /// No description provided for @resetBtn.
+  ///
+  /// In en, this message translates to:
+  /// **'Reset'**
+  String get resetBtn;
+
+  /// No description provided for @jobMarketTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Job Market'**
+  String get jobMarketTitle;
+
+  /// No description provided for @availableLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Available'**
+  String get availableLabel;
+
+  /// No description provided for @signContract.
+  ///
+  /// In en, this message translates to:
+  /// **'Sign Contract'**
+  String get signContract;
+
+  /// No description provided for @navDashboard.
+  ///
+  /// In en, this message translates to:
+  /// **'Dashboard'**
+  String get navDashboard;
+
+  /// No description provided for @navHQ.
+  ///
+  /// In en, this message translates to:
+  /// **'HQ'**
+  String get navHQ;
+
+  /// No description provided for @navTeamOffice.
+  ///
+  /// In en, this message translates to:
+  /// **'Office'**
+  String get navTeamOffice;
+
+  /// No description provided for @navGarage.
+  ///
+  /// In en, this message translates to:
+  /// **'Garage'**
+  String get navGarage;
+
+  /// No description provided for @navYouthAcademy.
+  ///
+  /// In en, this message translates to:
+  /// **'Academy'**
+  String get navYouthAcademy;
+
+  /// No description provided for @navRacing.
+  ///
+  /// In en, this message translates to:
+  /// **'Racing'**
+  String get navRacing;
+
+  /// No description provided for @navWeekendSetup.
+  ///
+  /// In en, this message translates to:
+  /// **'Setup'**
+  String get navWeekendSetup;
+
+  /// No description provided for @navRaceDay.
+  ///
+  /// In en, this message translates to:
+  /// **'Race Day'**
+  String get navRaceDay;
+
+  /// No description provided for @navManagement.
+  ///
+  /// In en, this message translates to:
+  /// **'Management'**
+  String get navManagement;
+
+  /// No description provided for @navPersonal.
+  ///
+  /// In en, this message translates to:
+  /// **'Personal'**
+  String get navPersonal;
+
+  /// No description provided for @navFinances.
+  ///
+  /// In en, this message translates to:
+  /// **'Finances'**
+  String get navFinances;
+
+  /// No description provided for @navSponsors.
+  ///
+  /// In en, this message translates to:
+  /// **'Sponsors'**
+  String get navSponsors;
+
+  /// No description provided for @navSeason.
+  ///
+  /// In en, this message translates to:
+  /// **'Season'**
+  String get navSeason;
+
+  /// No description provided for @navStandings.
+  ///
+  /// In en, this message translates to:
+  /// **'Standings'**
+  String get navStandings;
+
+  /// No description provided for @navCalendar.
+  ///
+  /// In en, this message translates to:
+  /// **'Calendar'**
+  String get navCalendar;
+
+  /// No description provided for @accountInfo.
+  ///
+  /// In en, this message translates to:
+  /// **'Account'**
+  String get accountInfo;
+
+  /// No description provided for @notAvailable.
+  ///
+  /// In en, this message translates to:
+  /// **'Not Available'**
+  String get notAvailable;
+
+  /// No description provided for @lastSession.
+  ///
+  /// In en, this message translates to:
+  /// **'Last Session'**
+  String get lastSession;
+
+  /// No description provided for @adminBtn.
+  ///
+  /// In en, this message translates to:
+  /// **'Admin'**
+  String get adminBtn;
+
+  /// No description provided for @accountBtn.
+  ///
+  /// In en, this message translates to:
+  /// **'Account'**
+  String get accountBtn;
+
+  /// No description provided for @logOutConfirmTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Log Out Confirm'**
+  String get logOutConfirmTitle;
+
+  /// No description provided for @logOutConfirmDesc.
+  ///
+  /// In en, this message translates to:
+  /// **'Log Out Confirm'**
+  String get logOutConfirmDesc;
+
+  /// No description provided for @navMarket.
+  ///
+  /// In en, this message translates to:
+  /// **'Market'**
+  String get navMarket;
+
+  /// No description provided for @personalManagement.
+  ///
+  /// In en, this message translates to:
+  /// **'Personal Management'**
+  String get personalManagement;
+
+  /// No description provided for @driversTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Drivers'**
+  String get driversTitle;
+
+  /// No description provided for @fitnessTrainerTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Fitness Trainer'**
+  String get fitnessTrainerTitle;
+
+  /// No description provided for @chiefEngineerTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Chief Engineer'**
+  String get chiefEngineerTitle;
+
+  /// No description provided for @hrManagerTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Hr Manager'**
+  String get hrManagerTitle;
+
+  /// No description provided for @marketingManagerTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Marketing Manager'**
+  String get marketingManagerTitle;
+
+  /// No description provided for @currentBalanceTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Current Balance'**
+  String get currentBalanceTitle;
+
+  /// No description provided for @recentMovementsTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Recent Movements'**
+  String get recentMovementsTitle;
+
+  /// No description provided for @noFinancialActivity.
+  ///
+  /// In en, this message translates to:
+  /// **'No Financial Activity'**
+  String get noFinancialActivity;
+
+  /// No description provided for @selectCarPartToManage.
+  ///
+  /// In en, this message translates to:
+  /// **'Select Car Part To Manage'**
+  String get selectCarPartToManage;
+
+  /// No description provided for @activeContractTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Active Contract Title {arg0}'**
+  String activeContractTitle(String arg0);
+
+  /// No description provided for @weeklyPayLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Weekly Pay'**
+  String get weeklyPayLabel;
+
+  /// No description provided for @racesLeftLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Races Left'**
+  String get racesLeftLabel;
+
+  /// No description provided for @availableOffersTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Available Offers Title {arg0}'**
+  String availableOffersTitle(String arg0);
+
+  /// No description provided for @rearWingPart.
+  ///
+  /// In en, this message translates to:
+  /// **'Rear Wing Part'**
+  String get rearWingPart;
+
+  /// No description provided for @sidepodLPart.
+  ///
+  /// In en, this message translates to:
+  /// **'Sidepod L Part'**
+  String get sidepodLPart;
+
+  /// No description provided for @sidepodRPart.
+  ///
+  /// In en, this message translates to:
+  /// **'Sidepod R Part'**
+  String get sidepodRPart;
+
+  /// No description provided for @haloPart.
+  ///
+  /// In en, this message translates to:
+  /// **'Halo Part'**
+  String get haloPart;
+
+  /// No description provided for @frontWingPart.
+  ///
+  /// In en, this message translates to:
+  /// **'Front Wing Part'**
+  String get frontWingPart;
+
+  /// No description provided for @nosePart.
+  ///
+  /// In en, this message translates to:
+  /// **'Nose Part'**
+  String get nosePart;
+
+  /// No description provided for @manageBtn.
+  ///
+  /// In en, this message translates to:
+  /// **'Manage'**
+  String get manageBtn;
+
+  /// No description provided for @selectSponsorBtn.
+  ///
+  /// In en, this message translates to:
+  /// **'Select Sponsor'**
+  String get selectSponsorBtn;
+
+  /// No description provided for @negotiationRulesTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Negotiation Rules'**
+  String get negotiationRulesTitle;
+
+  /// No description provided for @negotiationRulesDesc.
+  ///
+  /// In en, this message translates to:
+  /// **'Negotiation Rules'**
+  String get negotiationRulesDesc;
+
+  /// No description provided for @signingBonusLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Signing Bonus'**
+  String get signingBonusLabel;
+
+  /// No description provided for @weeklyPaymentLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Weekly Payment'**
+  String get weeklyPaymentLabel;
+
+  /// No description provided for @durationLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Duration'**
+  String get durationLabel;
+
+  /// No description provided for @durationRaces.
+  ///
+  /// In en, this message translates to:
+  /// **'Duration Races {arg0}'**
+  String durationRaces(String arg0);
+
+  /// No description provided for @objectiveLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Objective'**
+  String get objectiveLabel;
+
+  /// No description provided for @suspendedStatus.
+  ///
+  /// In en, this message translates to:
+  /// **'Suspended Status'**
+  String get suspendedStatus;
+
+  /// No description provided for @chooseTacticLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Choose Tactic Label {arg0}'**
+  String chooseTacticLabel(String arg0);
+
+  /// No description provided for @persuasiveTactic.
+  ///
+  /// In en, this message translates to:
+  /// **'Persuasive Tactic'**
+  String get persuasiveTactic;
+
+  /// No description provided for @negotiatorTactic.
+  ///
+  /// In en, this message translates to:
+  /// **'Negotiator Tactic'**
+  String get negotiatorTactic;
+
+  /// No description provided for @collaborativeTactic.
+  ///
+  /// In en, this message translates to:
+  /// **'Collaborative Tactic'**
+  String get collaborativeTactic;
+
+  /// No description provided for @availableSponsorsTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Available Sponsors'**
+  String get availableSponsorsTitle;
+
+  /// No description provided for @roleExDriverTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Role Ex Driver'**
+  String get roleExDriverTitle;
+
+  /// No description provided for @roleExDriverDesc.
+  ///
+  /// In en, this message translates to:
+  /// **'Role Ex Driver'**
+  String get roleExDriverDesc;
+
+  /// No description provided for @roleBusinessTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Role Business'**
+  String get roleBusinessTitle;
+
+  /// No description provided for @roleBusinessDesc.
+  ///
+  /// In en, this message translates to:
+  /// **'Role Business'**
+  String get roleBusinessDesc;
+
+  /// No description provided for @roleBureaucratTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Role Bureaucrat'**
+  String get roleBureaucratTitle;
+
+  /// No description provided for @roleBureaucratDesc.
+  ///
+  /// In en, this message translates to:
+  /// **'Role Bureaucrat'**
+  String get roleBureaucratDesc;
+
+  /// No description provided for @roleEngineerTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Role Engineer'**
+  String get roleEngineerTitle;
+
+  /// No description provided for @roleEngineerDesc.
+  ///
+  /// In en, this message translates to:
+  /// **'Role Engineer'**
+  String get roleEngineerDesc;
+
+  /// No description provided for @createManagerProfile.
+  ///
+  /// In en, this message translates to:
+  /// **'Create Manager Profile'**
+  String get createManagerProfile;
+
+  /// No description provided for @personalInfoTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Personal Information'**
+  String get personalInfoTitle;
+
+  /// No description provided for @selectCountryError.
+  ///
+  /// In en, this message translates to:
+  /// **'Please select a country'**
+  String get selectCountryError;
+
+  /// No description provided for @genderLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Gender'**
+  String get genderLabel;
+
+  /// No description provided for @maleGender.
+  ///
+  /// In en, this message translates to:
+  /// **'Male Gender'**
+  String get maleGender;
+
+  /// No description provided for @femaleGender.
+  ///
+  /// In en, this message translates to:
+  /// **'Female Gender'**
+  String get femaleGender;
+
+  /// No description provided for @nonBinaryGender.
+  ///
+  /// In en, this message translates to:
+  /// **'Non Binary Gender'**
+  String get nonBinaryGender;
+
+  /// No description provided for @selectGenderError.
+  ///
+  /// In en, this message translates to:
+  /// **'Please select a gender'**
+  String get selectGenderError;
+
+  /// No description provided for @dayLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Day'**
+  String get dayLabel;
+
+  /// No description provided for @monthLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Month'**
+  String get monthLabel;
+
+  /// No description provided for @yearLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Year'**
+  String get yearLabel;
+
+  /// No description provided for @selectBackgroundTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Select Background'**
+  String get selectBackgroundTitle;
+
+  /// No description provided for @createManagerDesc.
+  ///
+  /// In en, this message translates to:
+  /// **'Create Manager'**
+  String get createManagerDesc;
+
+  /// No description provided for @establishCareerBtn.
+  ///
+  /// In en, this message translates to:
+  /// **'Establish Career'**
+  String get establishCareerBtn;
+
+  /// No description provided for @requiredError.
+  ///
+  /// In en, this message translates to:
+  /// **'This field is required'**
+  String get requiredError;
+
+  /// No description provided for @advantagesTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Advantages'**
+  String get advantagesTitle;
+
+  /// No description provided for @disadvantagesTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Disadvantages'**
+  String get disadvantagesTitle;
+
+  /// No description provided for @adminAccess.
+  ///
+  /// In en, this message translates to:
+  /// **'Admin Access'**
+  String get adminAccess;
+
+  /// No description provided for @enterPin.
+  ///
+  /// In en, this message translates to:
+  /// **'Enter Pin'**
+  String get enterPin;
+
+  /// No description provided for @verifyBtn.
+  ///
+  /// In en, this message translates to:
+  /// **'Verify'**
+  String get verifyBtn;
+
+  /// No description provided for @nukeWorldTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Nuke World'**
+  String get nukeWorldTitle;
+
+  /// No description provided for @nukeWorldDesc.
+  ///
+  /// In en, this message translates to:
+  /// **'Nuke World'**
+  String get nukeWorldDesc;
+
+  /// No description provided for @nukeWorldSuccess.
+  ///
+  /// In en, this message translates to:
+  /// **'Database Reset Successful!'**
+  String get nukeWorldSuccess;
+
+  /// No description provided for @errorPrefix.
+  ///
+  /// In en, this message translates to:
+  /// **'Error Prefix {arg0}'**
+  String errorPrefix(String arg0);
+
+  /// No description provided for @executeNuke.
+  ///
+  /// In en, this message translates to:
+  /// **'Execute Nuke'**
+  String get executeNuke;
+
+  /// No description provided for @ftgRacing.
+  ///
+  /// In en, this message translates to:
+  /// **'Ftg Racing'**
+  String get ftgRacing;
+
+  /// No description provided for @manager2026.
+  ///
+  /// In en, this message translates to:
+  /// **'Manager2026'**
+  String get manager2026;
+
+  /// No description provided for @signInWithGoogle.
+  ///
+  /// In en, this message translates to:
+  /// **'Sign In With Google'**
+  String get signInWithGoogle;
+
+  /// No description provided for @signInWithEmail.
+  ///
+  /// In en, this message translates to:
+  /// **'Sign In With Email'**
+  String get signInWithEmail;
+
+  /// No description provided for @devQuickStart.
+  ///
+  /// In en, this message translates to:
+  /// **'Dev Quick Start'**
+  String get devQuickStart;
+
+  /// No description provided for @signingWithTeam.
+  ///
+  /// In en, this message translates to:
+  /// **'Signing With Team {arg0}'**
+  String signingWithTeam(String arg0);
+
+  /// No description provided for @applicationFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Application Failed {arg0}'**
+  String applicationFailed(String arg0);
+
+  /// No description provided for @selectTeamTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Select Team'**
+  String get selectTeamTitle;
+
+  /// No description provided for @selectTeamDesc.
+  ///
+  /// In en, this message translates to:
+  /// **'Select Team'**
+  String get selectTeamDesc;
+
+  /// No description provided for @worldChampionship.
+  ///
+  /// In en, this message translates to:
+  /// **'World Championship'**
+  String get worldChampionship;
+
+  /// No description provided for @secondSeries.
+  ///
+  /// In en, this message translates to:
+  /// **'Second Series'**
+  String get secondSeries;
+
+  /// No description provided for @noTeamsAvailable.
+  ///
+  /// In en, this message translates to:
+  /// **'No Teams Available'**
+  String get noTeamsAvailable;
+
+  /// No description provided for @recommendedTag.
+  ///
+  /// In en, this message translates to:
+  /// **'Recommended Tag'**
+  String get recommendedTag;
+
+  /// No description provided for @unlockLeagueDesc.
+  ///
+  /// In en, this message translates to:
+  /// **'Unlock League'**
+  String get unlockLeagueDesc;
+
+  /// No description provided for @mainDriverLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Main Driver'**
+  String get mainDriverLabel;
+
+  /// No description provided for @secondaryDriverLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Secondary Driver'**
+  String get secondaryDriverLabel;
+
+  /// No description provided for @selectTeamBtn.
+  ///
+  /// In en, this message translates to:
+  /// **'Select Team'**
+  String get selectTeamBtn;
+
+  /// No description provided for @selectedTag.
+  ///
+  /// In en, this message translates to:
+  /// **'Selected Tag'**
+  String get selectedTag;
+
+  /// No description provided for @standingsConstructorTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Standings Constructor'**
+  String get standingsConstructorTitle;
+
+  /// No description provided for @raceResults.
+  ///
+  /// In en, this message translates to:
+  /// **'Race Results'**
+  String get raceResults;
+
+  /// No description provided for @standingsTeam.
+  ///
+  /// In en, this message translates to:
+  /// **'Standings Team'**
+  String get standingsTeam;
+
+  /// No description provided for @standingsPoints.
+  ///
+  /// In en, this message translates to:
+  /// **'Standings Points'**
+  String get standingsPoints;
+
+  /// No description provided for @insufficientBudgetForNameChange.
+  ///
+  /// In en, this message translates to:
+  /// **'Insufficient Budget For Name Change'**
+  String get insufficientBudgetForNameChange;
+
+  /// No description provided for @teamRenamedFree.
+  ///
+  /// In en, this message translates to:
+  /// **'Team Renamed Free {arg0}'**
+  String teamRenamedFree(String arg0);
+
+  /// No description provided for @teamRenamedPaid.
+  ///
+  /// In en, this message translates to:
+  /// **'Team Renamed Paid {arg0}'**
+  String teamRenamedPaid(String arg0);
+
+  /// No description provided for @teamIdentityTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Team Identity'**
+  String get teamIdentityTitle;
+
+  /// No description provided for @teamNameLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Team Name'**
+  String get teamNameLabel;
+
+  /// No description provided for @confirmBtn.
+  ///
+  /// In en, this message translates to:
+  /// **'Confirm'**
+  String get confirmBtn;
+
+  /// No description provided for @regulationsTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Regulations'**
+  String get regulationsTitle;
+
+  /// No description provided for @firstChangeUsed.
+  ///
+  /// In en, this message translates to:
+  /// **'First Change Used'**
+  String get firstChangeUsed;
+
+  /// No description provided for @firstChangeFree.
+  ///
+  /// In en, this message translates to:
+  /// **'First Change Free'**
+  String get firstChangeFree;
+
+  /// No description provided for @nextChangesCost.
+  ///
+  /// In en, this message translates to:
+  /// **'Next Changes Cost'**
+  String get nextChangesCost;
+
+  /// No description provided for @renamedTimesLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Renamed Times Label {arg0}'**
+  String renamedTimesLabel(String arg0);
+
+  /// No description provided for @teamCareerStatsTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Team Career Stats'**
+  String get teamCareerStatsTitle;
+
+  /// No description provided for @combinedDriversLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Combined Drivers'**
+  String get combinedDriversLabel;
+
+  /// No description provided for @driverBreakdownTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Driver Breakdown'**
+  String get driverBreakdownTitle;
+
+  /// No description provided for @driverHeader.
+  ///
+  /// In en, this message translates to:
+  /// **'Driver Header'**
+  String get driverHeader;
+
+  /// No description provided for @teamLiveryTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Team Livery'**
+  String get teamLiveryTitle;
+
+  /// No description provided for @selectYourColors.
+  ///
+  /// In en, this message translates to:
+  /// **'Select Your Colors'**
+  String get selectYourColors;
+
+  /// No description provided for @liveryDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'Livery Description'**
+  String get liveryDescription;
+
+  /// No description provided for @managerProfileSectionTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Manager Profile Section'**
+  String get managerProfileSectionTitle;
+
+  /// No description provided for @circuitMexico.
+  ///
+  /// In en, this message translates to:
+  /// **'Circuit Mexico'**
+  String get circuitMexico;
+
+  /// No description provided for @circuitInterlagos.
+  ///
+  /// In en, this message translates to:
+  /// **'Circuit Interlagos'**
+  String get circuitInterlagos;
+
+  /// No description provided for @circuitMiami.
+  ///
+  /// In en, this message translates to:
+  /// **'Circuit Miami'**
+  String get circuitMiami;
+
+  /// No description provided for @circuitSanPabloStreet.
+  ///
+  /// In en, this message translates to:
+  /// **'Circuit San Pablo Street'**
+  String get circuitSanPabloStreet;
+
+  /// No description provided for @circuitIndianapolis.
+  ///
+  /// In en, this message translates to:
+  /// **'Circuit Indianapolis'**
+  String get circuitIndianapolis;
+
+  /// No description provided for @circuitMontreal.
+  ///
+  /// In en, this message translates to:
+  /// **'Circuit Montreal'**
+  String get circuitMontreal;
+
+  /// No description provided for @circuitVegas.
+  ///
+  /// In en, this message translates to:
+  /// **'Circuit Vegas'**
+  String get circuitVegas;
+
+  /// No description provided for @circuitTexas.
+  ///
+  /// In en, this message translates to:
+  /// **'Circuit Texas'**
+  String get circuitTexas;
+
+  /// No description provided for @circuitBuenosAires.
+  ///
+  /// In en, this message translates to:
+  /// **'Circuit Buenos Aires'**
+  String get circuitBuenosAires;
+
+  /// No description provided for @statusLivingLegend.
+  ///
+  /// In en, this message translates to:
+  /// **'Status Living Legend'**
+  String get statusLivingLegend;
+
+  /// No description provided for @statusEraDominator.
+  ///
+  /// In en, this message translates to:
+  /// **'Status Era Dominator'**
+  String get statusEraDominator;
+
+  /// No description provided for @statusTheHeir.
+  ///
+  /// In en, this message translates to:
+  /// **'Status The Heir'**
+  String get statusTheHeir;
+
+  /// No description provided for @statusTheHeiress.
+  ///
+  /// In en, this message translates to:
+  /// **'Status The Heiress'**
+  String get statusTheHeiress;
+
+  /// No description provided for @statusEliteVeteran.
+  ///
+  /// In en, this message translates to:
+  /// **'Status Elite Veteran'**
+  String get statusEliteVeteran;
+
+  /// No description provided for @statusLastDance.
+  ///
+  /// In en, this message translates to:
+  /// **'Status Last Dance'**
+  String get statusLastDance;
+
+  /// No description provided for @statusSolidSpecialist.
+  ///
+  /// In en, this message translates to:
+  /// **'Status Solid Specialist'**
+  String get statusSolidSpecialist;
+
+  /// No description provided for @statusYoungWonder.
+  ///
+  /// In en, this message translates to:
+  /// **'Status Young Wonder'**
+  String get statusYoungWonder;
+
+  /// No description provided for @statusRisingStar.
+  ///
+  /// In en, this message translates to:
+  /// **'Status Rising Star'**
+  String get statusRisingStar;
+
+  /// No description provided for @statusStuckPromise.
+  ///
+  /// In en, this message translates to:
+  /// **'Status Stuck Promise'**
+  String get statusStuckPromise;
+
+  /// No description provided for @statusJourneyman.
+  ///
+  /// In en, this message translates to:
+  /// **'Status Journeyman'**
+  String get statusJourneyman;
+
+  /// No description provided for @statusJourneywoman.
+  ///
+  /// In en, this message translates to:
+  /// **'Status Journeywoman'**
+  String get statusJourneywoman;
+
+  /// No description provided for @statusUnsungDriver.
+  ///
+  /// In en, this message translates to:
+  /// **'Status Unsung Driver'**
+  String get statusUnsungDriver;
+
+  /// No description provided for @statusMidfieldSpark.
+  ///
+  /// In en, this message translates to:
+  /// **'Status Midfield Spark'**
+  String get statusMidfieldSpark;
+
+  /// No description provided for @statusPastGlory.
+  ///
+  /// In en, this message translates to:
+  /// **'Status Past Glory'**
+  String get statusPastGlory;
+
+  /// No description provided for @statusGridFiller.
+  ///
+  /// In en, this message translates to:
+  /// **'Status Grid Filler'**
+  String get statusGridFiller;
+
+  /// No description provided for @statusUnknown.
+  ///
+  /// In en, this message translates to:
+  /// **'Status Unknown'**
+  String get statusUnknown;
+
+  /// No description provided for @descLivingLegend.
+  ///
+  /// In en, this message translates to:
+  /// **'Desc Living Legend'**
+  String get descLivingLegend;
+
+  /// No description provided for @descEraDominator.
+  ///
+  /// In en, this message translates to:
+  /// **'Desc Era Dominator'**
+  String get descEraDominator;
+
+  /// No description provided for @descTheHeir.
+  ///
+  /// In en, this message translates to:
+  /// **'Desc The Heir'**
+  String get descTheHeir;
+
+  /// No description provided for @descEliteVeteran.
+  ///
+  /// In en, this message translates to:
+  /// **'Desc Elite Veteran'**
+  String get descEliteVeteran;
+
+  /// No description provided for @descLastDance.
+  ///
+  /// In en, this message translates to:
+  /// **'Desc Last Dance'**
+  String get descLastDance;
+
+  /// No description provided for @descSolidSpecialist.
+  ///
+  /// In en, this message translates to:
+  /// **'Desc Solid Specialist'**
+  String get descSolidSpecialist;
+
+  /// No description provided for @descYoungWonder.
+  ///
+  /// In en, this message translates to:
+  /// **'Desc Young Wonder'**
+  String get descYoungWonder;
+
+  /// No description provided for @descRisingStar.
+  ///
+  /// In en, this message translates to:
+  /// **'Desc Rising Star'**
+  String get descRisingStar;
+
+  /// No description provided for @descStuckPromise.
+  ///
+  /// In en, this message translates to:
+  /// **'Desc Stuck Promise'**
+  String get descStuckPromise;
+
+  /// No description provided for @descJourneyman.
+  ///
+  /// In en, this message translates to:
+  /// **'Desc Journeyman'**
+  String get descJourneyman;
+
+  /// No description provided for @descUnsungDriver.
+  ///
+  /// In en, this message translates to:
+  /// **'Desc Unsung Driver'**
+  String get descUnsungDriver;
+
+  /// No description provided for @descMidfieldSpark.
+  ///
+  /// In en, this message translates to:
+  /// **'Desc Midfield Spark'**
+  String get descMidfieldSpark;
+
+  /// No description provided for @descPastGlory.
+  ///
+  /// In en, this message translates to:
+  /// **'Desc Past Glory'**
+  String get descPastGlory;
+
+  /// No description provided for @descGridFiller.
+  ///
+  /// In en, this message translates to:
+  /// **'Desc Grid Filler'**
+  String get descGridFiller;
+
+  /// No description provided for @descUnknown.
+  ///
+  /// In en, this message translates to:
+  /// **'Desc Unknown'**
+  String get descUnknown;
+
+  /// No description provided for @errorLoadingProfile.
+  ///
+  /// In en, this message translates to:
+  /// **'Error Loading Profile {arg0}'**
+  String errorLoadingProfile(String arg0);
+
+  /// No description provided for @powerStatsLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Power Stats'**
+  String get powerStatsLabel;
+
+  /// No description provided for @aeroStatsLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Aero Stats'**
+  String get aeroStatsLabel;
+
+  /// No description provided for @handlingStatsLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Handling Stats'**
+  String get handlingStatsLabel;
+
+  /// No description provided for @reliabilityStatsLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Reliability Stats'**
+  String get reliabilityStatsLabel;
+
+  /// No description provided for @failedToLoadLiveries.
+  ///
+  /// In en, this message translates to:
+  /// **'Failed To Load Liveries'**
+  String get failedToLoadLiveries;
+
+  /// No description provided for @liveryIndexLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Livery Index Label {arg0} {arg1}'**
+  String liveryIndexLabel(String arg0, String arg1);
+
+  /// No description provided for @loadingPhrase1.
+  ///
+  /// In en, this message translates to:
+  /// **'Warming up engines...'**
+  String get loadingPhrase1;
+
+  /// No description provided for @loadingPhrase2.
+  ///
+  /// In en, this message translates to:
+  /// **'Analyzing telemetry data...'**
+  String get loadingPhrase2;
+
+  /// No description provided for @loadingPhrase3.
+  ///
+  /// In en, this message translates to:
+  /// **'Adjusting aero balance...'**
+  String get loadingPhrase3;
+
+  /// No description provided for @loadingPhrase4.
+  ///
+  /// In en, this message translates to:
+  /// **'Preparing tyre sets...'**
+  String get loadingPhrase4;
+
+  /// No description provided for @loadingPhrase5.
+  ///
+  /// In en, this message translates to:
+  /// **'Checking fuel levels...'**
+  String get loadingPhrase5;
+
+  /// No description provided for @loadingPhrase6.
+  ///
+  /// In en, this message translates to:
+  /// **'Syncing with pit wall...'**
+  String get loadingPhrase6;
+
+  /// No description provided for @loadingPhrase7.
+  ///
+  /// In en, this message translates to:
+  /// **'Optimizing engine map...'**
+  String get loadingPhrase7;
+
+  /// No description provided for @loadingPhrase8.
+  ///
+  /// In en, this message translates to:
+  /// **'Awaiting green flag...'**
+  String get loadingPhrase8;
+
+  /// No description provided for @minsAgo.
+  ///
+  /// In en, this message translates to:
+  /// **'Mins Ago {arg0}'**
+  String minsAgo(int arg0);
+
+  /// No description provided for @hoursAgo.
+  ///
+  /// In en, this message translates to:
+  /// **'Hours Ago {arg0}'**
+  String hoursAgo(int arg0);
+
+  /// No description provided for @pressNewsManagerJoin.
+  ///
+  /// In en, this message translates to:
+  /// **'Press News Manager Join {arg0} {arg1} {arg2} {arg3} {arg4} {arg5} {arg6}'**
+  String pressNewsManagerJoin(
+    String arg0,
+    String arg1,
+    String arg2,
+    String arg3,
+    String arg4,
+    String arg5,
+    String arg6,
+  );
+
+  /// No description provided for @motorsportDaily.
+  ///
+  /// In en, this message translates to:
+  /// **'Motorsport Daily'**
+  String get motorsportDaily;
+
+  /// No description provided for @readFullArticle.
+  ///
+  /// In en, this message translates to:
+  /// **'Read Full Article'**
+  String get readFullArticle;
+
+  /// No description provided for @closeBtn.
+  ///
+  /// In en, this message translates to:
+  /// **'Close'**
+  String get closeBtn;
+
+  /// No description provided for @navOffice.
+  ///
+  /// In en, this message translates to:
+  /// **'Office'**
+  String get navOffice;
 }
 
 class _AppLocalizationsDelegate

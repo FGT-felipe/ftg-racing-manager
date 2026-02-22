@@ -3,8 +3,8 @@
   "appTitle": "FTG Racing Manager",
   "loading": "Cargando...",
   "error": "Error: {message}",
-  "save": "Guardar",
-  "cancel": "Cancelar",
+  "save": "GUARDAR",
+  "cancel": "CANCELAR",
   "delete": "Eliminar",
   "edit": "Editar",
   "add": "Añadir",
@@ -99,7 +99,7 @@
   "garageDnf": "DNF",
   "garageRepairMedicalCosts": "Se han aplicado costes médicos y de reparación. El piloto no puede volver a salir esta sesión.",
   "garageConfidence": "CONFIANZA",
-  "garageRestoreSetup": "RESTAURAR ESTA CONFIG.",
+  "garageRestoreSetup": "RESTAURAR ESTA CONFIGURACIÓN",
   "garageSetupRestored": "Configuración restaurada para la sesión actual",
   "garageLapTimes": "TIEMPOS DE VUELTA — {name}",
   "garageNoLapsYet": "Sin vueltas registradas aún",
@@ -178,7 +178,9 @@
   "garageLapSetup": "CONFIG. VUELTA — {time}",
   "@garageLapSetup": {
     "placeholders": {
-      "time": { "type": "String" }
+      "time": {
+        "type": "String"
+      }
     }
   },
   "garageClose": "CERRAR",
@@ -192,12 +194,675 @@
   "garageRaceStartTyreRegulation": "Regla: Debe salir con el neumático de su mejor tiempo en clasif.",
   "garageLapsIntelShort": "{count} VUELTAS",
   "garageNoFeedbackGatheredYet": "Sin feedback recolectado aún",
-  "garageSetupRestored": "Configuración restaurada para la sesión actual",
-  "garageRestoreSetup": "RESTAURAR ESTA CONFIGURACIÓN",
   "garageFitnessPercentage": "ESTADO: {percent}%",
   "@garageFitnessPercentage": {
     "placeholders": {
-      "percent": { "type": "int" }
+      "percent": {
+        "type": "int"
+      }
     }
-  }
+  },
+  "facTeamOffice": "Oficina del Equipo",
+  "facGarage": "Garaje",
+  "facYouthAcademy": "Academia Junior",
+  "facPressRoom": "Sala de Prensa",
+  "facScoutingOffice": "Scouting",
+  "facRacingSimulator": "Simulador",
+  "facGym": "Gimnasio",
+  "facRDOffice": "I+D",
+  "descTeamOffice": "Gestión administrativa y contratos.",
+  "descGarage": "Mantenimiento y puesta a punto del monoplaza.",
+  "descYouthAcademy": "Formación de nuevos talentos para el futuro.",
+  "descPressRoom": "Gestión de medios y relaciones públicas.",
+  "descScoutingOffice": "Búsqueda de talento global en la parrilla.",
+  "descRacingSimulator": "Entrenamiento de precisión en entorno virtual.",
+  "descGym": "Preparación física y resistencia de los pilotos.",
+  "descRDOffice": "Innovación y desarrollo tecnológico constante.",
+  "notPurchased": "No Comprado",
+  "bonusBudget": "Bono de Presupuesto: {arg0}",
+  "bonusRepair": "Bono de Reparación: {arg0}",
+  "bonusScouting": "Bono de Scouting: {arg0}",
+  "bonusTBD": "Bono por definir",
+  "accountSettingsTitle": "Ajustes de Cuenta",
+  "userProfileTitle": "PERFIL DE USUARIO",
+  "nameLabel": "Nombre",
+  "emailLabel": "Correo",
+  "registeredLabel": "Registrado",
+  "userDataNotFound": "Datos de usuario no encontrados",
+  "managerProfileTitle": "PERFIL DE MANAGER",
+  "managerNameLabel": "Nombre del Manager",
+  "roleLabel": "Rol",
+  "countryLabel": "País",
+  "noManagerProfile": "Sin Perfil de Manager",
+  "logOutBtn": "Cerrar Sesión",
+  "googleAuthError": "Error al conectar con Google: {arg0}",
+  "authError": "Error de acceso: {arg0}",
+  "emailAlreadyRegistered": "Este correo ya está registrado",
+  "unexpectedError": "Error inesperado: {arg0}",
+  "formulaTrackGlory": "Formula Track Glory",
+  "ftgSlogan": "Domina la pista",
+  "alreadyHaveAccount": "¿Ya tienes cuenta?",
+  "newManagerJoin": "Súmate como Manager",
+  "versionFooter": "Versión 1.0.0",
+  "continueWithGoogle": "Seguir con Google",
+  "orUseEmail": "O usar email",
+  "firstNameLabel": "Nombre",
+  "lastNameLabel": "Apellidos",
+  "emailAddressLabel": "Correo Electrónico",
+  "passwordLabel": "Contraseña",
+  "createAccountBtn": "Crear Cuenta",
+  "signInBtn": "Entrar",
+  "calendarNoEvents": "No hay eventos en el calendario actual.",
+  "calendarTitle": "Calendario",
+  "lapsIntel": "Vueltas",
+  "calendarStatusScheduled": "Programado",
+  "driversManagementTitle": "Gestión de Pilotos",
+  "errorLoadingDrivers": "Error al cargar pilotos",
+  "noDriversFound": "No se encontraron pilotos",
+  "renewingContractSimulated": "Renovando contrato de {arg0}...",
+  "firingDriverSimulated": "Despidiendo a {arg0}...",
+  "ageLabel": "Edad: {arg0}",
+  "contractDetailsTitle": "Detalles del Contrato",
+  "contractStatusLabel": "Estado del Contrato",
+  "salaryPerRaceLabel": "Salario por Carrera",
+  "terminationLabel": "Cláusula de Rescisión",
+  "remainingLabel": "Restante",
+  "seasonsRemaining": "Temporadas restantes: {arg0}",
+  "moraleLabel": "Moral",
+  "marketabilityLabel": "Valor Comercial",
+  "fireBtn": "DESPEDIR",
+  "renewContractBtn": "RENOVAR",
+  "driverStatsSectionTitle": "Estadísticas del Piloto",
+  "careerStatsTitle": "Estadísticas de Carrera",
+  "titlesStat": "Títulos",
+  "winsStat": "Victorias",
+  "podiumsStat": "Podios",
+  "racesStat": "Carreras",
+  "championshipFormTitle": "Estado del Campeonato",
+  "standingsBtn": "VER TABLA",
+  "posLabel": "Pos",
+  "eventHeader": "Evento",
+  "qHeader": "Clas.",
+  "rHeader": "Car.",
+  "pHeader": "Pos.",
+  "careerHistoryTitle": "Historial de Carrera",
+  "yearHeader": "Año",
+  "teamHeader": "Equipo",
+  "seriesHeader": "Serie",
+  "wHeader": "Vic.",
+  "historyIndividual": "Individual",
+  "noDataAvailableYet": "Sin datos disponibles aún",
+  "historyLowerDivision": "División Inferior",
+  "historyChampionBadge": "CAMPEÓN",
+  "statBraking": "Frenada",
+  "statCornering": "Curvas",
+  "statSmoothness": "Suavidad",
+  "statOvertaking": "Adelantamiento",
+  "statConsistency": "Consistencia",
+  "statAdaptability": "Adaptabilidad",
+  "statFitness": "Física",
+  "statFeedback": "Feedback",
+  "statFocus": "Enfoque",
+  "statMorale": "Moral",
+  "statMarketability": "Comercial",
+  "roleMain": "Primer Piloto",
+  "roleSecond": "Segundo Piloto",
+  "roleEqual": "Estatus Igualitario",
+  "roleReserve": "Piloto de Reserva",
+  "engineeringDescription": "Desarrollo técnico y mejoras del monoplaza.",
+  "budgetLabel": "PRESUPUESTO",
+  "currencySymbol": "$",
+  "millionsSuffix": "M",
+  "upgradeLimitReached": "Límite de mejoras alcanzado",
+  "carLabelA": "Coche A",
+  "noDriverAssigned": "Sin piloto asignado",
+  "carLabelB": "Coche B",
+  "carPerformanceTitle": "Rendimiento del Coche: {arg0}",
+  "aero": "Aerodinámica",
+  "engine": "Motor",
+  "chassisPart": "Chasis",
+  "reliability": "Fiabilidad",
+  "costLabel": "Costo: {arg0} {arg1}",
+  "upgradeBtn": "MEJORAR",
+  "managerError": "Error de gestión: {arg0}",
+  "managerProfileNotFound": "Perfil de manager no encontrado",
+  "teamError": "Error de equipo: {arg0}",
+  "teamDataNotFound": "Datos de equipo no encontrados",
+  "seasonError": "Error de temporada: {arg0}",
+  "quickView": "Vista Rápida",
+  "pressNewsTitle": "NOTICIAS DE PRENSA",
+  "errorLoadingNews": "Error al cargar noticias",
+  "officeNewsTitle": "NOTICIAS DE OFICINA",
+  "notificationsUnavailable": "Notificaciones no disponibles",
+  "noNewNotifications": "No hay notificaciones nuevas",
+  "noNewsFromPaddockYet": "Aún no hay noticias del paddock",
+  "welcomeBackManager": "Bienvenido de nuevo, Manager {arg0}",
+  "sessionInProgress": "Sesión en curso",
+  "timeUntilNextSession": "Próxima sesión en",
+  "teamBudget": "Presupuesto del Equipo",
+  "deficit": "Déficit",
+  "surplus": "Superávit",
+  "estimatedAbbr": "Est.",
+  "nextGrandPrix": "Próximo Gran Premio",
+  "circuitLengthAndLaps": "Distancia: {arg0} km | Vueltas: {arg1}",
+  "paddockOpen": "Paddock Abierto",
+  "weekendSetupBtn": "Ajustes de Fin de Semana",
+  "qualifyingStatus": "Clasificación en Curso",
+  "viewQualifyingBtn": "Ver Clasificación",
+  "raceStrategyStatus": "Estrategia de Carrera",
+  "setRaceStrategyBtn": "Fijar Estrategia",
+  "raceWeekendStatus": "Carrera en Curso",
+  "goToRaceBtn": "Ir a Carrera",
+  "raceFinishedStatus": "Carrera Finalizada",
+  "viewResultsBtn": "Ver Resultados",
+  "circuitIntelTitle": "Información del Circuito",
+  "aeroIntel": "Aero",
+  "highIntel": "Alto",
+  "powerIntel": "Potencia",
+  "speedIntel": "Velocidad",
+  "tyreIntel": "Neumáticos",
+  "onLive": "En Vivo",
+  "offLive": "Fuera de Línea",
+  "preRaceChecklist": "Lista de Preparación",
+  "practiceProgram": "Programa de Prácticas",
+  "completedLapsOf": "Vueltas: {arg0} de {arg1}",
+  "qualifyingSetup": "Configuración de Clasificación",
+  "readyStatus": "Listo",
+  "pendingStatus": "Pendiente",
+  "hqDescription": "Gestiona las instalaciones y el desarrollo de tu equipo.",
+  "facilitiesSectionTitle": "Instalaciones",
+  "levelLabel": "Nivel: {arg0}",
+  "nextLevelLabel": "Siguiente Nivel",
+  "maintCostLabel": "Costo Manto.",
+  "bonusLabel": "Bonificación",
+  "buyBtn": "COMPRAR",
+  "comingSoonBanner": "PRÓXIMAMENTE",
+  "facilityImproved": "¡Instalación mejorada a nivel {arg0}!",
+  "signContractError": "Error al firmar contrato",
+  "confirmResetWorldTitle": "¿Reiniciar el Mundo?",
+  "confirmResetWorldDesc": "Esta acción borrará todo el progreso actual. Es irreversible.",
+  "cancelBtn": "CANCELAR",
+  "resetSuccess": "¡Mundo reiniciado con éxito!",
+  "resetBtn": "REINICIAR",
+  "jobMarketTitle": "Mercado Laboral",
+  "availableLabel": "Disponible",
+  "signContract": "Firmar Contrato",
+  "navDashboard": "Panel",
+  "navHQ": "Sede",
+  "navTeamOffice": "Oficina",
+  "navGarage": "Garaje",
+  "navYouthAcademy": "Filial Junior",
+  "navRacing": "Competición",
+  "navWeekendSetup": "Ajustes de GP",
+  "navRaceDay": "DÍA DE CARRERA",
+  "navManagement": "Gestión",
+  "navPersonal": "Plataforma",
+  "navFinances": "Finanzas",
+  "navSponsors": "Patrocinadores",
+  "navSeason": "Temporada",
+  "navStandings": "Clasificación",
+  "navCalendar": "Calendario",
+  "accountInfo": "INFO. DE CUENTA",
+  "notAvailable": "NO DISPONIBLE",
+  "lastSession": "Última Sesión",
+  "adminBtn": "ADMIN",
+  "accountBtn": "CUENTA",
+  "logOutConfirmTitle": "Confirmar Cierre de Sesión",
+  "logOutConfirmDesc": "¿Estás seguro de que deseas cerrar la sesión?",
+  "navMarket": "Mercado",
+  "personalManagement": "Gestión de Personal",
+  "driversTitle": "Pilotos",
+  "fitnessTrainerTitle": "Entrenador Físico",
+  "chiefEngineerTitle": "Ingeniero Jefe",
+  "hrManagerTitle": "Director de RRHH",
+  "marketingManagerTitle": "Director de Marketing",
+  "currentBalanceTitle": "Saldo Actual",
+  "recentMovementsTitle": "Movimientos Recientes",
+  "noFinancialActivity": "Sin actividad financiera reciente.",
+  "selectCarPartToManage": "Selecciona la pieza a gestionar",
+  "activeContractTitle": "CONTRATO ACTIVO: {arg0}",
+  "weeklyPayLabel": "Pago Semanal",
+  "racesLeftLabel": "Carreras Restantes",
+  "availableOffersTitle": "OFERTAS: {arg0}",
+  "rearWingPart": "Alerón Trasero",
+  "sidepodLPart": "Pontón Izquierdo",
+  "sidepodRPart": "Pontón Derecho",
+  "haloPart": "Halo",
+  "frontWingPart": "Alerón Delantero",
+  "nosePart": "Morro",
+  "manageBtn": "GESTIONAR",
+  "selectSponsorBtn": "Seleccionar Patrocinador",
+  "negotiationRulesTitle": "Reglas de Negociación",
+  "negotiationRulesDesc": "Establece los términos antes de la firma.",
+  "signingBonusLabel": "Bono de Firma",
+  "weeklyPaymentLabel": "Pago Semanal",
+  "durationLabel": "Duración",
+  "durationRaces": "{arg0} Carreras",
+  "objectiveLabel": "Objetivo",
+  "suspendedStatus": "Suspendido",
+  "chooseTacticLabel": "Elige Táctica: {arg0}",
+  "persuasiveTactic": "Persuasiva",
+  "negotiatorTactic": "Negociadora",
+  "collaborativeTactic": "Colaborativa",
+  "availableSponsorsTitle": "Patrocinadores Disponibles",
+  "roleExDriverTitle": "Ex-Piloto",
+  "roleExDriverDesc": "Aporta experiencia técnica en pista.",
+  "roleBusinessTitle": "Empresario",
+  "roleBusinessDesc": "Optimiza ingresos y mercadeo.",
+  "roleBureaucratTitle": "Burócrata",
+  "roleBureaucratDesc": "Experto en regulaciones y política.",
+  "roleEngineerTitle": "Ingeniero",
+  "roleEngineerDesc": "Maximiza el desarrollo técnico.",
+  "createManagerProfile": "Crear Perfil de Manager",
+  "personalInfoTitle": "Información Personal",
+  "selectCountryError": "Debes seleccionar un país",
+  "genderLabel": "Género",
+  "maleGender": "Masculino",
+  "femaleGender": "Femenino",
+  "nonBinaryGender": "No Binario",
+  "selectGenderError": "Debes seleccionar un género",
+  "dayLabel": "Día",
+  "monthLabel": "Mes",
+  "yearLabel": "Año",
+  "selectBackgroundTitle": "TRASFONDO DEL MANAGER",
+  "createManagerDesc": "Personaliza tu perfil y trasfondo profesional.",
+  "establishCareerBtn": "ESTABLECER CARRERA",
+  "requiredError": "Este campo es obligatorio",
+  "advantagesTitle": "VENTAJAS",
+  "disadvantagesTitle": "DESVENTAJAS",
+  "adminAccess": "ADMINISTRACIÓN",
+  "enterPin": "INTRODUCIR PIN",
+  "verifyBtn": "VERIFICAR",
+  "nukeWorldTitle": "Reinicio Global",
+  "nukeWorldDesc": "Elimina todos los datos de la liga y los managers. Esta acción es definitiva.",
+  "nukeWorldSuccess": "¡Base de datos reiniciada!",
+  "errorPrefix": "Error: {arg0}",
+  "executeNuke": "Ejecutar Reinicio",
+  "ftgRacing": "FTG Racing",
+  "manager2026": "MANAGER 2026",
+  "signInWithGoogle": "Entrar con Google",
+  "signInWithEmail": "Entrar con Email",
+  "devQuickStart": "Inicio Rápido (Dev)",
+  "signingWithTeam": "Tramitando contrato con {arg0}...",
+  "applicationFailed": "Error en la solicitud: {arg0}",
+  "selectTeamTitle": "ELECCIÓN DE EQUIPO",
+  "selectTeamDesc": "Selecciona la escudería que deseas dirigir.",
+  "worldChampionship": "CAMPEONATO MUNDIAL",
+  "secondSeries": "SERIE SECUNDARIA",
+  "noTeamsAvailable": "No hay equipos disponibles en esta liga.",
+  "recommendedTag": "RECOMENDADO",
+  "unlockLeagueDesc": "Gana reputación para desbloquear ligas superiores.",
+  "mainDriverLabel": "Primer Piloto",
+  "secondaryDriverLabel": "Segundo Piloto",
+  "selectTeamBtn": "SELECCIONAR EQUIPO",
+  "selectedTag": "SELECCIONADO",
+  "standingsConstructorTitle": "Clasificación de Constructores",
+  "raceResults": "Resultados",
+  "standingsTeam": "Escudería",
+  "standingsPoints": "Puntos",
+  "insufficientBudgetForNameChange": "Presupuesto insuficiente para cambio de nombre",
+  "teamRenamedFree": "Renombrado gratis: {arg0}",
+  "teamRenamedPaid": "Renombrado: {arg0}",
+  "teamIdentityTitle": "IDENTIDAD VISUAL",
+  "teamNameLabel": "Nombre de la Escudería",
+  "confirmBtn": "CONFIRMAR",
+  "regulationsTitle": "NORMATIVA",
+  "firstChangeUsed": "Cambio inicial agotado",
+  "firstChangeFree": "Primer cambio sin costo",
+  "nextChangesCost": "Siguientes cambios tendrán costo",
+  "renamedTimesLabel": "Renombrado {arg0} veces",
+  "teamCareerStatsTitle": "ESTADÍSTICAS HISTÓRICAS",
+  "combinedDriversLabel": "RENDIMIENTO COMBINADO",
+  "driverBreakdownTitle": "DETALLE POR PILOTO",
+  "driverHeader": "PILOTO",
+  "teamLiveryTitle": "COLORES DEL EQUIPO",
+  "selectYourColors": "Elige tus colores",
+  "liveryDescription": "Configura la apariencia de tus monoplazas en pista.",
+  "managerProfileSectionTitle": "PERFIL DEL DIRECTOR",
+  "circuitMexico": "México",
+  "circuitInterlagos": "Interlagos",
+  "circuitMiami": "Miami",
+  "circuitSanPabloStreet": "San Pablo",
+  "circuitIndianapolis": "Indianápolis",
+  "circuitMontreal": "Montreal",
+  "circuitVegas": "Las Vegas",
+  "circuitTexas": "Texas",
+  "circuitBuenosAires": "Buenos Aires",
+  "statusLivingLegend": "LEYENDA VIVA",
+  "statusEraDominator": "DOMINADOR DE LA ERA",
+  "statusTheHeir": "EL HEREDERO",
+  "statusTheHeiress": "LA HEREDERA",
+  "statusEliteVeteran": "VETERANO DE ÉLITE",
+  "statusLastDance": "EL ÚLTIMO BAILE",
+  "statusSolidSpecialist": "Especialista Sólido",
+  "statusYoungWonder": "Joven Maravilla",
+  "statusRisingStar": "ESTRELLA EMERGENTE",
+  "statusStuckPromise": "PROMESA ESTANCADA",
+  "statusJourneyman": "TROTAMUNDOS",
+  "statusJourneywoman": "Trotamundos",
+  "statusUnsungDriver": "HÉROE ANÓNIMO",
+  "statusMidfieldSpark": "CHISPA DE MEDIA TABLA",
+  "statusPastGlory": "SOL DE OCASO",
+  "statusGridFiller": "RELLENO DE PARRILLA",
+  "statusUnknown": "Desconocido",
+  "descLivingLegend": "Uno de los mejores de la historia.",
+  "descEraDominator": "Domina su época con puño de hierro.",
+  "descTheHeir": "Heredero de una dinastía ganadora.",
+  "descEliteVeteran": "Años de experiencia al máximo nivel.",
+  "descLastDance": "Su última oportunidad para la gloria.",
+  "descSolidSpecialist": "Fiable en cualquier circunstancia.",
+  "descYoungWonder": "El futuro del automovilismo.",
+  "descRisingStar": "Un talento que sube como la espuma.",
+  "descStuckPromise": "Mucho talento, pocos resultados.",
+  "descJourneyman": "Ha pasado por casi todos los garajes.",
+  "descUnsungDriver": "Merece más atención de la prensa.",
+  "descMidfieldSpark": "Capaz de milagros en coches medios.",
+  "descPastGlory": "Su mejor momento ya pasó.",
+  "descGridFiller": "Simplemente está aquí para correr.",
+  "descUnknown": "Sin datos biográficos destacados.",
+  "errorLoadingProfile": "Error al cargar perfil: {arg0}",
+  "powerStatsLabel": "Potencia",
+  "aeroStatsLabel": "Aerodinámica",
+  "handlingStatsLabel": "Manejo",
+  "reliabilityStatsLabel": "Fiabilidad",
+  "failedToLoadLiveries": "Error al cargar diseños",
+  "liveryIndexLabel": "Diseño {arg0} de {arg1}",
+  "loadingPhrase1": "Calentando neumáticos...",
+  "loadingPhrase2": "Sincronizando telemetría...",
+  "loadingPhrase3": "Ajustando alerones...",
+  "loadingPhrase4": "Preparando estrategia...",
+  "loadingPhrase5": "Revisando niveles...",
+  "loadingPhrase6": "Conectando con el muro...",
+  "loadingPhrase7": "Optimizando motor...",
+  "loadingPhrase8": "Listos para el semáforo...",
+  "minsAgo": "Hace {arg0} min",
+  "hoursAgo": "Hace {arg0} h",
+  "pressNewsManagerJoin": "¡BOMBA! {arg0} se une a {arg1}. El manager de {arg2}, {arg3}, llega desde {arg4} para buscar {arg5} en {arg6}.",
+  "motorsportDaily": "DIARIO DEL MOTOR",
+  "readFullArticle": "Leer artículo completo",
+  "closeBtn": "CERRAR",
+  "navOffice": "Sede Central",
+  "@bonusBudget": {
+    "placeholders": {
+      "arg0": {
+        "type": "String"
+      }
+    }
+  },
+  "@bonusRepair": {
+    "placeholders": {
+      "arg0": {
+        "type": "String"
+      }
+    }
+  },
+  "@bonusScouting": {
+    "placeholders": {
+      "arg0": {
+        "type": "String"
+      }
+    }
+  },
+  "@carPerformanceTitle": {
+    "placeholders": {
+      "arg0": {
+        "type": "String"
+      }
+    }
+  },
+  "@costLabel": {
+    "placeholders": {
+      "arg0": {
+        "type": "String"
+      },
+      "arg1": {
+        "type": "String"
+      }
+    }
+  },
+  "@levelLabel": {
+    "placeholders": {
+      "arg0": {
+        "type": "String"
+      }
+    }
+  },
+  "@facilityImproved": {
+    "placeholders": {
+      "arg0": {
+        "type": "String"
+      }
+    }
+  },
+  "@pressNewsManagerJoin": {
+    "placeholders": {
+      "arg0": {
+        "type": "String"
+      },
+      "arg1": {
+        "type": "String"
+      },
+      "arg2": {
+        "type": "String"
+      },
+      "arg3": {
+        "type": "String"
+      },
+      "arg4": {
+        "type": "String"
+      },
+      "arg5": {
+        "type": "String"
+      },
+      "arg6": {
+        "type": "String"
+      }
+    }
+  },
+  "@googleAuthError": {
+    "placeholders": {
+      "arg0": {
+        "type": "String"
+      }
+    }
+  },
+  "@authError": {
+    "placeholders": {
+      "arg0": {
+        "type": "String"
+      }
+    }
+  },
+  "@unexpectedError": {
+    "placeholders": {
+      "arg0": {
+        "type": "String"
+      }
+    }
+  },
+  "@signingWithTeam": {
+    "placeholders": {
+      "arg0": {
+        "type": "String"
+      }
+    }
+  },
+  "@applicationFailed": {
+    "placeholders": {
+      "arg0": {
+        "type": "String"
+      }
+    }
+  },
+  "@managerError": {
+    "placeholders": {
+      "arg0": {
+        "type": "String"
+      }
+    }
+  },
+  "@teamError": {
+    "placeholders": {
+      "arg0": {
+        "type": "String"
+      }
+    }
+  },
+  "@seasonError": {
+    "placeholders": {
+      "arg0": {
+        "type": "String"
+      }
+    }
+  },
+  "@teamRenamedFree": {
+    "placeholders": {
+      "arg0": {
+        "type": "String"
+      }
+    }
+  },
+  "@teamRenamedPaid": {
+    "placeholders": {
+      "arg0": {
+        "type": "String"
+      }
+    }
+  },
+  "@renamedTimesLabel": {
+    "placeholders": {
+      "arg0": {
+        "type": "String"
+      }
+    }
+  },
+  "@renewingContractSimulated": {
+    "placeholders": {
+      "arg0": {
+        "type": "String"
+      }
+    }
+  },
+  "@firingDriverSimulated": {
+    "placeholders": {
+      "arg0": {
+        "type": "String"
+      }
+    }
+  },
+  "@activeContractTitle": {
+    "placeholders": {
+      "arg0": {
+        "type": "String"
+      }
+    }
+  },
+  "@availableOffersTitle": {
+    "placeholders": {
+      "arg0": {
+        "type": "String"
+      }
+    }
+  },
+  "@durationRaces": {
+    "placeholders": {
+      "arg0": {
+        "type": "String"
+      }
+    }
+  },
+  "@chooseTacticLabel": {
+    "placeholders": {
+      "arg0": {
+        "type": "String"
+      }
+    }
+  },
+  "@welcomeBackManager": {
+    "placeholders": {
+      "arg0": {
+        "type": "String"
+      }
+    }
+  },
+  "@seasonsRemaining": {
+    "placeholders": {
+      "arg0": {
+        "type": "String"
+      }
+    }
+  },
+  "@minsAgo": {
+    "placeholders": {
+      "arg0": {
+        "type": "int"
+      }
+    }
+  },
+  "@hoursAgo": {
+    "placeholders": {
+      "arg0": {
+        "type": "int"
+      }
+    }
+  },
+  "@ageLabel": {
+    "placeholders": {
+      "arg0": {
+        "type": "int"
+      }
+    }
+  },
+  "@circuitLengthAndLaps": {
+    "placeholders": {
+      "arg0": {
+        "type": "String"
+      },
+      "arg1": {
+        "type": "String"
+      }
+    }
+  },
+  "@completedLapsOf": {
+    "placeholders": {
+      "arg0": {
+        "type": "String"
+      },
+      "arg1": {
+        "type": "String"
+      }
+    }
+  },
+  "@liveryIndexLabel": {
+    "placeholders": {
+      "arg0": {
+        "type": "String"
+      },
+      "arg1": {
+        "type": "String"
+      }
+    }
+  },
+  "@errorPrefix": {
+    "placeholders": {
+      "arg0": {
+        "type": "String"
+      }
+    }
+  },
+  "@errorLoadingProfile": {
+    "placeholders": {
+      "arg0": {
+        "type": "String"
+      }
+    }
+  },
+  "confirm": "Confirmar",
+  "lowIntel": "Bajo",
+  "mediumIntel": "Medio",
+  "raceStrategy": "Estrategia de Carrera",
+  "setupSubmitted": "Configuración Enviada",
+  "setupPending": "Configuración Pendiente",
+  "strategySubmitted": "Estrategia Enviada",
+  "strategyPending": "Estrategia Pendiente"
 }
