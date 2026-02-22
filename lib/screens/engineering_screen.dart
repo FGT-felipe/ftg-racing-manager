@@ -265,48 +265,55 @@ class _CarUpgradesColumn extends StatelessWidget {
           ),
         ),
         const SizedBox(height: 20),
-        _UpgradeTile(
-          title: l10n.aero,
-          partKey: 'aero',
-          carIndex: carIndex,
-          level: stats['aero'] ?? 1,
-          currentBudget: currentBudget,
-          teamId: teamId,
-          isDisabled: hasUpgradedThisWeek,
-          managerRole: managerRole,
-        ),
-        const SizedBox(height: 16),
-        _UpgradeTile(
-          title: l10n.engine,
-          partKey: 'powertrain',
-          carIndex: carIndex,
-          level: stats['powertrain'] ?? 1,
-          currentBudget: currentBudget,
-          teamId: teamId,
-          isDisabled: hasUpgradedThisWeek,
-          managerRole: managerRole,
-        ),
-        const SizedBox(height: 16),
-        _UpgradeTile(
-          title: l10n.chassisPart,
-          partKey: 'chassis',
-          carIndex: carIndex,
-          level: stats['chassis'] ?? 1,
-          currentBudget: currentBudget,
-          teamId: teamId,
-          isDisabled: hasUpgradedThisWeek,
-          managerRole: managerRole,
-        ),
-        const SizedBox(height: 16),
-        _UpgradeTile(
-          title: l10n.reliability,
-          partKey: 'reliability',
-          carIndex: carIndex,
-          level: stats['reliability'] ?? 1,
-          currentBudget: currentBudget,
-          teamId: teamId,
-          isDisabled: hasUpgradedThisWeek,
-          managerRole: managerRole,
+        GridView.count(
+          crossAxisCount: 2,
+          shrinkWrap: true,
+          physics: const NeverScrollableScrollPhysics(),
+          crossAxisSpacing: 12,
+          mainAxisSpacing: 12,
+          childAspectRatio: 2.6,
+          children: [
+            _UpgradeTile(
+              title: l10n.aero,
+              partKey: 'aero',
+              carIndex: carIndex,
+              level: stats['aero'] ?? 1,
+              currentBudget: currentBudget,
+              teamId: teamId,
+              isDisabled: hasUpgradedThisWeek,
+              managerRole: managerRole,
+            ),
+            _UpgradeTile(
+              title: l10n.engine,
+              partKey: 'powertrain',
+              carIndex: carIndex,
+              level: stats['powertrain'] ?? 1,
+              currentBudget: currentBudget,
+              teamId: teamId,
+              isDisabled: hasUpgradedThisWeek,
+              managerRole: managerRole,
+            ),
+            _UpgradeTile(
+              title: l10n.chassisPart,
+              partKey: 'chassis',
+              carIndex: carIndex,
+              level: stats['chassis'] ?? 1,
+              currentBudget: currentBudget,
+              teamId: teamId,
+              isDisabled: hasUpgradedThisWeek,
+              managerRole: managerRole,
+            ),
+            _UpgradeTile(
+              title: l10n.reliability,
+              partKey: 'reliability',
+              carIndex: carIndex,
+              level: stats['reliability'] ?? 1,
+              currentBudget: currentBudget,
+              teamId: teamId,
+              isDisabled: hasUpgradedThisWeek,
+              managerRole: managerRole,
+            ),
+          ],
         ),
       ],
     );
@@ -364,7 +371,7 @@ class _UpgradeTileState extends State<_UpgradeTile> {
     }
 
     return Container(
-      padding: const EdgeInsets.all(16),
+      padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(12),
         border: Border.all(
@@ -390,35 +397,39 @@ class _UpgradeTileState extends State<_UpgradeTile> {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Text(
-                widget.title,
-                style: TextStyle(
-                  color: Theme.of(context).colorScheme.onSurface,
-                  fontSize: 14,
-                  fontWeight: FontWeight.bold,
+              Expanded(
+                child: Text(
+                  widget.title,
+                  style: TextStyle(
+                    color: Theme.of(context).colorScheme.onSurface,
+                    fontSize: 12,
+                    fontWeight: FontWeight.bold,
+                  ),
+                  overflow: TextOverflow.ellipsis,
                 ),
               ),
+              const SizedBox(width: 4),
               Text(
                 "L${widget.level}",
                 style: TextStyle(
                   color: Theme.of(context).primaryColor,
                   fontWeight: FontWeight.bold,
-                  fontSize: 14,
+                  fontSize: 12,
                 ),
               ),
             ],
           ),
-          const SizedBox(height: 12),
+          const SizedBox(height: 10),
           LinearProgressIndicator(
             value: (widget.level / 20).clamp(0.0, 1.0),
             backgroundColor: Theme.of(
               context,
             ).colorScheme.onSurface.withValues(alpha: 0.05),
             color: Theme.of(context).primaryColor,
-            minHeight: 4,
+            minHeight: 3,
             borderRadius: BorderRadius.circular(2),
           ),
-          const SizedBox(height: 16),
+          const SizedBox(height: 12),
           Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
@@ -428,7 +439,7 @@ class _UpgradeTileState extends State<_UpgradeTile> {
                   color: canAfford
                       ? Theme.of(context).colorScheme.onSurfaceVariant
                       : (isMaxed ? Colors.green : Colors.redAccent),
-                  fontSize: 11,
+                  fontSize: 10,
                   fontWeight: FontWeight.w500,
                 ),
               ),

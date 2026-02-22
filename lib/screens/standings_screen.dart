@@ -215,7 +215,6 @@ class _StandingsScreenState extends State<StandingsScreen> {
                                 Tab(text: l10n.navDrivers.toUpperCase()),
                                 Tab(
                                   text: l10n.standingsConstructorTitle
-                                      .split(' ')[0]
                                       .toUpperCase(),
                                 ),
                                 Tab(text: l10n.raceResults.toUpperCase()),

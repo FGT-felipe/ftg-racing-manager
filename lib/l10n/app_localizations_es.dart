@@ -1594,10 +1594,10 @@ class AppLocalizationsEs extends AppLocalizations {
   String get selectedTag => 'SELECCIONADO';
 
   @override
-  String get standingsConstructorTitle => ' Constructores';
+  String get standingsConstructorTitle => 'Constructores';
 
   @override
-  String get raceResults => 'Resultados';
+  String get raceResults => 'Última Carrera';
 
   @override
   String get standingsTeam => 'Escudería';
