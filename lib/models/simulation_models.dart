@@ -216,12 +216,14 @@ class LapData {
   final int lapNumber;
   final Map<String, double> driverLapTimes; // driverId -> time
   final Map<String, int> positions; // driverId -> position
+  final Map<String, TyreCompound> driverTyres; // driverId -> compound
   final List<RaceEventLog> events;
 
   LapData({
     required this.lapNumber,
     required this.driverLapTimes,
     required this.positions,
+    required this.driverTyres,
     required this.events,
   });
 }

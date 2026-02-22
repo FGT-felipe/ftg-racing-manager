@@ -1,82 +1,273 @@
 {
-  "appTitle": "FireTower Racing",
+  "@@locale": "en",
+  "appTitle": "FTG Racing Manager",
   "@appTitle": {
     "description": "The title of the application"
   },
-  "jobMarketTitle": "Open Contracts",
-  "signContract": "Sign Contract",
-  "budgetLabel": "Budget",
-  "availableLabel": "Available",
-  "takenLabel": "Taken",
-  "driversLabel": "Drivers",
-  "initializeWorld": "Initialize Universe",
-  "currencySymbol": "$",
-  "millionsSuffix": "M",
-  "signContractError": "Error signing contract",
-  "teamDetails": "Team Details",
-  "hqTitle": "Headquarters",
-  "activeDrivers": "Active Drivers",
-  "driverStats": "Stats",
-  "speed": "Speed",
-  "cornering": "Cornering",
-  "nextRace": "Next Race",
-  "gpPlaceholder": "GP Sao Paulo (Coming Soon)",
-  "ageLabel": "{age} yo",
-  "@ageLabel": {
+  "loading": "Loading...",
+  "error": "Error: {message}",
+  "@error": {
     "placeholders": {
-      "age": {
+      "message": {
+        "type": "String"
+      }
+    }
+  },
+  "save": "Save",
+  "cancel": "Cancel",
+  "delete": "Delete",
+  "edit": "Edit",
+  "add": "Add",
+  "name": "Name",
+  "description": "Description",
+  "paddockTitle": "PADDOCK",
+  "garageTitle": "GARAGE",
+  "hqTitle": "HEADQUARTERS",
+  "standingsTitle": "STANDINGS",
+  "newsTitle": "PRESS NEWS",
+  "officeTitle": "OFFICE",
+  "settingsTitle": "SETTINGS",
+  "nextRace": "NEXT RACE",
+  "raceDaySundayTime": "SUNDAY, 14:00 LOCAL",
+  "raceDayRaceTime": "RACE: {time}",
+  "raceDaySunday": "SUNDAY",
+  "raceDayLive": "LIVE",
+  "raceDayLoadingData": "Loading race data...",
+  "raceDayTitle": "RACE DAY",
+  "raceDayLap": "LAP",
+  "raceDayFastestLap": "FASTEST LAP",
+  "raceDayRacePositions": "RACE POSITIONS",
+  "raceDayInBoxes": "IN BOXES",
+  "raceDayRaceLabel": "RACE",
+  "raceDayPitBoard": "PIT BOARD",
+  "raceDayCommentary": "COMMENTARY",
+  "raceCompletedResults": "RACE COMPLETED — RESULTS",
+  "raceFinished": "FINISHED",
+  "racePreRace": "PRE-RACE",
+  "raceLightsOutSoon": "LIGHTS OUT SOON",
+  "noEventsYet": "No events recorded yet. Stand by for lights out.",
+  "raceWaitingStart": "Waiting for race start...",
+  "retired": "RETIRED",
+  "leader": "LEADER",
+  "standingsInterval": "INTERVAL",
+  "standingsPos": "POS",
+  "standingsDriver": "DRIVER",
+  "navDrivers": "DRIVERS",
+  "navEvents": "EVENTS",
+  "garageEvents": "GARAGE EVENTS",
+  "waitingForLightsOut": "Waiting for lights out...",
+  "commentatorsStandingBy": "Commentators standing by for the start...",
+  "practiceTab": "PRACTICE",
+  "qualifyingTab": "QUALIFYING",
+  "raceTab": "RACE",
+  "garageRaceSetupSubmitted": "Race setup submitted ✓",
+  "garageError": "Error: {message}",
+  "@garageError": {
+    "placeholders": {
+      "message": {
+        "type": "String"
+      }
+    }
+  },
+  "garageDriverCrashedSessionOver": "This driver has crashed and cannot run again this session.",
+  "garageDriverCrashedSessionOverDetails": "Repair and medical costs have been applied. This driver cannot run again this qualifying session.",
+  "garageOutLap": "OUT LAP...",
+  "garagePushing": "PUSHING...",
+  "garageCrashAccident": "CRASH! {name} HAS HAD AN ACCIDENT!",
+  "@garageCrashAccident": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "garageCrashedQualifying": "CRASHED! QUALIFYING OVER",
+  "garageInLap": "IN LAP...",
+  "garageImprovedTime": "✓ {time} — New PB! (Attempt {current}/{total})",
+  "@garageImprovedTime": {
+    "placeholders": {
+      "time": {
+        "type": "String"
+      },
+      "current": {
+        "type": "int"
+      },
+      "total": {
         "type": "int"
       }
     }
   },
-  "potentialLabel": "Pot: {value}",
-  "@potentialLabel": {
+  "garageNoImprovement": "⏱ {time} — No improvement (Attempt {current}/{total})",
+  "@garageNoImprovement": {
+    "placeholders": {
+      "time": {
+        "type": "String"
+      },
+      "current": {
+        "type": "int"
+      },
+      "total": {
+        "type": "int"
+      }
+    }
+  },
+  "garageTabPractice": "PRACTICE",
+  "garageTabQualifying": "QUALIFYING",
+  "garageTabRace": "RACE",
+  "garageSelectDriver": "Select a driver to configure setup",
+  "garageCircuitIntel": "CIRCUIT INTEL",
+  "garageSetupPractice": "PRACTICE SETUP",
+  "garageSetupQualifying": "QUALIFYING SETUP",
+  "garageSetupRace": "RACE SETUP",
+  "garageDriverStyle": "DRIVER STYLE",
+  "garageStartSeries": "START SERIES",
+  "garageRunQualyAttempt": "RUN QUALIFYING ATTEMPT ({current}/{total})",
+  "@garageRunQualyAttempt": {
+    "placeholders": {
+      "current": {
+        "type": "int"
+      },
+      "total": {
+        "type": "int"
+      }
+    }
+  },
+  "garageParcFermeLabel": "PARC FERMÉ",
+  "garageParcFerme": "PARC FERMÉ: Only front wing and tyres can be changed. (Attempt {current}/{total})",
+  "@garageParcFerme": {
+    "placeholders": {
+      "current": {
+        "type": "int"
+      },
+      "total": {
+        "type": "int"
+      }
+    }
+  },
+  "garageQualyAttempts": "Attempts: {current}/{total}",
+  "@garageQualyAttempts": {
+    "placeholders": {
+      "current": {
+        "type": "int"
+      },
+      "total": {
+        "type": "int"
+      }
+    }
+  },
+  "garageAllAttemptsUsed": "ALL ATTEMPTS USED",
+  "garageMaxQualifyingAttemptsReached": "Max qualifying attempts reached for this session.",
+  "garageBestTime": "BEST: {time}",
+  "@garageBestTime": {
+    "placeholders": {
+      "time": {
+        "type": "String"
+      }
+    }
+  },
+  "garageLastLap": "LAST LAP",
+  "garagePos": "POS",
+  "garageGap": "GAP",
+  "garageTyre": "TYRE",
+  "garageTime": "TIME",
+  "garageLaps": "LAPS",
+  "garageLoadingParticipants": "Loading participants...",
+  "garageQualySessionOpen": "QUALIFYING SESSION OPEN",
+  "garageQualySessionClosed": "QUALIFYING SESSION CLOSED",
+  "garageRaceStrategyDesc": "Configure your complete race strategy and driving styles. This setup will be used during the race itself.",
+  "garageRaceRegulationTyre": "Rule: Hard compound tyres MUST be used at least once during the race.",
+  "garageSubmitRaceSetup": "SUBMIT RACE SETUP",
+  "garageCarConfiguration": "CAR CONFIGURATION",
+  "garageRaceStrategy": "RACE STRATEGY",
+  "garageRaceStart": "RACE START",
+  "garagePitStop": "STOP {number}",
+  "@garagePitStop": {
+    "placeholders": {
+      "number": {
+        "type": "int"
+      }
+    }
+  },
+  "garageAddPitStop": "ADD PIT STOP",
+  "garageFitness": "FITNESS: {value}%",
+  "@garageFitness": {
     "placeholders": {
       "value": {
         "type": "int"
       }
     }
   },
-  "starMaterial": "Star Material",
-  "veteran": "Veteran",
-  "rookie": "Rookie",
-  "engineeringTitle": "R&D Lab",
-  "aero": "Aerodynamics",
-  "engine": "Powertrain",
-  "reliability": "Reliability",
-  "upgradeBtn": "Develop (+1)",
-  "costLabel": "Cost: {symbol}{cost}",
-  "@costLabel": {
+  "garageDnf": "DNF",
+  "garageRepairMedicalCosts": "Repair and medical costs have been applied. This driver cannot run again this qualifying session.",
+  "garageConfidence": "CONFIDENCE",
+  "garageRestoreSetup": "RESTORE THIS SETUP",
+  "garageSetupRestored": "Setup restored to current session",
+  "garageLapTimes": "LAP TIMES — {name}",
+  "@garageLapTimes": {
     "placeholders": {
-      "symbol": {
-        "type": "String"
-      },
-      "cost": {
+      "name": {
         "type": "String"
       }
     }
   },
-  "insufficientFunds": "Insufficient Funds",
-  "simulateBtn": "Simulate Race",
-  "raceResults": "Race Results",
-  "winner": "Winner",
-  "podium": "Podium",
-  "financialReport": "Financial Report",
-  "earnings": "Earnings",
-  "noDriverAssigned": "No driver assigned",
-  "engineeringWelcome": "Welcome to the R&D Lab",
-  "engineeringDescription": "Improve your cars' performance by developing specific parts. Remember that you can only perform ONE upgrade each week. Use your resources wisely to stay ahead of the competition!",
-  "circuitMexico": "Autodromo Hermanos Rodriguez",
-  "circuitVegas": "Las Vegas Strip Circuit",
-  "circuitInterlagos": "Autódromo José Carlos Pace",
-  "circuitMiami": "Miami International Autodrome",
-  "circuitSanPabloStreet": "Sao Paulo Street Circuit",
-  "circuitIndianapolis": "Indianapolis Motor Speedway",
-  "circuitMontreal": "Circuit Gilles Villeneuve",
-  "circuitTexas": "Circuit of the Americas",
-  "circuitBuenosAires": "Autódromo Oscar y Juan Gálvez",
-  "pitBoardTitle": "PIT BOARD",
-  "pitBoardLeftPits": "{name} left the pits",
+  "garageNoLapsYet": "No laps recorded yet",
+  "garageNoFeedbackYet": "No feedback gathered yet",
+  "garageSetQualy": "SET QUALY",
+  "garageSetRace": "SET RACE",
+  "setupFrontWing": "Front Wing",
+  "setupRearWing": "Rear Wing",
+  "setupSuspension": "Suspension",
+  "setupGearRatio": "Gear Ratio",
+  "styleRisky": "RISKY",
+  "styleAttack": "ATTACK",
+  "styleNormal": "NORMAL",
+  "styleConserve": "CONSERVE",
+  "tipRisky": "Most aggressive push — highest risk, highest reward",
+  "tipAttack": "Offensive style — push hard for lap time",
+  "tipNormal": "Balanced driving — default style",
+  "tipConserve": "Defensive / tyre saving style",
+  "tipRegulationStartTyres": "REGULATION: Start tyres are fixed. Drivers must start on the same compound used for their best qualifying lap.",
+  "pitBoardMessageInBox": "IN BOX",
+  "pitBoardMessageReady": "READY",
+  "pitBoardNewTeamRecord": "{name}: NEW TEAM RECORD — {time}!",
+  "@pitBoardNewTeamRecord": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      },
+      "time": {
+        "type": "String"
+      }
+    }
+  },
+  "pitBoardNewPB": "{name}: New Personal Best — {time}",
+  "@pitBoardNewPB": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      },
+      "time": {
+        "type": "String"
+      }
+    }
+  },
+  "pitBoardReturningPits": "{name} is returning to the pits...",
+  "@pitBoardReturningPits": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "pitBoardInGarage": "{name} is back in the garage.",
+  "@pitBoardInGarage": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "pitBoardLeftPits": "{name} IS LEAVING THE PITS",
   "@pitBoardLeftPits": {
     "placeholders": {
       "name": {
@@ -84,7 +275,7 @@
       }
     }
   },
-  "pitBoardStartingPractice": "{name} is starting practice series",
+  "pitBoardStartingPractice": "{name} IS STARTING PRACTICE SERIES",
   "@pitBoardStartingPractice": {
     "placeholders": {
       "name": {
@@ -92,7 +283,7 @@
       }
     }
   },
-  "pitBoardOnLap": "{name} is on lap {current}/{total}",
+  "pitBoardOnLap": "{name}: LAP {current}/{total}",
   "@pitBoardOnLap": {
     "placeholders": {
       "name": {
@@ -106,42 +297,772 @@
       }
     }
   },
-  "pitBoardReturningPits": "{name} is returning to pits",
-  "@pitBoardReturningPits": {
+  "bestPb": "BEST PB",
+  "fastest": "FASTEST",
+  "garagePracticeClosedRace": "PRACTICE CLOSED: Race setup has been submitted.",
+  "garagePracticeClosedQualy": "PRACTICE CLOSED: Qualifying session has started.",
+  "garageQualyIntro": "Configure your qualifying setup and run attempts to set the best lap time. Max attempts: {total}",
+  "@garageQualyIntro": {
     "placeholders": {
-      "name": {
-        "type": "String"
+      "total": {
+        "type": "int"
       }
     }
   },
-  "pitBoardInGarage": "{name} is back in the garage",
-  "@pitBoardInGarage": {
+  "garageRaceStrategyStintTips": "Optimize fuel load, tyre choices, and driving aggression for each stint.",
+  "setupTyreCompound": "Tyre Compound",
+  "labelFuel": "FUEL",
+  "labelDriveStyle": "DRIVE STYLE",
+  "labelTyres": "TYRES",
+  "labelLaps": "LAPS",
+  "labelLapTime": "LAP TIME",
+  "labelGap": "GAP",
+  "weatherLabel": "WEATHER",
+  "trackTempLabel": "TRACK",
+  "airTempLabel": "AIR",
+  "humidityLabel": "HUMIDITY",
+  "garageMaxLapsReached": "Driver reached max practice laps ({max}). Reducing series to {remaining} laps.",
+  "garageCrashAlert": "CRASH! {name} HAS HAD AN ACCIDENT!",
+  "garageSeriesCompletedConfidence": "Series completed. Setup confidence: {value}%",
+  "garageQualySetupSavedDraft": "Qualifying setup saved (Draft)",
+  "garageRaceSetupSavedDraft": "Race setup draft saved.",
+  "garageDriver": "DRIVER",
+  "garageConstructor": "CONSTRUCTOR",
+  "garageLapsIntel": "LAPS",
+  "garageTyresIntel": "TYRES",
+  "garageWeatherIntel": "WEATHER",
+  "garageEngineIntel": "ENGINE",
+  "garageFuelIntel": "FUEL",
+  "garageAeroIntel": "AERO",
+  "garageWeatherSunny": "SUNNY",
+  "garageWeatherExtremeHigh": "EXTREME",
+  "garageWeatherExtremeLow": "EXTREME LOW",
+  "garageImportant": "IMPORTANT",
+  "garageCrucial": "CRUCIAL",
+  "garageCritical": "CRITICAL",
+  "garageVeryHigh": "VERY HIGH",
+  "garageMaximum": "MAXIMUM",
+  "garageFocus": "FOCUS",
+  "garageQualifyingResults": "QUALIFYING RESULTS",
+  "garageLocked": "LOCKED",
+  "garageLowPriority": "LOW PRIORITY",
+  "garageLapsCount": "Attempts: {current}/{total}",
+  "@garageLapsCount": {
     "placeholders": {
-      "name": {
-        "type": "String"
-      }
-    }
-  },
-  "pitBoardNewPB": "{name} NEW PERSONAL BEST: {time}",
-  "@pitBoardNewPB": {
-    "placeholders": {
-      "name": {
-        "type": "String"
+      "current": {
+        "type": "int"
       },
+      "total": {
+        "type": "int"
+      }
+    }
+  },
+  "garageLapsCountShort": "Laps: {count}",
+  "@garageLapsCountShort": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "garageDnfSessionOver": "DNF — SESSION OVER",
+  "garageBestPersonal": "PERSONAL BEST",
+  "garageBestLapTimeShort": "PB: {time}",
+  "@garageBestLapTimeShort": {
+    "placeholders": {
       "time": {
         "type": "String"
       }
     }
   },
-  "pitBoardNewTeamRecord": "{name} NEW TEAM RECORD: {time}",
-  "@pitBoardNewTeamRecord": {
+  "garageLapSetup": "LAP SETUP — {time}",
+  "@garageLapSetup": {
     "placeholders": {
-      "name": {
-        "type": "String"
-      },
       "time": {
         "type": "String"
       }
     }
-  }
+  },
+  "garageClose": "CLOSE",
+  "garagePitStopStrategyTooltip": "Plan your pit strategy and tyre compounds.",
+  "garageParcFermeLockedTooltip": "Parc Fermé: This setting cannot be changed.",
+  "garageConfidenceShort": "CONF.",
+  "garagePitBoard": "PIT BOARD",
+  "garageReady": "READY",
+  "garageDriverFeedback": "DRIVER FEEDBACK",
+  "garageNoLapsRecordedYet": "No laps recorded yet",
+  "garageRaceStartTyreRegulation": "Regulation: Must start on best qualifying tyres.",
+  "garageLapsIntelShort": "{count} LAPS",
+  "garageNoFeedbackGatheredYet": "No feedback gathered yet",
+  "garageFitnessPercentage": "FITNESS: {percent}%",
+  "@garageFitnessPercentage": {
+    "placeholders": {
+      "percent": {
+        "type": "int"
+      }
+    }
+  },
+  "facTeamOffice": "Team Office",
+  "facGarage": "Garage",
+  "facYouthAcademy": "Youth Academy",
+  "facPressRoom": "Press Room",
+  "facScoutingOffice": "Scouting Office",
+  "facRacingSimulator": "Racing Simulator",
+  "facGym": "Gym",
+  "facRDOffice": "R&D Office",
+  "descTeamOffice": "Administrative hub and contract management.",
+  "descGarage": "Vehicle maintenance and technical tuning.",
+  "descYouthAcademy": "Training future talents for the team.",
+  "descPressRoom": "Media relations and public image management.",
+  "descScoutingOffice": "Global talent search for drivers and engineers.",
+  "descRacingSimulator": "Precision training in a virtual environment.",
+  "descGym": "Physical preparation and driver endurance.",
+  "descRDOffice": "Constant innovation and technical development.",
+  "notPurchased": "Not Purchased",
+  "bonusBudget": "Bonus Budget {arg0}",
+  "bonusRepair": "Bonus Repair {arg0}",
+  "bonusScouting": "Bonus Scouting {arg0}",
+  "bonusTBD": "Bonus T B D",
+  "accountSettingsTitle": "Account Settings",
+  "userProfileTitle": "User Profile",
+  "nameLabel": "Name",
+  "emailLabel": "Email",
+  "registeredLabel": "Registered",
+  "userDataNotFound": "User Data Not Found",
+  "managerProfileTitle": "Manager Profile",
+  "managerNameLabel": "Manager Name",
+  "roleLabel": "Role",
+  "countryLabel": "Country",
+  "noManagerProfile": "No Manager Profile",
+  "logOutBtn": "Log Out",
+  "googleAuthError": "Google Auth Error {arg0}",
+  "authError": "Auth Error {arg0}",
+  "emailAlreadyRegistered": "Email Already Registered",
+  "unexpectedError": "Unexpected Error {arg0}",
+  "formulaTrackGlory": "Formula Track Glory",
+  "ftgSlogan": "Ftg Slogan",
+  "alreadyHaveAccount": "Already Have Account",
+  "newManagerJoin": "New Manager Join",
+  "versionFooter": "V3.0.0 - Fire Tower Games Studio",
+  "continueWithGoogle": "Continue With Google",
+  "orUseEmail": "Or Use Email",
+  "firstNameLabel": "First Name",
+  "lastNameLabel": "Last Name",
+  "emailAddressLabel": "Email Address",
+  "passwordLabel": "Password",
+  "createAccountBtn": "Create Account",
+  "signInBtn": "Sign In",
+  "calendarNoEvents": "Calendar No Events",
+  "calendarTitle": "Calendar",
+  "lapsIntel": "Laps Intel",
+  "calendarStatusScheduled": "Calendar Status Scheduled",
+  "driversManagementTitle": "Drivers Management",
+  "errorLoadingDrivers": "Error Loading Drivers",
+  "noDriversFound": "No Drivers Found",
+  "renewingContractSimulated": "Renewing Contract Simulated {arg0}",
+  "firingDriverSimulated": "Firing Driver Simulated {arg0}",
+  "ageLabel": "Age {arg0}",
+  "contractDetailsTitle": "Contract Details",
+  "contractStatusLabel": "Contract Status",
+  "salaryPerRaceLabel": "Salary per Race",
+  "terminationLabel": "Termination",
+  "remainingLabel": "Remaining",
+  "seasonsRemaining": "Seasons Remaining: {arg0}",
+  "moraleLabel": "Morale",
+  "marketabilityLabel": "Marketability",
+  "fireBtn": "Fire",
+  "renewContractBtn": "Renew",
+  "driverStatsSectionTitle": "Driver Stats Section",
+  "careerStatsTitle": "Career Stats",
+  "titlesStat": "Titles",
+  "winsStat": "Wins",
+  "podiumsStat": "Podiums",
+  "racesStat": "Races",
+  "championshipFormTitle": "Championship Form",
+  "standingsBtn": "Standings",
+  "posLabel": "Pos",
+  "eventHeader": "Event Header",
+  "qHeader": "Q Header",
+  "rHeader": "R Header",
+  "pHeader": "P Header",
+  "careerHistoryTitle": "Career History",
+  "yearHeader": "Year Header",
+  "teamHeader": "Team Header",
+  "seriesHeader": "Series Header",
+  "wHeader": "W Header",
+  "historyIndividual": "History Individual",
+  "noDataAvailableYet": "No Data Available Yet",
+  "historyLowerDivision": "History Lower Division",
+  "historyChampionBadge": "CHAMPION",
+  "statBraking": "Braking",
+  "statCornering": "Cornering",
+  "statSmoothness": "Smoothness",
+  "statOvertaking": "Overtaking",
+  "statConsistency": "Consistency",
+  "statAdaptability": "Adaptability",
+  "statFitness": "Fitness",
+  "statFeedback": "Feedback",
+  "statFocus": "Focus",
+  "statMorale": "Morale",
+  "statMarketability": "Marketability",
+  "roleMain": "Role Main",
+  "roleSecond": "Role Second",
+  "roleEqual": "Role Equal",
+  "roleReserve": "Role Reserve",
+  "engineeringDescription": "Engineering Description",
+  "budgetLabel": "Budget",
+  "currencySymbol": "$",
+  "millionsSuffix": "M",
+  "upgradeLimitReached": "Upgrade Limit Reached",
+  "carLabelA": "Car Label A",
+  "noDriverAssigned": "No Driver Assigned",
+  "carLabelB": "Car Label B",
+  "carPerformanceTitle": "Car Performance Title {arg0}",
+  "aero": "Aero",
+  "engine": "Engine",
+  "chassisPart": "Chassis Part",
+  "reliability": "Reliability",
+  "costLabel": "Cost Label {arg0} {arg1}",
+  "upgradeBtn": "Upgrade",
+  "managerError": "Manager Error {arg0}",
+  "managerProfileNotFound": "Manager Profile Not Found",
+  "teamError": "Team Error {arg0}",
+  "teamDataNotFound": "Team Data Not Found",
+  "seasonError": "Season Error {arg0}",
+  "quickView": "Quick View",
+  "pressNewsTitle": "PRESS NEWS",
+  "errorLoadingNews": "Error Loading News",
+  "officeNewsTitle": "OFFICE NEWS",
+  "notificationsUnavailable": "Notifications Unavailable",
+  "noNewNotifications": "No New Notifications",
+  "noNewsFromPaddockYet": "No News From Paddock Yet",
+  "welcomeBackManager": "Welcome back, Manager {arg0}",
+  "sessionInProgress": "Session In Progress",
+  "timeUntilNextSession": "Time Until Next Session",
+  "teamBudget": "Team Budget",
+  "deficit": "Deficit",
+  "surplus": "Surplus",
+  "estimatedAbbr": "Estimated Abbr",
+  "nextGrandPrix": "Next Grand Prix",
+  "circuitLengthAndLaps": "Distance: {arg0} km | Laps: {arg1}",
+  "paddockOpen": "Paddock Open",
+  "weekendSetupBtn": "Weekend Setup",
+  "qualifyingStatus": "Qualifying",
+  "viewQualifyingBtn": "View Qualifying",
+  "raceStrategyStatus": "Race Strategy",
+  "setRaceStrategyBtn": "Set Race Strategy",
+  "raceWeekendStatus": "Race",
+  "goToRaceBtn": "Go To Race",
+  "raceFinishedStatus": "Race Finished Status",
+  "viewResultsBtn": "View Results",
+  "circuitIntelTitle": "Circuit Intel",
+  "aeroIntel": "Aero Intel",
+  "highIntel": "High Intel",
+  "powerIntel": "Power Intel",
+  "speedIntel": "Speed Intel",
+  "tyreIntel": "Tyre Intel",
+  "onLive": "On Live",
+  "offLive": "Off Live",
+  "preRaceChecklist": "Pre-Race Checklist",
+  "practiceProgram": "Practice Program",
+  "completedLapsOf": "Laps: {arg0} / {arg1}",
+  "qualifyingSetup": "Qualifying Setup",
+  "readyStatus": "Ready Status",
+  "pendingStatus": "Pending Status",
+  "hqDescription": "Hq Description",
+  "facilitiesSectionTitle": "Facilities Section",
+  "levelLabel": "Level Label {arg0}",
+  "nextLevelLabel": "Next Level",
+  "maintCostLabel": "Maint Cost",
+  "bonusLabel": "Bonus",
+  "buyBtn": "Buy",
+  "comingSoonBanner": "Coming Soon Banner",
+  "facilityImproved": "Facility Improved {arg0}",
+  "signContractError": "Sign Contract",
+  "confirmResetWorldTitle": "Confirm Reset World",
+  "confirmResetWorldDesc": "Confirm Reset World",
+  "cancelBtn": "Cancel",
+  "resetSuccess": "Reset Successful!",
+  "resetBtn": "Reset",
+  "jobMarketTitle": "Job Market",
+  "availableLabel": "Available",
+  "signContract": "Sign Contract",
+  "navDashboard": "Dashboard",
+  "navHQ": "HQ",
+  "navTeamOffice": "Office",
+  "navGarage": "Garage",
+  "navYouthAcademy": "Academy",
+  "navRacing": "Racing",
+  "navWeekendSetup": "Setup",
+  "navRaceDay": "Race Day",
+  "navManagement": "Management",
+  "navPersonal": "Personal",
+  "navFinances": "Finances",
+  "navSponsors": "Sponsors",
+  "navSeason": "Season",
+  "navStandings": "Standings",
+  "navCalendar": "Calendar",
+  "accountInfo": "Account",
+  "notAvailable": "Not Available",
+  "lastSession": "Last Session",
+  "adminBtn": "Admin",
+  "accountBtn": "Account",
+  "logOutConfirmTitle": "Log Out Confirm",
+  "logOutConfirmDesc": "Log Out Confirm",
+  "navMarket": "Market",
+  "personalManagement": "Personal Management",
+  "driversTitle": "Drivers",
+  "fitnessTrainerTitle": "Fitness Trainer",
+  "chiefEngineerTitle": "Chief Engineer",
+  "hrManagerTitle": "Hr Manager",
+  "marketingManagerTitle": "Marketing Manager",
+  "currentBalanceTitle": "Current Balance",
+  "recentMovementsTitle": "Recent Movements",
+  "noFinancialActivity": "No Financial Activity",
+  "selectCarPartToManage": "Select Car Part To Manage",
+  "activeContractTitle": "Active Contract Title {arg0}",
+  "weeklyPayLabel": "Weekly Pay",
+  "racesLeftLabel": "Races Left",
+  "availableOffersTitle": "Available Offers Title {arg0}",
+  "rearWingPart": "Rear Wing Part",
+  "sidepodLPart": "Sidepod L Part",
+  "sidepodRPart": "Sidepod R Part",
+  "haloPart": "Halo Part",
+  "frontWingPart": "Front Wing Part",
+  "nosePart": "Nose Part",
+  "manageBtn": "Manage",
+  "selectSponsorBtn": "Select Sponsor",
+  "negotiationRulesTitle": "Negotiation Rules",
+  "negotiationRulesDesc": "Negotiation Rules",
+  "signingBonusLabel": "Signing Bonus",
+  "weeklyPaymentLabel": "Weekly Payment",
+  "durationLabel": "Duration",
+  "durationRaces": "Duration Races {arg0}",
+  "objectiveLabel": "Objective",
+  "suspendedStatus": "Suspended Status",
+  "chooseTacticLabel": "Choose Tactic Label {arg0}",
+  "persuasiveTactic": "Persuasive Tactic",
+  "negotiatorTactic": "Negotiator Tactic",
+  "collaborativeTactic": "Collaborative Tactic",
+  "availableSponsorsTitle": "Available Sponsors",
+  "roleExDriverTitle": "Role Ex Driver",
+  "roleExDriverDesc": "Role Ex Driver",
+  "roleBusinessTitle": "Role Business",
+  "roleBusinessDesc": "Role Business",
+  "roleBureaucratTitle": "Role Bureaucrat",
+  "roleBureaucratDesc": "Role Bureaucrat",
+  "roleEngineerTitle": "Role Engineer",
+  "roleEngineerDesc": "Role Engineer",
+  "createManagerProfile": "Create Manager Profile",
+  "personalInfoTitle": "Personal Information",
+  "selectCountryError": "Please select a country",
+  "genderLabel": "Gender",
+  "maleGender": "Male Gender",
+  "femaleGender": "Female Gender",
+  "nonBinaryGender": "Non Binary Gender",
+  "selectGenderError": "Please select a gender",
+  "dayLabel": "Day",
+  "monthLabel": "Month",
+  "yearLabel": "Year",
+  "selectBackgroundTitle": "Select Background",
+  "createManagerDesc": "Create Manager",
+  "establishCareerBtn": "Establish Career",
+  "requiredError": "This field is required",
+  "advantagesTitle": "Advantages",
+  "disadvantagesTitle": "Disadvantages",
+  "adminAccess": "Admin Access",
+  "enterPin": "Enter Pin",
+  "verifyBtn": "Verify",
+  "nukeWorldTitle": "Nuke World",
+  "nukeWorldDesc": "Nuke World",
+  "nukeWorldSuccess": "Database Reset Successful!",
+  "errorPrefix": "Error Prefix {arg0}",
+  "executeNuke": "Execute Nuke",
+  "ftgRacing": "Ftg Racing",
+  "manager2026": "Manager2026",
+  "signInWithGoogle": "Sign In With Google",
+  "signInWithEmail": "Sign In With Email",
+  "devQuickStart": "Dev Quick Start",
+  "signingWithTeam": "Signing With Team {arg0}",
+  "applicationFailed": "Application Failed {arg0}",
+  "selectTeamTitle": "Select Team",
+  "selectTeamDesc": "Select Team",
+  "worldChampionship": "World Championship",
+  "secondSeries": "Second Series",
+  "noTeamsAvailable": "No Teams Available",
+  "recommendedTag": "Recommended Tag",
+  "unlockLeagueDesc": "Unlock League",
+  "mainDriverLabel": "Main Driver",
+  "secondaryDriverLabel": "Secondary Driver",
+  "selectTeamBtn": "Select Team",
+  "selectedTag": "Selected Tag",
+  "standingsConstructorTitle": "Constructors",
+  "raceResults": "Race Results",
+  "standingsTeam": "Standings Team",
+  "standingsPoints": "Standings Points",
+  "insufficientBudgetForNameChange": "Insufficient Budget For Name Change",
+  "teamRenamedFree": "Team Renamed Free {arg0}",
+  "teamRenamedPaid": "Team Renamed Paid {arg0}",
+  "teamIdentityTitle": "Team Identity",
+  "teamNameLabel": "Team Name",
+  "confirmBtn": "Confirm",
+  "regulationsTitle": "Regulations",
+  "firstChangeUsed": "First Change Used",
+  "firstChangeFree": "First Change Free",
+  "nextChangesCost": "Next Changes Cost",
+  "renamedTimesLabel": "Renamed Times Label {arg0}",
+  "teamCareerStatsTitle": "Team Career Stats",
+  "combinedDriversLabel": "Combined Drivers",
+  "driverBreakdownTitle": "Driver Breakdown",
+  "driverHeader": "Driver Header",
+  "teamLiveryTitle": "Team Livery",
+  "selectYourColors": "Select Your Colors",
+  "liveryDescription": "Livery Description",
+  "managerProfileSectionTitle": "Manager Profile Section",
+  "circuitMexico": "Circuit Mexico",
+  "circuitInterlagos": "Circuit Interlagos",
+  "circuitMiami": "Circuit Miami",
+  "circuitSanPabloStreet": "Circuit San Pablo Street",
+  "circuitIndianapolis": "Circuit Indianapolis",
+  "circuitMontreal": "Circuit Montreal",
+  "circuitVegas": "Circuit Vegas",
+  "circuitTexas": "Circuit Texas",
+  "circuitBuenosAires": "Circuit Buenos Aires",
+  "statusLivingLegend": "Status Living Legend",
+  "statusEraDominator": "Status Era Dominator",
+  "statusTheHeir": "Status The Heir",
+  "statusTheHeiress": "Status The Heiress",
+  "statusEliteVeteran": "Status Elite Veteran",
+  "statusLastDance": "Status Last Dance",
+  "statusSolidSpecialist": "Status Solid Specialist",
+  "statusYoungWonder": "Status Young Wonder",
+  "statusRisingStar": "Status Rising Star",
+  "statusStuckPromise": "Status Stuck Promise",
+  "statusJourneyman": "Status Journeyman",
+  "statusJourneywoman": "Status Journeywoman",
+  "statusUnsungDriver": "Status Unsung Driver",
+  "statusMidfieldSpark": "Status Midfield Spark",
+  "statusPastGlory": "Status Past Glory",
+  "statusGridFiller": "Status Grid Filler",
+  "statusUnknown": "Status Unknown",
+  "descLivingLegend": "Desc Living Legend",
+  "descEraDominator": "Desc Era Dominator",
+  "descTheHeir": "Desc The Heir",
+  "descEliteVeteran": "Desc Elite Veteran",
+  "descLastDance": "Desc Last Dance",
+  "descSolidSpecialist": "Desc Solid Specialist",
+  "descYoungWonder": "Desc Young Wonder",
+  "descRisingStar": "Desc Rising Star",
+  "descStuckPromise": "Desc Stuck Promise",
+  "descJourneyman": "Desc Journeyman",
+  "descUnsungDriver": "Desc Unsung Driver",
+  "descMidfieldSpark": "Desc Midfield Spark",
+  "descPastGlory": "Desc Past Glory",
+  "descGridFiller": "Desc Grid Filler",
+  "descUnknown": "Desc Unknown",
+  "errorLoadingProfile": "Error Loading Profile {arg0}",
+  "powerStatsLabel": "Power Stats",
+  "aeroStatsLabel": "Aero Stats",
+  "handlingStatsLabel": "Handling Stats",
+  "reliabilityStatsLabel": "Reliability Stats",
+  "failedToLoadLiveries": "Failed To Load Liveries",
+  "liveryIndexLabel": "Livery Index Label {arg0} {arg1}",
+  "loadingPhrase1": "Warming up engines...",
+  "loadingPhrase2": "Analyzing telemetry data...",
+  "loadingPhrase3": "Adjusting aero balance...",
+  "loadingPhrase4": "Preparing tyre sets...",
+  "loadingPhrase5": "Checking fuel levels...",
+  "loadingPhrase6": "Syncing with pit wall...",
+  "loadingPhrase7": "Optimizing engine map...",
+  "loadingPhrase8": "Awaiting green flag...",
+  "minsAgo": "Mins Ago {arg0}",
+  "hoursAgo": "Hours Ago {arg0}",
+  "pressNewsManagerJoin": "Press News Manager Join {arg0} {arg1} {arg2} {arg3} {arg4} {arg5} {arg6}",
+  "motorsportDaily": "Motorsport Daily",
+  "readFullArticle": "Read Full Article",
+  "closeBtn": "Close",
+  "navOffice": "Office",
+  "@bonusBudget": {
+    "placeholders": {
+      "arg0": {
+        "type": "String"
+      }
+    }
+  },
+  "@bonusRepair": {
+    "placeholders": {
+      "arg0": {
+        "type": "String"
+      }
+    }
+  },
+  "@bonusScouting": {
+    "placeholders": {
+      "arg0": {
+        "type": "String"
+      }
+    }
+  },
+  "@carPerformanceTitle": {
+    "placeholders": {
+      "arg0": {
+        "type": "String"
+      }
+    }
+  },
+  "@costLabel": {
+    "placeholders": {
+      "arg0": {
+        "type": "String"
+      },
+      "arg1": {
+        "type": "String"
+      }
+    }
+  },
+  "@levelLabel": {
+    "placeholders": {
+      "arg0": {
+        "type": "String"
+      }
+    }
+  },
+  "@facilityImproved": {
+    "placeholders": {
+      "arg0": {
+        "type": "String"
+      }
+    }
+  },
+  "@pressNewsManagerJoin": {
+    "placeholders": {
+      "arg0": {
+        "type": "String"
+      },
+      "arg1": {
+        "type": "String"
+      },
+      "arg2": {
+        "type": "String"
+      },
+      "arg3": {
+        "type": "String"
+      },
+      "arg4": {
+        "type": "String"
+      },
+      "arg5": {
+        "type": "String"
+      },
+      "arg6": {
+        "type": "String"
+      }
+    }
+  },
+  "@googleAuthError": {
+    "placeholders": {
+      "arg0": {
+        "type": "String"
+      }
+    }
+  },
+  "@authError": {
+    "placeholders": {
+      "arg0": {
+        "type": "String"
+      }
+    }
+  },
+  "@unexpectedError": {
+    "placeholders": {
+      "arg0": {
+        "type": "String"
+      }
+    }
+  },
+  "@signingWithTeam": {
+    "placeholders": {
+      "arg0": {
+        "type": "String"
+      }
+    }
+  },
+  "@applicationFailed": {
+    "placeholders": {
+      "arg0": {
+        "type": "String"
+      }
+    }
+  },
+  "@managerError": {
+    "placeholders": {
+      "arg0": {
+        "type": "String"
+      }
+    }
+  },
+  "@teamError": {
+    "placeholders": {
+      "arg0": {
+        "type": "String"
+      }
+    }
+  },
+  "@seasonError": {
+    "placeholders": {
+      "arg0": {
+        "type": "String"
+      }
+    }
+  },
+  "@teamRenamedFree": {
+    "placeholders": {
+      "arg0": {
+        "type": "String"
+      }
+    }
+  },
+  "@teamRenamedPaid": {
+    "placeholders": {
+      "arg0": {
+        "type": "String"
+      }
+    }
+  },
+  "@renamedTimesLabel": {
+    "placeholders": {
+      "arg0": {
+        "type": "String"
+      }
+    }
+  },
+  "@renewingContractSimulated": {
+    "placeholders": {
+      "arg0": {
+        "type": "String"
+      }
+    }
+  },
+  "@firingDriverSimulated": {
+    "placeholders": {
+      "arg0": {
+        "type": "String"
+      }
+    }
+  },
+  "@activeContractTitle": {
+    "placeholders": {
+      "arg0": {
+        "type": "String"
+      }
+    }
+  },
+  "@availableOffersTitle": {
+    "placeholders": {
+      "arg0": {
+        "type": "String"
+      }
+    }
+  },
+  "@durationRaces": {
+    "placeholders": {
+      "arg0": {
+        "type": "String"
+      }
+    }
+  },
+  "@chooseTacticLabel": {
+    "placeholders": {
+      "arg0": {
+        "type": "String"
+      }
+    }
+  },
+  "@welcomeBackManager": {
+    "placeholders": {
+      "arg0": {
+        "type": "String"
+      }
+    }
+  },
+  "@seasonsRemaining": {
+    "placeholders": {
+      "arg0": {
+        "type": "String"
+      }
+    }
+  },
+  "@minsAgo": {
+    "placeholders": {
+      "arg0": {
+        "type": "int"
+      }
+    }
+  },
+  "@hoursAgo": {
+    "placeholders": {
+      "arg0": {
+        "type": "int"
+      }
+    }
+  },
+  "@ageLabel": {
+    "placeholders": {
+      "arg0": {
+        "type": "int"
+      }
+    }
+  },
+  "@circuitLengthAndLaps": {
+    "placeholders": {
+      "arg0": {
+        "type": "String"
+      },
+      "arg1": {
+        "type": "String"
+      }
+    }
+  },
+  "@completedLapsOf": {
+    "placeholders": {
+      "arg0": {
+        "type": "String"
+      },
+      "arg1": {
+        "type": "String"
+      }
+    }
+  },
+  "@liveryIndexLabel": {
+    "placeholders": {
+      "arg0": {
+        "type": "String"
+      },
+      "arg1": {
+        "type": "String"
+      }
+    }
+  },
+  "@errorPrefix": {
+    "placeholders": {
+      "arg0": {
+        "type": "String"
+      }
+    }
+  },
+  "@errorLoadingProfile": {
+    "placeholders": {
+      "arg0": {
+        "type": "String"
+      }
+    }
+  },
+  "objFinishTop3": "Finish Top 3",
+  "objBothInPoints": "Both cars in points",
+  "objRaceWin": "Race Win",
+  "objFinishTop10": "Finish Top 10",
+  "objFastestLap": "Fastest Lap",
+  "objFinishRace": "Finish the race",
+  "objImproveGrid": "Improve Grid Position",
+  "objOvertake3Cars": "Overtake 3 cars"
 }

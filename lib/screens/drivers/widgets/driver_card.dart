@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import '../../../models/core_models.dart';
 import '../../../services/driver_portrait_service.dart';
 import '../../../services/driver_status_service.dart';
+import '../../../l10n/app_localizations.dart';
 
 class DriverCard extends StatelessWidget {
   final Driver driver;
@@ -26,21 +27,58 @@ class DriverCard extends StatelessWidget {
     final theme = Theme.of(context);
     final isDesktop = MediaQuery.of(context).size.width > 900;
 
-    return Card(
-      elevation: 4,
+    return Container(
       margin: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-      clipBehavior: Clip.antiAlias,
-      child: Container(
-        decoration: BoxDecoration(
-          border: Border(
-            left: BorderSide(color: theme.colorScheme.secondary, width: 4),
-          ),
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(
+          color: Colors.white.withValues(alpha: 0.1),
+          width: 1,
         ),
-        padding: const EdgeInsets.all(24.0),
-        child: isDesktop
-            ? _buildDesktopLayout(context)
-            : _buildMobileLayout(context),
+        gradient: const LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [Color(0xFF1E1E1E), Color(0xFF0A0A0A)],
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.45),
+            blurRadius: 16,
+            offset: const Offset(0, 8),
+          ),
+        ],
+      ),
+      child: Stack(
+        children: [
+          // Left Accent Border
+          Positioned(
+            left: 0,
+            top: 20,
+            bottom: 20,
+            child: Container(
+              width: 3,
+              decoration: BoxDecoration(
+                color: theme.colorScheme.secondary,
+                borderRadius: const BorderRadius.horizontal(
+                  right: Radius.circular(3),
+                ),
+                boxShadow: [
+                  BoxShadow(
+                    color: theme.colorScheme.secondary.withValues(alpha: 0.3),
+                    blurRadius: 8,
+                    spreadRadius: 1,
+                  ),
+                ],
+              ),
+            ),
+          ),
+          Padding(
+            padding: const EdgeInsets.all(16.0),
+            child: isDesktop
+                ? _buildDesktopLayout(context)
+                : _buildMobileLayout(context),
+          ),
+        ],
       ),
     );
   }
@@ -139,7 +177,7 @@ class DriverCard extends StatelessWidget {
         const SizedBox(height: 8),
         Center(
           child: Text(
-            'Age: ${driver.age}',
+            AppLocalizations.of(context).ageLabel(driver.age),
             style: theme.textTheme.bodySmall?.copyWith(
               color: theme.colorScheme.onSurface.withValues(alpha: 0.7),
             ),
@@ -172,7 +210,7 @@ class DriverCard extends StatelessWidget {
         const SizedBox(height: 24),
         // Contract Details
         Text(
-          'CONTRACT DETAILS',
+          AppLocalizations.of(context).contractDetailsTitle,
           style: theme.textTheme.labelMedium?.copyWith(
             fontWeight: FontWeight.bold,
             letterSpacing: 1.2,
@@ -180,18 +218,23 @@ class DriverCard extends StatelessWidget {
           ),
         ),
         const SizedBox(height: 12),
-        _buildContractRow('Status', driver.role),
         _buildContractRow(
-          'Salary/Race',
+          AppLocalizations.of(context).contractStatusLabel,
+          _getLocalizedRole(context, driver.role),
+        ),
+        _buildContractRow(
+          AppLocalizations.of(context).salaryPerRaceLabel,
           '\$${(driver.salary / 24000).toStringAsFixed(1)}k',
         ),
         _buildContractRow(
-          'Termination',
+          AppLocalizations.of(context).terminationLabel,
           '\$${(driver.salary / 1000).toStringAsFixed(0)}k',
         ),
         _buildContractRow(
-          'Remaining',
-          '${driver.contractYearsRemaining} Season(s)',
+          AppLocalizations.of(context).remainingLabel,
+          AppLocalizations.of(
+            context,
+          ).seasonsRemaining(driver.contractYearsRemaining.toString()),
         ),
         const SizedBox(height: 16),
         Divider(
@@ -200,11 +243,11 @@ class DriverCard extends StatelessWidget {
         ),
         const SizedBox(height: 16),
         _buildContractRow(
-          'Morale',
+          AppLocalizations.of(context).moraleLabel,
           '${(driver.stats[DriverStats.morale] ?? 0) ~/ 5}/20',
         ),
         _buildContractRow(
-          'Marketability',
+          AppLocalizations.of(context).marketabilityLabel,
           '${(driver.stats[DriverStats.marketability] ?? 0) ~/ 5}/20',
         ),
         const SizedBox(height: 16),
@@ -231,9 +274,9 @@ class DriverCard extends StatelessWidget {
                     borderRadius: BorderRadius.circular(100),
                   ),
                 ),
-                child: const FittedBox(
+                child: FittedBox(
                   fit: BoxFit.scaleDown,
-                  child: Text('FIRE'),
+                  child: Text(AppLocalizations.of(context).fireBtn),
                 ),
               ),
             ),
@@ -251,9 +294,9 @@ class DriverCard extends StatelessWidget {
                     borderRadius: BorderRadius.circular(100),
                   ),
                 ),
-                child: const FittedBox(
+                child: FittedBox(
                   fit: BoxFit.scaleDown,
-                  child: Text('RENEW CONTRACT'),
+                  child: Text(AppLocalizations.of(context).renewContractBtn),
                 ),
               ),
             ),
@@ -287,7 +330,7 @@ class DriverCard extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
-          'DRIVER STATS',
+          AppLocalizations.of(context).driverStatsSectionTitle,
           style: theme.textTheme.labelMedium?.copyWith(
             fontWeight: FontWeight.bold,
             letterSpacing: 1.2,
@@ -329,7 +372,7 @@ class DriverCard extends StatelessWidget {
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
           Text(
-            'CAREER STATS',
+            AppLocalizations.of(context).careerStatsTitle,
             style: theme.textTheme.labelMedium?.copyWith(
               fontWeight: FontWeight.bold,
               color: theme.colorScheme.secondary,
@@ -341,25 +384,25 @@ class DriverCard extends StatelessWidget {
             children: [
               _buildCareerStatCircle(
                 context,
-                'TITLES',
+                AppLocalizations.of(context).titlesStat,
                 '${driver.championships}',
                 Icons.emoji_events_rounded,
               ),
               _buildCareerStatCircle(
                 context,
-                'WINS',
+                AppLocalizations.of(context).winsStat,
                 '${driver.wins}',
                 Icons.military_tech_rounded,
               ),
               _buildCareerStatCircle(
                 context,
-                'PODIUMS',
+                AppLocalizations.of(context).podiumsStat,
                 '${driver.podiums}',
                 Icons.star_rounded,
               ),
               _buildCareerStatCircle(
                 context,
-                'RACES',
+                AppLocalizations.of(context).racesStat,
                 '${driver.races}',
                 Icons.flag_rounded,
               ),
@@ -369,7 +412,10 @@ class DriverCard extends StatelessWidget {
           // Status Title Badge
           Center(
             child: Tooltip(
-              message: DriverStatusService.getDescription(driver.statusTitle),
+              message: DriverStatusService.getLocalizedDescription(
+                context,
+                driver.statusTitle,
+              ),
               triggerMode: TooltipTriggerMode.tap,
               child: Container(
                 padding: const EdgeInsets.symmetric(
@@ -388,7 +434,10 @@ class DriverCard extends StatelessWidget {
                   mainAxisSize: MainAxisSize.min,
                   children: [
                     Text(
-                      driver.statusTitle.toUpperCase(),
+                      DriverStatusService.getLocalizedTitle(
+                        context,
+                        driver.statusTitle,
+                      ).toUpperCase(),
                       style: theme.textTheme.labelSmall?.copyWith(
                         color: theme.colorScheme.secondary,
                         fontWeight: FontWeight.bold,
@@ -490,7 +539,7 @@ class DriverCard extends StatelessWidget {
             children: [
               Flexible(
                 child: Text(
-                  'CHAMPIONSHIP FORM',
+                  AppLocalizations.of(context).championshipFormTitle,
                   style: theme.textTheme.labelMedium?.copyWith(
                     fontWeight: FontWeight.bold,
                     color: theme.colorScheme.secondary,
@@ -502,14 +551,17 @@ class DriverCard extends StatelessWidget {
                 onPressed: () {
                   // Navigate to standings (already in main layout usually)
                 },
-                child: const Text('Standings'),
+                child: Text(AppLocalizations.of(context).standingsBtn),
               ),
             ],
           ),
           const SizedBox(height: 8),
           Row(
             children: [
-              Text('Pos: ', style: theme.textTheme.titleMedium),
+              Text(
+                AppLocalizations.of(context).posLabel,
+                style: theme.textTheme.titleMedium,
+              ),
               Text(
                 '#--', // Fetching real position would require async in the card or passing it
                 style: theme.textTheme.titleLarge?.copyWith(
@@ -522,7 +574,12 @@ class DriverCard extends StatelessWidget {
           const SizedBox(height: 16),
           _buildTinyTable(
             context,
-            headers: ['Event', 'Q', 'R', 'P'],
+            headers: [
+              AppLocalizations.of(context).eventHeader,
+              AppLocalizations.of(context).qHeader,
+              AppLocalizations.of(context).rHeader,
+              AppLocalizations.of(context).pHeader,
+            ],
             flexValues: [3, 1, 1, 1],
             alignments: [
               TextAlign.left,
@@ -549,7 +606,7 @@ class DriverCard extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
-            'CAREER HISTORY',
+            AppLocalizations.of(context).careerHistoryTitle,
             style: theme.textTheme.labelMedium?.copyWith(
               fontWeight: FontWeight.bold,
               color: theme.colorScheme.secondary,
@@ -558,7 +615,14 @@ class DriverCard extends StatelessWidget {
           const SizedBox(height: 16),
           _buildTinyTable(
             context,
-            headers: ['Year', 'Team', 'Series', 'R', 'P', 'W'],
+            headers: [
+              AppLocalizations.of(context).yearHeader,
+              AppLocalizations.of(context).teamHeader,
+              AppLocalizations.of(context).seriesHeader,
+              AppLocalizations.of(context).rHeader,
+              AppLocalizations.of(context).pHeader,
+              AppLocalizations.of(context).wHeader,
+            ],
             flexValues: [1, 2, 2, 1, 1, 1],
             alignments: [
               TextAlign.center,
@@ -570,8 +634,9 @@ class DriverCard extends StatelessWidget {
             ],
             badgeColumns: [1, 2],
             rows: _generateStableHistory(
+              context,
               driver,
-              teamName ?? 'Individual',
+              teamName ?? AppLocalizations.of(context).historyIndividual,
               leagueName ?? '--',
             ),
           ),
@@ -634,7 +699,7 @@ class DriverCard extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
-          _formatSkillName(label),
+          _formatSkillName(context, label),
           style: theme.textTheme.labelSmall?.copyWith(fontSize: 10),
           overflow: TextOverflow.ellipsis,
         ),
@@ -736,7 +801,7 @@ class DriverCard extends StatelessWidget {
           child: rows.isEmpty
               ? Center(
                   child: Text(
-                    'No data available yet',
+                    AppLocalizations.of(context).noDataAvailableYet,
                     style: theme.textTheme.bodySmall?.copyWith(
                       color: Colors.grey,
                       fontStyle: FontStyle.italic,
@@ -812,88 +877,41 @@ class DriverCard extends StatelessWidget {
   }
 
   List<List<String>> _generateStableHistory(
+    BuildContext context,
     Driver driver,
     String currentTeam,
     String currentLeague,
   ) {
-    final List<List<String>> rows = [];
+    final l10n = AppLocalizations.of(context);
+    List<List<String>> rows = [];
+    int startYear = 2024;
+    int currentYearValue = currentYear ?? startYear;
 
-    // Fila de la temporada actual (pendientes de correr)
-    rows.add([
-      '${currentYear ?? 2026}',
-      currentTeam,
-      currentLeague,
-      '0',
-      '0',
-      '0',
-    ]);
+    int totalRaces = driver.races;
+    int totalPodiums = driver.podiums;
+    int totalWins = driver.wins;
+    int totalTitles = driver.championships;
 
-    if (driver.races <= 0) return rows;
+    int remainingRaces = totalRaces;
 
-    // Generador estable basado en ID para que no cambie al refrescar la UI
-    int remainingRaces = driver.races;
-    int remainingPodiums = driver.podiums;
-    int remainingWins = driver.wins;
-    int remainingTitles = driver.championships;
+    for (int i = 0; i < 5; i++) {
+      int year = currentYearValue - i;
+      int yearRaces = (totalRaces / 5).floor();
+      if (i == 0) yearRaces += totalRaces % 5;
 
-    // Años a generar basados en la edad y carreras
-    const int racesPerYear = 9;
-    int yearsPro = (remainingRaces / racesPerYear).ceil();
-    if (yearsPro < 1) yearsPro = 1;
-    // Capped a un máximo razonable de visualización, pero priorizando mostrar todo
-    if (yearsPro > 15) yearsPro = 15;
+      int yearWins = (totalWins / 5).floor();
+      if (i == 0) yearWins += totalWins % 5;
 
-    for (int i = 0; i < yearsPro; i++) {
-      int year = 2025 - i;
+      int yearPodiums = (totalPodiums / 5).floor();
+      if (i == 0) yearPodiums += totalPodiums % 5;
 
-      // Distribución de carreras
-      int yearRaces;
-      if (i == yearsPro - 1) {
-        // Último año mostrado toma el resto
-        yearRaces = remainingRaces;
-      } else {
-        yearRaces = racesPerYear;
-      }
+      bool isChampion = i < totalTitles;
 
-      if (yearRaces > remainingRaces) yearRaces = remainingRaces;
-      if (yearRaces <= 0) break;
+      if (remainingRaces <= 0 && i > 0) break;
 
-      // Distribución de victorias y podios
-      double weight =
-          1.0 - (i * 0.05); // Ligeramente más victorias en años recientes
-      if (weight < 0.5) weight = 0.5;
-
-      int yearWins;
-      if (i == yearsPro - 1) {
-        yearWins = remainingWins;
-      } else {
-        yearWins = (remainingWins * (yearRaces / remainingRaces) * weight)
-            .floor();
-      }
-      if (yearWins > yearRaces) yearWins = yearRaces;
-
-      int yearPodiums;
-      if (i == yearsPro - 1) {
-        yearPodiums = remainingPodiums;
-      } else {
-        yearPodiums = (remainingPodiums * (yearRaces / remainingRaces) * weight)
-            .floor();
-      }
-      if (yearPodiums > yearRaces) yearPodiums = yearRaces;
-      if (yearPodiums < yearWins) yearPodiums = yearWins;
-
-      // Lógica de Campeón: Si tiene títulos restantes y ganó mucho ese año, o si es el último año y quedan títulos
-      bool isChampion = false;
-      if (remainingTitles > 0) {
-        if (yearWins >= (yearRaces * 0.8).ceil() || i == yearsPro - 1) {
-          isChampion = true;
-          remainingTitles--;
-        }
-      }
-
-      String divDisplay = i == 0 ? currentLeague : 'Lower Division';
+      String divDisplay = i == 0 ? currentLeague : l10n.historyLowerDivision;
       if (isChampion) {
-        divDisplay = '🏆 CHAMPION';
+        divDisplay = l10n.historyChampionBadge;
       }
 
       rows.add([
@@ -906,18 +924,42 @@ class DriverCard extends StatelessWidget {
       ]);
 
       remainingRaces -= yearRaces;
-      remainingPodiums -= yearPodiums;
-      remainingWins -= yearWins;
 
-      if (remainingRaces <= 0) break;
+      if (remainingRaces <= 0 && i >= 1) break;
     }
 
     return rows;
   }
 
-  String _formatSkillName(String key) {
-    if (key.isEmpty) return key;
-    return key[0].toUpperCase() + key.substring(1);
+  String _formatSkillName(BuildContext context, String key) {
+    final l10n = AppLocalizations.of(context);
+    switch (key) {
+      case 'braking':
+        return l10n.statBraking;
+      case 'cornering':
+        return l10n.statCornering;
+      case 'smoothness':
+        return l10n.statSmoothness;
+      case 'overtaking':
+        return l10n.statOvertaking;
+      case 'consistency':
+        return l10n.statConsistency;
+      case 'adaptability':
+        return l10n.statAdaptability;
+      case 'fitness':
+        return l10n.statFitness;
+      case 'feedback':
+        return l10n.statFeedback;
+      case 'focus':
+        return l10n.statFocus;
+      case 'morale':
+        return l10n.statMorale;
+      case 'marketability':
+        return l10n.statMarketability;
+      default:
+        if (key.isEmpty) return key;
+        return key[0].toUpperCase() + key.substring(1);
+    }
   }
 
   String _getFlagEmoji(String? countryCode) {
@@ -936,5 +978,23 @@ class DriverCard extends StatelessWidget {
       'FR': '🇫🇷',
     };
     return flags[countryCode] ?? '🏳️';
+  }
+
+  String _getLocalizedRole(BuildContext context, String role) {
+    final l10n = AppLocalizations.of(context);
+    switch (role) {
+      case 'Main':
+        return l10n.roleMain;
+      case 'Second':
+      case 'Secondary':
+        return l10n.roleSecond;
+      case 'Equal':
+      case 'Equal Status':
+        return l10n.roleEqual;
+      case 'Reserve':
+        return l10n.roleReserve;
+      default:
+        return role;
+    }
   }
 }

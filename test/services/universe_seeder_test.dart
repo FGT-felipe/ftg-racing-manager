@@ -67,10 +67,13 @@ void main() {
 
       for (final league in universe.leagues) {
         expect(league.academy, isNotNull);
-        expect(league.academy.country.code, 'CO');
+        expect(league.academyCountry.code, 'CO');
 
         // El piloto generado por la academia debe ser de Colombia
-        final youngDriver = league.academy.generatePromisingDriver();
+        final youngDriver = league.academy.generatePromisingDriver(
+          academyLevel: 1,
+          country: league.academyCountry,
+        );
         expect(youngDriver.nationality.code, 'CO');
       }
     });

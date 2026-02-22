@@ -1,13 +1,13 @@
 /* eslint-disable max-len */
-const { onSchedule } = require("firebase-functions/v2/scheduler");
-const { setGlobalOptions } = require("firebase-functions");
+const {onSchedule} = require("firebase-functions/v2/scheduler");
+const {setGlobalOptions} = require("firebase-functions");
 const admin = require("firebase-admin");
 const logger = require("firebase-functions/logger");
 
 admin.initializeApp();
 const db = admin.firestore();
 
-setGlobalOptions({ maxInstances: 10 });
+setGlobalOptions({maxInstances: 10});
 
 // ─────────────────────────────────────────────
 // CIRCUIT PROFILES (mirror of circuit_service.dart)
@@ -141,9 +141,9 @@ const SimEngine = {
    * @return {Object} {lapTime, isCrashed}
    */
   simulateLap(p) {
-    const { circuit, carStats, driverStats, setup, style } = p;
+    const {circuit, carStats, driverStats, setup, style} = p;
     const ideal = circuit.idealSetup;
-    const s = carStats || { aero: 1, powertrain: 1, chassis: 1 };
+    const s = carStats || {aero: 1, powertrain: 1, chassis: 1};
 
     // Setup penalty
     const clamp = (v, lo, hi) => Math.min(Math.max(v, lo), hi);
@@ -188,12 +188,16 @@ const SimEngine = {
       sBonus = -0.01; accProb = 0.01;
     }
     df -= sBonus;
-    const crashed = Math.random() < accProb;
+    // Ex-Driver: +5% extra crash probability
+    const teamRole = p.teamRole || "";
+    let extraCrash = 0;
+    if (teamRole === "exDriver") extraCrash = 0.05;
+    const crashed = Math.random() < (accProb + extraCrash);
 
     let lap = circuit.baseLapTime * carFactor * df + penalty;
     lap += (Math.random() - 0.5) * 0.8;
 
-    return { lapTime: crashed ? 999.0 : lap, isCrashed: crashed };
+    return {lapTime: crashed ? 999.0 : lap, isCrashed: crashed};
   },
 
   /**
@@ -202,7 +206,8 @@ const SimEngine = {
    * @return {Object} Full race result.
    */
   simulateRace(p) {
-    const { circuit, grid, teamsMap, driversMap, setupsMap } = p;
+    const {circuit, grid, teamsMap, driversMap, setupsMap, managerRoles} = p;
+    const roles = managerRoles || {};
     const totalLaps = circuit.laps;
 
     // Initialise state
@@ -236,13 +241,14 @@ const SimEngine = {
         const su = setupsMap[did] || DEFAULT_SETUP;
         const idx = driver.carIndex || 0;
         const cs = (team.carStats && team.carStats[String(idx)]) ||
-          { aero: 1, powertrain: 1, chassis: 1 };
+          {aero: 1, powertrain: 1, chassis: 1};
 
         const res = this.simulateLap({
           circuit, carStats: cs,
           driverStats: driver.stats || {},
-          setup: { ...su, tyreCompound: compound[did] },
+          setup: {...su, tyreCompound: compound[did]},
           style: style[did],
+          teamRole: roles[driver.teamId] || "",
         });
 
         if (res.isCrashed) {
@@ -255,6 +261,13 @@ const SimEngine = {
         }
 
         let lt = res.lapTime;
+
+        // ── Manager Role Modifiers ──
+        const teamRole = roles[driver.teamId] || "";
+        // Ex-Driver: +2% pace (faster = multiply by 0.98)
+        if (teamRole === "exDriver") lt *= 0.98;
+        // Business Admin: -2% pace (slower = multiply by 1.02)
+        if (teamRole === "businessAdmin") lt *= 1.02;
 
         // Tyre wear penalty
         lt += Math.pow(wear[did] / 100.0, 2) * 8.0;
@@ -314,7 +327,7 @@ const SimEngine = {
 
           lapEvents.push({
             lap, driverId: did,
-            desc: `Pit Stop (${nc.toUpperCase()})`, type: "PIT",
+            desc: `In for a stop! Swapping to ${nc.toUpperCase()}s.`, type: "PIT",
           });
         } else {
           // Tyre wear accumulation
@@ -326,6 +339,12 @@ const SimEngine = {
           wear[did] += 4.5 *
             (circuit.tyreWearMultiplier || 1) *
             cwMod * wMod + Math.random();
+
+          // Ex-Engineer: -10% tyre wear
+          const teamRoleW = roles[driversMap[did].teamId] || "";
+          if (teamRoleW === "exEngineer") {
+            wear[did] *= 0.9;
+          }
         }
 
         lapTimes[did] = lt;
@@ -345,9 +364,21 @@ const SimEngine = {
         if (dnfs.includes(newOrd[i])) continue;
         const old = curOrder.indexOf(newOrd[i]);
         if (old !== -1 && i < old) {
+          let flavor = "Overtake move!";
+          if (i + 1 < newOrd.length) {
+            const passedId = newOrd[i + 1];
+            const passedName = (driversMap[passedId] && driversMap[passedId].name) || "rival";
+            const phrases = [
+              `Dives down the inside of ${passedName}!`,
+              `Moves past ${passedName} for P${i + 1}!`,
+              `Great move on ${passedName}!`,
+              `Takes P${i + 1} from ${passedName}!`,
+            ];
+            flavor = phrases[newOrd.length % phrases.length];
+          }
           lapEvents.push({
             lap, driverId: newOrd[i],
-            desc: "Overtake", type: "OVERTAKE",
+            desc: flavor, type: "OVERTAKE",
           });
         }
       }
@@ -355,13 +386,19 @@ const SimEngine = {
 
       const pos = {};
       curOrder.forEach((id, i) => pos[id] = i + 1);
-      raceLog.push({ lap, lapTimes, positions: pos, events: lapEvents });
+      raceLog.push({lap, lapTimes, positions: pos, tyres: {...compound}, events: lapEvents});
     }
 
     // Hard compound penalty (35s)
     for (const did of curOrder) {
       if (!dnfs.includes(did) && !usedHard[did]) {
         total[did] = (total[did] || 0) + 35.0;
+        if (raceLog.length) {
+          raceLog[raceLog.length - 1].events.push({
+            lap: totalLaps, driverId: did,
+            desc: "35s PENALTY: Failed to use Hard compound", type: "INFO",
+          });
+        }
       }
     }
 
@@ -374,7 +411,7 @@ const SimEngine = {
     const finalPos = {};
     curOrder.forEach((id, i) => finalPos[id] = i + 1);
 
-    return { raceLog, finalPositions: finalPos, totalTimes: total, dnfs };
+    return {raceLog, finalPositions: finalPos, totalTimes: total, dnfs};
   },
 };
 
@@ -397,15 +434,17 @@ function sleep(ms) {
  * @param {Object} data Notification data.
  * @return {Promise} Firestore write.
  */
+/*
 async function addPressNews(leagueId, data) {
   return db.collection("leagues").doc(leagueId)
-    .collection("press_news").add({
-      ...data,
-      leagueId,
-      isArchived: false,
-      timestamp: admin.firestore.FieldValue.serverTimestamp(),
-    });
+      .collection("press_news").add({
+        ...data,
+        leagueId,
+        isArchived: false,
+        timestamp: admin.firestore.FieldValue.serverTimestamp(),
+      });
 }
+*/
 
 /**
  * Sends an Office News notification to a specific team.
@@ -415,12 +454,12 @@ async function addPressNews(leagueId, data) {
  */
 async function addOfficeNews(teamId, data) {
   return db.collection("teams").doc(teamId)
-    .collection("notifications").add({
-      ...data,
-      teamId,
-      isRead: false,
-      timestamp: admin.firestore.FieldValue.serverTimestamp(),
-    });
+      .collection("notifications").add({
+        ...data,
+        teamId,
+        isRead: false,
+        timestamp: admin.firestore.FieldValue.serverTimestamp(),
+      });
 }
 
 /**
@@ -437,7 +476,7 @@ async function fetchTeams(teamIds) {
   const docs = [];
   for (const chunk of chunks) {
     const snap = await db.collection("teams")
-      .where("id", "in", chunk).get();
+        .where("id", "in", chunk).get();
     snap.docs.forEach((d) => docs.push(d));
   }
   return docs;
@@ -456,12 +495,12 @@ exports.scheduledQualifying = onSchedule({
 
   try {
     const uDoc = await db.collection("universe")
-      .doc("game_universe_v1").get();
+        .doc("game_universe_v1").get();
     if (!uDoc.exists) {
       logger.error("Universe not found"); return;
     }
     const leagues = Object.values(
-      uDoc.data().activeLeagues || {},
+        uDoc.data().activeLeagues || {},
     );
 
     let leagueIdx = 0;
@@ -478,7 +517,7 @@ exports.scheduledQualifying = onSchedule({
       const season = sDoc.data();
 
       const raceEvent = (season.calendar || [])
-        .find((r) => !r.isCompleted);
+          .find((r) => !r.isCompleted);
       if (!raceEvent) continue;
 
       const circuit = getCircuit(raceEvent.circuitId);
@@ -503,17 +542,29 @@ exports.scheduledQualifying = onSchedule({
       const teamDocs = await fetchTeams(teamIds);
       const qualyResults = [];
 
+      // Build manager roles map for qualifying modifiers
+      const managerRoles = {};
+      for (const tDoc of teamDocs) {
+        const t = tDoc.data();
+        if (t.managerId) {
+          const mgrDoc = await db.collection("managers").doc(t.managerId).get();
+          if (mgrDoc.exists) {
+            managerRoles[t.id] = mgrDoc.data().role || "";
+          }
+        }
+      }
+
       for (const tDoc of teamDocs) {
         const team = tDoc.data();
         const dSnap = await db.collection("drivers")
-          .where("teamId", "==", team.id).get();
+            .where("teamId", "==", team.id).get();
 
         for (let di = 0; di < dSnap.docs.length; di++) {
           const dDoc = dSnap.docs[di];
-          const driver = { ...dDoc.data(), id: dDoc.id, carIndex: di };
+          const driver = {...dDoc.data(), id: dDoc.id, carIndex: di};
 
           // Resolve setup
-          let setup = { ...DEFAULT_SETUP };
+          let setup = {...DEFAULT_SETUP};
           const ws = team.weekStatus || {};
           const ds = (ws.driverSetups || {})[driver.id];
           const sent = ds && ds.isSetupSent;
@@ -533,10 +584,10 @@ exports.scheduledQualifying = onSchedule({
               "normal", "normal", "offensive", "mostRisky",
             ];
             setup.qualifyingStyle = styles[
-              Math.floor(Math.random() * styles.length)
+                Math.floor(Math.random() * styles.length)
             ];
           } else if (sent && ds.qualifying) {
-            setup = { ...DEFAULT_SETUP, ...ds.qualifying };
+            setup = {...DEFAULT_SETUP, ...ds.qualifying};
           }
           // else: default 50/50
 
@@ -547,14 +598,21 @@ exports.scheduledQualifying = onSchedule({
             driverStats: driver.stats || {},
             setup,
             style: setup.qualifyingStyle || "normal",
+            teamRole: managerRoles[team.id] || "",
           });
+
+          // Ex-Engineer: +5% qualy success (5% faster lap)
+          let finalLapTime = res.lapTime;
+          if (!res.isCrashed && managerRoles[team.id] === "exEngineer") {
+            finalLapTime *= 0.95;
+          }
 
           qualyResults.push({
             driverId: driver.id,
             driverName: driver.name,
             teamName: team.name,
             teamId: team.id,
-            lapTime: res.lapTime,
+            lapTime: finalLapTime,
             isCrashed: res.isCrashed,
             tyreCompound: setup.tyreCompound || "medium",
             setupSubmitted: !!sent || team.isBot,
@@ -582,19 +640,18 @@ exports.scheduledQualifying = onSchedule({
         qualifyingResults: qualyResults,
         status: "qualifying",
         updatedAt: admin.firestore.FieldValue.serverTimestamp(),
-      }, { merge: true });
+      }, {merge: true});
 
       // Update pole stats
       const pole = qualyResults.find((r) => !r.isCrashed);
       if (pole) {
         const inc = admin.firestore.FieldValue.increment(1);
         await db.collection("drivers")
-          .doc(pole.driverId).update({ poles: inc });
+            .doc(pole.driverId).update({poles: inc});
         await db.collection("teams")
-          .doc(pole.teamId).update({ poles: inc });
+            .doc(pole.teamId).update({poles: inc});
 
-        // PRESS NEWS: Pole
-        const lId = league.id || "";
+        /*
         await addPressNews(lId, {
           title: `POLE POSITION: ${raceEvent.trackName.toUpperCase()}`,
           message: `${pole.driverName} (${pole.teamName}) takes POLE!`,
@@ -603,6 +660,7 @@ exports.scheduledQualifying = onSchedule({
           pilotName: pole.driverName,
           teamName: pole.teamName,
         });
+        */
       }
 
       // OFFICE NEWS: each team gets qualy report
@@ -647,10 +705,10 @@ exports.scheduledRace = onSchedule({
 
   try {
     const uDoc = await db.collection("universe")
-      .doc("game_universe_v1").get();
+        .doc("game_universe_v1").get();
     if (!uDoc.exists) return;
     const leagues = Object.values(
-      uDoc.data().activeLeagues || {},
+        uDoc.data().activeLeagues || {},
     );
 
     let leagueIdx = 0;
@@ -666,13 +724,13 @@ exports.scheduledRace = onSchedule({
       const season = sDoc.data();
 
       const rIdx = (season.calendar || [])
-        .findIndex((r) => !r.isCompleted);
+          .findIndex((r) => !r.isCompleted);
       if (rIdx === -1) continue;
       const rEvent = season.calendar[rIdx];
 
       const raceDocId = `${sId}_${rEvent.id}`;
       const rSnap = await db.collection("races")
-        .doc(raceDocId).get();
+          .doc(raceDocId).get();
 
       if (!rSnap.exists || !rSnap.data().qualyGrid) {
         logger.warn(`No qualy grid: ${raceDocId}`);
@@ -699,15 +757,15 @@ exports.scheduledRace = onSchedule({
       for (let gi = 0; gi < grid.length; gi++) {
         const g = grid[gi];
         const dDoc = await db.collection("drivers")
-          .doc(g.driverId).get();
+            .doc(g.driverId).get();
         if (!dDoc.exists) continue;
-        const dData = { ...dDoc.data(), id: g.driverId };
+        const dData = {...dDoc.data(), id: g.driverId};
         dData.carIndex = gi % 2; // 0 or 1 per team
         driversMap[g.driverId] = dData;
 
         // Resolve race setup
         const team = teamsMap[g.teamId] || {};
-        let su = { ...DEFAULT_SETUP };
+        let su = {...DEFAULT_SETUP};
 
         if (team.isBot) {
           const ideal = circuit.idealSetup;
@@ -727,7 +785,7 @@ exports.scheduledRace = onSchedule({
           const ws = team.weekStatus || {};
           const ds = (ws.driverSetups || {})[g.driverId];
           if (ds && ds.isSetupSent && ds.race) {
-            su = { ...DEFAULT_SETUP, ...ds.race };
+            su = {...DEFAULT_SETUP, ...ds.race};
           }
         }
         // Override tyreCompound with qualy best
@@ -735,14 +793,26 @@ exports.scheduledRace = onSchedule({
         setupsMap[g.driverId] = su;
       }
 
+      // Build manager roles map (teamId -> role string)
+      const managerRoles = {};
+      for (const tid of teamIds) {
+        const t = teamsMap[tid];
+        if (t && t.managerId) {
+          const mgrDoc = await db.collection("managers").doc(t.managerId).get();
+          if (mgrDoc.exists) {
+            managerRoles[tid] = mgrDoc.data().role || "";
+          }
+        }
+      }
+
       // Run full race
       const result = SimEngine.simulateRace({
-        circuit, grid, teamsMap, driversMap, setupsMap,
+        circuit, grid, teamsMap, driversMap, setupsMap, managerRoles,
       });
 
       // Calculate live duration for frontend
       const avgQualyTime = grid.reduce(
-        (s, g) => s + (g.lapTime < 900 ? g.lapTime : 0), 0,
+          (s, g) => s + (g.lapTime < 900 ? g.lapTime : 0), 0,
       ) / grid.filter((g) => g.lapTime < 900).length;
       const liveDurationSec = avgQualyTime * circuit.laps;
 
@@ -784,7 +854,7 @@ exports.scheduledRace = onSchedule({
 
       // --- POINTS & STATS ---
       const sorted = Object.keys(result.finalPositions)
-        .sort((a, b) => result.finalPositions[a] -
+          .sort((a, b) => result.finalPositions[a] -
           result.finalPositions[b]);
 
       const teamPointsAccum = {};
@@ -800,7 +870,7 @@ exports.scheduledRace = onSchedule({
         const inc = admin.firestore.FieldValue.increment;
 
         const dRef = db.collection("drivers").doc(did);
-        const du = { races: inc(1), seasonRaces: inc(1) };
+        const du = {races: inc(1), seasonRaces: inc(1)};
         if (pts > 0) {
           du.points = inc(pts);
           du.seasonPoints = inc(pts);
@@ -867,28 +937,26 @@ exports.scheduledRace = onSchedule({
 
       // Update season calendar
       const updCal = [...season.calendar];
-      updCal[rIdx] = { ...updCal[rIdx], isCompleted: true };
+      updCal[rIdx] = {...updCal[rIdx], isCompleted: true};
       statsBatch.update(
-        db.collection("seasons").doc(sId),
-        { calendar: updCal },
+          db.collection("seasons").doc(sId),
+          {calendar: updCal},
       );
 
       await statsBatch.commit();
 
       // --- NOTIFICATIONS ---
+      /*
       const lId = league.id || "";
-      if (sorted.length && !result.dnfs.includes(sorted[0])) {
-        const winDrv = driversMap[sorted[0]];
-        const winTeam = teamsMap[winDrv.teamId];
-        await addPressNews(lId, {
-          title: `RACE WINNER: ${rEvent.trackName.toUpperCase()}`,
-          message: `${winDrv.name} (${winTeam.name}) wins!`,
-          type: "WINNER",
-          eventType: "Race",
-          pilotName: winDrv.name,
-          teamName: winTeam.name,
-        });
-      }
+      await addPressNews(lId, {
+        title: `RACE WINNER: ${rEvent.trackName.toUpperCase()}`,
+        message: `${winDrv.name} (${winTeam.name}) wins!`,
+        type: "WINNER",
+        eventType: "Race",
+        pilotName: winDrv.name,
+        teamName: winTeam.name,
+      });
+      */
 
       // Office News: each team gets its result
       const teamGrp = {};
@@ -909,7 +977,7 @@ exports.scheduledRace = onSchedule({
         const ep = teamPointsAccum[tid] || 0;
         const earn = BASE_PRIZE + ep * POINT_VALUE;
         const lines = drivers.map(
-          (d) => `${d.name}: ${d.pos} (+${d.pts} pts)`,
+            (d) => `${d.name}: ${d.pos} (+${d.pts} pts)`,
         ).join("\n");
         await addOfficeNews(tid, {
           title: `Race Results: ${rEvent.trackName}`,
@@ -924,7 +992,7 @@ exports.scheduledRace = onSchedule({
       // checks this timestamp
       await raceRef.update({
         postRaceProcessingAt: new Date(
-          Date.now() + 60 * 60 * 1000,
+            Date.now() + 60 * 60 * 1000,
         ),
       });
 
@@ -948,9 +1016,9 @@ exports.postRaceProcessing = onSchedule({
     const now = new Date();
     // Find races that need post-processing
     const racesSnap = await db.collection("races")
-      .where("isFinished", "==", true)
-      .where("postRaceProcessed", "==", null)
-      .get();
+        .where("isFinished", "==", true)
+        .where("postRaceProcessed", "==", null)
+        .get();
 
     for (const rDoc of racesSnap.docs) {
       const rd = rDoc.data();
@@ -969,7 +1037,7 @@ exports.postRaceProcessing = onSchedule({
 
       for (const did of driverIds) {
         const dDoc = await db.collection("drivers")
-          .doc(did).get();
+            .doc(did).get();
         if (dDoc.exists) {
           teamIdsSet.add(dDoc.data().teamId);
         }
@@ -977,12 +1045,20 @@ exports.postRaceProcessing = onSchedule({
 
       // Reset weekStatus and unlock
       for (const tid of teamIdsSet) {
+        // Read current weekStatus to preserve Bureaucrat cooldown
+        const tDoc = await db.collection("teams").doc(tid).get();
+        const curWs = (tDoc.exists && tDoc.data().weekStatus) || {};
+        let cooldown = curWs.upgradeCooldownWeeksLeft || 0;
+        if (cooldown > 0) cooldown--; // Decrement each week
+
         await db.collection("teams").doc(tid).update({
           "weekStatus": {
             practiceCompleted: false,
             strategySet: false,
             sponsorReviewed: false,
             hasUpgradedThisWeek: false,
+            upgradesThisWeek: 0,
+            upgradeCooldownWeeksLeft: cooldown,
             isLockedForProcessing: false,
           },
         });
@@ -991,15 +1067,15 @@ exports.postRaceProcessing = onSchedule({
       // AI team upgrades (30% chance per stat)
       for (const tid of teamIdsSet) {
         const tDoc = await db.collection("teams")
-          .doc(tid).get();
+            .doc(tid).get();
         if (!tDoc.exists) continue;
         const team = tDoc.data();
         if (!team.isBot) continue;
 
-        const cs = { ...(team.carStats || {}) };
+        const cs = {...(team.carStats || {})};
         let upgraded = false;
         for (const key of ["0", "1"]) {
-          const st = { ...(cs[key] || {}) };
+          const st = {...(cs[key] || {})};
           if (Math.random() < 0.3) {
             st.aero = (st.aero || 1) + 1;
             upgraded = true;
@@ -1016,7 +1092,7 @@ exports.postRaceProcessing = onSchedule({
         }
         if (upgraded) {
           await db.collection("teams").doc(tid)
-            .update({ carStats: cs });
+              .update({carStats: cs});
         }
       }
 
@@ -1030,5 +1106,67 @@ exports.postRaceProcessing = onSchedule({
     }
   } catch (err) {
     logger.error("Error in postRaceProcessing", err);
+  }
+});
+
+// ─────────────────────────────────────────────
+// 8. SCHEDULED DAILY FITNESS RECOVERY (Midnight COT)
+// ─────────────────────────────────────────────
+exports.scheduledDailyFitnessRecovery = onSchedule({
+  schedule: "0 0 * * *",
+  timeZone: "America/Bogota",
+  memory: "512MiB",
+  timeoutSeconds: 300,
+}, async () => {
+  logger.info("=== DAILY FITNESS RECOVERY START ===");
+
+  try {
+    const driversRef = db.collection("drivers");
+    const snapshot = await driversRef.get();
+
+    if (snapshot.empty) {
+      logger.info("No drivers found. Skipping.");
+      return;
+    }
+
+    // Firestore matches have a limit of 500 writes per batch
+    const batches = [];
+    let currentBatch = db.batch();
+    let opCount = 0;
+
+    snapshot.docs.forEach((doc) => {
+      const driver = doc.data();
+      const stats = driver.stats || {};
+
+      const currentFitness = stats.fitness || 50;
+
+      if (currentFitness < 100) {
+        const newFitness = Math.min(100, currentFitness + 2);
+
+        currentBatch.update(doc.ref, {
+          "stats.fitness": newFitness,
+        });
+
+        opCount++;
+
+        // If batch is full (500 limit), push and start a new one
+        if (opCount === 500) {
+          batches.push(currentBatch.commit());
+          currentBatch = db.batch();
+          opCount = 0;
+        }
+      }
+    });
+
+    // Commit any remaining operations in the last batch
+    if (opCount > 0) {
+      batches.push(currentBatch.commit());
+    }
+
+    await Promise.all(batches);
+
+    logger.info(`=== DAILY FITNESS RECOVERY COMPLETE. Batches: ${batches.length} ===`);
+  } catch (error) {
+    logger.error("Error in scheduledDailyFitnessRecovery:", error);
   }
 });

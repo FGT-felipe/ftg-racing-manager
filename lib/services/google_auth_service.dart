@@ -5,7 +5,9 @@ import 'package:flutter/foundation.dart';
 
 class GoogleAuthService {
   final FirebaseAuth _auth = FirebaseAuth.instance;
-  final GoogleSignIn _googleSignIn = GoogleSignIn();
+  final GoogleSignIn _googleSignIn = GoogleSignIn(
+    scopes: const <String>['email', 'profile'],
+  );
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
 
   Future<User?> signIn() async {

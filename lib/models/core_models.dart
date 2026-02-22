@@ -1,4 +1,6 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:flutter/material.dart';
+import '../l10n/app_localizations.dart';
 
 class League {
   final String id;
@@ -271,7 +273,7 @@ class SponsorOffer {
     required this.personality,
     required this.contractDuration,
     this.isAdminBonusApplied = false,
-    this.consecutiveFailuresAllowed = 3,
+    this.consecutiveFailuresAllowed = 2,
     this.attemptsMade = 0,
     this.lockedUntil,
   });
@@ -306,7 +308,7 @@ class SponsorOffer {
       weeklyBasePayment: map['weeklyBasePayment'] ?? 0,
       objectiveBonus: map['objectiveBonus'] ?? 0,
       objectiveDescription: map['objectiveDescription'] ?? '',
-      consecutiveFailuresAllowed: map['consecutiveFailuresAllowed'] ?? 3,
+      consecutiveFailuresAllowed: map['consecutiveFailuresAllowed'] ?? 2,
       personality: SponsorPersonality.values.firstWhere(
         (e) => e.name == map['personality'],
         orElse: () => SponsorPersonality.professional,
@@ -379,6 +381,7 @@ class Team {
   final int seasonWins;
   final int seasonPodiums;
   final int seasonPoles;
+  final int nameChangeCount;
 
   final Map<String, Map<String, int>> carStats;
   final Map<String, dynamic> weekStatus;
@@ -401,6 +404,7 @@ class Team {
     this.seasonWins = 0,
     this.seasonPodiums = 0,
     this.seasonPoles = 0,
+    this.nameChangeCount = 0,
     required this.carStats,
     required this.weekStatus,
     this.sponsors = const {},
@@ -433,6 +437,7 @@ class Team {
       'seasonWins': seasonWins,
       'seasonPodiums': seasonPodiums,
       'seasonPoles': seasonPoles,
+      'nameChangeCount': nameChangeCount,
       'carStats': carStats,
       'weekStatus': weekStatus,
       'sponsors': sponsors.map((k, v) => MapEntry(k, v.toMap())),
@@ -498,6 +503,7 @@ class Team {
       seasonWins: map['seasonWins'] ?? 0,
       seasonPodiums: map['seasonPodiums'] ?? 0,
       seasonPoles: map['seasonPoles'] ?? 0,
+      nameChangeCount: map['nameChangeCount'] ?? 0,
       carStats: carStatsMap,
       weekStatus: Map<String, dynamic>.from(map['weekStatus'] ?? {}),
       sponsors: (map['sponsors'] as Map<String, dynamic>? ?? {}).map(
@@ -507,6 +513,52 @@ class Team {
       facilities: (map['facilities'] as Map<String, dynamic>? ?? {}).map(
         (k, v) => MapEntry(k, Facility.fromMap(Map<String, dynamic>.from(v))),
       ),
+    );
+  }
+
+  Team copyWith({
+    String? id,
+    String? name,
+    String? managerId,
+    bool? isBot,
+    int? budget,
+    int? points,
+    int? races,
+    int? wins,
+    int? podiums,
+    int? poles,
+    int? seasonPoints,
+    int? seasonRaces,
+    int? seasonWins,
+    int? seasonPodiums,
+    int? seasonPoles,
+    int? nameChangeCount,
+    Map<String, Map<String, int>>? carStats,
+    Map<String, dynamic>? weekStatus,
+    Map<String, ActiveContract>? sponsors,
+    Map<String, Facility>? facilities,
+  }) {
+    return Team(
+      id: id ?? this.id,
+      name: name ?? this.name,
+      managerId: managerId ?? this.managerId,
+      isBot: isBot ?? this.isBot,
+      budget: budget ?? this.budget,
+      points: points ?? this.points,
+      races: races ?? this.races,
+      wins: wins ?? this.wins,
+      podiums: podiums ?? this.podiums,
+      poles: poles ?? this.poles,
+      seasonPoints: seasonPoints ?? this.seasonPoints,
+      seasonRaces: seasonRaces ?? this.seasonRaces,
+      seasonWins: seasonWins ?? this.seasonWins,
+      seasonPodiums: seasonPodiums ?? this.seasonPodiums,
+      seasonPoles: seasonPoles ?? this.seasonPoles,
+      nameChangeCount: nameChangeCount ?? this.nameChangeCount,
+      carStats: carStats ?? this.carStats,
+      weekStatus: weekStatus ?? this.weekStatus,
+      sponsors: sponsors ?? this.sponsors,
+      facilities: facilities ?? this.facilities,
     );
   }
 }
@@ -574,17 +626,62 @@ class Facility {
     return level * 15000;
   }
 
-  String get bonusDescription {
-    if (level == 0) return "Not purchased";
+  String getLocalizedName(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
     switch (type) {
       case FacilityType.teamOffice:
-        return "Budget +${level * 5}%";
+        return l10n.facTeamOffice;
       case FacilityType.garage:
-        return "Repair +${level * 2}%";
+        return l10n.facGarage;
       case FacilityType.youthAcademy:
-        return "Scouting +${level * 10}";
+        return l10n.facYouthAcademy;
+      case FacilityType.pressRoom:
+        return l10n.facPressRoom;
+      case FacilityType.scoutingOffice:
+        return l10n.facScoutingOffice;
+      case FacilityType.racingSimulator:
+        return l10n.facRacingSimulator;
+      case FacilityType.gym:
+        return l10n.facGym;
+      case FacilityType.rdOffice:
+        return l10n.facRDOffice;
+    }
+  }
+
+  String getLocalizedDescription(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
+    switch (type) {
+      case FacilityType.teamOffice:
+        return l10n.descTeamOffice;
+      case FacilityType.garage:
+        return l10n.descGarage;
+      case FacilityType.youthAcademy:
+        return l10n.descYouthAcademy;
+      case FacilityType.pressRoom:
+        return l10n.descPressRoom;
+      case FacilityType.scoutingOffice:
+        return l10n.descScoutingOffice;
+      case FacilityType.racingSimulator:
+        return l10n.descRacingSimulator;
+      case FacilityType.gym:
+        return l10n.descGym;
+      case FacilityType.rdOffice:
+        return l10n.descRDOffice;
+    }
+  }
+
+  String getLocalizedBonus(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
+    if (level == 0) return l10n.notPurchased;
+    switch (type) {
+      case FacilityType.teamOffice:
+        return l10n.bonusBudget((level * 5).toString());
+      case FacilityType.garage:
+        return l10n.bonusRepair((level * 2).toString());
+      case FacilityType.youthAcademy:
+        return l10n.bonusScouting((level * 10).toString());
       default:
-        return "TBD";
+        return l10n.bonusTBD;
     }
   }
 
@@ -1091,6 +1188,7 @@ class LeagueNotification {
   final String? pilotName;
   final String? managerName;
   final String? teamName;
+  final Map<String, dynamic>? payload;
   final bool isArchived;
 
   LeagueNotification({
@@ -1104,6 +1202,7 @@ class LeagueNotification {
     this.pilotName,
     this.managerName,
     this.teamName,
+    this.payload,
     this.isArchived = false,
   });
 
@@ -1119,6 +1218,7 @@ class LeagueNotification {
       'pilotName': pilotName,
       'managerName': managerName,
       'teamName': teamName,
+      'payload': payload,
       'isArchived': isArchived,
     };
   }
@@ -1142,6 +1242,7 @@ class LeagueNotification {
       pilotName: map['pilotName'],
       managerName: map['managerName'],
       teamName: map['teamName'],
+      payload: map['payload'] as Map<String, dynamic>?,
       isArchived: map['isArchived'] ?? false,
     );
   }

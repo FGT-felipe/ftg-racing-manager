@@ -4,6 +4,7 @@ import '../screens/engineering_screen.dart';
 import '../screens/standings_screen.dart';
 import '../screens/job_market_screen.dart';
 import '../screens/office/finances_screen.dart';
+import '../l10n/app_localizations.dart';
 
 class ResponsiveMainScaffold extends StatefulWidget {
   final String teamId;
@@ -53,31 +54,31 @@ class _ResponsiveMainScaffoldState extends State<ResponsiveMainScaffold> {
                   labelType: NavigationRailLabelType.all,
                   groupAlignment: -0.9,
                   minWidth: 80,
-                  destinations: const [
+                  destinations: [
                     NavigationRailDestination(
-                      icon: Icon(Icons.dashboard_rounded),
-                      selectedIcon: Icon(Icons.dashboard),
-                      label: Text('HQ'),
+                      icon: const Icon(Icons.dashboard_rounded),
+                      selectedIcon: const Icon(Icons.dashboard),
+                      label: Text(AppLocalizations.of(context).navHQ),
                     ),
                     NavigationRailDestination(
-                      icon: Icon(Icons.business_center_outlined),
-                      selectedIcon: Icon(Icons.business_center),
-                      label: Text('Office'),
+                      icon: const Icon(Icons.business_center_outlined),
+                      selectedIcon: const Icon(Icons.business_center),
+                      label: Text(AppLocalizations.of(context).navOffice),
                     ),
                     NavigationRailDestination(
-                      icon: Icon(Icons.build_circle_outlined),
-                      selectedIcon: Icon(Icons.build_circle),
-                      label: Text('Garage'),
+                      icon: const Icon(Icons.build_circle_outlined),
+                      selectedIcon: const Icon(Icons.build_circle),
+                      label: Text(AppLocalizations.of(context).navGarage),
                     ),
                     NavigationRailDestination(
-                      icon: Icon(Icons.emoji_events_outlined),
-                      selectedIcon: Icon(Icons.emoji_events),
-                      label: Text('Season'),
+                      icon: const Icon(Icons.emoji_events_outlined),
+                      selectedIcon: const Icon(Icons.emoji_events),
+                      label: Text(AppLocalizations.of(context).navSeason),
                     ),
                     NavigationRailDestination(
-                      icon: Icon(Icons.groups_outlined),
-                      selectedIcon: Icon(Icons.groups),
-                      label: Text('Market'),
+                      icon: const Icon(Icons.groups_outlined),
+                      selectedIcon: const Icon(Icons.groups),
+                      label: Text(AppLocalizations.of(context).navMarket),
                     ),
                   ],
                 ),
@@ -122,26 +123,26 @@ class _ResponsiveMainScaffoldState extends State<ResponsiveMainScaffold> {
                 ),
               ),
               child: BottomNavigationBar(
-                items: const <BottomNavigationBarItem>[
+                items: <BottomNavigationBarItem>[
                   BottomNavigationBarItem(
-                    icon: Icon(Icons.dashboard_rounded),
-                    label: 'HQ',
+                    icon: const Icon(Icons.dashboard_rounded),
+                    label: AppLocalizations.of(context).navHQ,
                   ),
                   BottomNavigationBarItem(
-                    icon: Icon(Icons.business_center),
-                    label: 'Office',
+                    icon: const Icon(Icons.business_center),
+                    label: AppLocalizations.of(context).navOffice,
                   ),
                   BottomNavigationBarItem(
-                    icon: Icon(Icons.build_circle),
-                    label: 'Garage',
+                    icon: const Icon(Icons.build_circle),
+                    label: AppLocalizations.of(context).navGarage,
                   ),
                   BottomNavigationBarItem(
-                    icon: Icon(Icons.emoji_events),
-                    label: 'Season',
+                    icon: const Icon(Icons.emoji_events),
+                    label: AppLocalizations.of(context).navSeason,
                   ),
                   BottomNavigationBarItem(
-                    icon: Icon(Icons.groups),
-                    label: 'Market',
+                    icon: const Icon(Icons.groups),
+                    label: AppLocalizations.of(context).navMarket,
                   ),
                 ],
                 currentIndex: _selectedIndex,

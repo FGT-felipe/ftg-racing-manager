@@ -6,6 +6,7 @@ import '../screens/onboarding/landing_screen.dart';
 import '../screens/onboarding/create_manager_screen.dart';
 import '../screens/onboarding/team_selection_screen.dart';
 import '../services/auth_service.dart';
+import '../../l10n/app_localizations.dart';
 
 class AuthWrapper extends StatelessWidget {
   const AuthWrapper({super.key});
@@ -47,7 +48,9 @@ class AuthWrapper extends StatelessWidget {
               return Scaffold(
                 body: Center(
                   child: Text(
-                    "Error loading profile: ${profileSnapshot.error}",
+                    AppLocalizations.of(
+                      context,
+                    ).errorLoadingProfile(profileSnapshot.error.toString()),
                   ),
                 ),
               );

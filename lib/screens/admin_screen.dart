@@ -2,6 +2,10 @@ import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import '../services/database_seeder.dart';
+import '../services/driver_assignment_service.dart';
+import '../services/team_assignment_service.dart';
+import '../services/universe_service.dart';
+import '../models/domain/domain_models.dart';
 
 class AdminScreen extends StatefulWidget {
   const AdminScreen({super.key});
@@ -35,6 +39,78 @@ class _AdminScreenState extends State<AdminScreen> {
       }
     } finally {
       if (mounted) setState(() => _isProcessing = false);
+    }
+  }
+
+  final TextEditingController _newLeagueNameController =
+      TextEditingController();
+  int _newLeagueTier = 2;
+  bool _isCreatingLeague = false;
+
+  void _handleCreateNewLeague() async {
+    if (_newLeagueNameController.text.trim().isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text("Please enter a League Name")),
+      );
+      return;
+    }
+
+    setState(() => _isCreatingLeague = true);
+
+    try {
+      // Create new league document explicitly using Universe Seeder helper to set defaults
+      final String generateId =
+          'ftg_series_t${_newLeagueTier}_${DateTime.now().millisecondsSinceEpoch}';
+
+      final db = FirebaseFirestore.instance;
+      final seasonSnapshot = await db.collection('seasons').limit(1).get();
+      String currentSeasonId = '';
+      if (seasonSnapshot.docs.isNotEmpty) {
+        currentSeasonId = seasonSnapshot.docs.first.id;
+      } else {
+        throw Exception("No active season found, cannot attach new league.");
+      }
+
+      final teams = await TeamAssignmentService().generateAndSaveTeamsForLeague(
+        generateId,
+        count: 11,
+      );
+      final drivers = await DriverAssignmentService()
+          .generateAndSaveDriversForTeams(teams, _newLeagueTier);
+
+      final newLeague = FtgLeague(
+        id: generateId,
+        name: _newLeagueNameController.text.trim(),
+        teams: teams,
+        drivers: drivers,
+        currentSeasonId: currentSeasonId,
+        tier: _newLeagueTier,
+      );
+
+      // Agrega la liga al universe doc y collection
+      await UniverseService().addLeague(newLeague);
+      await db.collection('leagues').doc(generateId).set(newLeague.toMap());
+
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text("League ${newLeague.name} created successfully!"),
+            backgroundColor: Colors.green,
+          ),
+        );
+        _newLeagueNameController.clear();
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text("Error creating league: $e"),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    } finally {
+      if (mounted) setState(() => _isCreatingLeague = false);
     }
   }
 
@@ -189,6 +265,74 @@ class _AdminScreenState extends State<AdminScreen> {
                     );
                   }
                 },
+              ),
+            ),
+            const SizedBox(height: 32),
+            const Text(
+              "NEW LEAGUE TIER CREATION",
+              style: TextStyle(
+                fontSize: 18,
+                fontWeight: FontWeight.bold,
+                color: Colors.greenAccent,
+              ),
+            ),
+            const SizedBox(height: 16),
+            const Text(
+              "Incrementally adds a new League, generates 11 default teams, and 22 default drivers.",
+              style: TextStyle(color: Colors.grey, fontSize: 13),
+            ),
+            const SizedBox(height: 16),
+            TextField(
+              controller: _newLeagueNameController,
+              decoration: const InputDecoration(
+                labelText: "League Name (e.g. FTG 2.2 Series)",
+                border: OutlineInputBorder(),
+              ),
+              enabled: !_isCreatingLeague,
+            ),
+            const SizedBox(height: 16),
+            DropdownButtonFormField<int>(
+              initialValue: _newLeagueTier,
+              decoration: const InputDecoration(
+                labelText: "Tier Level",
+                border: OutlineInputBorder(),
+              ),
+              items: const [
+                DropdownMenuItem(value: 1, child: Text("Tier 1")),
+                DropdownMenuItem(value: 2, child: Text("Tier 2")),
+                DropdownMenuItem(value: 3, child: Text("Tier 3")),
+              ],
+              onChanged: _isCreatingLeague
+                  ? null
+                  : (val) {
+                      if (val != null) setState(() => _newLeagueTier = val);
+                    },
+            ),
+            const SizedBox(height: 16),
+            SizedBox(
+              width: double.infinity,
+              child: ElevatedButton.icon(
+                onPressed: _isCreatingLeague ? null : _handleCreateNewLeague,
+                icon: _isCreatingLeague
+                    ? const SizedBox(
+                        width: 20,
+                        height: 20,
+                        child: CircularProgressIndicator(
+                          strokeWidth: 2,
+                          color: Colors.black,
+                        ),
+                      )
+                    : const Icon(Icons.add),
+                label: Text(
+                  _isCreatingLeague
+                      ? "GENERATING ENTITIES..."
+                      : "CREATE LEAGUE & GENERATE ENTITIES",
+                ),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Colors.greenAccent,
+                  foregroundColor: Colors.black,
+                  padding: const EdgeInsets.symmetric(vertical: 16),
+                ),
               ),
             ),
             const SizedBox(height: 32),

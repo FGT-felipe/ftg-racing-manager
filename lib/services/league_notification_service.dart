@@ -48,7 +48,10 @@ class LeagueNotificationService {
     String? pilotName,
     String? managerName,
     String? teamName,
+    Map<String, dynamic>? payload,
   }) async {
+    // Press News logic disabled as per user request
+    /*
     await _db.collection('leagues').doc(leagueId).collection('press_news').add({
       'title': title,
       'message': message,
@@ -59,8 +62,10 @@ class LeagueNotificationService {
       'pilotName': pilotName,
       'managerName': managerName,
       'teamName': teamName,
+      'payload': payload,
       'isArchived': false,
     });
+    */
   }
 
   /// Archive old notifications (Older than 2 weeks).

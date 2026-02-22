@@ -47,20 +47,29 @@ class TeamAssignmentService {
 
   /// Puebla una liga específica (11 equipos)
   Future<int> _populateLeague(FtgLeague league) async {
-    final factory = TeamFactory();
-    final teams = <Team>[];
-
-    for (int i = 0; i < 11; i++) {
-      final team = factory.generateBotTeam();
-      teams.add(team);
-    }
-
-    await _saveTeams(teams);
+    final teams = await generateAndSaveTeamsForLeague(league.id);
 
     final updatedLeague = league.copyWith(teams: teams);
     await UniverseService().updateLeague(updatedLeague);
 
     return teams.length;
+  }
+
+  /// Generates teams for a league independently of UniverseService
+  Future<List<Team>> generateAndSaveTeamsForLeague(
+    String leagueId, {
+    int count = 11,
+  }) async {
+    final factory = TeamFactory();
+    final teams = <Team>[];
+
+    for (int i = 0; i < count; i++) {
+      final team = factory.generateBotTeam();
+      teams.add(team);
+    }
+
+    await _saveTeams(teams);
+    return teams;
   }
 
   /// Guarda múltiples equipos en Firestore usando batch

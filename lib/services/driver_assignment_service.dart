@@ -1,3 +1,4 @@
+import 'dart:math';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/foundation.dart';
 import '../models/core_models.dart';
@@ -29,6 +30,13 @@ class DriverAssignmentService {
     int totalDriversCreated = 0;
 
     for (final league in universe.leagues) {
+      if (league.tier == 3) {
+        debugPrint(
+          "DRIVER ASSIGNMENT: Skipping league ${league.name} (Tier 3) - Reserved for Youth Academy.",
+        );
+        continue;
+      }
+
       debugPrint("DRIVER ASSIGNMENT: Poblando liga ${league.name}...");
 
       // Verificar si la liga ya tiene pilotos
@@ -48,19 +56,42 @@ class DriverAssignmentService {
 
   /// Puebla los equipos de una liga con pilotos
   Future<int> _populateLeagueDrivers(FtgLeague league) async {
-    final factory = DriverFactory();
-    int driversCreated = 0;
+    final drivers = await generateAndSaveDriversForTeams(
+      league.teams,
+      league.tier,
+    );
 
-    // Obtener equipos de esta liga
-    final teams = league.teams;
+    // Actualizar liga con pilotos poblados
+    final updatedLeague = league.copyWith(drivers: drivers);
+    await UniverseService().updateLeague(updatedLeague);
+
+    debugPrint(
+      "DRIVER ASSIGNMENT: ${league.name}: ${drivers.length} pilotos creados",
+    );
+
+    return drivers.length;
+  }
+
+  /// Generates drivers for given teams independently of UniverseService
+  Future<List<Driver>> generateAndSaveDriversForTeams(
+    List<Team> teams,
+    int tier,
+  ) async {
+    final factory = DriverFactory();
+    final random = Random();
+
     final drivers = <Driver>[];
 
     for (final team in teams) {
+      final isMaleMain = random.nextBool();
+
       // Generar 1 Male y 1 Female driver per team as per new requirements
       for (int i = 0; i < 2; i++) {
-        final gender = i == 0 ? 'M' : 'F';
+        final gender = (i == 0)
+            ? (isMaleMain ? 'M' : 'F')
+            : (isMaleMain ? 'F' : 'M');
         final driver = factory.generateDriver(
-          divisionTier: league.tier,
+          divisionTier: tier,
           forcedGender: gender,
         );
 
@@ -82,21 +113,11 @@ class DriverAssignmentService {
         );
 
         drivers.add(assignedDriver);
-        driversCreated++;
       }
     }
 
     await _saveDrivers(drivers);
-
-    // Actualizar liga con pilotos poblados
-    final updatedLeague = league.copyWith(drivers: drivers);
-    await UniverseService().updateLeague(updatedLeague);
-
-    debugPrint(
-      "DRIVER ASSIGNMENT: ${league.name}: $driversCreated pilotos creados",
-    );
-
-    return driversCreated;
+    return drivers;
   }
 
   /// Guarda múltiples pilotos en Firestore usando batch

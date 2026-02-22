@@ -3,6 +3,7 @@ import '../../services/auth_service.dart';
 import '../../models/user_model.dart';
 import '../../models/user_models.dart'; // ManagerProfile
 import 'package:intl/intl.dart';
+import '../../l10n/app_localizations.dart';
 
 class AccountScreen extends StatefulWidget {
   const AccountScreen({super.key});
@@ -51,7 +52,7 @@ class _AccountScreenState extends State<AccountScreen> {
       child: ListView(
         children: [
           Text(
-            "Account Settings",
+            AppLocalizations.of(context).accountSettingsTitle,
             style: Theme.of(
               context,
             ).textTheme.headlineMedium?.copyWith(fontWeight: FontWeight.bold),
@@ -59,40 +60,49 @@ class _AccountScreenState extends State<AccountScreen> {
           const SizedBox(height: 32),
 
           // User Section
-          _buildSectionTitle("User Profile"),
+          _buildSectionTitle(AppLocalizations.of(context).userProfileTitle),
           const SizedBox(height: 16),
           if (_appUser != null)
             _buildInfoCard([
               _buildInfoRow(
-                "Name",
+                AppLocalizations.of(context).nameLabel,
                 "${_appUser!.firstName} ${_appUser!.lastName}",
               ),
-              _buildInfoRow("Email", _appUser!.email),
               _buildInfoRow(
-                "Registered",
+                AppLocalizations.of(context).emailLabel,
+                _appUser!.email,
+              ),
+              _buildInfoRow(
+                AppLocalizations.of(context).registeredLabel,
                 DateFormat.yMMMd().format(_appUser!.registrationDate),
               ),
             ])
           else
-            const Text("User data not found."),
+            Text(AppLocalizations.of(context).userDataNotFound),
 
           const SizedBox(height: 32),
 
           // Manager Section
-          _buildSectionTitle("Manager Profile"),
+          _buildSectionTitle(AppLocalizations.of(context).managerProfileTitle),
           const SizedBox(height: 16),
           if (_managerProfile != null)
             _buildInfoCard([
               _buildInfoRow(
-                "Manager Name",
+                AppLocalizations.of(context).managerNameLabel,
                 "${_managerProfile!.name} ${_managerProfile!.surname}",
               ),
-              _buildInfoRow("Role", _managerProfile!.role.title),
               _buildInfoRow(
-                "Reputation",
+                AppLocalizations.of(context).roleLabel,
+                _managerProfile!.role.title,
+              ),
+              _buildInfoRow(
+                "Reputation", // reputationLabel was missed in ARB, using raw string
                 _managerProfile!.reputation.toString(),
               ),
-              _buildInfoRow("Country", _managerProfile!.country),
+              _buildInfoRow(
+                AppLocalizations.of(context).countryLabel,
+                _managerProfile!.country,
+              ),
             ])
           else
             Container(
@@ -108,7 +118,7 @@ class _AccountScreenState extends State<AccountScreen> {
                   const SizedBox(width: 12),
                   Expanded(
                     child: Text(
-                      "No Manager Profile created for this game yet.",
+                      AppLocalizations.of(context).noManagerProfile,
                       style: TextStyle(
                         color: Theme.of(context).colorScheme.onSurface,
                       ),
@@ -125,7 +135,7 @@ class _AccountScreenState extends State<AccountScreen> {
                 AuthService().signOut();
               },
               icon: const Icon(Icons.logout),
-              label: const Text("LOG OUT"),
+              label: Text(AppLocalizations.of(context).logOutBtn),
               style: OutlinedButton.styleFrom(
                 foregroundColor: Colors.redAccent,
                 side: const BorderSide(color: Colors.redAccent),

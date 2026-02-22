@@ -1,10 +1,4 @@
-enum ManagerRole {
-  exDriver,
-  businessAdmin,
-  bureaucrat,
-  exEngineer,
-  noExperience,
-}
+enum ManagerRole { exDriver, businessAdmin, bureaucrat, exEngineer }
 
 extension ManagerRoleExtension on ManagerRole {
   String get title {
@@ -17,8 +11,6 @@ extension ManagerRoleExtension on ManagerRole {
         return "Bureaucrat";
       case ManagerRole.exEngineer:
         return "Ex-Engineer";
-      case ManagerRole.noExperience:
-        return "No Experience";
     }
   }
 
@@ -32,38 +24,32 @@ extension ManagerRoleExtension on ManagerRole {
         return "Master of rules and politics.";
       case ManagerRole.exEngineer:
         return "Technical excellence is the only way.";
-      case ManagerRole.noExperience:
-        return "A fresh perspective on the sport.";
     }
   }
 
   String get buffText {
     switch (this) {
       case ManagerRole.exDriver:
-        return "(+) Technical bonus in sessions";
+        return "(+) +2% race pace, +10 morale during race";
       case ManagerRole.businessAdmin:
-        return "(+) Better financial deals & sponsors";
+        return "(+) +15% sponsor deals, -10% facility costs";
       case ManagerRole.bureaucrat:
-        return "(+) Cheaper personnel contracts";
+        return "(+) -10% facility costs, +1 academy slot/level";
       case ManagerRole.exEngineer:
-        return "(+) Faster car setup & R&D";
-      case ManagerRole.noExperience:
-        return "(+) Balanced approach";
+        return "(+) 2 simultaneous upgrades, -10% tyre wear";
     }
   }
 
   String get debuffText {
     switch (this) {
       case ManagerRole.exDriver:
-        return "(-) Slower improvement in management stats";
+        return "(-) +20% driver salary, +5% crash risk";
       case ManagerRole.businessAdmin:
-        return "(-) High driver fatigue rate";
+        return "(-) -2% race pace, morale loss on sponsor fail";
       case ManagerRole.bureaucrat:
-        return "(-) Poor team harmony & rivalries";
+        return "(-) 2-week part upgrade cooldown";
       case ManagerRole.exEngineer:
-        return "(-) Drivers gain less XP";
-      case ManagerRole.noExperience:
-        return "(-) No specialized bonuses";
+        return "(-) -5% driver XP, double upgrade cost";
     }
   }
 
@@ -71,33 +57,26 @@ extension ManagerRoleExtension on ManagerRole {
     switch (this) {
       case ManagerRole.exDriver:
         return [
-          "Technical bonus in racing sessions",
-          "Better driver feedback accuracy",
-          "Respect from pit crew",
+          "+5 driver feedback for setup",
+          "+2% driver race pace",
+          "+10 driver morale during race",
+          "Unlocks Risky Driver Style",
         ];
       case ManagerRole.businessAdmin:
         return [
-          "Higher sponsor payouts (+15%)",
-          "Reduced interest on loans",
-          "Cheaper facility upgrades",
+          "+15% better financial sponsorship deals",
+          "-10% facility upgrade costs",
         ];
       case ManagerRole.bureaucrat:
         return [
-          "Lower personnel salary demands",
-          "Easier rule changes approval",
-          "Political influence in paddock",
+          "-10% facility purchase and upgrade costs",
+          "+1 extra youth academy driver per level",
         ];
       case ManagerRole.exEngineer:
         return [
-          "Faster car development (R&D)",
-          "Improved car reliability",
-          "Precise wind tunnel data",
-        ];
-      case ManagerRole.noExperience:
-        return [
-          "Maximum growth potential",
-          "No pre-existing rivalries",
-          "Balanced leadership style",
+          "Can upgrade 2 car parts simultaneously",
+          "-10% tyre wear",
+          "+5% Qualifying success probability",
         ];
     }
   }
@@ -106,34 +85,18 @@ extension ManagerRoleExtension on ManagerRole {
     switch (this) {
       case ManagerRole.exDriver:
         return [
-          "Slow management skill progression",
-          "Higher salary expectation",
-          "Aggressive strategy bias",
+          "Drivers salary is 20% higher",
+          "+5% higher risk of race crashes",
         ];
       case ManagerRole.businessAdmin:
         return [
-          "Strict focus on profits vs performance",
-          "High driver pressure/fatigue",
-          "Personnel feel undervalued",
+          "-2% driver race pace",
+          "-10% driver morale if sponsor goals fail",
         ];
       case ManagerRole.bureaucrat:
-        return [
-          "Slow decision making",
-          "Poor team harmony",
-          "Bureaucratic overhead",
-        ];
+        return ["Car part upgrade cooldown is 2 weeks (not 1)"];
       case ManagerRole.exEngineer:
-        return [
-          "Difficulty managing driver egos",
-          "Drivers gain experience slower",
-          "Perfectionism delays parts",
-        ];
-      case ManagerRole.noExperience:
-        return [
-          "No starting bonuses",
-          "Lower initial reputation",
-          "Learning curve for telemetry",
-        ];
+        return ["-5% driver XP gain", "Car part upgrades cost double"];
     }
   }
 }
@@ -162,8 +125,8 @@ class ManagerProfile {
   Map<String, dynamic> toMap() {
     return {
       'uid': uid,
-      'name': name,
-      'surname': surname,
+      'firstName': name,
+      'lastName': surname,
       'country': country,
       'birthDate': birthDate.toIso8601String(),
       'role': role.name,
@@ -173,18 +136,41 @@ class ManagerProfile {
   }
 
   factory ManagerProfile.fromMap(Map<String, dynamic> map) {
+    // Robust role parsing
+    final rawRole = map['role'] ?? map['backgroundId'] ?? '';
+    ManagerRole parsedRole;
+    switch (rawRole.toString().replaceAll('-', '_').toLowerCase()) {
+      case 'ex_driver':
+      case 'exdriver':
+        parsedRole = ManagerRole.exDriver;
+        break;
+      case 'business':
+      case 'business_admin':
+      case 'businessadmin':
+        parsedRole = ManagerRole.businessAdmin;
+        break;
+      case 'bureaucrat':
+        parsedRole = ManagerRole.bureaucrat;
+        break;
+      case 'engineer':
+      case 'ex_engineer':
+      case 'exengineer':
+        parsedRole = ManagerRole.exEngineer;
+        break;
+      default:
+        parsedRole =
+            ManagerRole.exDriver; // Default to ex-driver as per modern rules
+    }
+
     return ManagerProfile(
       uid: map['uid'] ?? '',
-      name: map['firstName'] ?? '',
-      surname: map['lastName'] ?? '',
-      country: map['nationality'] ?? 'Unknown',
+      name: map['firstName'] ?? map['name'] ?? '',
+      surname: map['lastName'] ?? map['surname'] ?? '',
+      country: map['nationality'] ?? map['country'] ?? 'Unknown',
       birthDate: map['birthDate'] != null
           ? DateTime.parse(map['birthDate'])
           : DateTime(2000),
-      role: ManagerRole.values.firstWhere(
-        (e) => e.name == map['role'],
-        orElse: () => ManagerRole.noExperience,
-      ),
+      role: parsedRole,
       reputation: map['reputation'] ?? 0,
       trophyCase: List<String>.from(map['trophyCase'] ?? []),
     );

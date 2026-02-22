@@ -1,4 +1,5 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
+import '../models/user_models.dart';
 
 class CarService {
   static final CarService _instance = CarService._internal();
@@ -7,16 +8,15 @@ class CarService {
 
   final FirebaseFirestore _db = FirebaseFirestore.instance;
 
-  /// Gets the cost for upgrading a part from currentLevel to currentLevel + 1
-  int getUpgradeCost(int currentLevel) {
+  /// Gets the cost for upgrading a part from currentLevel to currentLevel + 1.
+  /// Ex-Engineer pays double.
+  int getUpgradeCost(int currentLevel, {ManagerRole? role}) {
     // Fibonacci sequence for multiplier: 1, 1, 2, 3, 5, 8, 13, 21...
-    // Level 1 -> 2: multiplier F(1) = 1
-    // Level 2 -> 3: multiplier F(2) = 1
-    // Level 3 -> 4: multiplier F(3) = 2
-    // ...
-    // Using simple fib computation
     int n = currentLevel;
-    if (n <= 2) return 100000; // $100k for initial levels
+    if (n <= 2) {
+      final base = 100000;
+      return role == ManagerRole.exEngineer ? base * 2 : base;
+    }
 
     int a = 1;
     int b = 1;
@@ -26,7 +26,8 @@ class CarService {
       b = temp;
     }
 
-    return b * 100000; // Base cost $100k * fib multiplier
+    final base = b * 100000;
+    return role == ManagerRole.exEngineer ? base * 2 : base;
   }
 
   Future<void> upgradePart({
@@ -35,12 +36,13 @@ class CarService {
     required int carIndex,
     required int currentLevel,
     required int currentBudget,
+    ManagerRole? role,
   }) async {
     if (currentLevel >= 20) {
       throw Exception("Part is already at maximum level (20)");
     }
 
-    final cost = getUpgradeCost(currentLevel);
+    final cost = getUpgradeCost(currentLevel, role: role);
 
     if (currentBudget < cost) {
       throw Exception("Insufficient funds. Need \$${cost ~/ 1000}k");
@@ -60,8 +62,21 @@ class CarService {
 
       // Check weekly upgrade limit
       final weekStatus = Map<String, dynamic>.from(data['weekStatus'] ?? {});
-      if (weekStatus['hasUpgradedThisWeek'] == true) {
-        throw Exception("Only 1 upgrade allowed per race week.");
+      final int upgradeCount = (weekStatus['upgradesThisWeek'] as int?) ?? 0;
+
+      // Bureaucrat: 2-week cooldown — check if cooldownWeeksLeft > 0
+      final int cooldownLeft =
+          (weekStatus['upgradeCooldownWeeksLeft'] as int?) ?? 0;
+      if (role == ManagerRole.bureaucrat && cooldownLeft > 0) {
+        throw Exception(
+          "Bureaucrat cooldown: $cooldownLeft week(s) remaining.",
+        );
+      }
+
+      // Ex-Engineer can upgrade 2 parts per week, others only 1
+      final int maxUpgrades = role == ManagerRole.exEngineer ? 2 : 1;
+      if (upgradeCount >= maxUpgrades) {
+        throw Exception("Upgrade limit reached ($maxUpgrades per week).");
       }
 
       // Initialize carStats structure if missing or old
@@ -94,7 +109,13 @@ class CarService {
       carStats[carKey] = targetCarStats;
 
       // Update week status
-      weekStatus['hasUpgradedThisWeek'] = true;
+      weekStatus['upgradesThisWeek'] = upgradeCount + 1;
+      weekStatus['hasUpgradedThisWeek'] = true; // backward compat
+
+      // Bureaucrat: set 2-week cooldown after upgrading
+      if (role == ManagerRole.bureaucrat) {
+        weekStatus['upgradeCooldownWeeksLeft'] = 2;
+      }
 
       transaction.update(teamRef, {
         'budget': budget - cost,

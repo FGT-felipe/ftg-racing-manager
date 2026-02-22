@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:ftg_racing_manager/l10n/app_localizations.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import '../models/core_models.dart';
+import '../models/user_models.dart';
 import '../models/domain/domain_models.dart';
 import '../services/season_service.dart';
 import '../services/universe_service.dart';
@@ -21,9 +23,9 @@ class _StandingsScreenState extends State<StandingsScreen> {
   void _initializeSelection(GameUniverse universe, String? userTeamId) {
     if (_initialized) return;
 
-    // Default: try to find user's league
+    // Default: try to find user's league (only if it's not tier 3)
     if (userTeamId != null) {
-      for (final league in universe.leagues) {
+      for (final league in universe.leagues.where((l) => l.tier != 3)) {
         if (league.teams.any((t) => t.id == userTeamId)) {
           _selectedLeagueId = league.id;
           _initialized = true;
@@ -32,10 +34,10 @@ class _StandingsScreenState extends State<StandingsScreen> {
       }
     }
 
-    // Fallback: first league
-    if (universe.leagues.isNotEmpty) {
-      final firstLeague = universe.leagues.first;
-      _selectedLeagueId = firstLeague.id;
+    // Fallback: first non-tier 3 league
+    final visibleLeagues = universe.leagues.where((l) => l.tier != 3).toList();
+    if (visibleLeagues.isNotEmpty) {
+      _selectedLeagueId = visibleLeagues.first.id;
     }
     _initialized = true;
   }
@@ -72,24 +74,32 @@ class _StandingsScreenState extends State<StandingsScreen> {
             // Initialize selection if needed
             _initializeSelection(universe, userTeamId);
 
-            // Get selected objects
+            // Get selected objects from filtered list
+            final displayedLeagues = universe.leagues
+                .where((l) => l.tier != 3)
+                .toList();
+
             FtgLeague? selectedLeague;
             if (_selectedLeagueId != null) {
               try {
-                selectedLeague = universe.leagues.firstWhere(
+                selectedLeague = displayedLeagues.firstWhere(
                   (l) => l.id == _selectedLeagueId,
                 );
               } catch (_) {}
             }
 
-            if (selectedLeague == null && universe.leagues.isNotEmpty) {
-              selectedLeague = universe.leagues.first;
+            if (selectedLeague == null && displayedLeagues.isNotEmpty) {
+              selectedLeague = displayedLeagues.first;
               _selectedLeagueId = selectedLeague.id;
             }
 
             if (selectedLeague == null) {
-              return const Center(child: Text("No leagues available."));
+              return Center(
+                child: Text(AppLocalizations.of(context).noTeamsAvailable),
+              );
             }
+
+            final l10n = AppLocalizations.of(context);
 
             return Padding(
               padding: const EdgeInsets.all(16.0),
@@ -112,7 +122,8 @@ class _StandingsScreenState extends State<StandingsScreen> {
                                 final seasonYear =
                                     seasonSnapshot.data?.year ?? 2026;
                                 return Text(
-                                  "STANDINGS SEASON $seasonYear".toUpperCase(),
+                                  "${l10n.standingsTitle} $seasonYear"
+                                      .toUpperCase(),
                                   style: GoogleFonts.poppins(
                                     fontSize: 24,
                                     fontWeight: FontWeight.w900,
@@ -121,11 +132,9 @@ class _StandingsScreenState extends State<StandingsScreen> {
                                 );
                               },
                             ),
-                            // Current League/Division info if desired, or just title
                           ],
                         ),
                       ),
-                      // DROPDOWNS
                       // LEAGUE DROPDOWN
                       Container(
                         padding: const EdgeInsets.symmetric(horizontal: 12),
@@ -141,7 +150,7 @@ class _StandingsScreenState extends State<StandingsScreen> {
                             dropdownColor: Theme.of(
                               context,
                             ).colorScheme.surface,
-                            items: universe.leagues.map((league) {
+                            items: displayedLeagues.map((league) {
                               return DropdownMenuItem(
                                 value: league.id,
                                 child: Text(
@@ -166,39 +175,56 @@ class _StandingsScreenState extends State<StandingsScreen> {
 
                   // MAIN CONTENT
                   Expanded(
-                    child: Card(
-                      color: Colors.black,
-                      margin: EdgeInsets.zero,
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(12),
+                    child: Container(
+                      decoration: BoxDecoration(
+                        color: const Color(0xFF121212),
+                        borderRadius: BorderRadius.circular(16),
+                        gradient: const LinearGradient(
+                          begin: Alignment.topLeft,
+                          end: Alignment.bottomRight,
+                          colors: [Color(0xFF1E1E1E), Color(0xFF0A0A0A)],
+                        ),
+                        border: Border.all(
+                          color: Colors.white.withValues(alpha: 0.08),
+                        ),
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.black.withValues(alpha: 0.4),
+                            blurRadius: 24,
+                            offset: const Offset(0, 12),
+                          ),
+                        ],
                       ),
                       child: DefaultTabController(
                         length: 3,
                         child: Column(
                           children: [
                             TabBar(
-                              indicatorColor: Theme.of(
-                                context,
-                              ).colorScheme.secondary,
-                              labelColor: Theme.of(
-                                context,
-                              ).colorScheme.secondary,
-                              unselectedLabelColor: Theme.of(
-                                context,
-                              ).colorScheme.onSurface.withValues(alpha: 0.5),
+                              indicatorColor: const Color(0xFF00C853),
+                              labelColor: const Color(0xFF00C853),
+                              unselectedLabelColor: Colors.white.withValues(
+                                alpha: 0.3,
+                              ),
                               indicatorSize: TabBarIndicatorSize.label,
-                              tabs: const [
-                                Tab(text: "DRIVERS"),
-                                Tab(text: "CONSTRUCTORS"),
-                                Tab(text: "LAST RACE"),
+                              labelStyle: GoogleFonts.poppins(
+                                fontSize: 13,
+                                fontWeight: FontWeight.bold,
+                                letterSpacing: 1.2,
+                              ),
+                              tabs: [
+                                Tab(text: l10n.navDrivers.toUpperCase()),
+                                Tab(
+                                  text: l10n.standingsConstructorTitle
+                                      .split(' ')[0]
+                                      .toUpperCase(),
+                                ),
+                                Tab(text: l10n.raceResults.toUpperCase()),
                               ],
                             ),
                             Divider(
                               height: 1,
                               thickness: 1,
-                              color: Theme.of(
-                                context,
-                              ).colorScheme.onSurface.withValues(alpha: 0.1),
+                              color: Colors.white.withValues(alpha: 0.05),
                             ),
                             Expanded(
                               child: TabBarView(
@@ -242,7 +268,7 @@ class _DriversStandingsTab extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     if (league.teams.isEmpty) {
-      return const Center(child: Text("No teams in this league."));
+      return Center(child: Text(AppLocalizations.of(context).noTeamsAvailable));
     }
 
     final drivers = List<Driver>.from(league.drivers);
@@ -260,9 +286,20 @@ class _DriversStandingsTab extends StatelessWidget {
       ranks[drivers[i].id] = i + 1;
     }
 
+    final l10n = AppLocalizations.of(context);
+
     return _StandingsTable(
       flexValues: const [1, 4, 4, 1, 1, 1, 1, 2],
-      columns: const ["Pos", "Driver", "Team", "R", "W", "P", "Pl", "Pts"],
+      columns: [
+        l10n.standingsPos,
+        l10n.standingsDriver,
+        l10n.standingsTeam,
+        l10n.rHeader,
+        l10n.wHeader,
+        l10n.pHeader,
+        "Pl", // Pole
+        l10n.standingsPoints,
+      ],
       highlightIndices: drivers
           .asMap()
           .entries
@@ -287,21 +324,90 @@ class _DriversStandingsTab extends StatelessWidget {
   }
 }
 
-class _ConstructorsStandingsTab extends StatelessWidget {
+class _ConstructorsStandingsTab extends StatefulWidget {
   final FtgLeague league;
   final String? highlightTeamId;
 
   const _ConstructorsStandingsTab({required this.league, this.highlightTeamId});
 
   @override
+  State<_ConstructorsStandingsTab> createState() =>
+      _ConstructorsStandingsTabState();
+}
+
+class _ConstructorsStandingsTabState extends State<_ConstructorsStandingsTab> {
+  final Map<String, ManagerProfile> _managersMap = {};
+
+  @override
+  void initState() {
+    super.initState();
+    _fetchManagers();
+  }
+
+  Future<void> _fetchManagers() async {
+    final futures = <Future<void>>[];
+    for (var team in widget.league.teams) {
+      futures.add(
+        FirebaseFirestore.instance.collection('teams').doc(team.id).get().then((
+          teamDoc,
+        ) {
+          if (teamDoc.exists) {
+            final managerId = teamDoc.data()?['managerId'] as String?;
+            if (managerId != null && managerId.isNotEmpty) {
+              return FirebaseFirestore.instance
+                  .collection('managers')
+                  .doc(managerId)
+                  .get()
+                  .then((managerDoc) {
+                    if (managerDoc.exists && mounted) {
+                      setState(() {
+                        _managersMap[team.id] = ManagerProfile.fromMap(
+                          managerDoc.data()!,
+                        );
+                      });
+                    }
+                  });
+            }
+          }
+        }),
+      );
+    }
+    await Future.wait(futures);
+  }
+
+  String _getFlagEmoji(String country) {
+    final upperCountry = country.toUpperCase();
+    const flags = {
+      'BRAZIL': '🇧🇷',
+      'ARGENTINA': '🇦🇷',
+      'COLOMBIA': '🇨🇴',
+      'MEXICO': '🇲🇽',
+      'URUGUAY': '🇺🇾',
+      'CHILE': '🇨🇱',
+      'USA': '🇺🇸',
+      'UNITED STATES': '🇺🇸',
+      'ITALY': '🇮🇹',
+      'SPAIN': '🇪🇸',
+      'FRANCE': '🇫🇷',
+      'GERMANY': '🇩🇪',
+      'UNITED KINGDOM': '🇬🇧',
+      'UK': '🇬🇧',
+      'JAPAN': '🇯🇵',
+      'NETHERLANDS': '🇳🇱',
+      'CANADA': '🇨🇦',
+      'AUSTRALIA': '🇦🇺',
+    };
+    return flags[upperCountry] ?? '🏁';
+  }
+
+  @override
   Widget build(BuildContext context) {
-    if (league.teams.isEmpty) {
-      return const Center(child: Text("No teams in this league."));
+    if (widget.league.teams.isEmpty) {
+      return Center(child: Text(AppLocalizations.of(context).noTeamsAvailable));
     }
 
-    final teams = List<Team>.from(league.teams);
+    final teams = List<Team>.from(widget.league.teams);
 
-    // Sort by seasonPoints DESC (primary) then Name ASC (secondary tie-breaker)
     teams.sort((a, b) {
       if (b.seasonPoints != a.seasonPoints) {
         return b.seasonPoints.compareTo(a.seasonPoints);
@@ -314,28 +420,59 @@ class _ConstructorsStandingsTab extends StatelessWidget {
       ranks[teams[i].id] = i + 1;
     }
 
+    final l10n = AppLocalizations.of(context);
+
     return _StandingsTable(
-      flexValues: const [1, 6, 1, 1, 1, 1, 2],
-      columns: const ["Pos", "Team", "R", "W", "P", "Pl", "Pts"],
+      flexValues: const [1, 7, 1, 1, 1, 1, 2],
+      columns: [
+        l10n.standingsPos,
+        l10n.standingsTeam,
+        l10n.rHeader,
+        l10n.wHeader,
+        l10n.pHeader,
+        "Pl",
+        l10n.standingsPoints,
+      ],
       highlightIndices: teams
           .asMap()
           .entries
-          .where((e) => e.value.id == highlightTeamId)
+          .where((e) => e.value.id == widget.highlightTeamId)
           .map((e) => e.key)
           .toList(),
-      rows: teams
-          .map(
-            (t) => <String>[
-              "#${ranks[t.id] ?? '-'}",
-              t.name,
-              "${t.seasonRaces}",
-              "${t.seasonWins}",
-              "${t.seasonPodiums}",
-              "${t.seasonPoles}",
-              "${t.seasonPoints}",
+      rows: teams.map((t) {
+        final manager = _managersMap[t.id];
+        final bool hasManager = manager != null;
+
+        return <dynamic>[
+          "#${ranks[t.id] ?? '-'}",
+          TextSpan(
+            children: [
+              TextSpan(
+                text: t.name,
+                style: GoogleFonts.inter(
+                  fontWeight: FontWeight.w700,
+                  fontSize: 12,
+                ),
+              ),
+              if (hasManager)
+                TextSpan(
+                  text:
+                      '  (${_getFlagEmoji(manager.country)} ${manager.name} ${manager.surname})',
+                  style: GoogleFonts.inter(
+                    fontWeight: FontWeight.w400,
+                    fontSize: 11,
+                    color: Colors.white.withValues(alpha: 0.35),
+                  ),
+                ),
             ],
-          )
-          .toList(),
+          ),
+          "${t.seasonRaces}",
+          "${t.seasonWins}",
+          "${t.seasonPodiums}",
+          "${t.seasonPoles}",
+          "${t.seasonPoints}",
+        ];
+      }).toList(),
     );
   }
 }
@@ -348,15 +485,6 @@ class _LastRaceStandingsTab extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // If we only have teamId, we need team name for highlighting because Race results (legacy) used teamName.
-    // Ideally we should use ID. Let's try to get team name if possible, or just skip highlight if matching by name is flaky.
-    // Actually the previous code used `playerTeamName`.
-    // I can fetch user's team name via a future if needed, or pass it down.
-    // For now, let's see if we can highlight by ID or if we need Name.
-    // Race results structure: `{'teamName': '...', 'driverName': '...'}`. It stores names! Ideally it should store IDs.
-    // If it stores names, we need the user's team name to highlight.
-    // I'll fetch it quickly if `highlightTeamId` is present.
-
     return FutureBuilder<DocumentSnapshot>(
       future: highlightTeamId != null
           ? FirebaseFirestore.instance
@@ -379,15 +507,17 @@ class _LastRaceStandingsTab extends StatelessWidget {
             }
             final season = snapshot.data!;
 
-            // Find last completed race
             final lastRaceIndex = season.calendar.lastIndexWhere(
               (r) => r.isCompleted,
             );
             if (lastRaceIndex == -1) {
-              return const Center(
+              return Center(
                 child: Text(
-                  "The season hasn't started yet.",
-                  style: TextStyle(fontSize: 16, fontStyle: FontStyle.italic),
+                  AppLocalizations.of(context).noDataAvailableYet,
+                  style: const TextStyle(
+                    fontSize: 16,
+                    fontStyle: FontStyle.italic,
+                  ),
                 ),
               );
             }
@@ -407,38 +537,24 @@ class _LastRaceStandingsTab extends StatelessWidget {
                 final raceData =
                     raceSnapshot.data!.data() as Map<String, dynamic>?;
                 if (raceData == null || raceData['qualifyingResults'] == null) {
-                  return const Center(
-                    child: Text("No data available for the last race."),
+                  return Center(
+                    child: Text(
+                      AppLocalizations.of(context).noDataAvailableYet,
+                    ),
                   );
                 }
-
-                // Try to get race results first, fall back to qualifying results (which is weird but was existing logic partially)
-                // Existing logic: `final results = List<Map<String, dynamic>>.from(raceData['qualifyingResults'] ?? []);`
-                // Wait, results usually come from `results` map in `raceData` which is `position -> driverId`?
-                // `SeasonService.saveRaceResults` saves `results` as `Map<String, int> finalPositions`.
-                // It does NOT save a list with names.
-                // However, `qualifyingResults` IS a list of maps with names.
-                // The previous code displayed `qualifyingResults` as RACE RESULTS?
-                // "RESULTS: ${lastRaceEvent.trackName}" was the title.
-                // And it calculated points [25, 18, ...] based on the list index.
-                // This implies it was treating the qualifying list as race result, OR the race result structure was misunderstood.
-                // Given `saveRaceResults` saves `results` (map of ID->Pos), showing `qualifyingResults` (list of maps) as final results is actually WRONG if race happened.
-                // BUT, looking at `applyRaceResults` (not shown here but implied), maybe `qualifyingResults` IS updated or `results` is used.
-                // Re-reading `_LastRaceStandingsTab` original code:
-                // `final results = List<Map<String, dynamic>>.from(raceData['qualifyingResults'] ?? []);`
-                // It STRICTLY used qualifying results. This might have been a placeholder or "Qualifying Results" tab labeled as "Last Race"?
-                // Or maybe existing simulation writes to `qualifyingResults`.
-                // I will KEEP the existing logic to avoid breaking it, assuming `qualifyingResults` contains what we want to show.
 
                 final results = List<Map<String, dynamic>>.from(
                   raceData['qualifyingResults'] ?? [],
                 );
 
+                final l10n = AppLocalizations.of(context);
+
                 return ListView(
                   padding: const EdgeInsets.all(16),
                   children: [
                     Text(
-                      "RESULTS: ${lastRaceEvent.trackName}",
+                      "${l10n.raceResults}: ${lastRaceEvent.trackName}",
                       style: TextStyle(
                         fontWeight: FontWeight.bold,
                         fontSize: 16,
@@ -446,17 +562,21 @@ class _LastRaceStandingsTab extends StatelessWidget {
                       ),
                     ),
                     const SizedBox(height: 16),
-                    const SizedBox(height: 16),
-                    const Text(
-                      "DRIVER RESULTS",
-                      style: TextStyle(
+                    Text(
+                      l10n.raceDayRacePositions.toUpperCase(),
+                      style: const TextStyle(
                         fontWeight: FontWeight.bold,
                         fontSize: 13,
                       ),
                     ),
                     _StandingsTable(
                       flexValues: const [1, 4, 4, 2],
-                      columns: const ["Pos", "Driver", "Team", "Pts"],
+                      columns: [
+                        l10n.standingsPos,
+                        l10n.standingsDriver,
+                        l10n.standingsTeam,
+                        l10n.standingsPoints,
+                      ],
                       highlightIndices: results
                           .take(10)
                           .toList()
@@ -470,7 +590,6 @@ class _LastRaceStandingsTab extends StatelessWidget {
                           .map((e) => e.key)
                           .toList(),
                       rows: results.take(10).toList().asMap().entries.map((e) {
-                        final res = e.value;
                         final pos = e.key + 1;
                         final points = [
                           25,
@@ -486,16 +605,16 @@ class _LastRaceStandingsTab extends StatelessWidget {
                         ][e.key];
                         return <String>[
                           "$pos",
-                          res['driverName'] ?? 'Unknown',
-                          res['teamName'] ?? 'Unknown',
+                          e.value['driverName'] ?? 'Unknown',
+                          e.value['teamName'] ?? 'Unknown',
                           "+$points",
                         ];
                       }).toList(),
                     ),
                     const SizedBox(height: 24),
-                    const Text(
-                      "CONSTRUCTOR RESULTS",
-                      style: TextStyle(
+                    Text(
+                      l10n.standingsConstructorTitle.toUpperCase(),
+                      style: const TextStyle(
                         fontWeight: FontWeight.bold,
                         fontSize: 13,
                       ),
@@ -517,7 +636,11 @@ class _LastRaceStandingsTab extends StatelessWidget {
 
                         return _StandingsTable(
                           flexValues: const [1, 7, 2],
-                          columns: const ["Pos", "Team", "Pts"],
+                          columns: [
+                            l10n.standingsPos,
+                            l10n.standingsTeam,
+                            l10n.standingsPoints,
+                          ],
                           highlightIndices: constructorResults
                               .asMap()
                               .entries
@@ -550,7 +673,7 @@ class _LastRaceStandingsTab extends StatelessWidget {
 
 class _StandingsTable extends StatelessWidget {
   final List<String> columns;
-  final List<List<String>> rows;
+  final List<List<dynamic>> rows;
   final List<int> flexValues;
   final List<int> highlightIndices;
 
@@ -563,80 +686,121 @@ class _StandingsTable extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return SingleChildScrollView(
-      padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 16),
-      child: Column(
-        children: [
-          // HEADER ROW
-          Row(
+    return Column(
+      children: [
+        // FIXED HEADER
+        Container(
+          padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 20),
+          decoration: BoxDecoration(
+            color: Colors.white.withValues(alpha: 0.03),
+            border: Border(
+              bottom: BorderSide(color: Colors.white.withValues(alpha: 0.05)),
+            ),
+          ),
+          child: Row(
             children: List.generate(columns.length, (i) {
               return Expanded(
                 flex: flexValues[i],
                 child: Text(
                   columns[i].toUpperCase(),
-                  style: TextStyle(
-                    fontWeight: FontWeight.bold,
-                    fontSize: 12,
-                    color: Theme.of(context).colorScheme.secondary,
+                  style: GoogleFonts.poppins(
+                    fontWeight: FontWeight.w900,
+                    fontSize: 10,
+                    letterSpacing: 1.1,
+                    color: Colors.white.withValues(alpha: 0.4),
                   ),
                 ),
               );
             }),
           ),
-          const SizedBox(height: 12),
-          // DATA ROWS
-          ...rows.asMap().entries.map((entry) {
-            final index = entry.key;
-            final row = entry.value;
-            final isHighlighted = highlightIndices.contains(index);
+        ),
+        // SCROLLABLE DATA ROWS
+        Expanded(
+          child: Scrollbar(
+            thumbVisibility: true,
+            child: ListView.builder(
+              padding: const EdgeInsets.symmetric(vertical: 0),
+              itemCount: rows.length,
+              itemBuilder: (context, index) {
+                final row = rows[index];
+                final isHighlighted = highlightIndices.contains(index);
 
-            return Container(
-              decoration: BoxDecoration(
-                color: isHighlighted
-                    ? Theme.of(
-                        context,
-                      ).colorScheme.secondary.withValues(alpha: 0.15)
-                    : null,
-                border: Border(
-                  left: isHighlighted
-                      ? BorderSide(
-                          color: Theme.of(context).colorScheme.secondary,
-                          width: 4,
-                        )
-                      : BorderSide.none,
-                  bottom: const BorderSide(color: Color(0xFF303037), width: 1),
-                ),
-              ),
-              child: Container(
-                padding: const EdgeInsets.symmetric(
-                  vertical: 12,
-                  horizontal: 4,
-                ),
-                child: Row(
-                  children: List.generate(row.length, (i) {
-                    return Expanded(
-                      flex: flexValues[i],
-                      child: Text(
-                        row[i],
-                        style: TextStyle(
-                          fontSize: 12,
-                          color: isHighlighted
-                              ? Theme.of(context).colorScheme.secondary
-                              : Colors.white,
-                          fontWeight: isHighlighted
-                              ? FontWeight.bold
-                              : FontWeight.normal,
-                        ),
-                        overflow: TextOverflow.ellipsis,
+                return Container(
+                  decoration: BoxDecoration(
+                    color: isHighlighted
+                        ? const Color(0xFF00C853).withValues(alpha: 0.1)
+                        : (index % 2 == 0
+                              ? Colors.transparent
+                              : Colors.white.withValues(alpha: 0.01)),
+                    border: Border(
+                      left: isHighlighted
+                          ? const BorderSide(color: Color(0xFF00C853), width: 4)
+                          : BorderSide.none,
+                      bottom: BorderSide(
+                        color: Colors.white.withValues(alpha: 0.05),
+                        width: 0.5,
                       ),
-                    );
-                  }),
-                ),
-              ),
-            );
-          }),
-        ],
-      ),
+                    ),
+                  ),
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(
+                      vertical: 14,
+                      horizontal: 20,
+                    ),
+                    child: Row(
+                      children: List.generate(row.length, (i) {
+                        final isPoints = i == row.length - 1;
+                        final isPos = i == 0;
+
+                        final textStyle = (isPoints || isPos)
+                            ? GoogleFonts.jetBrainsMono(
+                                fontSize: 12,
+                                color: isHighlighted
+                                    ? const Color(0xFF00C853)
+                                    : (isPos
+                                          ? Colors.white.withValues(alpha: 0.5)
+                                          : Colors.white.withValues(
+                                              alpha: 0.9,
+                                            )),
+                                fontWeight: isHighlighted || isPoints
+                                    ? FontWeight.w900
+                                    : FontWeight.w500,
+                              )
+                            : GoogleFonts.inter(
+                                fontSize: 12,
+                                color: isHighlighted
+                                    ? const Color(0xFF00C853)
+                                    : Colors.white.withValues(alpha: 0.9),
+                                fontWeight: isHighlighted
+                                    ? FontWeight.w900
+                                    : FontWeight.w500,
+                              );
+
+                        final content = row[i];
+
+                        return Expanded(
+                          flex: flexValues[i],
+                          child: content is InlineSpan
+                              ? Text.rich(
+                                  content,
+                                  style: textStyle,
+                                  overflow: TextOverflow.ellipsis,
+                                )
+                              : Text(
+                                  content.toString(),
+                                  style: textStyle,
+                                  overflow: TextOverflow.ellipsis,
+                                ),
+                        );
+                      }),
+                    ),
+                  ),
+                );
+              },
+            ),
+          ),
+        ),
+      ],
     );
   }
 }

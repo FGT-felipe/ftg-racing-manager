@@ -44,19 +44,7 @@ class DriverNameService {
     final lastNames = _lastNames[countryCode] ?? _defaultLastNames;
 
     final first = firstNames[_random.nextInt(firstNames.length)];
-
-    // 30% de probabilidad de usar dos apellidos para mayor variedad
-    final String last;
-    if (_random.nextInt(100) < 30 && lastNames.length >= 2) {
-      final idx1 = _random.nextInt(lastNames.length);
-      int idx2 = _random.nextInt(lastNames.length);
-      while (idx2 == idx1) {
-        idx2 = _random.nextInt(lastNames.length);
-      }
-      last = '${lastNames[idx1]} ${lastNames[idx2]}';
-    } else {
-      last = lastNames[_random.nextInt(lastNames.length)];
-    }
+    final last = lastNames[_random.nextInt(lastNames.length)];
 
     return '$first $last';
   }

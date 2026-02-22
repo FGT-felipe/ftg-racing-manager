@@ -1,17 +1,47 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import '../l10n/app_localizations.dart';
 import '../models/core_models.dart';
+import '../models/user_models.dart';
 import '../services/car_service.dart';
 import '../services/driver_assignment_service.dart';
 import '../widgets/car_schematic_widget.dart';
 import '../widgets/common/instruction_card.dart';
 
-class EngineeringScreen extends StatelessWidget {
+class EngineeringScreen extends StatefulWidget {
   final String teamId;
 
   const EngineeringScreen({super.key, required this.teamId});
+
+  @override
+  State<EngineeringScreen> createState() => _EngineeringScreenState();
+}
+
+class _EngineeringScreenState extends State<EngineeringScreen> {
+  ManagerRole? _managerRole;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadManagerRole();
+  }
+
+  Future<void> _loadManagerRole() async {
+    final uid = FirebaseAuth.instance.currentUser?.uid;
+    if (uid == null) return;
+    final doc = await FirebaseFirestore.instance
+        .collection('managers')
+        .doc(uid)
+        .get();
+    if (doc.exists && mounted) {
+      setState(() {
+        final profile = ManagerProfile.fromMap(doc.data()!);
+        _managerRole = profile.role;
+      });
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -20,7 +50,7 @@ class EngineeringScreen extends StatelessWidget {
     return StreamBuilder<DocumentSnapshot>(
       stream: FirebaseFirestore.instance
           .collection('teams')
-          .doc(teamId)
+          .doc(widget.teamId)
           .snapshots(),
       builder: (context, teamSnapshot) {
         if (teamSnapshot.hasError) {
@@ -33,10 +63,21 @@ class EngineeringScreen extends StatelessWidget {
         final data = teamSnapshot.data!.data() as Map<String, dynamic>;
         final team = Team.fromMap(data);
         final budgetM = (team.budget / 1000000).toStringAsFixed(1);
-        final bool hasUpgraded = team.weekStatus['hasUpgradedThisWeek'] == true;
+
+        // Ex-Engineer can upgrade 2/week, else 1
+        final int upgradeCount =
+            (team.weekStatus['upgradesThisWeek'] as int?) ?? 0;
+        final int maxUpgrades = _managerRole == ManagerRole.exEngineer ? 2 : 1;
+        final bool hasUpgraded = upgradeCount >= maxUpgrades;
+
+        // Bureaucrat cooldown
+        final int cooldownLeft =
+            (team.weekStatus['upgradeCooldownWeeksLeft'] as int?) ?? 0;
+        final bool isCooldown =
+            _managerRole == ManagerRole.bureaucrat && cooldownLeft > 0;
 
         return FutureBuilder<List<Driver>>(
-          future: DriverAssignmentService().getDriversByTeam(teamId),
+          future: DriverAssignmentService().getDriversByTeam(widget.teamId),
           builder: (context, driverSnapshot) {
             final drivers = driverSnapshot.data ?? [];
             final driverA = drivers.where((d) => d.carIndex == 0).firstOrNull;
@@ -50,7 +91,7 @@ class EngineeringScreen extends StatelessWidget {
                   // R&D Lab Info Header (Shared Instruction Card)
                   InstructionCard(
                     icon: Icons.biotech_rounded,
-                    title: "GARAGE",
+                    title: l10n.garageTitle.toUpperCase(),
                     description: l10n.engineeringDescription,
                     extraContent: Column(
                       children: [
@@ -99,7 +140,7 @@ class EngineeringScreen extends StatelessWidget {
                           const SizedBox(width: 12),
                           Expanded(
                             child: Text(
-                              "Weekly upgrade limit reached. Wait for the next race to upgrade again.",
+                              l10n.upgradeLimitReached,
                               style: TextStyle(
                                 color: Theme.of(context).colorScheme.onSurface,
                                 fontSize: 13,
@@ -115,7 +156,7 @@ class EngineeringScreen extends StatelessWidget {
                     children: [
                       Expanded(
                         child: _CarUpgradesColumn(
-                          carLabel: "CAR A",
+                          carLabel: l10n.carLabelA,
                           driverName: driverA?.name ?? l10n.noDriverAssigned,
                           carIndex: 0,
                           stats:
@@ -128,13 +169,14 @@ class EngineeringScreen extends StatelessWidget {
                               },
                           teamId: team.id,
                           currentBudget: team.budget,
-                          hasUpgradedThisWeek: hasUpgraded,
+                          hasUpgradedThisWeek: hasUpgraded || isCooldown,
+                          managerRole: _managerRole,
                         ),
                       ),
                       const SizedBox(width: 20),
                       Expanded(
                         child: _CarUpgradesColumn(
-                          carLabel: "CAR B",
+                          carLabel: l10n.carLabelB,
                           driverName: driverB?.name ?? l10n.noDriverAssigned,
                           carIndex: 1,
                           stats:
@@ -147,7 +189,8 @@ class EngineeringScreen extends StatelessWidget {
                               },
                           teamId: team.id,
                           currentBudget: team.budget,
-                          hasUpgradedThisWeek: hasUpgraded,
+                          hasUpgradedThisWeek: hasUpgraded || isCooldown,
+                          managerRole: _managerRole,
                         ),
                       ),
                     ],
@@ -170,6 +213,7 @@ class _CarUpgradesColumn extends StatelessWidget {
   final String teamId;
   final int currentBudget;
   final bool hasUpgradedThisWeek;
+  final ManagerRole? managerRole;
 
   const _CarUpgradesColumn({
     required this.carLabel,
@@ -179,6 +223,7 @@ class _CarUpgradesColumn extends StatelessWidget {
     required this.teamId,
     required this.currentBudget,
     required this.hasUpgradedThisWeek,
+    this.managerRole,
   });
 
   @override
@@ -216,7 +261,7 @@ class _CarUpgradesColumn extends StatelessWidget {
         Center(
           child: CarSchematicWidget(
             stats: stats,
-            carLabel: "$carLabel PERFORMANCE",
+            carLabel: l10n.carPerformanceTitle(carLabel),
           ),
         ),
         const SizedBox(height: 20),
@@ -228,6 +273,7 @@ class _CarUpgradesColumn extends StatelessWidget {
           currentBudget: currentBudget,
           teamId: teamId,
           isDisabled: hasUpgradedThisWeek,
+          managerRole: managerRole,
         ),
         const SizedBox(height: 16),
         _UpgradeTile(
@@ -238,16 +284,18 @@ class _CarUpgradesColumn extends StatelessWidget {
           currentBudget: currentBudget,
           teamId: teamId,
           isDisabled: hasUpgradedThisWeek,
+          managerRole: managerRole,
         ),
         const SizedBox(height: 16),
         _UpgradeTile(
-          title: "Chassis",
+          title: l10n.chassisPart,
           partKey: 'chassis',
           carIndex: carIndex,
           level: stats['chassis'] ?? 1,
           currentBudget: currentBudget,
           teamId: teamId,
           isDisabled: hasUpgradedThisWeek,
+          managerRole: managerRole,
         ),
         const SizedBox(height: 16),
         _UpgradeTile(
@@ -258,6 +306,7 @@ class _CarUpgradesColumn extends StatelessWidget {
           currentBudget: currentBudget,
           teamId: teamId,
           isDisabled: hasUpgradedThisWeek,
+          managerRole: managerRole,
         ),
       ],
     );
@@ -272,6 +321,7 @@ class _UpgradeTile extends StatefulWidget {
   final int currentBudget;
   final String teamId;
   final bool isDisabled;
+  final ManagerRole? managerRole;
 
   const _UpgradeTile({
     required this.title,
@@ -281,6 +331,7 @@ class _UpgradeTile extends StatefulWidget {
     required this.currentBudget,
     required this.teamId,
     this.isDisabled = false,
+    this.managerRole,
   });
 
   @override
@@ -293,7 +344,10 @@ class _UpgradeTileState extends State<_UpgradeTile> {
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
-    final cost = CarService().getUpgradeCost(widget.level);
+    final cost = CarService().getUpgradeCost(
+      widget.level,
+      role: widget.managerRole,
+    );
     final canAfford = widget.currentBudget >= cost;
     final isMaxed = widget.level >= 20;
 
@@ -312,9 +366,23 @@ class _UpgradeTileState extends State<_UpgradeTile> {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: Theme.of(context).cardTheme.color,
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: Colors.white10),
+        border: Border.all(
+          color: Colors.white.withValues(alpha: 0.1),
+          width: 1,
+        ),
+        gradient: const LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [Color(0xFF1E1E1E), Color(0xFF0A0A0A)],
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.4),
+            blurRadius: 10,
+            offset: const Offset(0, 4),
+          ),
+        ],
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -378,6 +446,7 @@ class _UpgradeTileState extends State<_UpgradeTile> {
                               partKey: widget.partKey,
                               currentLevel: widget.level,
                               currentBudget: widget.currentBudget,
+                              role: widget.managerRole,
                             );
                           } catch (e) {
                             if (context.mounted) {

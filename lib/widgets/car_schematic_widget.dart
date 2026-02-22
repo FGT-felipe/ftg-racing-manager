@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../l10n/app_localizations.dart';
 
 class CarSchematicWidget extends StatelessWidget {
   final Map<String, int> stats;
@@ -47,13 +48,29 @@ class CarSchematicWidget extends StatelessWidget {
           ),
           const SizedBox(height: 16),
           // Stats Breakdown
-          _buildStatRow("POWER", "+$powerBoost%", Colors.orangeAccent),
+          _buildStatRow(
+            AppLocalizations.of(context).powerStatsLabel,
+            "+$powerBoost%",
+            Colors.orangeAccent,
+          ),
           const SizedBox(height: 8),
-          _buildStatRow("AERO", "+$corneringBoost%", Colors.cyanAccent),
+          _buildStatRow(
+            AppLocalizations.of(context).aeroStatsLabel,
+            "+$corneringBoost%",
+            Colors.cyanAccent,
+          ),
           const SizedBox(height: 8),
-          _buildStatRow("HANDLING", "+$handlingBoost%", Colors.purpleAccent),
+          _buildStatRow(
+            AppLocalizations.of(context).handlingStatsLabel,
+            "+$handlingBoost%",
+            Colors.purpleAccent,
+          ),
           const SizedBox(height: 8),
-          _buildStatRow("RELIABILITY", "$reliabilityVal%", Colors.greenAccent),
+          _buildStatRow(
+            AppLocalizations.of(context).reliabilityStatsLabel,
+            "$reliabilityVal%",
+            Colors.greenAccent,
+          ),
         ],
       ),
     );

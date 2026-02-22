@@ -1,0 +1,173 @@
+{
+  "appTitle": "FireTower Racing",
+  "@appTitle": {
+    "description": "The title of the application"
+  },
+  "jobMarketTitle": "Open Contracts",
+  "signContract": "Sign Contract",
+  "budgetLabel": "Budget",
+  "availableLabel": "Available",
+  "takenLabel": "Taken",
+  "driversLabel": "Drivers",
+  "initializeWorld": "Initialize Universe",
+  "currencySymbol": "$",
+  "millionsSuffix": "M",
+  "signContractError": "Error signing contract",
+  "teamDetails": "Team Details",
+  "hqTitle": "Headquarters",
+  "activeDrivers": "Active Drivers",
+  "driverStats": "Stats",
+  "speed": "Speed",
+  "cornering": "Cornering",
+  "nextRace": "Next Race",
+  "gpPlaceholder": "GP Sao Paulo (Coming Soon)",
+  "ageLabel": "{age} yo",
+  "@ageLabel": {
+    "placeholders": {
+      "age": {
+        "type": "int"
+      }
+    }
+  },
+  "potentialLabel": "Pot: {value}",
+  "@potentialLabel": {
+    "placeholders": {
+      "value": {
+        "type": "int"
+      }
+    }
+  },
+  "starMaterial": "Star Material",
+  "veteran": "Veteran",
+  "rookie": "Rookie",
+  "engineeringTitle": "R&D Lab",
+  "aero": "Aerodynamics",
+  "engine": "Powertrain",
+  "reliability": "Reliability",
+  "upgradeBtn": "Develop (+1)",
+  "costLabel": "Cost: {symbol}{cost}",
+  "@costLabel": {
+    "placeholders": {
+      "symbol": {
+        "type": "String"
+      },
+      "cost": {
+        "type": "String"
+      }
+    }
+  },
+  "insufficientFunds": "Insufficient Funds",
+  "simulateBtn": "Simulate Race",
+  "raceResults": "Race Results",
+  "winner": "Winner",
+  "podium": "Podium",
+  "financialReport": "Financial Report",
+  "earnings": "Earnings",
+  "noDriverAssigned": "No driver assigned",
+  "engineeringWelcome": "Welcome to the R&D Lab",
+  "engineeringDescription": "Improve your cars' performance by developing specific parts. Remember that you can only perform ONE upgrade each week. Use your resources wisely to stay ahead of the competition!",
+  "circuitMexico": "Autodromo Hermanos Rodriguez",
+  "circuitVegas": "Las Vegas Strip Circuit",
+  "circuitInterlagos": "Autódromo José Carlos Pace",
+  "circuitMiami": "Miami International Autodrome",
+  "circuitSanPabloStreet": "Sao Paulo Street Circuit",
+  "circuitIndianapolis": "Indianapolis Motor Speedway",
+  "circuitMontreal": "Circuit Gilles Villeneuve",
+  "circuitTexas": "Circuit of the Americas",
+  "circuitBuenosAires": "Autódromo Oscar y Juan Gálvez",
+  "pitBoardTitle": "PIT BOARD",
+  "pitBoardLeftPits": "{name} left the pits",
+  "@pitBoardLeftPits": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "pitBoardStartingPractice": "{name} is starting practice series",
+  "@pitBoardStartingPractice": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "pitBoardOnLap": "{name} is on lap {current}/{total}",
+  "@pitBoardOnLap": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      },
+      "current": {
+        "type": "int"
+      },
+      "total": {
+        "type": "int"
+      }
+    }
+  },
+  "pitBoardReturningPits": "{name} is returning to pits",
+  "@pitBoardReturningPits": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "pitBoardInGarage": "{name} is back in the garage",
+  "@pitBoardInGarage": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "pitBoardNewPB": "{name} NEW PERSONAL BEST: {time}",
+  "@pitBoardNewPB": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      },
+      "time": {
+        "type": "String"
+      }
+    }
+  },
+  "pitBoardNewTeamRecord": "{name} NEW TEAM RECORD: {time}",
+  "@pitBoardNewTeamRecord": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      },
+      "time": {
+        "type": "String"
+      }
+    }
+  },
+  "pressNewsManagerJoin": "{managerName} has been hired by {teamName} to lead the team to glory in the {leagueName}. Fans believe their background as {roleManager} will not be enough and they will need to make several adjustments to achieve the goals. {mainDriver} thinks {managerSurname} has what it takes at this level, while {secondaryDriver} hopes to prove that with their arrival, many things can change in their favor.",
+  "@pressNewsManagerJoin": {
+    "placeholders": {
+      "managerName": {
+        "type": "String"
+      },
+      "managerSurname": {
+        "type": "String"
+      },
+      "teamName": {
+        "type": "String"
+      },
+      "leagueName": {
+        "type": "String"
+      },
+      "roleManager": {
+        "type": "String"
+      },
+      "mainDriver": {
+        "type": "String"
+      },
+      "secondaryDriver": {
+        "type": "String"
+      }
+    }
+  }
+}

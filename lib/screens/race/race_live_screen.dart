@@ -279,6 +279,19 @@ class _RaceLiveScreenState extends State<RaceLiveScreen> {
     final sortedDrivers = currentLapData.positions.entries.toList()
       ..sort((a, b) => a.value.compareTo(b.value));
 
+    // Determine overall fastest lap holder up to this point
+    String? overallFastestDriverId;
+    double overallFastestTime = double.infinity;
+    for (int i = 0; i <= _currentLapIndex; i++) {
+      final lapData = _fullResult!.laps[i];
+      for (final entry in lapData.driverLapTimes.entries) {
+        if (entry.value < 900 && entry.value < overallFastestTime) {
+          overallFastestTime = entry.value;
+          overallFastestDriverId = entry.key;
+        }
+      }
+    }
+
     // Determine recent events (from this lap)
     final events = currentLapData.events;
 
@@ -315,51 +328,184 @@ class _RaceLiveScreenState extends State<RaceLiveScreen> {
                 ),
         ),
 
-        // Leaderboard
-        Expanded(
-          child: ListView.builder(
-            itemCount: sortedDrivers.length,
-            itemBuilder: (context, index) {
-              final entry = sortedDrivers[index];
-              final driverId = entry.key;
-              final pos = entry.value;
-              final driver = _driversMap[driverId];
-              final team = _teamsMap[driver?.teamId];
-              final lapTime = currentLapData.driverLapTimes[driverId] ?? 0.0;
+        // Fastest Lap & Race Time info bar
+        Builder(
+          builder: (context) {
+            // Compute overall fastest lap across all laps so far
+            String? overallFastestDriverId;
+            double overallFastestTime = double.infinity;
+            double leaderTotalTime = 0;
 
-              return Card(
-                color: index == 0
-                    ? Theme.of(context).colorScheme.secondaryContainer
-                    : null,
-                margin: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                child: ListTile(
-                  leading: Container(
-                    width: 30,
-                    alignment: Alignment.center,
-                    child: Text(
-                      "$pos",
-                      style: const TextStyle(
-                        fontWeight: FontWeight.bold,
-                        fontSize: 18,
-                      ),
+            for (int i = 0; i <= _currentLapIndex; i++) {
+              final lap = _fullResult!.laps[i];
+              for (var entry in lap.driverLapTimes.entries) {
+                if (entry.value < 900 && entry.value < overallFastestTime) {
+                  overallFastestTime = entry.value;
+                  overallFastestDriverId = entry.key;
+                }
+              }
+              // Accumulate leader's time
+              String? lapLeader;
+              int bestPos = 999;
+              for (var pe in lap.positions.entries) {
+                if (pe.value < bestPos) {
+                  bestPos = pe.value;
+                  lapLeader = pe.key;
+                }
+              }
+              if (lapLeader != null) {
+                final lt = lap.driverLapTimes[lapLeader] ?? 0;
+                if (lt < 900) leaderTotalTime += lt;
+              }
+            }
+
+            final hasFastest =
+                overallFastestDriverId != null &&
+                overallFastestTime < double.infinity;
+            final fastestName = hasFastest
+                ? (_driversMap[overallFastestDriverId]?.name ?? 'Unknown')
+                : '—';
+
+            return Container(
+              width: double.infinity,
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+              color: Theme.of(
+                context,
+              ).colorScheme.surfaceContainerHighest.withValues(alpha: 0.5),
+              child: Row(
+                children: [
+                  // Fastest Lap
+                  Icon(Icons.timer, size: 14, color: const Color(0xFFE040FB)),
+                  const SizedBox(width: 4),
+                  Text(
+                    hasFastest
+                        ? '$fastestName  ${_formatLapTime(overallFastestTime)}'
+                        : 'FASTEST LAP: —',
+                    style: const TextStyle(
+                      fontSize: 11,
+                      fontWeight: FontWeight.bold,
+                      color: Color(0xFFE040FB),
                     ),
                   ),
-                  title: Text(driver?.name ?? "Unknown"),
-                  subtitle: Text(team?.name ?? "Unknown Team"),
-                  trailing: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    crossAxisAlignment: CrossAxisAlignment.end,
-                    children: [
-                      Text(
-                        "Lap: ${lapTime.toStringAsFixed(3)}s",
-                        style: TextStyle(
-                          color: Theme.of(context).primaryColor,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                    ],
+                  const Spacer(),
+                  // Race Time
+                  Icon(
+                    Icons.schedule,
+                    size: 14,
+                    color: Theme.of(
+                      context,
+                    ).colorScheme.onSurface.withValues(alpha: 0.5),
                   ),
-                ),
+                  const SizedBox(width: 4),
+                  Text(
+                    leaderTotalTime > 0
+                        ? 'RACE: ${_formatRaceTime(leaderTotalTime)}'
+                        : 'RACE: —',
+                    style: TextStyle(
+                      fontSize: 11,
+                      fontWeight: FontWeight.bold,
+                      color: Theme.of(
+                        context,
+                      ).colorScheme.onSurface.withValues(alpha: 0.7),
+                    ),
+                  ),
+                ],
+              ),
+            );
+          },
+        ),
+
+        // Leaderboard
+        Expanded(
+          child: Builder(
+            builder: (context) {
+              // Get leader's lap time for gap calculation
+              final leaderId = sortedDrivers.isNotEmpty
+                  ? sortedDrivers.first.key
+                  : null;
+              final leaderLapTime = leaderId != null
+                  ? currentLapData.driverLapTimes[leaderId]
+                  : null;
+
+              return ListView.builder(
+                itemCount: sortedDrivers.length,
+                itemBuilder: (context, index) {
+                  final entry = sortedDrivers[index];
+                  final driverId = entry.key;
+                  final pos = entry.value;
+                  final driver = _driversMap[driverId];
+                  final team = _teamsMap[driver?.teamId];
+                  final lapTime =
+                      currentLapData.driverLapTimes[driverId] ?? 0.0;
+                  final isDnf = lapTime > 900;
+                  final isFastestLap = driverId == overallFastestDriverId;
+
+                  // Compute interval text
+                  String intervalText;
+                  if (isDnf) {
+                    intervalText = 'RETIRED';
+                  } else if (index == 0) {
+                    intervalText = 'LEADER';
+                  } else if (leaderLapTime != null && leaderLapTime < 900) {
+                    final gap = lapTime - leaderLapTime;
+                    intervalText = '+${gap.toStringAsFixed(3)}s';
+                  } else {
+                    intervalText = '${lapTime.toStringAsFixed(3)}s';
+                  }
+
+                  return Card(
+                    margin: const EdgeInsets.symmetric(
+                      horizontal: 8,
+                      vertical: 4,
+                    ),
+                    child: ListTile(
+                      leading: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Container(
+                            width: 30,
+                            alignment: Alignment.center,
+                            child: Text(
+                              "$pos",
+                              style: const TextStyle(
+                                fontWeight: FontWeight.bold,
+                                fontSize: 18,
+                              ),
+                            ),
+                          ),
+                          if (isFastestLap && !isDnf)
+                            Padding(
+                              padding: const EdgeInsets.only(left: 4),
+                              child: Icon(
+                                Icons.timer,
+                                size: 16,
+                                color: const Color(0xFFE040FB),
+                              ),
+                            ),
+                        ],
+                      ),
+                      title: Text(driver?.name ?? "Unknown"),
+                      subtitle: Text(team?.name ?? "Unknown Team"),
+                      trailing: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        crossAxisAlignment: CrossAxisAlignment.end,
+                        children: [
+                          Text(
+                            intervalText,
+                            style: TextStyle(
+                              color: isDnf
+                                  ? Colors.red
+                                  : (isFastestLap
+                                        ? const Color(0xFFE040FB)
+                                        : Theme.of(context).primaryColor),
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  );
+                },
               );
             },
           ),
@@ -386,5 +532,18 @@ class _RaceLiveScreenState extends State<RaceLiveScreen> {
       ),
       body: content,
     );
+  }
+
+  String _formatLapTime(double seconds) {
+    final mins = (seconds / 60).floor();
+    final secs = seconds - (mins * 60);
+    return "$mins:${secs.toStringAsFixed(3).padLeft(6, '0')}";
+  }
+
+  String _formatRaceTime(double totalSeconds) {
+    final hours = (totalSeconds / 3600).floor();
+    final mins = ((totalSeconds % 3600) / 60).floor();
+    final secs = (totalSeconds % 60).floor();
+    return '${hours.toString().padLeft(2, '0')}H:${mins.toString().padLeft(2, '0')}M:${secs.toString().padLeft(2, '0')}S';
   }
 }

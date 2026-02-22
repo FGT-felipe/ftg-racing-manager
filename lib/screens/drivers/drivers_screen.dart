@@ -5,6 +5,7 @@ import '../../services/driver_assignment_service.dart';
 import '../../services/universe_service.dart';
 import '../../services/season_service.dart';
 import 'widgets/driver_card.dart';
+import '../../l10n/app_localizations.dart';
 
 class DriversScreen extends StatefulWidget {
   final String teamId;
@@ -71,7 +72,9 @@ class _DriversScreenState extends State<DriversScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('Drivers Management')),
+      appBar: AppBar(
+        title: Text(AppLocalizations.of(context).driversManagementTitle),
+      ),
       body: _buildCurrentDriversTab(),
     );
   }
@@ -87,15 +90,17 @@ class _DriversScreenState extends State<DriversScreen> {
 
         if (snapshot.hasError) {
           debugPrint("Drivers stream error: ${snapshot.error}");
-          return const Center(
-            child: Text('Error loading drivers. Please check your connection.'),
+          return Center(
+            child: Text(AppLocalizations.of(context).errorLoadingDrivers),
           );
         }
 
         final drivers = snapshot.data ?? [];
 
         if (drivers.isEmpty) {
-          return const Center(child: Text('No drivers found for this team.'));
+          return Center(
+            child: Text(AppLocalizations.of(context).noDriversFound),
+          );
         }
 
         return ListView.builder(
@@ -111,7 +116,9 @@ class _DriversScreenState extends State<DriversScreen> {
                 ScaffoldMessenger.of(context).showSnackBar(
                   SnackBar(
                     content: Text(
-                      'Renewing contract for ${driver.name}... (Simulated)',
+                      AppLocalizations.of(
+                        context,
+                      ).renewingContractSimulated(driver.name),
                     ),
                   ),
                 );
@@ -119,7 +126,11 @@ class _DriversScreenState extends State<DriversScreen> {
               onFire: () {
                 ScaffoldMessenger.of(context).showSnackBar(
                   SnackBar(
-                    content: Text('Firing ${driver.name}... (Simulated)'),
+                    content: Text(
+                      AppLocalizations.of(
+                        context,
+                      ).firingDriverSimulated(driver.name),
+                    ),
                   ),
                 );
               },

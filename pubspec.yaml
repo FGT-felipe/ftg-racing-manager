@@ -67,6 +67,8 @@ flutter:
 
   assets:
     - drivers/
+    - drivers/male/
+    - drivers/female/
     - blueprints/
     - liverys/
     - news/

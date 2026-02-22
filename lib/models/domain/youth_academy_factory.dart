@@ -3,84 +3,131 @@ import 'country_model.dart';
 import 'young_driver_model.dart';
 import '../../services/driver_portrait_service.dart';
 import '../../services/driver_name_service.dart';
+import '../../models/core_models.dart';
 
-/// Fábrica para generar pilotos jóvenes prometedores de un país específico.
+/// Fábrica para generar pilotos jóvenes prometedores para la academia.
 ///
-/// Implementa el patrón Factory con contexto inmutable (Country).
-/// Cada CountryLeague tiene su propia academia vinculada a su país.
+/// Genera stats escalados según el nivel de la academia:
+/// - Nivel 1: baseSkill ~7, growthPotential 5-7
+/// - Nivel 5: baseSkill ~15, growthPotential 5-12
 class YouthAcademyFactory {
-  /// País del cual esta academia genera pilotos (inmutable)
-  final Country country;
-
-  /// Generador de números aleatorios
   final Random _random;
-
-  /// Servicio centralizado de nombres de pilotos
   final DriverNameService _nameService;
 
-  YouthAcademyFactory(this.country)
-    : _random = Random(),
+  YouthAcademyFactory({Random? random})
+    : _random = random ?? Random(),
       _nameService = DriverNameService();
 
-  /// Genera un piloto joven prometedor de este país
+  /// Genera un par de candidatos (1 hombre + 1 mujer) para la academia.
   ///
-  /// El piloto tendrá:
-  /// - Nationality del país de la academia (garantizado)
-  /// - Edad entre 16-19 años
-  /// - BaseSkill entre 35-55 (sin experiencia)
-  /// - Potential entre 70-95
-  /// - Nombre simulado basado en el país
-  YoungDriver generatePromisingDriver() {
-    final id = _generateId();
-    final gender = _generateGender();
+  /// [academyLevel]: Nivel actual de la academia (1-5)
+  /// [country]: País de la academia (elegido al comprar)
+  List<YoungDriver> generateCandidatePair({
+    required int academyLevel,
+    required Country country,
+  }) {
+    return [
+      generatePromisingDriver(
+        academyLevel: academyLevel,
+        country: country,
+        forcedGender: 'M',
+      ),
+      generatePromisingDriver(
+        academyLevel: academyLevel,
+        country: country,
+        forcedGender: 'F',
+      ),
+    ];
+  }
+
+  /// Genera un piloto joven prometedor.
+  ///
+  /// Stats escalados por nivel de academia:
+  /// - Base skill: 7 + (level - 1) * 2 → 7 at level 1, 15 at level 5
+  /// - Growth potential: 5 + random(0, level * 1.5) → better academies find higher-ceiling talent
+  YoungDriver generatePromisingDriver({
+    required int academyLevel,
+    required Country country,
+    String? forcedGender,
+  }) {
+    final id = _generateId(country.code);
+    final gender = forcedGender ?? (_random.nextBool() ? 'M' : 'F');
     final age = _generateAge();
+    final level = academyLevel.clamp(1, 5);
+
+    // Base skill scales with academy level: 7 → 15
+    final baseSkill = 7 + ((level - 1) * 2);
+
+    // Growth potential: 5-12, higher levels unlock higher range
+    final maxGrowth = 5 + (level * 1.4).floor(); // level 1 → 6, level 5 → 12
+    final growthPotential =
+        5 + _random.nextInt((maxGrowth - 5 + 1).clamp(1, 8));
+
+    // Generate stat ranges based on baseSkill and growthPotential
+    final statRangeMin = <String, int>{};
+    final statRangeMax = <String, int>{};
+
+    for (final statKey in DriverStats.all) {
+      // Each stat has a base ± random variance
+      final variance = _random.nextInt(4); // 0-3 variance
+      final minVal = (baseSkill - 2 + variance).clamp(1, 100);
+      final maxVal = (baseSkill + growthPotential + variance).clamp(
+        minVal,
+        100,
+      );
+      statRangeMin[statKey] = minVal;
+      statRangeMax[statKey] = maxVal;
+    }
+
+    // Expiration: 7 days from now (weekly cycle)
+    final expiresAt = DateTime.now().add(const Duration(days: 7));
 
     return YoungDriver(
       id: id,
-      name: _generateName(gender),
+      name: _nameService.generateName(
+        gender: gender,
+        countryCode: country.code,
+      ),
       nationality: country,
       age: age,
-      baseSkill: _generateBaseSkill(),
+      baseSkill: baseSkill,
       gender: gender,
-      potential: _generatePotential(),
+      growthPotential: growthPotential,
       portraitUrl: DriverPortraitService().getPortraitUrl(
         driverId: id,
-        countryCode: country.code,
         gender: gender,
+        countryCode: country.code,
         age: age,
       ),
+      status: 'candidate',
+      expiresAt: expiresAt,
+      salary: 100000,
+      contractYears: 1,
+      statRangeMin: statRangeMin,
+      statRangeMax: statRangeMax,
     );
   }
 
-  /// Genera un ID único para el piloto usando timestamp y random
-  String _generateId() {
+  /// Genera un solo candidato de reemplazo con el género especificado.
+  YoungDriver generateReplacement({
+    required int academyLevel,
+    required Country country,
+    required String gender,
+  }) {
+    return generatePromisingDriver(
+      academyLevel: academyLevel,
+      country: country,
+      forcedGender: gender,
+    );
+  }
+
+  String _generateId(String countryCode) {
     final timestamp = DateTime.now().microsecondsSinceEpoch;
     final randomSuffix = _random.nextInt(999999);
-    return 'young_${country.code}_${timestamp}_$randomSuffix';
+    return 'young_${countryCode}_${timestamp}_$randomSuffix';
   }
 
-  /// Genera un nombre simulado usando el servicio centralizado
-  String _generateName(String gender) {
-    return _nameService.generateName(gender: gender, countryCode: country.code);
-  }
-
-  /// Genera edad para piloto joven (16-19 años)
   int _generateAge() {
     return 16 + _random.nextInt(4); // 16, 17, 18, 19
-  }
-
-  /// Genera habilidad base para piloto sin experiencia (35-55)
-  int _generateBaseSkill() {
-    return 35 + _random.nextInt(21); // 35 to 55
-  }
-
-  /// Genera género del piloto
-  String _generateGender() {
-    return _random.nextBool() ? 'M' : 'F';
-  }
-
-  /// Genera potencial máximo del piloto (70-95)
-  int _generatePotential() {
-    return 70 + _random.nextInt(26); // 70 to 95
   }
 }

@@ -4,6 +4,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import '../../services/database_seeder.dart';
 import '../auth/login_screen.dart';
+import '../../l10n/app_localizations.dart';
 
 class LandingScreen extends StatefulWidget {
   const LandingScreen({super.key});
@@ -64,16 +65,16 @@ class _LandingScreenState extends State<LandingScreen>
       context: context,
       builder: (context) => AlertDialog(
         backgroundColor: Colors.red[900],
-        title: const Text(
-          "ADMIN ACCESS",
-          style: TextStyle(color: Colors.white),
+        title: Text(
+          AppLocalizations.of(context).adminAccess,
+          style: const TextStyle(color: Colors.white),
         ),
         content: TextField(
           controller: pinController,
           obscureText: true,
           style: const TextStyle(color: Colors.white),
-          decoration: const InputDecoration(
-            labelText: "Enter PIN",
+          decoration: InputDecoration(
+            labelText: AppLocalizations.of(context).enterPin,
             labelStyle: TextStyle(color: Colors.white70),
             enabledBorder: UnderlineInputBorder(
               borderSide: BorderSide(color: Colors.white),
@@ -83,7 +84,10 @@ class _LandingScreenState extends State<LandingScreen>
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
-            child: const Text("CANCEL", style: TextStyle(color: Colors.white)),
+            child: Text(
+              AppLocalizations.of(context).cancelBtn,
+              style: const TextStyle(color: Colors.white),
+            ),
           ),
           ElevatedButton(
             style: ElevatedButton.styleFrom(backgroundColor: Colors.black),
@@ -93,9 +97,9 @@ class _LandingScreenState extends State<LandingScreen>
                 _showNukeConfirmation();
               }
             },
-            child: const Text(
-              "VERIFY",
-              style: TextStyle(color: Colors.redAccent),
+            child: Text(
+              AppLocalizations.of(context).verifyBtn,
+              style: const TextStyle(color: Colors.redAccent),
             ),
           ),
         ],
@@ -108,15 +112,18 @@ class _LandingScreenState extends State<LandingScreen>
       context: context,
       builder: (context) => AlertDialog(
         backgroundColor: Colors.black,
-        title: const Text("NUKE WORLD?", style: TextStyle(color: Colors.red)),
-        content: const Text(
-          "This will DELETE ALL data (Leagues, Teams, Drivers, Seasons) and RESEED a fresh world.\n\nAre you sure?",
-          style: TextStyle(color: Colors.white70),
+        title: Text(
+          AppLocalizations.of(context).nukeWorldTitle,
+          style: const TextStyle(color: Colors.red),
+        ),
+        content: Text(
+          AppLocalizations.of(context).nukeWorldDesc,
+          style: const TextStyle(color: Colors.white70),
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
-            child: const Text("CANCEL"),
+            child: Text(AppLocalizations.of(context).cancelBtn),
           ),
           ElevatedButton(
             style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
@@ -127,8 +134,10 @@ class _LandingScreenState extends State<LandingScreen>
                 await DatabaseSeeder.nukeAndReseed();
                 if (context.mounted) {
                   ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(
-                      content: Text("WORLD NUKE SUCCESSFUL"),
+                    SnackBar(
+                      content: Text(
+                        AppLocalizations.of(context).nukeWorldSuccess,
+                      ),
                       backgroundColor: Colors.green,
                     ),
                   );
@@ -137,7 +146,9 @@ class _LandingScreenState extends State<LandingScreen>
                 if (context.mounted) {
                   ScaffoldMessenger.of(context).showSnackBar(
                     SnackBar(
-                      content: Text("Error: $e"),
+                      content: Text(
+                        AppLocalizations.of(context).errorPrefix(e.toString()),
+                      ),
                       backgroundColor: Colors.red,
                     ),
                   );
@@ -146,7 +157,7 @@ class _LandingScreenState extends State<LandingScreen>
                 if (mounted) setState(() => _isLoading = false);
               }
             },
-            child: const Text("EXECUTE NUKE"),
+            child: Text(AppLocalizations.of(context).executeNuke),
           ),
         ],
       ),
@@ -222,12 +233,12 @@ class _LandingScreenState extends State<LandingScreen>
 
                       // Title
                       Text(
-                        "FTG RACING",
+                        AppLocalizations.of(context).ftgRacing,
                         style: Theme.of(context).textTheme.headlineMedium
                             ?.copyWith(fontSize: 32, letterSpacing: 2.0),
                       ),
                       Text(
-                        "MANAGER 2026",
+                        AppLocalizations.of(context).manager2026,
                         style: TextStyle(
                           color: Theme.of(context).primaryColor,
                           fontSize: 16,
@@ -249,7 +260,7 @@ class _LandingScreenState extends State<LandingScreen>
                           children: [
                             _buildAuthButton(
                               context,
-                              "SIGN IN WITH GOOGLE",
+                              AppLocalizations.of(context).signInWithGoogle,
                               Icons.g_mobiledata,
                               Colors.white, // Google is always white bg
                               Colors.black,
@@ -258,7 +269,7 @@ class _LandingScreenState extends State<LandingScreen>
                             const SizedBox(height: 16),
                             _buildAuthButton(
                               context,
-                              "SIGN IN WITH EMAIL",
+                              AppLocalizations.of(context).signInWithEmail,
                               Icons.email,
                               Theme.of(context).cardColor,
                               Colors.white,
@@ -273,9 +284,9 @@ class _LandingScreenState extends State<LandingScreen>
                                 Icons.developer_mode,
                                 color: Colors.orangeAccent,
                               ),
-                              label: const Text(
-                                "DEV: QUICK START",
-                                style: TextStyle(
+                              label: Text(
+                                AppLocalizations.of(context).devQuickStart,
+                                style: const TextStyle(
                                   color: Colors.orangeAccent,
                                   fontWeight: FontWeight.bold,
                                 ),

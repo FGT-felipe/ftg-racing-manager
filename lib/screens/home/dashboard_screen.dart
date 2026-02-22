@@ -14,10 +14,10 @@ import '../race/race_live_screen.dart';
 import '../race/race_strategy_screen.dart';
 import '../../services/circuit_service.dart';
 import '../../services/notification_service.dart';
-import '../../services/league_notification_service.dart';
 import '../../widgets/notification_card.dart';
-import '../../widgets/press_news_card.dart';
 import '../../utils/app_constants.dart';
+import '../../widgets/common/dynamic_loading_indicator.dart';
+import '../../l10n/app_localizations.dart';
 
 class DashboardScreen extends StatefulWidget {
   final String teamId;
@@ -36,6 +36,15 @@ class _DashboardScreenState extends State<DashboardScreen> {
   // Manager stream depends on UID, so we memorize it locally
   Stream<DocumentSnapshot>? _managerStream;
   String? _currentManagerUid;
+
+  // Scroller for the Press News grid
+  final ScrollController _newsScrollController = ScrollController();
+
+  @override
+  void dispose() {
+    _newsScrollController.dispose();
+    super.dispose();
+  }
 
   @override
   void initState() {
@@ -65,10 +74,16 @@ class _DashboardScreenState extends State<DashboardScreen> {
       stream: AuthService().user,
       builder: (context, authSnapshot) {
         if (authSnapshot.hasError) {
-          return Center(child: Text("Auth Error: ${authSnapshot.error}"));
+          return Center(
+            child: Text(
+              AppLocalizations.of(
+                context,
+              ).authError(authSnapshot.error.toString()),
+            ),
+          );
         }
         if (!authSnapshot.hasData) {
-          return const Center(child: CircularProgressIndicator());
+          return const Scaffold(body: DynamicLoadingIndicator());
         }
         final uid = authSnapshot.data!.uid;
 
@@ -86,17 +101,25 @@ class _DashboardScreenState extends State<DashboardScreen> {
           builder: (context, managerSnapshot) {
             if (managerSnapshot.hasError) {
               return Center(
-                child: Text("Manager Error: ${managerSnapshot.error}"),
+                child: Text(
+                  AppLocalizations.of(
+                    context,
+                  ).managerError(managerSnapshot.error.toString()),
+                ),
               );
             }
             if (!managerSnapshot.hasData) {
-              return const Center(child: CircularProgressIndicator());
+              return const Scaffold(body: DynamicLoadingIndicator());
             }
 
             final managerData =
                 managerSnapshot.data!.data() as Map<String, dynamic>?;
             if (managerData == null) {
-              return const Center(child: Text("Manager profile not found"));
+              return Center(
+                child: Text(
+                  AppLocalizations.of(context).managerProfileNotFound,
+                ),
+              );
             }
             final manager = ManagerProfile.fromMap(managerData);
 
@@ -105,17 +128,24 @@ class _DashboardScreenState extends State<DashboardScreen> {
               builder: (context, teamSnapshot) {
                 if (teamSnapshot.hasError) {
                   return Center(
-                    child: Text("Team Error: ${teamSnapshot.error}"),
+                    child: Text(
+                      AppLocalizations.of(
+                        context,
+                      ).teamError(teamSnapshot.error.toString()),
+                    ),
                   );
                 }
                 if (!teamSnapshot.hasData) {
-                  return const Center(child: CircularProgressIndicator());
+                  return const Scaffold(body: DynamicLoadingIndicator());
                 }
 
                 final teamData =
                     teamSnapshot.data!.data() as Map<String, dynamic>?;
                 if (teamData == null) {
-                  return _buildErrorState(context, "Team data not found");
+                  return _buildErrorState(
+                    context,
+                    AppLocalizations.of(context).teamDataNotFound,
+                  );
                 }
                 final team = Team.fromMap(teamData);
 
@@ -124,7 +154,11 @@ class _DashboardScreenState extends State<DashboardScreen> {
                   builder: (context, seasonSnapshot) {
                     if (seasonSnapshot.hasError) {
                       return Center(
-                        child: Text("Season Error: ${seasonSnapshot.error}"),
+                        child: Text(
+                          AppLocalizations.of(
+                            context,
+                          ).seasonError(seasonSnapshot.error.toString()),
+                        ),
                       );
                     }
                     final season = seasonSnapshot.data;
@@ -146,6 +180,14 @@ class _DashboardScreenState extends State<DashboardScreen> {
                     );
                     final targetDate = timeService.nowBogota.add(
                       timeService.getTimeUntilNextEvent(currentStatus),
+                    );
+                    final qualyDate = timeService.getCurrentWeekQualyDate(
+                      timeService.nowBogota,
+                      currentRace?.event.date,
+                    );
+                    final raceDate = timeService.getCurrentWeekRaceDate(
+                      timeService.nowBogota,
+                      currentRace?.event.date,
                     );
 
                     // Calculate completed practice laps
@@ -245,6 +287,8 @@ class _DashboardScreenState extends State<DashboardScreen> {
                               countryCode: countryCode,
                               flagEmoji: flagEmoji,
                               targetDate: targetDate,
+                              qualyDate: qualyDate,
+                              raceDate: raceDate,
                               onActionPressed: onHeroAction,
                               totalLaps: currentRace?.event.totalLaps ?? 50,
                               weatherPractice:
@@ -262,7 +306,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
 
                             const SizedBox(height: 32),
                             Text(
-                              "QUICK VIEW",
+                              AppLocalizations.of(context).quickView,
                               style: Theme.of(context).textTheme.labelLarge
                                   ?.copyWith(
                                     letterSpacing: 1.5,
@@ -272,7 +316,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                             const SizedBox(height: 16),
                             LayoutBuilder(
                               builder: (context, constraints) {
-                                final isWide = constraints.maxWidth > 600;
+                                final isWide = constraints.maxWidth > 900;
 
                                 final budgetCard = FinanceCard(
                                   budget: team.budget,
@@ -321,123 +365,13 @@ class _DashboardScreenState extends State<DashboardScreen> {
                                   totalLaps: kMaxPracticeLapsPerDriver * 2,
                                 );
 
-                                if (isWide) {
-                                  return Row(
-                                    crossAxisAlignment:
-                                        CrossAxisAlignment.start,
-                                    children: [
-                                      Expanded(child: budgetCard),
-                                      const SizedBox(width: 16),
-                                      Expanded(child: checklistCard),
-                                    ],
-                                  );
-                                } else {
-                                  return Column(
-                                    children: [
-                                      budgetCard,
-                                      const SizedBox(height: 16),
-                                      checklistCard,
-                                    ],
-                                  );
-                                }
-                              },
-                            ),
-                            const SizedBox(height: 32),
-                            const SizedBox(height: 32),
-                            LayoutBuilder(
-                              builder: (context, constraints) {
-                                final isDesktop = constraints.maxWidth > 800;
-
-                                final Widget pressNewsColumn = Column(
+                                final officeNewsColumn = Column(
                                   crossAxisAlignment: CrossAxisAlignment.start,
                                   children: [
                                     Text(
-                                      "PRESS NEWS",
-                                      style: Theme.of(context)
-                                          .textTheme
-                                          .labelLarge
-                                          ?.copyWith(
-                                            letterSpacing: 1.5,
-                                            color: Colors.grey,
-                                          ),
-                                    ),
-                                    const SizedBox(height: 16),
-                                    if (season != null)
-                                      StreamBuilder<List<LeagueNotification>>(
-                                        stream: LeagueNotificationService()
-                                            .getLeagueNotifications(
-                                              season.leagueId,
-                                            ),
-                                        builder: (context, snapshot) {
-                                          if (snapshot.hasError) {
-                                            debugPrint(
-                                              "Press News error: ${snapshot.error}",
-                                            );
-                                            return const Text(
-                                              "Error loading news",
-                                            );
-                                          }
-                                          final news = snapshot.data ?? [];
-                                          if (news.isEmpty) {
-                                            return _buildEmptyNews(context);
-                                          }
-
-                                          return LayoutBuilder(
-                                            builder: (context, constraints) {
-                                              final bool isWide =
-                                                  constraints.maxWidth > 600;
-
-                                              // If desktop, show up to 3 rows (6 cards).
-                                              // If more than 6, it should scroll.
-                                              // We limit the height to 3 rows * 130 approx = 400
-                                              return SizedBox(
-                                                height: isWide
-                                                    ? (news.length > 2
-                                                          ? 400
-                                                          : 130)
-                                                    : null,
-                                                child: Scrollbar(
-                                                  thumbVisibility: true,
-                                                  child: GridView.builder(
-                                                    shrinkWrap: !isWide,
-                                                    physics: isWide
-                                                        ? const AlwaysScrollableScrollPhysics()
-                                                        : const NeverScrollableScrollPhysics(),
-                                                    gridDelegate:
-                                                        SliverGridDelegateWithFixedCrossAxisCount(
-                                                          crossAxisCount: isWide
-                                                              ? 2
-                                                              : 1,
-                                                          crossAxisSpacing: 16,
-                                                          mainAxisSpacing: 12,
-                                                          mainAxisExtent: 120,
-                                                        ),
-                                                    itemCount: news.length,
-                                                    itemBuilder:
-                                                        (context, index) =>
-                                                            PressNewsCard(
-                                                              notification:
-                                                                  news[index],
-                                                            ),
-                                                  ),
-                                                ),
-                                              );
-                                            },
-                                          );
-                                        },
-                                      )
-                                    else
-                                      const Center(
-                                        child: CircularProgressIndicator(),
-                                      ),
-                                  ],
-                                );
-
-                                final Widget officeNewsColumn = Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    Text(
-                                      "OFFICE NEWS",
+                                      AppLocalizations.of(
+                                        context,
+                                      ).officeNewsTitle,
                                       style: Theme.of(context)
                                           .textTheme
                                           .labelLarge
@@ -456,7 +390,9 @@ class _DashboardScreenState extends State<DashboardScreen> {
                                             "Notification stream error: ${notifSnapshot.error}",
                                           );
                                           return Text(
-                                            "Notifications unavailable",
+                                            AppLocalizations.of(
+                                              context,
+                                            ).notificationsUnavailable,
                                             style: TextStyle(
                                               color: Colors.grey[600],
                                               fontSize: 12,
@@ -491,7 +427,9 @@ class _DashboardScreenState extends State<DashboardScreen> {
                                                 ),
                                                 const SizedBox(width: 16),
                                                 Text(
-                                                  "No new notifications",
+                                                  AppLocalizations.of(
+                                                    context,
+                                                  ).noNewNotifications,
                                                   style: TextStyle(
                                                     color: Colors.grey[600],
                                                     fontStyle: FontStyle.italic,
@@ -529,20 +467,24 @@ class _DashboardScreenState extends State<DashboardScreen> {
                                   ],
                                 );
 
-                                if (isDesktop) {
+                                if (isWide) {
                                   return Row(
                                     crossAxisAlignment:
                                         CrossAxisAlignment.start,
                                     children: [
-                                      Expanded(child: pressNewsColumn),
-                                      const SizedBox(width: 24),
+                                      Expanded(child: budgetCard),
+                                      const SizedBox(width: 16),
+                                      Expanded(child: checklistCard),
+                                      const SizedBox(width: 16),
                                       Expanded(child: officeNewsColumn),
                                     ],
                                   );
                                 } else {
                                   return Column(
                                     children: [
-                                      pressNewsColumn,
+                                      budgetCard,
+                                      const SizedBox(height: 16),
+                                      checklistCard,
                                       const SizedBox(height: 32),
                                       officeNewsColumn,
                                     ],
@@ -575,27 +517,6 @@ class _DashboardScreenState extends State<DashboardScreen> {
           Text(
             message,
             style: const TextStyle(fontSize: 18, color: Colors.grey),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildEmptyNews(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.all(24),
-      decoration: BoxDecoration(
-        color: Theme.of(context).cardTheme.color?.withValues(alpha: 0.5),
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: Colors.white.withValues(alpha: 0.05)),
-      ),
-      child: const Row(
-        children: [
-          Icon(Icons.newspaper, color: Colors.grey),
-          SizedBox(width: 16),
-          Text(
-            "No news from the paddock yet.",
-            style: TextStyle(color: Colors.grey, fontStyle: FontStyle.italic),
           ),
         ],
       ),

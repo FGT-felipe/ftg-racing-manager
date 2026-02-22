@@ -3,6 +3,7 @@ import 'package:cloud_firestore/cloud_firestore.dart' hide Transaction;
 import '../../models/core_models.dart';
 import '../../services/finance_service.dart';
 import 'package:intl/intl.dart';
+import '../../l10n/app_localizations.dart';
 
 class FinancesScreen extends StatelessWidget {
   final String teamId;
@@ -39,14 +40,28 @@ class FinancesScreen extends StatelessWidget {
               padding: const EdgeInsets.all(32),
               width: double.infinity,
               decoration: BoxDecoration(
-                color: Theme.of(context).cardTheme.color,
+                gradient: const LinearGradient(
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                  colors: [Color(0xFF1E1E1E), Color(0xFF0A0A0A)],
+                ),
                 borderRadius: BorderRadius.circular(12),
-                // Removed boxShadow for consistency with dashboard cards
+                border: Border.all(
+                  color: Colors.white.withValues(alpha: 0.1),
+                  width: 1,
+                ),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withValues(alpha: 0.4),
+                    blurRadius: 12,
+                    offset: const Offset(0, 6),
+                  ),
+                ],
               ),
               child: Column(
                 children: [
-                  const Text(
-                    "CURRENT BALANCE",
+                  Text(
+                    AppLocalizations.of(context).currentBalanceTitle,
                     style: TextStyle(
                       color: Colors.grey,
                       fontSize: 12,
@@ -77,7 +92,7 @@ class FinancesScreen extends StatelessWidget {
               child: Row(
                 children: [
                   Text(
-                    "RECENT MOVEMENTS",
+                    AppLocalizations.of(context).recentMovementsTitle,
                     style: TextStyle(
                       color: Theme.of(context).colorScheme.secondary,
                       fontSize: 14,
@@ -124,8 +139,8 @@ class FinancesScreen extends StatelessWidget {
                             ).colorScheme.onSurface.withValues(alpha: 0.1),
                           ),
                           const SizedBox(height: 16),
-                          const Text(
-                            "No financial activity yet",
+                          Text(
+                            AppLocalizations.of(context).noFinancialActivity,
                             style: TextStyle(color: Colors.grey),
                           ),
                         ],
@@ -193,8 +208,12 @@ class FinancesScreen extends StatelessWidget {
     return Container(
       margin: const EdgeInsets.only(bottom: 12),
       decoration: BoxDecoration(
-        color: Theme.of(context).cardTheme.color,
+        color: const Color(0xFF121212),
         borderRadius: BorderRadius.circular(12),
+        border: Border.all(
+          color: Colors.white.withValues(alpha: 0.05),
+          width: 1,
+        ),
       ),
       child: ListTile(
         contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),

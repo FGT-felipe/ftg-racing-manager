@@ -3,6 +3,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../../services/auth_service.dart';
+import '../../l10n/app_localizations.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -20,25 +21,23 @@ class _LoginScreenState extends State<LoginScreen> {
   final _passCtrl = TextEditingController();
   final _nameCtrl = TextEditingController();
   final _lastNameCtrl = TextEditingController();
-  int _adminTapCount = 0;
 
   // AUTH LOGIC: GOOGLE
   Future<void> _signInWithGoogle() async {
     setState(() => _isLoading = true);
     try {
       final user = await AuthService().signInWithGoogle();
-
       if (user == null) {
         setState(() => _isLoading = false);
         return;
       }
-
-      // Note: Firestore entry is already handled inside AuthService.signInWithGoogle()
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text("Google Auth Error: ${e.toString()}"),
+            content: Text(
+              AppLocalizations.of(context).googleAuthError(e.toString()),
+            ),
             backgroundColor: Colors.red,
           ),
         );
@@ -80,9 +79,9 @@ class _LoginScreenState extends State<LoginScreen> {
         );
       }
     } on FirebaseAuthException catch (e) {
-      String message = "Auth Error: ${e.message}";
+      String message = AppLocalizations.of(context).authError(e.message ?? '');
       if (e.code == 'email-already-in-use') {
-        message = "This email is already registered. Please log in instead.";
+        message = AppLocalizations.of(context).emailAlreadyRegistered;
       }
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -93,7 +92,9 @@ class _LoginScreenState extends State<LoginScreen> {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text("An unexpected error occurred: ${e.toString()}"),
+            content: Text(
+              AppLocalizations.of(context).unexpectedError(e.toString()),
+            ),
             backgroundColor: Colors.red,
           ),
         );
@@ -106,217 +107,340 @@ class _LoginScreenState extends State<LoginScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
-      body: Center(
-        child: ConstrainedBox(
-          constraints: const BoxConstraints(maxWidth: 450),
-          child: SingleChildScrollView(
-            padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 40),
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                // TOP: LOGO & WELCOME
-                const _BrandLogo(),
-                const SizedBox(height: 16),
-                Text(
-                  "The evolution of digital telemetry.",
-                  style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                    color: Theme.of(
-                      context,
-                    ).colorScheme.onSurface.withValues(alpha: 0.5),
-                  ),
+      body: Stack(
+        children: [
+          // ── Background Image with dark gradient overlay ──
+          Positioned.fill(
+            child: Image.asset(
+              'blueprints/login_image.png',
+              fit: BoxFit.cover,
+              alignment: Alignment.center,
+            ),
+          ),
+          // Dark gradient overlay for readability
+          Positioned.fill(
+            child: DecoratedBox(
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  begin: Alignment.topCenter,
+                  end: Alignment.bottomCenter,
+                  colors: [
+                    const Color(0xFF0A0A0A).withValues(alpha: 0.75),
+                    const Color(0xFF0A0A0A).withValues(alpha: 0.92),
+                    const Color(0xFF0A0A0A),
+                  ],
+                  stops: const [0.0, 0.45, 0.75],
                 ),
-                const SizedBox(height: 48),
-
-                // MIDDLE: GOOGLE BUTTON
-                SizedBox(
-                  width: double.infinity,
-                  height: 56,
-                  child: OutlinedButton.icon(
-                    onPressed: _isLoading ? null : _signInWithGoogle,
-                    icon: const Icon(Icons.g_mobiledata, size: 32),
-                    label: const Text(
-                      "CONTINUE WITH GOOGLE",
-                      style: TextStyle(
-                        fontWeight: FontWeight.bold,
-                        letterSpacing: 1.1,
-                      ),
-                    ),
-                    style: Theme.of(context).outlinedButtonTheme.style,
-                  ),
+              ),
+            ),
+          ),
+          // Subtle vignette
+          Positioned.fill(
+            child: DecoratedBox(
+              decoration: BoxDecoration(
+                gradient: RadialGradient(
+                  center: Alignment.center,
+                  radius: 1.2,
+                  colors: [
+                    Colors.transparent,
+                    const Color(0xFF0A0A0A).withValues(alpha: 0.6),
+                  ],
                 ),
+              ),
+            ),
+          ),
 
-                const SizedBox(height: 32),
-                Row(
+          // ── Main Content ──
+          Center(
+            child: ConstrainedBox(
+              constraints: const BoxConstraints(maxWidth: 420),
+              child: SingleChildScrollView(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 28,
+                  vertical: 48,
+                ),
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    Expanded(
-                      child: Divider(
-                        color: Theme.of(
-                          context,
-                        ).colorScheme.onSurface.withValues(alpha: 0.1),
+                    // ── Brand Logo ──
+                    const _BrandLogo(),
+                    const SizedBox(height: 8),
+
+                    // ── "Formula Track Glory" ──
+                    Text(
+                      AppLocalizations.of(context).formulaTrackGlory,
+                      style: GoogleFonts.montserrat(
+                        fontWeight: FontWeight.w300,
+                        fontSize: 14,
+                        letterSpacing: 4.0,
+                        color: Colors.white.withValues(alpha: 0.6),
                       ),
                     ),
-                    Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 16),
+                    const SizedBox(height: 20),
+
+                    // ── Slogan ──
+                    Text(
+                      AppLocalizations.of(context).ftgSlogan,
+                      textAlign: TextAlign.center,
+                      style: GoogleFonts.montserrat(
+                        fontWeight: FontWeight.w600,
+                        fontSize: 13,
+                        letterSpacing: 0.5,
+                        fontStyle: FontStyle.italic,
+                        color: const Color(0xFF00C853),
+                      ),
+                    ),
+                    const SizedBox(height: 48),
+
+                    // ── Google Button ──
+                    _buildGoogleButton(),
+                    const SizedBox(height: 28),
+
+                    // ── Divider ──
+                    _buildDivider(),
+                    const SizedBox(height: 28),
+
+                    // ── Email Form ──
+                    _buildEmailForm(),
+                    const SizedBox(height: 20),
+
+                    // ── Toggle ──
+                    TextButton(
+                      onPressed: () {
+                        setState(() => _isRegistering = !_isRegistering);
+                      },
                       child: Text(
-                        "OR USE EMAIL",
+                        _isRegistering
+                            ? AppLocalizations.of(context).alreadyHaveAccount
+                            : AppLocalizations.of(context).newManagerJoin,
                         style: TextStyle(
-                          fontSize: 12,
-                          color: Theme.of(context).colorScheme.onSurface,
-                          fontWeight: FontWeight.bold,
+                          color: Colors.white.withValues(alpha: 0.7),
+                          fontWeight: FontWeight.w600,
+                          fontSize: 13,
                         ),
                       ),
                     ),
-                    Expanded(
-                      child: Divider(
-                        color: Theme.of(
-                          context,
-                        ).colorScheme.onSurface.withValues(alpha: 0.1),
+                    const SizedBox(height: 32),
+
+                    // ── Footer ──
+                    Text(
+                      AppLocalizations.of(context).versionFooter,
+                      style: TextStyle(
+                        fontSize: 9,
+                        color: Colors.white.withValues(alpha: 0.25),
+                        letterSpacing: 2.5,
+                        fontWeight: FontWeight.w600,
                       ),
                     ),
                   ],
                 ),
-                const SizedBox(height: 32),
-
-                // BOTTOM: EMAIL FORM
-                Form(
-                  key: _formKey,
-                  child: Column(
-                    children: [
-                      if (_isRegistering) ...[
-                        Row(
-                          children: [
-                            Expanded(
-                              child: _buildTextField(
-                                controller: _nameCtrl,
-                                label: "First Name",
-                              ),
-                            ),
-                            const SizedBox(width: 12),
-                            Expanded(
-                              child: _buildTextField(
-                                controller: _lastNameCtrl,
-                                label: "Last Name",
-                              ),
-                            ),
-                          ],
-                        ),
-                        const SizedBox(height: 16),
-                      ],
-                      _buildTextField(
-                        controller: _emailCtrl,
-                        label: "Email Address",
-                        keyboardType: TextInputType.emailAddress,
-                      ),
-                      const SizedBox(height: 16),
-                      _buildTextField(
-                        controller: _passCtrl,
-                        label: "Password",
-                        obscureText: true,
-                      ),
-                      const SizedBox(height: 32),
-                      SizedBox(
-                        width: double.infinity,
-                        height: 56,
-                        child: ElevatedButton(
-                          onPressed: _isLoading ? null : _handleEmailAuth,
-                          child: _isLoading
-                              ? const CircularProgressIndicator()
-                              : Text(
-                                  _isRegistering ? "CREATE ACCOUNT" : "SIGN IN",
-                                  style: const TextStyle(
-                                    fontWeight: FontWeight.bold,
-                                  ),
-                                ),
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-
-                const SizedBox(height: 24),
-                TextButton(
-                  onPressed: () {
-                    setState(() {
-                      _isRegistering = !_isRegistering;
-                    });
-                  },
-                  child: Text(
-                    _isRegistering
-                        ? "Already have an account? Sign In"
-                        : "New manager? Join the Paddock",
-                    style: TextStyle(
-                      color: Theme.of(context).colorScheme.onSurface,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                ),
-                const SizedBox(height: 24),
-                GestureDetector(
-                  onTap: () {
-                    _adminTapCount++;
-                    if (_adminTapCount >= 5) {
-                      _adminTapCount = 0;
-                      Navigator.pushNamed(context, '/admin');
-                    }
-                  },
-                  child: Text(
-                    "v2.1.4 POWERED BY FIRETOWER GAMES STUDIO",
-                    style: TextStyle(
-                      fontSize: 10,
-                      color: Theme.of(
-                        context,
-                      ).colorScheme.onSurface.withValues(alpha: 0.6),
-                      letterSpacing: 2,
-                    ),
-                  ),
-                ),
-              ],
+              ),
             ),
           ),
+        ],
+      ),
+    );
+  }
+
+  // ── Google Button ──
+  Widget _buildGoogleButton() {
+    return SizedBox(
+      width: double.infinity,
+      height: 52,
+      child: OutlinedButton.icon(
+        onPressed: _isLoading ? null : _signInWithGoogle,
+        icon: const Icon(Icons.g_mobiledata, size: 28),
+        label: Text(
+          AppLocalizations.of(context).continueWithGoogle,
+          style: const TextStyle(
+            fontWeight: FontWeight.w800,
+            letterSpacing: 1.2,
+            fontSize: 13,
+          ),
+        ),
+        style: OutlinedButton.styleFrom(
+          foregroundColor: Colors.white,
+          side: BorderSide(color: Colors.white.withValues(alpha: 0.15)),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(12),
+          ),
+          backgroundColor: Colors.white.withValues(alpha: 0.04),
         ),
       ),
     );
   }
 
+  // ── Divider ──
+  Widget _buildDivider() {
+    return Row(
+      children: [
+        Expanded(
+          child: Container(
+            height: 1,
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                colors: [
+                  Colors.transparent,
+                  Colors.white.withValues(alpha: 0.12),
+                ],
+              ),
+            ),
+          ),
+        ),
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 16),
+          child: Text(
+            AppLocalizations.of(context).orUseEmail,
+            style: TextStyle(
+              fontSize: 10,
+              color: Colors.white.withValues(alpha: 0.35),
+              fontWeight: FontWeight.w800,
+              letterSpacing: 2.0,
+            ),
+          ),
+        ),
+        Expanded(
+          child: Container(
+            height: 1,
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                colors: [
+                  Colors.white.withValues(alpha: 0.12),
+                  Colors.transparent,
+                ],
+              ),
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  // ── Email Form ──
+  Widget _buildEmailForm() {
+    return Form(
+      key: _formKey,
+      child: Column(
+        children: [
+          if (_isRegistering) ...[
+            Row(
+              children: [
+                Expanded(
+                  child: _buildTextField(
+                    controller: _nameCtrl,
+                    label: AppLocalizations.of(context).firstNameLabel,
+                    icon: Icons.person_outline,
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: _buildTextField(
+                    controller: _lastNameCtrl,
+                    label: AppLocalizations.of(context).lastNameLabel,
+                    icon: Icons.person_outline,
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 14),
+          ],
+          _buildTextField(
+            controller: _emailCtrl,
+            label: AppLocalizations.of(context).emailAddressLabel,
+            keyboardType: TextInputType.emailAddress,
+            icon: Icons.email_outlined,
+          ),
+          const SizedBox(height: 14),
+          _buildTextField(
+            controller: _passCtrl,
+            label: AppLocalizations.of(context).passwordLabel,
+            obscureText: true,
+            icon: Icons.lock_outline,
+          ),
+          const SizedBox(height: 28),
+
+          // ── Submit Button ──
+          SizedBox(
+            width: double.infinity,
+            height: 52,
+            child: ElevatedButton(
+              onPressed: _isLoading ? null : _handleEmailAuth,
+              style: ElevatedButton.styleFrom(
+                backgroundColor: const Color(0xFF00C853),
+                foregroundColor: Colors.black,
+                disabledBackgroundColor: const Color(
+                  0xFF00C853,
+                ).withValues(alpha: 0.3),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                elevation: 0,
+              ),
+              child: _isLoading
+                  ? const SizedBox(
+                      width: 20,
+                      height: 20,
+                      child: CircularProgressIndicator(
+                        strokeWidth: 2,
+                        color: Colors.black,
+                      ),
+                    )
+                  : Text(
+                      _isRegistering
+                          ? AppLocalizations.of(context).createAccountBtn
+                          : AppLocalizations.of(context).signInBtn,
+                      style: const TextStyle(
+                        fontWeight: FontWeight.w900,
+                        letterSpacing: 1.5,
+                        fontSize: 14,
+                      ),
+                    ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  // ── Text Field ──
   Widget _buildTextField({
     required TextEditingController controller,
     required String label,
     bool obscureText = false,
     TextInputType? keyboardType,
+    IconData? icon,
   }) {
     return TextFormField(
       controller: controller,
       obscureText: obscureText,
       keyboardType: keyboardType,
-      style: TextStyle(color: Theme.of(context).colorScheme.onSurface),
+      style: const TextStyle(color: Colors.white, fontSize: 14),
       decoration: InputDecoration(
         labelText: label,
         labelStyle: TextStyle(
-          color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.5),
+          color: Colors.white.withValues(alpha: 0.4),
+          fontSize: 13,
         ),
+        prefixIcon: icon != null
+            ? Icon(icon, size: 18, color: Colors.white.withValues(alpha: 0.3))
+            : null,
         filled: true,
-        fillColor: Theme.of(
-          context,
-        ).colorScheme.onSurface.withValues(alpha: 0.05),
+        fillColor: Colors.white.withValues(alpha: 0.04),
         border: OutlineInputBorder(
           borderRadius: BorderRadius.circular(12),
-          borderSide: BorderSide.none,
+          borderSide: BorderSide(color: Colors.white.withValues(alpha: 0.08)),
         ),
         enabledBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(12),
-          borderSide: BorderSide.none,
+          borderSide: BorderSide(color: Colors.white.withValues(alpha: 0.08)),
         ),
         focusedBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(12),
-          borderSide: BorderSide(
-            color: Theme.of(context).primaryColor,
-            width: 2,
-          ),
+          borderSide: const BorderSide(color: Color(0xFF00C853), width: 1.5),
         ),
         contentPadding: const EdgeInsets.symmetric(
           horizontal: 16,
-          vertical: 18,
+          vertical: 16,
         ),
       ),
       validator: (value) {
@@ -329,23 +453,40 @@ class _LoginScreenState extends State<LoginScreen> {
   }
 }
 
+// ── BRAND LOGO ──
 class _BrandLogo extends StatelessWidget {
   const _BrandLogo();
 
   @override
   Widget build(BuildContext context) {
-    final primaryColor = Theme.of(context).primaryColor;
-    final onSurface = Theme.of(context).colorScheme.onSurface;
+    const accentColor = Color(0xFF00C853);
 
     return Column(
       mainAxisSize: MainAxisSize.min,
       children: [
         Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 80, vertical: 20),
+          padding: const EdgeInsets.symmetric(horizontal: 60, vertical: 16),
           child: Stack(
             clipBehavior: Clip.none,
             alignment: Alignment.center,
             children: [
+              // Subtle glow behind FTG
+              Positioned(
+                child: Container(
+                  width: 160,
+                  height: 80,
+                  decoration: BoxDecoration(
+                    boxShadow: [
+                      BoxShadow(
+                        color: accentColor.withValues(alpha: 0.06),
+                        blurRadius: 80,
+                        spreadRadius: 40,
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+
               // "FTG" Core Text
               Transform(
                 transform: Matrix4.skewX(-0.3),
@@ -355,7 +496,7 @@ class _BrandLogo extends StatelessWidget {
                     fontWeight: FontWeight.w900,
                     fontSize: 84,
                     letterSpacing: -10,
-                    color: onSurface,
+                    color: Colors.white,
                   ),
                 ),
               ),
@@ -368,7 +509,7 @@ class _BrandLogo extends StatelessWidget {
                   child: Container(
                     width: 240,
                     height: 10,
-                    color: Theme.of(context).scaffoldBackgroundColor,
+                    color: Colors.transparent,
                   ),
                 ),
               ),
@@ -381,13 +522,13 @@ class _BrandLogo extends StatelessWidget {
                   child: Row(
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      Container(width: 180, height: 1.5, color: primaryColor),
+                      Container(width: 180, height: 1.5, color: accentColor),
                       const SizedBox(width: 4),
                       Container(
                         width: 5,
                         height: 5,
-                        decoration: BoxDecoration(
-                          color: primaryColor,
+                        decoration: const BoxDecoration(
+                          color: accentColor,
                           shape: BoxShape.circle,
                         ),
                       ),
@@ -396,17 +537,6 @@ class _BrandLogo extends StatelessWidget {
                 ),
               ),
             ],
-          ),
-        ),
-        const SizedBox(height: 2),
-        // Descriptor Seconday
-        Text(
-          "RACING MANAGER",
-          style: GoogleFonts.montserrat(
-            fontWeight: FontWeight.w500,
-            fontSize: 13,
-            letterSpacing: 7.2, // Adjust tracking to match FTG width
-            color: Theme.of(context).colorScheme.onSurface,
           ),
         ),
       ],

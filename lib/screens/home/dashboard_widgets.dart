@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
 import '../../services/time_service.dart';
+import '../../l10n/app_localizations.dart';
 
 class TeamHeader extends StatelessWidget {
   final String managerName;
@@ -36,7 +37,7 @@ class TeamHeader extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  "Welcome back, $managerName",
+                  AppLocalizations.of(context).welcomeBackManager(managerName),
                   style: Theme.of(context).textTheme.bodyMedium,
                 ),
                 Text(
@@ -109,7 +110,9 @@ class StatusCard extends StatelessWidget {
           ),
           const SizedBox(height: 12),
           Text(
-            isRaceWeekend ? "SESSION IN PROGRESS" : "TIME UNTIL NEXT SESSION",
+            isRaceWeekend
+                ? AppLocalizations.of(context).sessionInProgress
+                : AppLocalizations.of(context).timeUntilNextSession,
             style: Theme.of(context).textTheme.bodyLarge?.copyWith(
               fontWeight: FontWeight.bold,
               fontSize: 18,
@@ -182,7 +185,7 @@ class FinanceCard extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  "TEAM BUDGET",
+                  AppLocalizations.of(context).teamBudget,
                   style: TextStyle(
                     fontSize: 9,
                     fontWeight: FontWeight.bold,
@@ -207,7 +210,9 @@ class FinanceCard extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.end,
               children: [
                 Text(
-                  isNegative ? "DEFICIT" : "SURPLUS",
+                  isNegative
+                      ? AppLocalizations.of(context).deficit
+                      : AppLocalizations.of(context).surplus,
                   style: TextStyle(
                     color: color,
                     fontSize: 9,
@@ -217,7 +222,7 @@ class FinanceCard extends StatelessWidget {
                 ),
                 const SizedBox(height: 4),
                 Text(
-                  "EST. +\$1.2M",
+                  "${AppLocalizations.of(context).estimatedAbbr} +\$1.2M",
                   style: TextStyle(
                     color: Colors.white.withValues(alpha: 0.5),
                     fontSize: 10,
@@ -312,7 +317,7 @@ class UpcomingCircuitCard extends StatelessWidget {
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
                 Text(
-                  "NEXT GRAND PRIX",
+                  AppLocalizations.of(context).nextGrandPrix,
                   style: Theme.of(context).textTheme.labelSmall?.copyWith(
                     color: Colors.orangeAccent,
                     letterSpacing: 1.2,
@@ -359,7 +364,9 @@ class UpcomingCircuitCard extends StatelessWidget {
                 const Icon(Icons.route, color: Colors.white70, size: 20),
                 const SizedBox(width: 8),
                 Text(
-                  "4.309 km | 71 Laps",
+                  AppLocalizations.of(
+                    context,
+                  ).circuitLengthAndLaps("4.309", "71"),
                   style: const TextStyle(color: Colors.white70),
                 ),
               ],
@@ -378,6 +385,8 @@ class RaceStatusHero extends StatefulWidget {
   final String countryCode;
   final String flagEmoji;
   final DateTime targetDate;
+  final DateTime qualyDate;
+  final DateTime raceDate;
   final VoidCallback? onActionPressed;
 
   final int totalLaps;
@@ -396,6 +405,8 @@ class RaceStatusHero extends StatefulWidget {
     required this.countryCode,
     required this.flagEmoji,
     required this.targetDate,
+    required this.qualyDate,
+    required this.raceDate,
     this.onActionPressed,
     this.totalLaps = 50,
     this.weatherPractice = 'Sunny',
@@ -414,7 +425,8 @@ class RaceStatusHero extends StatefulWidget {
 class _RaceStatusHeroState extends State<RaceStatusHero>
     with SingleTickerProviderStateMixin {
   late Timer _timer;
-  Duration _timeLeft = Duration.zero;
+  Duration _timeLeftQualy = Duration.zero;
+  Duration _timeLeftRace = Duration.zero;
   late AnimationController _blinkingController;
 
   @override
@@ -434,15 +446,20 @@ class _RaceStatusHeroState extends State<RaceStatusHero>
   void _updateTimeLeft() {
     final now = TimeService().nowBogota;
     setState(() {
-      _timeLeft = widget.targetDate.difference(now);
-      if (_timeLeft.isNegative) _timeLeft = Duration.zero;
+      _timeLeftQualy = widget.qualyDate.difference(now);
+      if (_timeLeftQualy.isNegative) _timeLeftQualy = Duration.zero;
+
+      _timeLeftRace = widget.raceDate.difference(now);
+      if (_timeLeftRace.isNegative) _timeLeftRace = Duration.zero;
     });
   }
 
   @override
   void didUpdateWidget(covariant RaceStatusHero oldWidget) {
     super.didUpdateWidget(oldWidget);
-    if (oldWidget.targetDate != widget.targetDate) {
+    if (oldWidget.targetDate != widget.targetDate ||
+        oldWidget.qualyDate != widget.qualyDate ||
+        oldWidget.raceDate != widget.raceDate) {
       _updateTimeLeft();
     }
   }
@@ -456,45 +473,42 @@ class _RaceStatusHeroState extends State<RaceStatusHero>
 
   @override
   Widget build(BuildContext context) {
-    final days = _timeLeft.inDays;
-    final hours = _timeLeft.inHours % 24;
-    final minutes = _timeLeft.inMinutes % 60;
-    final seconds = _timeLeft.inSeconds % 60;
+    // We will compute days, hours, mins, secs dynamically for each countdown inline
 
-    String statusText = "PADDOCK OPEN";
+    String statusText = AppLocalizations.of(context).paddockOpen;
     Color statusColor = const Color(0xFF00C853);
-    String buttonLabel = "ENTER PADDOCK";
+    String buttonLabel = AppLocalizations.of(context).weekendSetupBtn;
     IconData buttonIcon = Icons.speed;
 
     switch (widget.currentStatus) {
       case RaceWeekStatus.practice:
-        statusText = "PADDOCK OPEN";
+        statusText = AppLocalizations.of(context).paddockOpen;
         statusColor = const Color(0xFF00C853);
-        buttonLabel = "WEEKEND SETUP";
+        buttonLabel = AppLocalizations.of(context).weekendSetupBtn;
         buttonIcon = Icons.settings;
         break;
       case RaceWeekStatus.qualifying:
-        statusText = "QUALIFYING";
+        statusText = AppLocalizations.of(context).qualifyingStatus;
         statusColor = const Color(0xFFFFB800);
-        buttonLabel = "VIEW QUALIFYING";
+        buttonLabel = AppLocalizations.of(context).viewQualifyingBtn;
         buttonIcon = Icons.list_alt;
         break;
       case RaceWeekStatus.raceStrategy:
-        statusText = "RACE STRATEGY";
+        statusText = AppLocalizations.of(context).raceStrategyStatus;
         statusColor = const Color(0xFFFF6D00);
-        buttonLabel = "SET RACE STRATEGY";
+        buttonLabel = AppLocalizations.of(context).setRaceStrategyBtn;
         buttonIcon = Icons.tune;
         break;
       case RaceWeekStatus.race:
-        statusText = "RACE WEEKEND";
+        statusText = AppLocalizations.of(context).raceWeekendStatus;
         statusColor = const Color(0xFFFF5252);
-        buttonLabel = "GO TO RACE";
+        buttonLabel = AppLocalizations.of(context).goToRaceBtn;
         buttonIcon = Icons.flag;
         break;
       case RaceWeekStatus.postRace:
-        statusText = "RACE FINISHED";
+        statusText = AppLocalizations.of(context).raceFinishedStatus;
         statusColor = const Color(0xFF9E9E9E);
-        buttonLabel = "VIEW RESULTS";
+        buttonLabel = AppLocalizations.of(context).viewResultsBtn;
         buttonIcon = Icons.emoji_events;
         break;
     }
@@ -606,35 +620,31 @@ class _RaceStatusHeroState extends State<RaceStatusHero>
                                   ),
                                 ),
                                 const SizedBox(height: 12),
-                                Wrap(
-                                  spacing: 4,
-                                  runSpacing: 4,
+                                Row(
                                   children: [
-                                    _buildTimeBlock(
-                                      context,
-                                      days.toString().padLeft(2, '0'),
-                                      "DAYS",
-                                    ),
-                                    _buildTimeSeparator(context),
-                                    _buildTimeBlock(
-                                      context,
-                                      hours.toString().padLeft(2, '0'),
-                                      "HRS",
-                                    ),
-                                    _buildTimeSeparator(context),
-                                    _buildTimeBlock(
-                                      context,
-                                      minutes.toString().padLeft(2, '0'),
-                                      "MIN",
-                                    ),
-                                    if (isWide) ...[
-                                      _buildTimeSeparator(context),
-                                      _buildTimeBlock(
+                                    Expanded(
+                                      child: _buildCountdownRow(
                                         context,
-                                        seconds.toString().padLeft(2, '0'),
-                                        "SEC",
+                                        AppLocalizations.of(
+                                          context,
+                                        ).qualifyingStatus,
+                                        widget.qualyDate,
+                                        _timeLeftQualy,
+                                        isWide,
                                       ),
-                                    ],
+                                    ),
+                                    const SizedBox(width: 12),
+                                    Expanded(
+                                      child: _buildCountdownRow(
+                                        context,
+                                        AppLocalizations.of(
+                                          context,
+                                        ).raceWeekendStatus,
+                                        widget.raceDate,
+                                        _timeLeftRace,
+                                        isWide,
+                                      ),
+                                    ),
                                   ],
                                 ),
                               ],
@@ -649,10 +659,14 @@ class _RaceStatusHeroState extends State<RaceStatusHero>
                             child: Column(
                               crossAxisAlignment: CrossAxisAlignment.end,
                               children: [
-                                _buildIntelHeader("CIRCUIT INTEL"),
+                                _buildIntelHeader(
+                                  AppLocalizations.of(
+                                    context,
+                                  ).circuitIntelTitle,
+                                ),
                                 const SizedBox(height: 8),
                                 _buildIntelRow(
-                                  "LAPS",
+                                  AppLocalizations.of(context).lapsIntel,
                                   "${widget.totalLaps}",
                                   Colors.white,
                                 ),
@@ -683,21 +697,27 @@ class _RaceStatusHeroState extends State<RaceStatusHero>
                                   runSpacing: 4,
                                   children: [
                                     if (widget.aeroWeight >= 0.4)
-                                      _buildCompactChip("AERO", "HIGH"),
+                                      _buildCompactChip(
+                                        AppLocalizations.of(context).aeroIntel,
+                                        AppLocalizations.of(context).highIntel,
+                                      ),
                                     if (widget.powertrainWeight >= 0.4)
-                                      _buildCompactChip("POWER", "HIGH"),
+                                      _buildCompactChip(
+                                        AppLocalizations.of(context).powerIntel,
+                                        AppLocalizations.of(context).highIntel,
+                                      ),
                                     if (widget.characteristics.containsKey(
                                       'Top Speed',
                                     ))
                                       _buildCompactChip(
-                                        "SPEED",
+                                        AppLocalizations.of(context).speedIntel,
                                         widget.characteristics['Top Speed']!,
                                       ),
                                     if (widget.characteristics.containsKey(
                                       'Tyre Wear',
                                     ))
                                       _buildCompactChip(
-                                        "TYRE",
+                                        AppLocalizations.of(context).tyreIntel,
                                         widget.characteristics['Tyre Wear']!,
                                       ),
                                   ],
@@ -899,7 +919,9 @@ class _RaceStatusHeroState extends State<RaceStatusHero>
             ),
           const SizedBox(width: 8),
           Text(
-            isLive ? "ON LIVE" : "OFF LIVE",
+            isLive
+                ? AppLocalizations.of(context).onLive
+                : AppLocalizations.of(context).offLive,
             style: TextStyle(
               fontSize: 10,
               fontWeight: FontWeight.w900,
@@ -914,32 +936,111 @@ class _RaceStatusHeroState extends State<RaceStatusHero>
     );
   }
 
+  Widget _buildCountdownRow(
+    BuildContext context,
+    String title,
+    DateTime targetDate,
+    Duration timeLeft,
+    bool isWide,
+  ) {
+    final days = timeLeft.inDays;
+    final hours = timeLeft.inHours % 24;
+    final minutes = timeLeft.inMinutes % 60;
+    final seconds = timeLeft.inSeconds % 60;
+
+    final monthNames = [
+      'JAN',
+      'FEB',
+      'MAR',
+      'APR',
+      'MAY',
+      'JUN',
+      'JUL',
+      'AUG',
+      'SEP',
+      'OCT',
+      'NOV',
+      'DEC',
+    ];
+    final dateStr = "${targetDate.day} ${monthNames[targetDate.month - 1]}";
+    final timeStr =
+        "${targetDate.hour.toString().padLeft(2, '0')}:${targetDate.minute.toString().padLeft(2, '0')}";
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          title,
+          style: TextStyle(
+            fontSize: 10,
+            fontWeight: FontWeight.w900,
+            color: Colors.white.withValues(alpha: 0.5),
+            letterSpacing: 1.5,
+          ),
+        ),
+        const SizedBox(height: 6),
+        Row(
+          children: [
+            _buildTimeBlock(context, days.toString().padLeft(2, '0'), "D"),
+            _buildTimeSeparator(context),
+            _buildTimeBlock(context, hours.toString().padLeft(2, '0'), "H"),
+            _buildTimeSeparator(context),
+            _buildTimeBlock(context, minutes.toString().padLeft(2, '0'), "M"),
+            if (isWide) ...[
+              _buildTimeSeparator(context),
+              _buildTimeBlock(context, seconds.toString().padLeft(2, '0'), "S"),
+            ],
+          ],
+        ),
+        const SizedBox(height: 6),
+        Row(
+          children: [
+            Icon(
+              Icons.calendar_today,
+              size: 10,
+              color: Colors.white.withValues(alpha: 0.3),
+            ),
+            const SizedBox(width: 4),
+            Text(
+              "$dateStr · $timeStr",
+              style: TextStyle(
+                fontSize: 10,
+                color: Colors.white.withValues(alpha: 0.4),
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+          ],
+        ),
+      ],
+    );
+  }
+
   Widget _buildTimeBlock(BuildContext context, String value, String label) {
     return Column(
       children: [
         Container(
-          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
           decoration: BoxDecoration(
             color: Colors.white.withValues(alpha: 0.05),
-            borderRadius: BorderRadius.circular(12),
+            borderRadius: BorderRadius.circular(8),
           ),
           child: Text(
             value,
             style: const TextStyle(
               fontFamily: 'monospace',
-              fontSize: 28,
+              fontSize: 20,
               fontWeight: FontWeight.w900,
               color: Colors.white,
             ),
           ),
         ),
-        const SizedBox(height: 4),
+        const SizedBox(height: 2),
         Text(
           label,
           style: TextStyle(
-            fontSize: 10,
+            fontSize: 8,
             fontWeight: FontWeight.bold,
-            letterSpacing: 1.2,
+            letterSpacing: 1.0,
             color: Theme.of(context).textTheme.bodyMedium?.color,
           ),
         ),
@@ -949,11 +1050,11 @@ class _RaceStatusHeroState extends State<RaceStatusHero>
 
   Widget _buildTimeSeparator(BuildContext context) {
     return Padding(
-      padding: const EdgeInsets.only(bottom: 16, left: 4, right: 4),
+      padding: const EdgeInsets.only(bottom: 12, left: 2, right: 2),
       child: Text(
         ":",
         style: TextStyle(
-          fontSize: 24,
+          fontSize: 18,
           fontWeight: FontWeight.bold,
           color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.3),
         ),
@@ -1001,7 +1102,7 @@ class PreparationChecklist extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
-            "PRE-RACE CHECKLIST",
+            AppLocalizations.of(context).preRaceChecklist,
             style: TextStyle(
               color: Colors.white.withValues(alpha: 0.4),
               fontSize: 9,
@@ -1012,22 +1113,28 @@ class PreparationChecklist extends StatelessWidget {
           const SizedBox(height: 16),
           _buildItem(
             context,
-            "Practice Program",
-            "$completedLaps/$totalLaps LAPS",
+            AppLocalizations.of(context).practiceProgram,
+            AppLocalizations.of(
+              context,
+            ).completedLapsOf(completedLaps.toString(), totalLaps.toString()),
             completedLaps >= totalLaps,
           ),
           Divider(color: Colors.white.withValues(alpha: 0.05), height: 20),
           _buildItem(
             context,
-            "Qualifying Setup",
-            setupSubmitted ? "READY" : "PENDING",
+            AppLocalizations.of(context).qualifyingSetup,
+            setupSubmitted
+                ? AppLocalizations.of(context).readyStatus
+                : AppLocalizations.of(context).pendingStatus,
             setupSubmitted,
           ),
           Divider(color: Colors.white.withValues(alpha: 0.05), height: 20),
           _buildItem(
             context,
-            "Race Strategy",
-            strategySubmitted ? "READY" : "PENDING",
+            AppLocalizations.of(context).raceStrategyStatus,
+            strategySubmitted
+                ? AppLocalizations.of(context).readyStatus
+                : AppLocalizations.of(context).pendingStatus,
             strategySubmitted,
           ),
         ],

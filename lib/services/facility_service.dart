@@ -1,10 +1,15 @@
 import 'package:cloud_firestore/cloud_firestore.dart' hide Transaction;
 import '../models/core_models.dart';
+import '../models/user_models.dart';
 
 class FacilityService {
   final FirebaseFirestore _db = FirebaseFirestore.instance;
 
-  Future<void> upgradeFacility(String teamId, FacilityType type) async {
+  Future<void> upgradeFacility(
+    String teamId,
+    FacilityType type, {
+    ManagerRole? role,
+  }) async {
     final teamRef = _db.collection('teams').doc(teamId);
 
     return _db.runTransaction((transaction) async {
@@ -23,6 +28,9 @@ class FacilityService {
       }
 
       int price = facility.upgradePrice;
+      if (role == ManagerRole.businessAdmin || role == ManagerRole.bureaucrat) {
+        price = (price * 0.9).round();
+      }
 
       if (team.budget < price) {
         throw Exception("Insufficient budget");

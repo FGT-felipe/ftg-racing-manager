@@ -3,6 +3,7 @@ import 'home/dashboard_screen.dart';
 import 'engineering_screen.dart';
 import 'standings_screen.dart';
 import 'job_market_screen.dart';
+import '../l10n/app_localizations.dart';
 
 class MainScaffold extends StatefulWidget {
   final String teamId;
@@ -46,20 +47,23 @@ class _MainScaffoldState extends State<MainScaffold> {
           ),
         ),
         child: BottomNavigationBar(
-          items: const <BottomNavigationBarItem>[
+          items: <BottomNavigationBarItem>[
             BottomNavigationBarItem(
-              icon: Icon(Icons.dashboard_rounded),
-              label: 'HQ',
+              icon: const Icon(Icons.dashboard_rounded),
+              label: AppLocalizations.of(context).navHQ,
             ),
             BottomNavigationBarItem(
-              icon: Icon(Icons.build_circle),
-              label: 'Garage',
+              icon: const Icon(Icons.build_circle),
+              label: AppLocalizations.of(context).navGarage,
             ),
             BottomNavigationBarItem(
-              icon: Icon(Icons.emoji_events),
-              label: 'Season',
+              icon: const Icon(Icons.emoji_events),
+              label: AppLocalizations.of(context).navSeason,
             ),
-            BottomNavigationBarItem(icon: Icon(Icons.groups), label: 'Market'),
+            BottomNavigationBarItem(
+              icon: const Icon(Icons.groups),
+              label: AppLocalizations.of(context).navMarket,
+            ),
           ],
           currentIndex: _selectedIndex,
           onTap: _onItemTapped,

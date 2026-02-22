@@ -1,4 +1,3 @@
-import 'dart:math';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/widgets.dart'; // Add widgets for Locale
 import '../l10n/app_localizations.dart'; // Import AppLocalizations
@@ -8,15 +7,12 @@ import '../config/game_config.dart';
 import 'universe_service.dart';
 import 'team_assignment_service.dart';
 import 'driver_assignment_service.dart';
-import 'driver_name_service.dart';
 import 'driver_status_service.dart';
 
 class DatabaseSeeder {
   static final FirebaseFirestore _db = FirebaseFirestore.instance;
 
-  /// Servicio centralizado de nombres (con anti-repetición)
   /// Contador para IDs únicos
-  static final DriverNameService _nameService = DriverNameService();
 
   static Future<void> nukeAndReseed({DateTime? startDate}) async {
     try {
@@ -36,6 +32,16 @@ class DatabaseSeeder {
         debugPrint("NUKE: Pilotos eliminados.");
       }
 
+      final pressNewsSnapshot = await _db.collectionGroup('press_news').get();
+      if (pressNewsSnapshot.docs.isNotEmpty) {
+        final batch = _db.batch();
+        for (var doc in pressNewsSnapshot.docs) {
+          batch.delete(doc.reference);
+        }
+        await batch.commit();
+        debugPrint("NUKE: Noticias de prensa eliminadas.");
+      }
+
       final collectionsToClear = [
         'teams',
         'leagues',
@@ -43,7 +49,8 @@ class DatabaseSeeder {
         'divisions',
         'races',
         'driver_titles',
-      ]; // Added races and driver_titles
+        'managers',
+      ]; // Added managers to allow full onboarding reset
       for (var collection in collectionsToClear) {
         final snapshot = await _db.collection(collection).get();
         if (snapshot.docs.isNotEmpty) {
@@ -109,30 +116,82 @@ class DatabaseSeeder {
           'tier': league.tier,
         });
 
-        // 2. CALENDARIO base for each league
+        // 2. CALENDAR: 9 races, 1 per week — uses all circuits from CircuitService
         final now = startDate ?? DateTime.now();
         final l10n = lookupAppLocalizations(const Locale('en'));
 
-        final List<RaceEvent> calendar = [
-          RaceEvent(
-            id: 'r1',
-            trackName: l10n.circuitMexico,
-            countryCode: "MX",
-            flagEmoji: "🇲🇽",
-            circuitId: 'mexico',
-            date: now.add(const Duration(days: 7)),
-            isCompleted: false,
-          ),
-          RaceEvent(
-            id: 'r2',
-            trackName: l10n.circuitInterlagos,
-            countryCode: "BR",
-            flagEmoji: "🇧🇷",
-            circuitId: 'interlagos',
-            date: now.add(const Duration(days: 14)),
-            isCompleted: false,
-          ),
+        // Define the full 9-race calendar in order, mapping circuitId → l10n name + metadata
+        final calendarData = [
+          {
+            'circuitId': 'mexico',
+            'name': l10n.circuitMexico,
+            'country': 'MX',
+            'flag': '🇲🇽',
+          },
+          {
+            'circuitId': 'interlagos',
+            'name': l10n.circuitInterlagos,
+            'country': 'BR',
+            'flag': '🇧🇷',
+          },
+          {
+            'circuitId': 'miami',
+            'name': l10n.circuitMiami,
+            'country': 'US',
+            'flag': '🇺🇸',
+          },
+          {
+            'circuitId': 'san_pablo_street',
+            'name': l10n.circuitSanPabloStreet,
+            'country': 'BR',
+            'flag': '🇧🇷',
+          },
+          {
+            'circuitId': 'indianapolis',
+            'name': l10n.circuitIndianapolis,
+            'country': 'US',
+            'flag': '🇺🇸',
+          },
+          {
+            'circuitId': 'montreal',
+            'name': l10n.circuitMontreal,
+            'country': 'CA',
+            'flag': '🇨🇦',
+          },
+          {
+            'circuitId': 'vegas',
+            'name': l10n.circuitVegas,
+            'country': 'US',
+            'flag': '🇺🇸',
+          },
+          {
+            'circuitId': 'texas',
+            'name': l10n.circuitTexas,
+            'country': 'US',
+            'flag': '🇺🇸',
+          },
+          {
+            'circuitId': 'buenos_aires',
+            'name': l10n.circuitBuenosAires,
+            'country': 'AR',
+            'flag': '🇦🇷',
+          },
         ];
+
+        final List<RaceEvent> calendar = List.generate(calendarData.length, (
+          i,
+        ) {
+          final data = calendarData[i];
+          return RaceEvent(
+            id: 'r${i + 1}',
+            trackName: data['name']!,
+            countryCode: data['country']!,
+            flagEmoji: data['flag']!,
+            circuitId: data['circuitId']!,
+            date: now.add(Duration(days: 7 * (i + 1))), // Week 1, 2, 3...9
+            isCompleted: false,
+          );
+        });
 
         // 3. SEASON for each league
         final seasonRef = _db.collection('seasons').doc();

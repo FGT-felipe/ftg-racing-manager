@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../models/core_models.dart';
+import '../l10n/app_localizations.dart';
 
 class NotificationCard extends StatelessWidget {
   final AppNotification notification;
@@ -109,7 +110,7 @@ class NotificationCard extends StatelessWidget {
                               ),
                             ),
                             Text(
-                              _formatTimestamp(notification.timestamp),
+                              _formatTimestamp(context, notification.timestamp),
                               style: TextStyle(
                                 fontSize: 10,
                                 color: theme.colorScheme.onSurface.withValues(
@@ -162,11 +163,15 @@ class NotificationCard extends StatelessWidget {
     );
   }
 
-  String _formatTimestamp(DateTime dt) {
+  String _formatTimestamp(BuildContext context, DateTime dt) {
     final now = DateTime.now();
     final diff = now.difference(dt);
-    if (diff.inMinutes < 60) return "${diff.inMinutes}m ago";
-    if (diff.inHours < 24) return "${diff.inHours}h ago";
+    if (diff.inMinutes < 60) {
+      return AppLocalizations.of(context).minsAgo(diff.inMinutes);
+    }
+    if (diff.inHours < 24) {
+      return AppLocalizations.of(context).hoursAgo(diff.inHours);
+    }
     return "${dt.day}/${dt.month}";
   }
 }

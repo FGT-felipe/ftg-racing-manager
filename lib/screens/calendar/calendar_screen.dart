@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
+import 'package:ftg_racing_manager/l10n/app_localizations.dart';
 import '../../services/season_service.dart';
 import '../../models/core_models.dart';
 
@@ -18,8 +19,10 @@ class CalendarScreen extends StatelessWidget {
         }
 
         final season = snapshot.data;
+        final l10n = AppLocalizations.of(context);
+
         if (season == null || season.calendar.isEmpty) {
-          return const Center(child: Text("No season scheduled yet."));
+          return Center(child: Text(l10n.calendarNoEvents));
         }
 
         return Column(
@@ -40,7 +43,7 @@ class CalendarScreen extends StatelessWidget {
                   ),
                   const SizedBox(height: 8),
                   Text(
-                    "RACE CALENDAR",
+                    l10n.calendarTitle,
                     style: Theme.of(context).textTheme.headlineMedium?.copyWith(
                       fontWeight: FontWeight.w900,
                     ),
@@ -80,6 +83,7 @@ class CalendarScreen extends StatelessWidget {
     bool isCurrent,
   ) {
     final theme = Theme.of(context);
+    final l10n = AppLocalizations.of(context);
     final dateStr = DateFormat('MMM dd, yyyy').format(event.date);
 
     return Container(
@@ -133,7 +137,7 @@ class CalendarScreen extends StatelessWidget {
             const Icon(Icons.loop, size: 12, color: Colors.grey),
             const SizedBox(width: 4),
             Text(
-              "${event.totalLaps} LAPS",
+              "${event.totalLaps} ${l10n.lapsIntel}",
               style: const TextStyle(color: Colors.grey),
             ),
           ],
@@ -147,9 +151,9 @@ class CalendarScreen extends StatelessWidget {
                   color: theme.primaryColor,
                   borderRadius: BorderRadius.circular(4),
                 ),
-                child: const Text(
-                  "CURRENT",
-                  style: TextStyle(
+                child: Text(
+                  l10n.calendarStatusScheduled,
+                  style: const TextStyle(
                     fontSize: 10,
                     fontWeight: FontWeight.bold,
                     color: Colors.black,
