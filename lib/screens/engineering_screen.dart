@@ -271,7 +271,7 @@ class _CarUpgradesColumn extends StatelessWidget {
           physics: const NeverScrollableScrollPhysics(),
           crossAxisSpacing: 12,
           mainAxisSpacing: 12,
-          childAspectRatio: 1.85,
+          childAspectRatio: 2.6,
           children: [
             _UpgradeTile(
               title: l10n.aero,
