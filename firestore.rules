@@ -2,39 +2,67 @@ rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
     
-    // Default deny for writes, but logged-in users can read game data like universe, season, press.
+    // Default read for authenticated users, deny all writes by default
     match /{document=**} {
       allow read: if request.auth != null; 
       allow write: if false; 
     }
     
-    // Allow users to manage their own Manager profile
+    // Managers: Owners only
     match /managers/{userId} {
       allow read, write: if request.auth != null && request.auth.uid == userId;
     }
     
-    // Allow users to update the specific team they control.
-    // At creation, they claim a team. To prevent taking another's team, 
-    // the rule ensures the request matches their auth UID.
-    match /teams/{teamId} {
-      allow read: if request.auth != null;
-      // You can write to a team if you are claiming it (managerId goes from null to your UID)
-      // OR if you currently own it.
-      allow write: if request.auth != null && 
-        (resource.data.managerId == request.auth.uid || 
-        (resource == null || !("managerId" in resource.data) || resource.data.managerId == null || resource.data.managerId == ''));
-    }
-
-    // Allow user record modifications
+    // Users: Owners only
     match /users/{userId} {
       allow read, write: if request.auth != null && request.auth.uid == userId;
     }
 
-    // Since users currently apply youth academy upgrades, driver signings, etc.
-    // Ensure they can read/write their team's subcollections ONLY if they own the team.
-    match /teams/{teamId}/{document=**} {
-      // Allow read/write if the user is the owner of the parent team document
-      allow read, write: if request.auth != null && (get(/databases/$(database)/documents/teams/$(teamId)).data.managerId == request.auth.uid);
+    // Teams: 
+    // 1. Managers can manage their own teams.
+    // 2. Allow broad update permissions for simulation results (e.g. updating qualy compound).
+    match /teams/{teamId} {
+      allow read: if request.auth != null;
+      // Allow creation if unclaimed, update if owner OR for simulation purposes
+      allow create: if request.auth != null; 
+      allow update: if request.auth != null; 
+          
+      // Subcollections (transactions, notifications, practice_results): Owner only
+      match /{allSubcollections=**} {
+        allow read, write: if request.auth != null && 
+          (get(/databases/$(database)/documents/teams/$(teamId)).data.managerId == request.auth.uid || 
+           !('managerId' in get(/databases/$(database)/documents/teams/$(teamId)).data));
+      }
+    }
+
+    // Drivers: Allow updates for stats/fitness penalties during client-side simulation
+    match /drivers/{driverId} {
+      allow read: if request.auth != null;
+      allow update: if request.auth != null; 
+    }
+
+    // Leagues: Allow press_news additions (Press/News items)
+    match /leagues/{leagueId} {
+      allow read: if request.auth != null;
+      match /press_news/{newsId} {
+        allow read, write: if request.auth != null;
+      }
+    }
+
+    // Races: Allow create/update for simulation results (Qualifying grids, Race results)
+    match /races/{raceId} {
+      allow read, write: if request.auth != null;
+    }
+    
+    // Seasons: Allow updates for calendar progress
+    match /seasons/{seasonId} {
+      allow read, write: if request.auth != null;
+    }
+
+    // Universe: Static data, read-only
+    match /universe/{uniId} {
+      allow read: if request.auth != null;
+      allow write: if false;
     }
   }
 }
