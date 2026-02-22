@@ -313,7 +313,7 @@
   "budgetLabel": "PRESUPUESTO",
   "currencySymbol": "$",
   "millionsSuffix": "M",
-  "upgradeLimitReached": "Límite de mejoras alcanzado",
+  "upgradeLimitReached": "Límite de mejoras alcanzado esta semana.",
   "carLabelA": "Coche A",
   "noDriverAssigned": "Sin piloto asignado",
   "carLabelB": "Coche B",

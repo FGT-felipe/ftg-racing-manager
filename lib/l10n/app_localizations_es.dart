@@ -1004,7 +1004,7 @@ class AppLocalizationsEs extends AppLocalizations {
   String get millionsSuffix => 'M';
 
   @override
-  String get upgradeLimitReached => 'Límite de mejoras alcanzado';
+  String get upgradeLimitReached => 'Límite de mejoras alcanzado esta semana.';
 
   @override
   String get carLabelA => 'Coche A';

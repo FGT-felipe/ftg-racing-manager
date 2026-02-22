@@ -434,6 +434,7 @@ function sleep(ms) {
  * @param {Object} data Notification data.
  * @return {Promise} Firestore write.
  */
+/*
 async function addPressNews(leagueId, data) {
   return db.collection("leagues").doc(leagueId)
       .collection("press_news").add({
@@ -443,6 +444,7 @@ async function addPressNews(leagueId, data) {
         timestamp: admin.firestore.FieldValue.serverTimestamp(),
       });
 }
+*/
 
 /**
  * Sends an Office News notification to a specific team.
@@ -649,8 +651,7 @@ exports.scheduledQualifying = onSchedule({
         await db.collection("teams")
             .doc(pole.teamId).update({poles: inc});
 
-        // PRESS NEWS: Pole
-        const lId = league.id || "";
+        /*
         await addPressNews(lId, {
           title: `POLE POSITION: ${raceEvent.trackName.toUpperCase()}`,
           message: `${pole.driverName} (${pole.teamName}) takes POLE!`,
@@ -659,6 +660,7 @@ exports.scheduledQualifying = onSchedule({
           pilotName: pole.driverName,
           teamName: pole.teamName,
         });
+        */
       }
 
       // OFFICE NEWS: each team gets qualy report
@@ -944,19 +946,17 @@ exports.scheduledRace = onSchedule({
       await statsBatch.commit();
 
       // --- NOTIFICATIONS ---
+      /*
       const lId = league.id || "";
-      if (sorted.length && !result.dnfs.includes(sorted[0])) {
-        const winDrv = driversMap[sorted[0]];
-        const winTeam = teamsMap[winDrv.teamId];
-        await addPressNews(lId, {
-          title: `RACE WINNER: ${rEvent.trackName.toUpperCase()}`,
-          message: `${winDrv.name} (${winTeam.name}) wins!`,
-          type: "WINNER",
-          eventType: "Race",
-          pilotName: winDrv.name,
-          teamName: winTeam.name,
-        });
-      }
+      await addPressNews(lId, {
+        title: `RACE WINNER: ${rEvent.trackName.toUpperCase()}`,
+        message: `${winDrv.name} (${winTeam.name}) wins!`,
+        type: "WINNER",
+        eventType: "Race",
+        pilotName: winDrv.name,
+        teamName: winTeam.name,
+      });
+      */
 
       // Office News: each team gets its result
       const teamGrp = {};

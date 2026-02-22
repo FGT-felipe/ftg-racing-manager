@@ -7,7 +7,6 @@ import '../../models/domain/domain_models.dart';
 import '../../services/auth_service.dart';
 import '../../services/team_service.dart';
 import '../../services/universe_service.dart';
-import '../../services/league_notification_service.dart';
 import '../../models/user_models.dart';
 import '../../widgets/common/dynamic_loading_indicator.dart';
 import '../../l10n/app_localizations.dart';
@@ -184,6 +183,7 @@ class _TeamSelectionScreenState extends State<TeamSelectionScreen> {
       try {
         final manager = await AuthService().getManagerProfile(user.uid);
         if (manager != null) {
+          /*
           final drivers = _driversByTeam[team.id] ?? [];
           final mainDriverName = drivers.isNotEmpty
               ? drivers[0].name
@@ -210,6 +210,7 @@ class _TeamSelectionScreenState extends State<TeamSelectionScreen> {
               "secondaryDriver": secondaryDriverName,
             },
           );
+          */
         }
       } catch (e) {
         debugPrint("Error sending press news notification: $e");

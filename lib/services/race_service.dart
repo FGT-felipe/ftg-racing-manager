@@ -1,12 +1,9 @@
 import 'dart:math';
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:flutter/foundation.dart';
 import '../models/core_models.dart';
 import '../models/simulation_models.dart';
 import '../services/circuit_service.dart';
 import '../services/season_service.dart';
-import '../services/league_notification_service.dart';
-import '../services/auth_service.dart';
 
 class RaceService {
   static final RaceService _instance = RaceService._internal();
@@ -101,6 +98,7 @@ class RaceService {
           setup: driverSetup,
         );
 
+        /*
         if (result.isCrashed) {
           try {
             await LeagueNotificationService().addLeagueNotification(
@@ -117,6 +115,7 @@ class RaceService {
             debugPrint("Error sending crash notification: $e");
           }
         }
+        */
 
         qualyResults.add({
           'driverId': driver.id,
@@ -726,6 +725,7 @@ class RaceService {
 
           if (isDemo) continue; // Skip notifications in Demo Mode
 
+          /*
           try {
             await LeagueNotificationService().addLeagueNotification(
               leagueId: leagueId,
@@ -740,6 +740,7 @@ class RaceService {
           } catch (e) {
             debugPrint("Error sending race crash notification: $e");
           }
+          */
 
           continue;
         }
@@ -1121,6 +1122,7 @@ class RaceService {
     performances.sort((a, b) => b.score.compareTo(a.score));
 
     // Trigger Winner Notification for this league
+    /*
     if (performances.isNotEmpty && !performances[0].isDNF) {
       try {
         final winner = performances[0].driver;
@@ -1151,6 +1153,7 @@ class RaceService {
         debugPrint("Error sending winner notification in simulateNextRace: $e");
       }
     }
+    */
 
     final pointSystem = [25, 18, 15, 12, 10, 8, 6, 4, 2, 1];
     Map<DocumentReference, int> teamPointUpdates = {};
@@ -1469,6 +1472,7 @@ class RaceService {
     );
 
     // 4.5. Trigger Winner Notification
+    /*
     if (sortedDriverIds.isNotEmpty) {
       final winnerId = sortedDriverIds[0];
       // We already have teamsMap and driverTeamIds
@@ -1506,6 +1510,7 @@ class RaceService {
         debugPrint("Error sending winner notification: $e");
       }
     }
+    */
 
     batch.update(seasonDoc.reference, {
       'calendar': updatedCalendar.map((e) => e.toMap()).toList(),
