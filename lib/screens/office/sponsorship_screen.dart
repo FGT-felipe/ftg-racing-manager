@@ -40,11 +40,13 @@ class _SponsorshipScreenState extends State<SponsorshipScreen> {
     BuildContext context,
     SponsorSlot slot,
     ManagerRole role,
+    Map<String, dynamic> negotiations,
   ) {
     final offers = _sponsorService.getAvailableSponsors(
       slot,
       role,
-    ); // Passed role
+      negotiations,
+    );
 
     showModalBottomSheet(
       context: context,
@@ -67,10 +69,18 @@ class _SponsorshipScreenState extends State<SponsorshipScreen> {
     );
   }
 
-  void _selectSlotDesktop(SponsorSlot slot, ManagerRole role) {
+  void _selectSlotDesktop(
+    SponsorSlot slot,
+    ManagerRole role,
+    Map<String, dynamic> negotiations,
+  ) {
     setState(() {
       _selectedSlotDesktop = slot;
-      _desktopOffers = _sponsorService.getAvailableSponsors(slot, role);
+      _desktopOffers = _sponsorService.getAvailableSponsors(
+        slot,
+        role,
+        negotiations,
+      );
     });
   }
 
@@ -294,6 +304,7 @@ class _SponsorshipScreenState extends State<SponsorshipScreen> {
     return Column(
       children: [
         _buildSlotItem(
+          team,
           AppLocalizations.of(context).rearWingPart,
           SponsorSlot.rearWing,
           team.sponsors[SponsorSlot.rearWing.name],
@@ -306,6 +317,7 @@ class _SponsorshipScreenState extends State<SponsorshipScreen> {
           children: [
             Expanded(
               child: _buildSlotItem(
+                team,
                 AppLocalizations.of(context).sidepodLPart,
                 SponsorSlot.sidepods,
                 team.sponsors[SponsorSlot.sidepods.name],
@@ -317,6 +329,7 @@ class _SponsorshipScreenState extends State<SponsorshipScreen> {
             const SizedBox(width: 12),
             Expanded(
               child: _buildSlotItem(
+                team,
                 AppLocalizations.of(context).sidepodRPart,
                 SponsorSlot.sidepods,
                 team.sponsors[SponsorSlot.sidepods.name],
@@ -329,6 +342,7 @@ class _SponsorshipScreenState extends State<SponsorshipScreen> {
         ),
         const SizedBox(height: 12),
         _buildSlotItem(
+          team,
           AppLocalizations.of(context).haloPart,
           SponsorSlot.halo,
           team.sponsors[SponsorSlot.halo.name],
@@ -338,6 +352,7 @@ class _SponsorshipScreenState extends State<SponsorshipScreen> {
         ),
         const SizedBox(height: 12),
         _buildSlotItem(
+          team,
           AppLocalizations.of(context).frontWingPart,
           SponsorSlot.frontWing,
           team.sponsors[SponsorSlot.frontWing.name],
@@ -347,6 +362,7 @@ class _SponsorshipScreenState extends State<SponsorshipScreen> {
         ),
         const SizedBox(height: 12),
         _buildSlotItem(
+          team,
           AppLocalizations.of(context).nosePart,
           SponsorSlot.nose,
           team.sponsors[SponsorSlot.nose.name],
@@ -374,6 +390,7 @@ class _SponsorshipScreenState extends State<SponsorshipScreen> {
   }
 
   Widget _buildSlotItem(
+    Team team,
     String label,
     SponsorSlot slot,
     ActiveContract? contract,
@@ -385,12 +402,15 @@ class _SponsorshipScreenState extends State<SponsorshipScreen> {
     final isSelected = _selectedSlotDesktop == slot;
     final assetPath = _getSlotAsset(slot);
 
+    final negotiations =
+        team.weekStatus['sponsorNegotiations'] as Map<String, dynamic>? ?? {};
+
     return GestureDetector(
       onTap: () {
         if (isDesktop) {
-          _selectSlotDesktop(slot, role);
+          _selectSlotDesktop(slot, role, negotiations);
         } else if (!hasContract) {
-          _showSponsorCarouselMobile(context, slot, role);
+          _showSponsorCarouselMobile(context, slot, role, negotiations);
         }
       },
       child: Container(

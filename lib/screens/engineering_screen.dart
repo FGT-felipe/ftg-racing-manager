@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import '../l10n/app_localizations.dart';
@@ -9,6 +8,7 @@ import '../services/car_service.dart';
 import '../services/driver_assignment_service.dart';
 import '../widgets/car_schematic_widget.dart';
 import '../widgets/common/instruction_card.dart';
+import '../services/driver_portrait_service.dart';
 
 class EngineeringScreen extends StatefulWidget {
   final String teamId;
@@ -157,7 +157,7 @@ class _EngineeringScreenState extends State<EngineeringScreen> {
                       Expanded(
                         child: _CarUpgradesColumn(
                           carLabel: l10n.carLabelA,
-                          driverName: driverA?.name ?? l10n.noDriverAssigned,
+                          driver: driverA,
                           carIndex: 0,
                           stats:
                               team.carStats['0'] ??
@@ -177,7 +177,7 @@ class _EngineeringScreenState extends State<EngineeringScreen> {
                       Expanded(
                         child: _CarUpgradesColumn(
                           carLabel: l10n.carLabelB,
-                          driverName: driverB?.name ?? l10n.noDriverAssigned,
+                          driver: driverB,
                           carIndex: 1,
                           stats:
                               team.carStats['1'] ??
@@ -207,7 +207,7 @@ class _EngineeringScreenState extends State<EngineeringScreen> {
 
 class _CarUpgradesColumn extends StatelessWidget {
   final String carLabel;
-  final String driverName;
+  final Driver? driver;
   final int carIndex;
   final Map<String, int> stats;
   final String teamId;
@@ -217,7 +217,7 @@ class _CarUpgradesColumn extends StatelessWidget {
 
   const _CarUpgradesColumn({
     required this.carLabel,
-    required this.driverName,
+    required this.driver,
     required this.carIndex,
     required this.stats,
     required this.teamId,
@@ -233,37 +233,30 @@ class _CarUpgradesColumn extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: [
-            Text(
-              carLabel,
-              style: TextStyle(
-                color: Theme.of(context).primaryColor,
-                fontSize: 18,
-                fontWeight: FontWeight.bold,
-              ),
-            ),
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-              decoration: BoxDecoration(
-                color: Colors.white10,
-                borderRadius: BorderRadius.circular(4),
-              ),
-              child: Text(
-                driverName,
-                style: GoogleFonts.raleway(fontSize: 12, color: Colors.white70),
-              ),
-            ),
-          ],
-        ),
-        const SizedBox(height: 16),
-        Center(
-          child: CarSchematicWidget(
-            stats: stats,
-            carLabel: l10n.carPerformanceTitle(carLabel),
+        Text(
+          carLabel,
+          style: TextStyle(
+            color: Theme.of(context).primaryColor,
+            fontSize: 18,
+            fontWeight: FontWeight.bold,
           ),
         ),
+        const SizedBox(height: 16),
+        Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Expanded(
+              flex: 5,
+              child: CarSchematicWidget(
+                stats: stats,
+                carLabel: l10n.carPerformanceTitle(carLabel),
+              ),
+            ),
+            const SizedBox(width: 8),
+            Expanded(flex: 3, child: _DriverSmallCard(driver: driver)),
+          ],
+        ),
+
         const SizedBox(height: 20),
         GridView.count(
           crossAxisCount: 2,
@@ -501,5 +494,129 @@ class _UpgradeTileState extends State<_UpgradeTile> {
         ],
       ),
     );
+  }
+}
+
+class _DriverSmallCard extends StatelessWidget {
+  final Driver? driver;
+
+  const _DriverSmallCard({this.driver});
+
+  @override
+  Widget build(BuildContext context) {
+    if (driver == null) {
+      return Container(
+        height: 154, // Match CarSchematicWidget roughly
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(color: Colors.white.withValues(alpha: 0.05)),
+          color: Colors.white.withValues(alpha: 0.02),
+        ),
+        child: const Center(
+          child: Icon(
+            Icons.person_off_rounded,
+            color: Colors.white24,
+            size: 32,
+          ),
+        ),
+      );
+    }
+
+    final theme = Theme.of(context);
+    final portraitUrl =
+        driver!.portraitUrl ??
+        DriverPortraitService().getEffectivePortraitUrl(
+          driverId: driver!.id,
+          countryCode: driver!.countryCode,
+          gender: driver!.gender,
+          age: driver!.age,
+        );
+
+    return Container(
+      padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 8),
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(
+          color: Colors.white.withValues(alpha: 0.1),
+          width: 1,
+        ),
+        gradient: const LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [Color(0xFF1E1E1E), Color(0xFF0A0A0A)],
+        ),
+      ),
+      child: Column(
+        children: [
+          Container(
+            width: 64,
+            height: 64,
+            decoration: BoxDecoration(
+              color: theme.colorScheme.primaryContainer,
+              shape: BoxShape.circle,
+              border: Border.all(
+                color: theme.colorScheme.primary.withValues(alpha: 0.5),
+                width: 2,
+              ),
+              image: DecorationImage(
+                image: portraitUrl.startsWith('http')
+                    ? NetworkImage(portraitUrl) as ImageProvider
+                    : AssetImage(portraitUrl),
+                fit: BoxFit.cover,
+                onError: (e, s) => debugPrint('Error $e'),
+              ),
+            ),
+          ),
+          const SizedBox(height: 10),
+          Text(
+            driver!.name.split(' ').first,
+            style: const TextStyle(
+              fontSize: 11,
+              fontWeight: FontWeight.bold,
+              color: Colors.white,
+            ),
+            overflow: TextOverflow.ellipsis,
+          ),
+          const SizedBox(height: 2),
+          Text(
+            driver!.name.split(' ').length > 1
+                ? driver!.name.split(' ').last
+                : '',
+            style: const TextStyle(
+              fontSize: 10,
+              fontWeight: FontWeight.w500,
+              color: Colors.white70,
+            ),
+            overflow: TextOverflow.ellipsis,
+          ),
+          const SizedBox(height: 8),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Text(
+                _getFlagEmoji(driver!.countryCode),
+                style: const TextStyle(fontSize: 14),
+              ),
+              const SizedBox(width: 4),
+              Text(
+                "L${(driver!.stats[DriverStats.consistency] ?? 0) ~/ 5}",
+                style: TextStyle(
+                  fontSize: 10,
+                  fontWeight: FontWeight.bold,
+                  color: theme.primaryColor,
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  String _getFlagEmoji(String countryCode) {
+    if (countryCode.length != 2) return '🏁';
+    final int firstLetter = countryCode.codeUnitAt(0) - 0x41 + 0x1F1E6;
+    final int secondLetter = countryCode.codeUnitAt(1) - 0x41 + 0x1F1E6;
+    return String.fromCharCode(firstLetter) + String.fromCharCode(secondLetter);
   }
 }
