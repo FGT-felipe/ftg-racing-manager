@@ -17,7 +17,11 @@ class SponsorService {
   final FirebaseFirestore _db = FirebaseFirestore.instance;
   final Random _random = Random();
 
-  List<SponsorOffer> getAvailableSponsors(SponsorSlot slot, ManagerRole role) {
+  List<SponsorOffer> getAvailableSponsors(
+    SponsorSlot slot,
+    ManagerRole role,
+    Map<String, dynamic> negotiations,
+  ) {
     // 1. Calculate Bonus Multiplier based on Role
     double multiplier = 1.0;
     bool isAdmin = false;
@@ -63,9 +67,12 @@ class SponsorService {
       );
     }
 
+    // List of offers to return
+    List<SponsorOffer> offers = [];
+
     switch (slot) {
       case SponsorSlot.rearWing:
-        return [
+        offers = [
           createOffer(
             id: 'titans_oil',
             name: 'Titans Oil',
@@ -94,9 +101,10 @@ class SponsorService {
             objDesc: "objRaceWin",
           ),
         ];
+        break;
       case SponsorSlot.frontWing:
       case SponsorSlot.sidepods:
-        return [
+        offers = [
           createOffer(
             id: 'fast_logistics',
             name: 'Fast Logistics',
@@ -125,8 +133,9 @@ class SponsorService {
             objDesc: "objFinishRace",
           ),
         ];
+        break;
       default: // Nose / Halo
-        return [
+        offers = [
           createOffer(
             id: 'local_drinks',
             name: 'Local Drinks',
@@ -156,6 +165,19 @@ class SponsorService {
           ),
         ];
     }
+
+    // Apply persisted negotiation state
+    for (var offer in offers) {
+      if (negotiations.containsKey(offer.id)) {
+        final state = negotiations[offer.id] as Map<String, dynamic>;
+        offer.attemptsMade = state['attemptsMade'] ?? 0;
+        if (state['lockedUntil'] != null) {
+          offer.lockedUntil = DateTime.tryParse(state['lockedUntil']);
+        }
+      }
+    }
+
+    return offers;
   }
 
   Future<NegotiationResult> negotiate({
@@ -216,6 +238,12 @@ class SponsorService {
 
       if (offer.attemptsMade >= 2) {
         offer.lockedUntil = DateTime.now().add(const Duration(days: 7));
+      }
+
+      // Persist negotiation state
+      await _updateNegotiationState(teamId, offer);
+
+      if (offer.attemptsMade >= 2) {
         return NegotiationResult(
           NegotiationStatus.locked,
           "Sponsor walked away.",
@@ -229,6 +257,32 @@ class SponsorService {
         remainingAttempts: remaining,
       );
     }
+  }
+
+  Future<void> _updateNegotiationState(
+    String teamId,
+    SponsorOffer offer,
+  ) async {
+    final teamRef = _db.collection('teams').doc(teamId);
+    await _db.runTransaction((transaction) async {
+      final teamDoc = await transaction.get(teamRef);
+      if (!teamDoc.exists) return;
+
+      Map<String, dynamic> weekStatus = Map<String, dynamic>.from(
+        teamDoc.data()?['weekStatus'] ?? {},
+      );
+      Map<String, dynamic> negotiations = Map<String, dynamic>.from(
+        weekStatus['sponsorNegotiations'] ?? {},
+      );
+
+      negotiations[offer.id] = {
+        'attemptsMade': offer.attemptsMade,
+        'lockedUntil': offer.lockedUntil?.toIso8601String(),
+      };
+
+      weekStatus['sponsorNegotiations'] = negotiations;
+      transaction.update(teamRef, {'weekStatus': weekStatus});
+    });
   }
 
   Future<void> _signContract(
@@ -258,7 +312,21 @@ class SponsorService {
       );
       sponsors[slot.name] = contract.toMap();
 
-      transaction.update(teamRef, {'budget': newBudget, 'sponsors': sponsors});
+      // Clear negotiation state for this sponsor when signed
+      Map<String, dynamic> weekStatus = Map<String, dynamic>.from(
+        teamDoc.data()?['weekStatus'] ?? {},
+      );
+      Map<String, dynamic> negotiations = Map<String, dynamic>.from(
+        weekStatus['sponsorNegotiations'] ?? {},
+      );
+      negotiations.remove(offer.id);
+      weekStatus['sponsorNegotiations'] = negotiations;
+
+      transaction.update(teamRef, {
+        'budget': newBudget,
+        'sponsors': sponsors,
+        'weekStatus': weekStatus,
+      });
 
       final txRef = teamRef.collection('transactions').doc();
       transaction.set(txRef, {
