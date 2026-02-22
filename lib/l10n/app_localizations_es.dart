@@ -785,7 +785,7 @@ class AppLocalizationsEs extends AppLocalizations {
   String get newManagerJoin => 'Súmate como Manager';
 
   @override
-  String get versionFooter => 'Versión 1.0.0';
+  String get versionFooter => 'V3.0.0 - Fire Tower Games Studio';
 
   @override
   String get continueWithGoogle => 'Seguir con Google';
@@ -1594,7 +1594,7 @@ class AppLocalizationsEs extends AppLocalizations {
   String get selectedTag => 'SELECCIONADO';
 
   @override
-  String get standingsConstructorTitle => 'Clasificación de Constructores';
+  String get standingsConstructorTitle => ' Constructores';
 
   @override
   String get raceResults => 'Resultados';
@@ -1876,4 +1876,28 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get navOffice => 'Sede Central';
+
+  @override
+  String get objFinishTop3 => 'Terminar en el Top 3';
+
+  @override
+  String get objBothInPoints => 'Ambos coches en los puntos';
+
+  @override
+  String get objRaceWin => 'Ganar la carrera';
+
+  @override
+  String get objFinishTop10 => 'Terminar en el Top 10';
+
+  @override
+  String get objFastestLap => 'Vuelta rápida';
+
+  @override
+  String get objFinishRace => 'Terminar la carrera';
+
+  @override
+  String get objImproveGrid => 'Mejorar posición de parrilla';
+
+  @override
+  String get objOvertake3Cars => 'Adelantar 3 coches';
 }

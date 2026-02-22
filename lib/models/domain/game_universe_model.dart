@@ -17,7 +17,7 @@ class GameUniverse {
   GameUniverse({
     required this.leagues,
     required this.createdAt,
-    this.gameVersion = "1.0.0",
+    this.gameVersion = "3.0.0",
   });
 
   /// Obtiene una liga por su ID

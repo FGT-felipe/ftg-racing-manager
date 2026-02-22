@@ -73,7 +73,7 @@ class SponsorService {
             baseSign: 5000000,
             baseWeekly: 450000,
             baseObj: 800000,
-            objDesc: "Finish Top 3",
+            objDesc: "objFinishTop3",
           ),
           createOffer(
             id: 'global_tech',
@@ -82,7 +82,7 @@ class SponsorService {
             baseSign: 4200000,
             baseWeekly: 500000,
             baseObj: 600000,
-            objDesc: "Both cars in points",
+            objDesc: "objBothInPoints",
           ),
           createOffer(
             id: 'zenith_sky',
@@ -91,7 +91,7 @@ class SponsorService {
             baseSign: 4800000,
             baseWeekly: 400000,
             baseObj: 1000000,
-            objDesc: "Race Win",
+            objDesc: "objRaceWin",
           ),
         ];
       case SponsorSlot.frontWing:
@@ -104,7 +104,7 @@ class SponsorService {
             baseSign: 1200000,
             baseWeekly: 150000,
             baseObj: 200000,
-            objDesc: "Finish Top 10",
+            objDesc: "objFinishTop10",
           ),
           createOffer(
             id: 'spark_energy',
@@ -113,7 +113,7 @@ class SponsorService {
             baseSign: 1500000,
             baseWeekly: 120000,
             baseObj: 300000,
-            objDesc: "Fastest Lap",
+            objDesc: "objFastestLap",
           ),
           createOffer(
             id: 'eco_pulse',
@@ -122,7 +122,7 @@ class SponsorService {
             baseSign: 1100000,
             baseWeekly: 160000,
             baseObj: 150000,
-            objDesc: "Finish the race",
+            objDesc: "objFinishRace",
           ),
         ];
       default: // Nose / Halo
@@ -134,7 +134,7 @@ class SponsorService {
             baseSign: 300000,
             baseWeekly: 40000,
             baseObj: 50000,
-            objDesc: "Finish the race",
+            objDesc: "objFinishRace",
           ),
           createOffer(
             id: 'micro_chips',
@@ -143,7 +143,7 @@ class SponsorService {
             baseSign: 450000,
             baseWeekly: 35000,
             baseObj: 70000,
-            objDesc: "Improve Grid Position",
+            objDesc: "objImproveGrid",
           ),
           createOffer(
             id: 'nitro_gear',
@@ -152,7 +152,7 @@ class SponsorService {
             baseSign: 400000,
             baseWeekly: 45000,
             baseObj: 60000,
-            objDesc: "Overtake 3 cars",
+            objDesc: "objOvertake3Cars",
           ),
         ];
     }
@@ -165,7 +165,7 @@ class SponsorService {
     required SponsorSlot slot,
   }) async {
     // 1. Validation
-    if (offer.attemptsMade >= 3) {
+    if (offer.attemptsMade >= 2) {
       return NegotiationResult(
         NegotiationStatus.locked,
         "Negotiation failed too many times.",
@@ -212,9 +212,9 @@ class SponsorService {
       return NegotiationResult(NegotiationStatus.success, "Deal Signed!");
     } else {
       offer.attemptsMade++;
-      int remaining = 3 - offer.attemptsMade;
+      int remaining = 2 - offer.attemptsMade;
 
-      if (offer.attemptsMade >= 3) {
+      if (offer.attemptsMade >= 2) {
         offer.lockedUntil = DateTime.now().add(const Duration(days: 7));
         return NegotiationResult(
           NegotiationStatus.locked,

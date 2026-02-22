@@ -709,7 +709,7 @@ class _SponsorOfferCardState extends State<_SponsorOfferCard> {
         _infoRow(
           Icons.emoji_events_outlined,
           AppLocalizations.of(context).objectiveLabel,
-          widget.offer.objectiveDescription,
+          _localizeObjective(context, widget.offer.objectiveDescription),
           Colors.orangeAccent,
         ),
         const SizedBox(height: 16),
@@ -734,7 +734,7 @@ class _SponsorOfferCardState extends State<_SponsorOfferCard> {
             child: Text(
               AppLocalizations.of(
                 context,
-              ).chooseTacticLabel((3 - widget.offer.attemptsMade).toString()),
+              ).chooseTacticLabel((2 - widget.offer.attemptsMade).toString()),
               style: TextStyle(
                 color: Colors.white.withValues(alpha: 0.4),
                 fontSize: 9,
@@ -845,7 +845,10 @@ class _SponsorOfferCardState extends State<_SponsorOfferCard> {
                   ),
                   _infoChip(
                     Icons.emoji_events_outlined,
-                    widget.offer.objectiveDescription,
+                    _localizeObjective(
+                      context,
+                      widget.offer.objectiveDescription,
+                    ),
                     Colors.orangeAccent,
                   ),
                 ],
@@ -878,7 +881,7 @@ class _SponsorOfferCardState extends State<_SponsorOfferCard> {
                   children: [
                     Text(
                       AppLocalizations.of(context).chooseTacticLabel(
-                        (3 - widget.offer.attemptsMade).toString(),
+                        (2 - widget.offer.attemptsMade).toString(),
                       ),
                       style: TextStyle(
                         color: Colors.white.withValues(alpha: 0.4),
@@ -917,6 +920,30 @@ class _SponsorOfferCardState extends State<_SponsorOfferCard> {
         ),
       ],
     );
+  }
+
+  String _localizeObjective(BuildContext context, String objKey) {
+    final l10n = AppLocalizations.of(context);
+    switch (objKey) {
+      case 'objFinishTop3':
+        return l10n.objFinishTop3;
+      case 'objBothInPoints':
+        return l10n.objBothInPoints;
+      case 'objRaceWin':
+        return l10n.objRaceWin;
+      case 'objFinishTop10':
+        return l10n.objFinishTop10;
+      case 'objFastestLap':
+        return l10n.objFastestLap;
+      case 'objFinishRace':
+        return l10n.objFinishRace;
+      case 'objImproveGrid':
+        return l10n.objImproveGrid;
+      case 'objOvertake3Cars':
+        return l10n.objOvertake3Cars;
+      default:
+        return objKey;
+    }
   }
 
   Widget _infoChip(IconData icon, String value, Color color) {

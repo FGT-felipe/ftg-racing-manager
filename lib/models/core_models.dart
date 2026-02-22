@@ -273,7 +273,7 @@ class SponsorOffer {
     required this.personality,
     required this.contractDuration,
     this.isAdminBonusApplied = false,
-    this.consecutiveFailuresAllowed = 3,
+    this.consecutiveFailuresAllowed = 2,
     this.attemptsMade = 0,
     this.lockedUntil,
   });
@@ -308,7 +308,7 @@ class SponsorOffer {
       weeklyBasePayment: map['weeklyBasePayment'] ?? 0,
       objectiveBonus: map['objectiveBonus'] ?? 0,
       objectiveDescription: map['objectiveDescription'] ?? '',
-      consecutiveFailuresAllowed: map['consecutiveFailuresAllowed'] ?? 3,
+      consecutiveFailuresAllowed: map['consecutiveFailuresAllowed'] ?? 2,
       personality: SponsorPersonality.values.firstWhere(
         (e) => e.name == map['personality'],
         orElse: () => SponsorPersonality.professional,

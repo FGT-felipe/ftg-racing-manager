@@ -243,7 +243,7 @@
   "ftgSlogan": "Domina la pista",
   "alreadyHaveAccount": "¿Ya tienes cuenta?",
   "newManagerJoin": "Súmate como Manager",
-  "versionFooter": "Versión 1.0.0",
+  "versionFooter": "V3.0.0 - Fire Tower Games Studio",
   "continueWithGoogle": "Seguir con Google",
   "orUseEmail": "O usar email",
   "firstNameLabel": "Nombre",
@@ -496,7 +496,7 @@
   "secondaryDriverLabel": "Segundo Piloto",
   "selectTeamBtn": "SELECCIONAR EQUIPO",
   "selectedTag": "SELECCIONADO",
-  "standingsConstructorTitle": "Clasificación de Constructores",
+  "standingsConstructorTitle": " Constructores",
   "raceResults": "Resultados",
   "standingsTeam": "Escudería",
   "standingsPoints": "Puntos",
@@ -864,5 +864,13 @@
   "setupSubmitted": "Configuración Enviada",
   "setupPending": "Configuración Pendiente",
   "strategySubmitted": "Estrategia Enviada",
-  "strategyPending": "Estrategia Pendiente"
+  "strategyPending": "Estrategia Pendiente",
+  "objFinishTop3": "Terminar en el Top 3",
+  "objBothInPoints": "Ambos coches en los puntos",
+  "objRaceWin": "Ganar la carrera",
+  "objFinishTop10": "Terminar en el Top 10",
+  "objFastestLap": "Vuelta rápida",
+  "objFinishRace": "Terminar la carrera",
+  "objImproveGrid": "Mejorar posición de parrilla",
+  "objOvertake3Cars": "Adelantar 3 coches"
 }

@@ -1475,7 +1475,7 @@ abstract class AppLocalizations {
   /// No description provided for @versionFooter.
   ///
   /// In en, this message translates to:
-  /// **'Version Footer'**
+  /// **'V3.0.0 - Fire Tower Games Studio'**
   String get versionFooter;
 
   /// No description provided for @continueWithGoogle.
@@ -2993,7 +2993,7 @@ abstract class AppLocalizations {
   /// No description provided for @standingsConstructorTitle.
   ///
   /// In en, this message translates to:
-  /// **'Standings Constructor'**
+  /// **'Constructors'**
   String get standingsConstructorTitle;
 
   /// No description provided for @raceResults.
@@ -3513,6 +3513,54 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Office'**
   String get navOffice;
+
+  /// No description provided for @objFinishTop3.
+  ///
+  /// In en, this message translates to:
+  /// **'Finish Top 3'**
+  String get objFinishTop3;
+
+  /// No description provided for @objBothInPoints.
+  ///
+  /// In en, this message translates to:
+  /// **'Both cars in points'**
+  String get objBothInPoints;
+
+  /// No description provided for @objRaceWin.
+  ///
+  /// In en, this message translates to:
+  /// **'Race Win'**
+  String get objRaceWin;
+
+  /// No description provided for @objFinishTop10.
+  ///
+  /// In en, this message translates to:
+  /// **'Finish Top 10'**
+  String get objFinishTop10;
+
+  /// No description provided for @objFastestLap.
+  ///
+  /// In en, this message translates to:
+  /// **'Fastest Lap'**
+  String get objFastestLap;
+
+  /// No description provided for @objFinishRace.
+  ///
+  /// In en, this message translates to:
+  /// **'Finish the race'**
+  String get objFinishRace;
+
+  /// No description provided for @objImproveGrid.
+  ///
+  /// In en, this message translates to:
+  /// **'Improve Grid Position'**
+  String get objImproveGrid;
+
+  /// No description provided for @objOvertake3Cars.
+  ///
+  /// In en, this message translates to:
+  /// **'Overtake 3 cars'**
+  String get objOvertake3Cars;
 }
 
 class _AppLocalizationsDelegate

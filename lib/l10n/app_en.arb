@@ -443,7 +443,7 @@
   "ftgSlogan": "Ftg Slogan",
   "alreadyHaveAccount": "Already Have Account",
   "newManagerJoin": "New Manager Join",
-  "versionFooter": "Version Footer",
+  "versionFooter": "V3.0.0 - Fire Tower Games Studio",
   "continueWithGoogle": "Continue With Google",
   "orUseEmail": "Or Use Email",
   "firstNameLabel": "First Name",
@@ -696,7 +696,7 @@
   "secondaryDriverLabel": "Secondary Driver",
   "selectTeamBtn": "Select Team",
   "selectedTag": "Selected Tag",
-  "standingsConstructorTitle": "Standings Constructor",
+  "standingsConstructorTitle": "Constructors",
   "raceResults": "Race Results",
   "standingsTeam": "Standings Team",
   "standingsPoints": "Standings Points",
@@ -1056,5 +1056,13 @@
         "type": "String"
       }
     }
-  }
+  },
+  "objFinishTop3": "Finish Top 3",
+  "objBothInPoints": "Both cars in points",
+  "objRaceWin": "Race Win",
+  "objFinishTop10": "Finish Top 10",
+  "objFastestLap": "Fastest Lap",
+  "objFinishRace": "Finish the race",
+  "objImproveGrid": "Improve Grid Position",
+  "objOvertake3Cars": "Overtake 3 cars"
 }

@@ -784,7 +784,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get newManagerJoin => 'New Manager Join';
 
   @override
-  String get versionFooter => 'Version Footer';
+  String get versionFooter => 'V3.0.0 - Fire Tower Games Studio';
 
   @override
   String get continueWithGoogle => 'Continue With Google';
@@ -1585,7 +1585,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get selectedTag => 'Selected Tag';
 
   @override
-  String get standingsConstructorTitle => 'Standings Constructor';
+  String get standingsConstructorTitle => 'Constructors';
 
   @override
   String get raceResults => 'Race Results';
@@ -1866,4 +1866,28 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get navOffice => 'Office';
+
+  @override
+  String get objFinishTop3 => 'Finish Top 3';
+
+  @override
+  String get objBothInPoints => 'Both cars in points';
+
+  @override
+  String get objRaceWin => 'Race Win';
+
+  @override
+  String get objFinishTop10 => 'Finish Top 10';
+
+  @override
+  String get objFastestLap => 'Fastest Lap';
+
+  @override
+  String get objFinishRace => 'Finish the race';
+
+  @override
+  String get objImproveGrid => 'Improve Grid Position';
+
+  @override
+  String get objOvertake3Cars => 'Overtake 3 cars';
 }
