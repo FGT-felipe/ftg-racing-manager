@@ -1,4 +1,5 @@
 /* eslint-disable max-len */
+// Deployment: 2026-02-24
 const {onSchedule} = require("firebase-functions/v2/scheduler");
 const {setGlobalOptions} = require("firebase-functions");
 const admin = require("firebase-admin");
@@ -563,7 +564,11 @@ exports.scheduledQualifying = onSchedule({
           const dDoc = dSnap.docs[di];
           const driver = {...dDoc.data(), id: dDoc.id, carIndex: di};
 
-          // Resolve setup
+          let finalLapTime = 0.0;
+          let isCrashed = false;
+          let tyreCompound = "medium";
+          let setupSubmitted = false;
+
           let setup = {...DEFAULT_SETUP};
           const ws = team.weekStatus || {};
           const ds = (ws.driverSetups || {})[driver.id];
@@ -572,39 +577,39 @@ exports.scheduledQualifying = onSchedule({
           if (team.isBot) {
             // AI: near-ideal setup with randomness
             const ideal = circuit.idealSetup;
-            setup.frontWing = ideal.frontWing +
-              Math.floor(Math.random() * 10) - 5;
-            setup.rearWing = ideal.rearWing +
-              Math.floor(Math.random() * 10) - 5;
-            setup.suspension = ideal.suspension +
-              Math.floor(Math.random() * 10) - 5;
-            setup.gearRatio = ideal.gearRatio +
-              Math.floor(Math.random() * 10) - 5;
-            const styles = [
-              "normal", "normal", "offensive", "mostRisky",
-            ];
-            setup.qualifyingStyle = styles[
-                Math.floor(Math.random() * styles.length)
-            ];
+            setup.frontWing = ideal.frontWing + Math.floor(Math.random() * 10) - 5;
+            setup.rearWing = ideal.rearWing + Math.floor(Math.random() * 10) - 5;
+            setup.suspension = ideal.suspension + Math.floor(Math.random() * 10) - 5;
+            setup.gearRatio = ideal.gearRatio + Math.floor(Math.random() * 10) - 5;
+            const styles = ["normal", "normal", "offensive", "mostRisky"];
+            setup.qualifyingStyle = styles[Math.floor(Math.random() * styles.length)];
+            setupSubmitted = true;
           } else if (sent && ds.qualifying) {
             setup = {...DEFAULT_SETUP, ...ds.qualifying};
+            setupSubmitted = true;
           }
-          // else: default 50/50
 
-          const cs = (team.carStats &&
-            team.carStats[String(di)]) || {};
-          const res = SimEngine.simulateLap({
-            circuit, carStats: cs,
-            driverStats: driver.stats || {},
-            setup,
-            style: setup.qualifyingStyle || "normal",
-            teamRole: managerRoles[team.id] || "",
-          });
+          if (!team.isBot && ds && ds.qualifyingBestTime && ds.qualifyingBestTime > 0) {
+            finalLapTime = ds.qualifyingBestTime;
+            isCrashed = ds.qualifyingDnf || false;
+            tyreCompound = ds.qualifyingBestCompound || setup.tyreCompound || "medium";
+          } else {
+            const cs = (team.carStats && team.carStats[String(di)]) || {};
+            const res = SimEngine.simulateLap({
+              circuit, carStats: cs,
+              driverStats: driver.stats || {},
+              setup,
+              style: setup.qualifyingStyle || "normal",
+              teamRole: managerRoles[team.id] || "",
+            });
 
-          // Ex-Engineer: +5% qualy success (5% faster lap)
-          let finalLapTime = res.lapTime;
-          if (!res.isCrashed && managerRoles[team.id] === "exEngineer") {
-            finalLapTime *= 0.95;
+            // Ex-Engineer: +5% qualy success (5% faster lap)
+            finalLapTime = res.lapTime;
+            if (!res.isCrashed && managerRoles[team.id] === "exEngineer") {
+              finalLapTime *= 0.95;
+            }
+            isCrashed = res.isCrashed;
+            tyreCompound = setup.tyreCompound || "medium";
           }
 
           qualyResults.push({
@@ -613,9 +618,9 @@ exports.scheduledQualifying = onSchedule({
             teamName: team.name,
             teamId: team.id,
             lapTime: finalLapTime,
-            isCrashed: res.isCrashed,
-            tyreCompound: setup.tyreCompound || "medium",
-            setupSubmitted: !!sent || team.isBot,
+            isCrashed: isCrashed,
+            tyreCompound: tyreCompound,
+            setupSubmitted: setupSubmitted || team.isBot,
           });
         }
       }

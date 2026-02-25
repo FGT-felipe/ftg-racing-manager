@@ -58,6 +58,8 @@ class _GarageScreenState extends State<GarageScreen>
   // Per-driver lap history: driverId -> [{lapTime, confidence, feedback}]
   final Map<String, List<Map<String, dynamic>>> _driverLapHistory = {};
 
+  List<Map<String, dynamic>>? _officialQualyResults;
+
   PracticeRunResult? _lastResult;
   double? _fastestGlobalLap;
   String? _fastestGlobalDriverId;
@@ -252,6 +254,7 @@ class _GarageScreenState extends State<GarageScreen>
               final qResults = List<Map<String, dynamic>>.from(
                 data['qualifyingResults'],
               );
+              _officialQualyResults = qResults;
               for (var res in qResults) {
                 final dId = res['driverId'] as String;
                 final compoundName = res['tyreCompound'] as String?;
@@ -854,6 +857,50 @@ class _GarageScreenState extends State<GarageScreen>
 
   /// Build the initial qualifying results table with all drivers showing their recorded times
   void _buildInitialQualifyingTable() {
+    if (_officialQualyResults != null) {
+      // Qualifying has concluded natively; populate from official results
+      _qualifyingResultsTable = _divisionDrivers.map((driver) {
+        final team = _divisionTeams.firstWhere(
+          (t) => t.id == driver.teamId,
+          orElse: () => Team(
+            id: '',
+            name: 'Unknown',
+            isBot: true,
+            budget: 0,
+            points: 0,
+            carStats: {},
+            weekStatus: {},
+          ),
+        );
+
+        final officialRow = _officialQualyResults!.firstWhere(
+          (r) => r['driverId'] == driver.id,
+          orElse: () => <String, dynamic>{},
+        );
+
+        return {
+          'driverId': driver.id,
+          'driverName': driver.name,
+          'teamName': team.name,
+          'teamId': team.id,
+          'bestTime': officialRow.containsKey('lapTime')
+              ? (officialRow['lapTime'] as num).toDouble()
+              : 0.0,
+          'laps': _qualifyingLaps[driver.id] ?? 0,
+          'bestCompound': officialRow.containsKey('tyreCompound')
+              ? TyreCompound.values.firstWhere(
+                  (c) => c.name == officialRow['tyreCompound'],
+                  orElse: () => TyreCompound.soft,
+                )
+              : _qualifyingBestCompounds[driver.id],
+          'isPlayerTeam': team.id == widget.teamId,
+        };
+      }).toList();
+
+      _sortQualifyingResults();
+      return;
+    }
+
     _qualifyingResultsTable = _divisionDrivers.map((driver) {
       final team = _divisionTeams.firstWhere(
         (t) => t.id == driver.teamId,

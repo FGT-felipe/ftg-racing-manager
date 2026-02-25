@@ -18,7 +18,7 @@
                 "*.local"
             ],
             "predeploy": [
-                "npm --prefix functions run lint"
+                "npm.cmd --prefix functions run lint"
             ]
         }
     ],
