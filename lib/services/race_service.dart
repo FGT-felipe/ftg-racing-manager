@@ -72,9 +72,24 @@ class RaceService {
           'carIndex': i,
         });
 
-        CarSetup driverSetup;
+        CarSetup driverSetup = CarSetup();
+        bool isCrashed = false;
+        double lapTime = 0.0;
+        String tyreCompoundName = 'medium';
+        bool setupSubmitted = false;
+
         if (team.isBot) {
           driverSetup = _generateAISetup(circuit, team);
+          // Simular vuelta
+          final result = simulatePracticeRun(
+            circuit: circuit,
+            team: team,
+            driver: driver,
+            setup: driverSetup,
+          );
+          lapTime = result.lapTime;
+          isCrashed = result.isCrashed;
+          tyreCompoundName = driverSetup.tyreCompound.name;
         } else {
           // Player Team: Recuperar setup per-driver o usar default
           final driverData = team.weekStatus['driverSetups'] != null
@@ -85,44 +100,40 @@ class RaceService {
             driverSetup = CarSetup.fromMap(
               Map<String, dynamic>.from(driverData['qualifying']),
             );
+            setupSubmitted = driverData['qualifyingSubmitted'] == true;
+          }
+
+          // Use human manager's manual qualifying sprint if it exists
+          if (driverData != null &&
+              driverData['qualifyingBestTime'] != null &&
+              (driverData['qualifyingBestTime'] as num) > 0) {
+            lapTime = (driverData['qualifyingBestTime'] as num).toDouble();
+            isCrashed = driverData['qualifyingDnf'] == true;
+            tyreCompoundName =
+                driverData['qualifyingBestCompound'] as String? ??
+                driverSetup.tyreCompound.name;
           } else {
-            driverSetup = CarSetup();
-          }
-        }
-
-        // Simular vuelta
-        final result = simulatePracticeRun(
-          circuit: circuit,
-          team: team,
-          driver: driver,
-          setup: driverSetup,
-        );
-
-        /*
-        if (result.isCrashed) {
-          try {
-            await LeagueNotificationService().addLeagueNotification(
-              leagueId: season.leagueId,
-              title: "QUALIFYING ACCIDENT",
-              message:
-                  "Drama in qualifying! ${driver.name} from ${team.name} has suffered a heavy accident at ${circuit.name}.",
-              type: "CRASH",
-              eventType: "Qualifying",
-              pilotName: driver.name,
-              teamName: team.name,
+            // Re-simular vuelta si no hay tiempo manual
+            final result = simulatePracticeRun(
+              circuit: circuit,
+              team: team,
+              driver: driver,
+              setup: driverSetup,
             );
-          } catch (e) {
-            debugPrint("Error sending crash notification: $e");
+            lapTime = result.lapTime;
+            isCrashed = result.isCrashed;
+            tyreCompoundName = driverSetup.tyreCompound.name;
           }
         }
-        */
 
         qualyResults.add({
           'driverId': driver.id,
           'driverName': driver.name,
           'teamName': team.name,
-          'lapTime': result.lapTime,
-          'tyreCompound': driverSetup.tyreCompound.name,
+          'lapTime': lapTime,
+          'tyreCompound': tyreCompoundName,
+          'isCrashed': isCrashed,
+          'setupSubmitted': setupSubmitted || team.isBot,
           'gap': 0.0, // Se calcula después de ordenar
         });
       }
