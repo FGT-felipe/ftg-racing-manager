@@ -64,6 +64,9 @@ class FTGRacingApp extends StatelessWidget {
         GlobalCupertinoLocalizations.delegate,
       ],
       supportedLocales: AppLocalizations.supportedLocales,
+      // Forzar idioma a Inglés por ahora.
+      // Para habilitar Español (u otros idiomas del sistema), eliminar la línea 'locale' de abajo.
+      locale: const Locale('en'),
       initialRoute: '/',
       routes: {
         '/': (context) => const AuthWrapper(),

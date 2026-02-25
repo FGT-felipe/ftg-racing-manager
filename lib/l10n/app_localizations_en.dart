@@ -372,6 +372,22 @@ class AppLocalizationsEn extends AppLocalizations {
   String get setupGearRatio => 'Gear Ratio';
 
   @override
+  String get hintFrontWing =>
+      '0: Understeer (Lazy entry)\n100: Oversteer (Sharp/Aggressive entry)';
+
+  @override
+  String get hintRearWing =>
+      '0: High Top Speed / Less Stability\n100: Low Top Speed / More Stability';
+
+  @override
+  String get hintSuspension =>
+      '0: Soft (Better for bumps/kerbs)\n100: Stiff (Better for high speed/flat tracks)';
+
+  @override
+  String get hintGearRatio =>
+      '0: Long (Higher Top Speed)\n100: Short (Faster Acceleration)';
+
+  @override
   String get styleRisky => 'RISKY';
 
   @override

@@ -3327,12 +3327,18 @@ class _GarageScreenState extends State<GarageScreen>
     onPitStopsChanged,
   }) {
     final l10n = AppLocalizations.of(context);
-    Widget buildSlider(String label, int value, String fieldId) {
+    Widget buildSlider(
+      String label,
+      int value,
+      String fieldId, {
+      String? hint,
+    }) {
       return _buildCompactSlider(
         theme,
         label,
         value,
         (v) => onChanged(fieldId, v),
+        hint: hint,
       );
     }
 
@@ -3480,21 +3486,25 @@ class _GarageScreenState extends State<GarageScreen>
                               l10n.setupFrontWing,
                               setup.frontWing,
                               'frontWing',
+                              hint: l10n.hintFrontWing,
                             ),
                             buildSlider(
                               l10n.setupRearWing,
                               setup.rearWing,
                               'rearWing',
+                              hint: l10n.hintRearWing,
                             ),
                             buildSlider(
                               l10n.setupSuspension,
                               setup.suspension,
                               'suspension',
+                              hint: l10n.hintSuspension,
                             ),
                             buildSlider(
                               l10n.setupGearRatio,
                               setup.gearRatio,
                               'gearRatio',
+                              hint: l10n.hintGearRatio,
                             ),
                           ],
                         ),
@@ -3817,7 +3827,12 @@ class _GarageScreenState extends State<GarageScreen>
     VoidCallback? onCopyToRace,
   }) {
     final l10n = AppLocalizations.of(context);
-    Widget buildSlider(String label, int value, String fieldId) {
+    Widget buildSlider(
+      String label,
+      int value,
+      String fieldId, {
+      String? hint,
+    }) {
       final isLocked = parcFermeFields?.contains(fieldId) ?? false;
       return Opacity(
         opacity: isLocked ? 0.4 : 1.0,
@@ -3831,6 +3846,7 @@ class _GarageScreenState extends State<GarageScreen>
                   label,
                   value,
                   (v) => onChanged(fieldId, v),
+                  hint: hint,
                 ),
               ),
               if (isLocked)
@@ -3930,21 +3946,25 @@ class _GarageScreenState extends State<GarageScreen>
                         l10n.setupFrontWing,
                         setup.frontWing,
                         'frontWing',
+                        hint: l10n.hintFrontWing,
                       ),
                       buildSlider(
                         l10n.setupRearWing,
                         setup.rearWing,
                         'rearWing',
+                        hint: l10n.hintRearWing,
                       ),
                       buildSlider(
                         l10n.setupSuspension,
                         setup.suspension,
                         'suspension',
+                        hint: l10n.hintSuspension,
                       ),
                       buildSlider(
                         l10n.setupGearRatio,
                         setup.gearRatio,
                         'gearRatio',
+                        hint: l10n.hintGearRatio,
                       ),
                       const SizedBox(height: 20),
                       Text(
@@ -4177,22 +4197,38 @@ class _GarageScreenState extends State<GarageScreen>
     ThemeData theme,
     String label,
     int value,
-    ValueChanged<int> onChanged,
-  ) {
+    ValueChanged<int> onChanged, {
+    String? hint,
+  }) {
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 2),
       child: Row(
         children: [
           SizedBox(
-            width: 90,
-            child: Text(
-              label,
-              style: TextStyle(
-                fontSize: 12,
-                color: theme.colorScheme.onSurface.withValues(alpha: 0.5),
+            width: 100, // Increased slightly to accommodate icon better
+            child: Tooltip(
+              message: hint ?? '',
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Text(
+                    label,
+                    style: TextStyle(
+                      fontSize: 12,
+                      color: theme.colorScheme.onSurface.withValues(alpha: 0.5),
+                    ),
+                  ),
+                  if (hint != null)
+                    Icon(
+                      Icons.help_outline,
+                      size: 14,
+                      color: theme.colorScheme.onSurface.withValues(alpha: 0.3),
+                    ),
+                ],
               ),
             ),
           ),
+          const SizedBox(width: 8),
           Expanded(
             child: SliderTheme(
               data: SliderThemeData(

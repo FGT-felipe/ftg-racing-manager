@@ -758,6 +758,30 @@ abstract class AppLocalizations {
   /// **'Gear Ratio'**
   String get setupGearRatio;
 
+  /// No description provided for @hintFrontWing.
+  ///
+  /// In en, this message translates to:
+  /// **'0: Understeer (Lazy entry)\n100: Oversteer (Sharp/Aggressive entry)'**
+  String get hintFrontWing;
+
+  /// No description provided for @hintRearWing.
+  ///
+  /// In en, this message translates to:
+  /// **'0: High Top Speed / Less Stability\n100: Low Top Speed / More Stability'**
+  String get hintRearWing;
+
+  /// No description provided for @hintSuspension.
+  ///
+  /// In en, this message translates to:
+  /// **'0: Soft (Better for bumps/kerbs)\n100: Stiff (Better for high speed/flat tracks)'**
+  String get hintSuspension;
+
+  /// No description provided for @hintGearRatio.
+  ///
+  /// In en, this message translates to:
+  /// **'0: Long (Higher Top Speed)\n100: Short (Faster Acceleration)'**
+  String get hintGearRatio;
+
   /// No description provided for @styleRisky.
   ///
   /// In en, this message translates to:
