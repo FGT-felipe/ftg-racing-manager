@@ -1,9 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+import '../../models/user_models.dart';
 import '../../models/core_models.dart';
 import '../../models/domain/domain_models.dart';
 import '../../services/youth_academy_service.dart';
+import '../../services/season_service.dart';
 import '../../services/finance_service.dart';
 import '../../widgets/common/instruction_card.dart';
 
@@ -21,6 +24,37 @@ class _YouthAcademyScreenState extends State<YouthAcademyScreen> {
   final FinanceService _financeService = FinanceService();
   Country? _selectedCountry;
   bool _isPurchasing = false;
+  ManagerRole? _managerRole;
+  String? _activeSeasonId;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadManagerRole();
+    _loadActiveSeason();
+  }
+
+  Future<void> _loadActiveSeason() async {
+    final season = await SeasonService().getActiveSeason();
+    if (mounted) {
+      setState(() => _activeSeasonId = season?.id);
+    }
+  }
+
+  Future<void> _loadManagerRole() async {
+    final uid = FirebaseAuth.instance.currentUser?.uid;
+    if (uid == null) return;
+    final doc = await FirebaseFirestore.instance
+        .collection('managers')
+        .doc(uid)
+        .get();
+    if (doc.exists && mounted) {
+      setState(() {
+        final profile = ManagerProfile.fromMap(doc.data()!);
+        _managerRole = profile.role;
+      });
+    }
+  }
 
   /// Available countries for academy setup
   static final List<Country> _availableCountries = [
@@ -394,10 +428,25 @@ class _YouthAcademyScreenState extends State<YouthAcademyScreen> {
   // ══════════════════════════════════════════════════════════════════════════
 
   Widget _buildAcademyView(Team team, Map<String, dynamic> config) {
-    final level = config['academyLevel'] ?? 1;
-    final maxSlots = config['maxSlots'] ?? 2;
+    // The source of truth for the level is the Team document (which handles the HQ card level)
+    final int hqLevel =
+        team.facilities[FacilityType.youthAcademy.name]?.level ?? 0;
+    final int configLevel = config['academyLevel'] ?? 1;
+    final int level = hqLevel > configLevel ? hqLevel : configLevel;
+
+    // Fix maxSlots if level mismatch
+    final int configMaxSlots = config['maxSlots'] ?? 2;
+    int maxSlots = configMaxSlots;
+    if (hqLevel > configLevel) {
+      maxSlots = hqLevel * 2;
+      if (_managerRole == ManagerRole.bureaucrat) {
+        maxSlots += hqLevel;
+      }
+    }
+
     final countryFlag = config['countryFlag'] ?? '🏁';
     final countryName = config['countryName'] ?? 'Unknown';
+    final lastUpgradeSeasonId = config['lastUpgradeSeasonId'] as String?;
 
     return SingleChildScrollView(
       padding: const EdgeInsets.all(24),
@@ -422,6 +471,7 @@ class _YouthAcademyScreenState extends State<YouthAcademyScreen> {
             countryFlag: countryFlag,
             countryName: countryName,
             team: team,
+            lastUpgradeSeasonId: lastUpgradeSeasonId,
           ),
           const SizedBox(height: 32),
 
@@ -473,10 +523,23 @@ class _YouthAcademyScreenState extends State<YouthAcademyScreen> {
     required String countryFlag,
     required String countryName,
     required Team team,
+    String? lastUpgradeSeasonId,
   }) {
     const green = Color(0xFF00C853);
-    final upgradePrice = 1000000 * level;
-    final canUpgrade = level < 5 && team.budget >= upgradePrice;
+
+    int upgradePrice = 1000000 * level;
+    if (_managerRole == ManagerRole.businessAdmin ||
+        _managerRole == ManagerRole.bureaucrat) {
+      upgradePrice = (upgradePrice * 0.9).round();
+    }
+
+    final bool reachedSeasonLimit =
+        lastUpgradeSeasonId != null &&
+        _activeSeasonId != null &&
+        lastUpgradeSeasonId == _activeSeasonId;
+
+    final canUpgrade =
+        level < 5 && team.budget >= upgradePrice && !reachedSeasonLimit;
 
     return Container(
       padding: const EdgeInsets.all(20),
@@ -546,11 +609,13 @@ class _YouthAcademyScreenState extends State<YouthAcademyScreen> {
               crossAxisAlignment: CrossAxisAlignment.end,
               children: [
                 Text(
-                  'UPGRADE',
+                  reachedSeasonLimit ? 'SEASON LIMIT REACHED' : 'UPGRADE',
                   style: GoogleFonts.poppins(
-                    fontSize: 10,
+                    fontSize: reachedSeasonLimit ? 9 : 10,
                     fontWeight: FontWeight.bold,
-                    color: Colors.white54,
+                    color: reachedSeasonLimit
+                        ? Colors.orangeAccent
+                        : Colors.white54,
                     letterSpacing: 1,
                   ),
                 ),
@@ -609,7 +674,7 @@ class _YouthAcademyScreenState extends State<YouthAcademyScreen> {
 
   Future<void> _upgradeAcademy() async {
     try {
-      await _academyService.upgradeAcademy(widget.teamId);
+      await _academyService.upgradeAcademy(widget.teamId, role: _managerRole);
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(

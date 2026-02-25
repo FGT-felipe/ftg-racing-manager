@@ -7,6 +7,8 @@ import '../models/core_models.dart';
 import '../models/user_models.dart';
 import '../services/facility_service.dart';
 import '../services/finance_service.dart';
+import '../services/youth_academy_service.dart';
+import '../services/season_service.dart';
 import '../widgets/common/instruction_card.dart';
 
 class HQScreen extends StatefulWidget {
@@ -21,12 +23,21 @@ class HQScreen extends StatefulWidget {
 
 class _HQScreenState extends State<HQScreen> {
   ManagerRole? _managerRole;
+  String? _activeSeasonId;
 
   @override
   void initState() {
     super.initState();
     FacilityService().ensureBaseFacilities(widget.teamId);
     _loadManagerRole();
+    _loadActiveSeason();
+  }
+
+  Future<void> _loadActiveSeason() async {
+    final season = await SeasonService().getActiveSeason();
+    if (mounted) {
+      setState(() => _activeSeasonId = season?.id);
+    }
   }
 
   Future<void> _loadManagerRole() async {
@@ -151,6 +162,7 @@ class _HQScreenState extends State<HQScreen> {
                       canUpgrade: !isFixed,
                       onNavigate: widget.onNavigate,
                       managerRole: _managerRole,
+                      activeSeasonId: _activeSeasonId,
                     );
                   },
                 ),
@@ -169,6 +181,7 @@ class _FacilityCard extends StatelessWidget {
   final bool canUpgrade;
   final Function(String)? onNavigate;
   final ManagerRole? managerRole;
+  final String? activeSeasonId;
 
   const _FacilityCard({
     required this.facility,
@@ -176,6 +189,7 @@ class _FacilityCard extends StatelessWidget {
     required this.canUpgrade,
     this.onNavigate,
     this.managerRole,
+    this.activeSeasonId,
   });
 
   IconData _getIcon() {
@@ -339,8 +353,30 @@ class _FacilityCard extends StatelessWidget {
                               children: [
                                 if (!isMaxLevel && canUpgrade)
                                   _DetailRow(
-                                    label: l10n.nextLevelLabel,
-                                    value: nextLevelPrice,
+                                    label:
+                                        facility.type ==
+                                                FacilityType.youthAcademy &&
+                                            activeSeasonId != null &&
+                                            facility.lastUpgradeSeasonId ==
+                                                activeSeasonId
+                                        ? "SEASON LIMIT"
+                                        : l10n.nextLevelLabel,
+                                    value:
+                                        facility.type ==
+                                                FacilityType.youthAcademy &&
+                                            activeSeasonId != null &&
+                                            facility.lastUpgradeSeasonId ==
+                                                activeSeasonId
+                                        ? "REACHED"
+                                        : nextLevelPrice,
+                                    color:
+                                        facility.type ==
+                                                FacilityType.youthAcademy &&
+                                            activeSeasonId != null &&
+                                            facility.lastUpgradeSeasonId ==
+                                                activeSeasonId
+                                        ? Colors.orangeAccent
+                                        : null,
                                   ),
                                 _DetailRow(
                                   label: l10n.maintCostLabel,
@@ -357,7 +393,13 @@ class _FacilityCard extends StatelessWidget {
                           ),
                           if (canUpgrade && !isMaxLevel)
                             TextButton(
-                              onPressed: () => _handleUpgrade(context),
+                              onPressed:
+                                  (facility.type == FacilityType.youthAcademy &&
+                                      activeSeasonId != null &&
+                                      facility.lastUpgradeSeasonId ==
+                                          activeSeasonId)
+                                  ? null
+                                  : () => _handleUpgrade(context),
                               style: TextButton.styleFrom(
                                 backgroundColor: const Color(0xFF141414),
                                 foregroundColor: theme.colorScheme.secondary,
@@ -427,12 +469,23 @@ class _FacilityCard extends StatelessWidget {
 
   void _handleUpgrade(BuildContext context) async {
     final l10n = AppLocalizations.of(context);
+
+    if (facility.type == FacilityType.youthAcademy && facility.level == 0) {
+      // Must select country first, navigate to academy screen
+      if (onNavigate != null) onNavigate!('hq_academy');
+      return;
+    }
+
     try {
-      await FacilityService().upgradeFacility(
-        teamId,
-        facility.type,
-        role: managerRole,
-      );
+      if (facility.type == FacilityType.youthAcademy) {
+        await YouthAcademyService().upgradeAcademy(teamId, role: managerRole);
+      } else {
+        await FacilityService().upgradeFacility(
+          teamId,
+          facility.type,
+          role: managerRole,
+        );
+      }
       if (context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
