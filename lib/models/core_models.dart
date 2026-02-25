@@ -578,8 +578,14 @@ class Facility {
   final FacilityType type;
   final int level;
   final bool isLocked;
+  final String? lastUpgradeSeasonId;
 
-  Facility({required this.type, this.level = 0, this.isLocked = false});
+  Facility({
+    required this.type,
+    this.level = 0,
+    this.isLocked = false,
+    this.lastUpgradeSeasonId,
+  });
 
   String get name {
     switch (type) {
@@ -612,6 +618,13 @@ class Facility {
 
   int get upgradePrice {
     if (level >= 5) return 0;
+
+    // Youth Academy overrides base price when upgrading (level > 0).
+    // Level 0 (to buy) is 100000. Level 1->2 is 1M, 2->3 is 2M, etc.
+    if (type == FacilityType.youthAcademy && level > 0) {
+      return 1000000 * level;
+    }
+
     // Base prices
     int basePrice = 100000;
     // level 0 (to buy): 100k
@@ -686,7 +699,13 @@ class Facility {
   }
 
   Map<String, dynamic> toMap() {
-    return {'type': type.name, 'level': level, 'isLocked': isLocked};
+    return {
+      'type': type.name,
+      'level': level,
+      'isLocked': isLocked,
+      if (lastUpgradeSeasonId != null)
+        'lastUpgradeSeasonId': lastUpgradeSeasonId,
+    };
   }
 
   factory Facility.fromMap(Map<String, dynamic> map) {
@@ -697,14 +716,16 @@ class Facility {
       ),
       level: map['level'] ?? 0,
       isLocked: map['isLocked'] ?? false,
+      lastUpgradeSeasonId: map['lastUpgradeSeasonId'],
     );
   }
 
-  Facility copyWith({int? level, bool? isLocked}) {
+  Facility copyWith({int? level, bool? isLocked, String? lastUpgradeSeasonId}) {
     return Facility(
       type: type,
       level: level ?? this.level,
       isLocked: isLocked ?? this.isLocked,
+      lastUpgradeSeasonId: lastUpgradeSeasonId ?? this.lastUpgradeSeasonId,
     );
   }
 }

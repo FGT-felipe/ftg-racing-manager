@@ -3,6 +3,7 @@ import 'package:flutter/widgets.dart';
 import '../models/core_models.dart';
 import '../models/user_models.dart';
 import '../models/domain/domain_models.dart';
+import 'season_service.dart';
 
 /// Servicio para gestionar la Academia de Jóvenes de un equipo.
 ///
@@ -63,6 +64,8 @@ class YouthAcademyService {
     ManagerRole? role,
   }) async {
     final teamRef = _db.collection('teams').doc(teamId);
+    final activeSeason = await SeasonService().getActiveSeason();
+    final currentSeasonId = activeSeason?.id ?? 'unknown';
 
     await _db.runTransaction((txn) async {
       final teamSnap = await txn.get(teamRef);
@@ -87,10 +90,15 @@ class YouthAcademyService {
         'countryFlag': country.flagEmoji,
         'academyLevel': 1,
         'maxSlots': maxSlots,
+        'lastUpgradeSeasonId': currentSeasonId,
       });
 
       // Update team budget and facility
-      final facility = Facility(type: FacilityType.youthAcademy, level: 1);
+      final facility = Facility(
+        type: FacilityType.youthAcademy,
+        level: 1,
+        lastUpgradeSeasonId: currentSeasonId,
+      );
       txn.update(teamRef, {
         'budget': team.budget - purchasePrice,
         'facilities.${FacilityType.youthAcademy.name}': facility.toMap(),
@@ -222,6 +230,8 @@ class YouthAcademyService {
   /// Upgrade the academy level (+1). Max 5, 1 per season.
   Future<void> upgradeAcademy(String teamId, {ManagerRole? role}) async {
     final teamRef = _db.collection('teams').doc(teamId);
+    final activeSeason = await SeasonService().getActiveSeason();
+    final currentSeasonId = activeSeason?.id ?? 'unknown';
 
     return _db.runTransaction((txn) async {
       final teamSnap = await txn.get(teamRef);
@@ -233,12 +243,21 @@ class YouthAcademyService {
 
       final config = configSnap.data() as Map<String, dynamic>;
       final currentLevel = (config['academyLevel'] as num?)?.toInt() ?? 1;
+      final lastUpgradeSeasonId = config['lastUpgradeSeasonId'] as String?;
+
+      if (lastUpgradeSeasonId == currentSeasonId) {
+        throw Exception('Youth Academy can only be upgraded once per season.');
+      }
 
       if (currentLevel >= 5) {
         throw Exception('Academy is already at maximum level (5)');
       }
 
-      final int upgradePrice = 1000000 * currentLevel;
+      int upgradePrice = 1000000 * currentLevel;
+      if (role == ManagerRole.businessAdmin || role == ManagerRole.bureaucrat) {
+        upgradePrice = (upgradePrice * 0.9).round();
+      }
+
       if (team.budget < upgradePrice) {
         throw Exception('Insufficient budget for upgrade');
       }
@@ -254,12 +273,15 @@ class YouthAcademyService {
       txn.update(_configRef(teamId), {
         'academyLevel': newLevel,
         'maxSlots': maxSlots,
+        'lastUpgradeSeasonId': currentSeasonId,
       });
 
       // Update team budget and facility
       txn.update(teamRef, {
         'budget': team.budget - upgradePrice,
         'facilities.${FacilityType.youthAcademy.name}.level': newLevel,
+        'facilities.${FacilityType.youthAcademy.name}.lastUpgradeSeasonId':
+            currentSeasonId,
       });
 
       // Record transaction

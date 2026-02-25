@@ -1107,6 +1107,8 @@ class _GarageScreenState extends State<GarageScreen>
           .update({
             'weekStatus.driverSetups.$driverId.qualifying': setup.toMap(),
             'weekStatus.driverSetups.$driverId.qualifyingAttempts': newAttempts,
+            'weekStatus.driverSetups.$driverId.qualifyingBestTime': bestTime,
+            'weekStatus.driverSetups.$driverId.qualifyingLaps': totalLaps,
             'weekStatus.driverSetups.$driverId.qualifyingBestCompound':
                 bestCompound.name,
             'weekStatus.driverSetups.$driverId.qualifyingParcFerme': true,
