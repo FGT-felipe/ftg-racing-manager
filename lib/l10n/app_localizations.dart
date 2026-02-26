@@ -1664,6 +1664,12 @@ abstract class AppLocalizations {
   /// **'Marketability'**
   String get marketabilityLabel;
 
+  /// No description provided for @marketValueLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Market Value'**
+  String get marketValueLabel;
+
   /// No description provided for @fireBtn.
   ///
   /// In en, this message translates to:
@@ -2503,6 +2509,18 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Market'**
   String get navMarket;
+
+  /// No description provided for @totalBalance.
+  ///
+  /// In en, this message translates to:
+  /// **'Total Balance'**
+  String get totalBalance;
+
+  /// No description provided for @transferBudgetLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Transfer Budget'**
+  String get transferBudgetLabel;
 
   /// No description provided for @personalManagement.
   ///

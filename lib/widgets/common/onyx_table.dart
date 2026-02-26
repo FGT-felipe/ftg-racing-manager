@@ -9,6 +9,7 @@ class OnyxTable extends StatefulWidget {
   final List<int> flexValues;
   final List<int> highlightIndices;
   final VoidCallback? onReachEnd;
+  final bool shrinkWrap;
 
   const OnyxTable({
     super.key,
@@ -19,6 +20,7 @@ class OnyxTable extends StatefulWidget {
     required this.flexValues,
     this.highlightIndices = const [],
     this.onReachEnd,
+    this.shrinkWrap = false,
   }) : assert(
          rows != null || (itemBuilder != null && itemCount != null),
          'Either rows or (itemBuilder and itemCount) must be provided',
@@ -31,6 +33,7 @@ class OnyxTable extends StatefulWidget {
 class _OnyxTableState extends State<OnyxTable> {
   final ScrollController _scrollController = ScrollController();
   bool _onEndThresholdReached = false;
+  int? _hoveredIndex;
 
   @override
   void initState() {
@@ -84,6 +87,7 @@ class _OnyxTableState extends State<OnyxTable> {
                 flex: widget.flexValues[i],
                 child: Text(
                   widget.columns[i].toUpperCase(),
+                  textAlign: TextAlign.center,
                   style: GoogleFonts.poppins(
                     fontWeight: FontWeight.w900,
                     fontSize: 10,
@@ -96,56 +100,86 @@ class _OnyxTableState extends State<OnyxTable> {
           ),
         ),
         // SCROLLABLE DATA ROWS
-        Expanded(
-          child: Scrollbar(
-            controller: _scrollController,
-            thumbVisibility: true,
-            child: ListView.builder(
-              controller: _scrollController,
-              padding: const EdgeInsets.symmetric(vertical: 0),
-              itemCount: widget.itemBuilder != null
-                  ? widget.itemCount
-                  : widget.rows?.length ?? 0,
-              itemBuilder: (context, index) {
-                if (widget.itemBuilder != null) {
-                  return _buildRowWrapper(
-                    context,
-                    index,
-                    widget.itemBuilder!(context, index),
-                  );
-                }
-                return _buildRowFromData(context, index, widget.rows![index]);
-              },
-            ),
-          ),
-        ),
+        widget.shrinkWrap
+            ? ListView.builder(
+                shrinkWrap: true,
+                physics: const NeverScrollableScrollPhysics(),
+                padding: const EdgeInsets.symmetric(vertical: 0),
+                itemCount: widget.itemBuilder != null
+                    ? widget.itemCount
+                    : widget.rows?.length ?? 0,
+                itemBuilder: (context, index) {
+                  if (widget.itemBuilder != null) {
+                    return _buildRowWrapper(
+                      context,
+                      index,
+                      widget.itemBuilder!(context, index),
+                    );
+                  }
+                  return _buildRowFromData(context, index, widget.rows![index]);
+                },
+              )
+            : Expanded(
+                child: Scrollbar(
+                  controller: _scrollController,
+                  thumbVisibility: true,
+                  child: ListView.builder(
+                    controller: _scrollController,
+                    padding: const EdgeInsets.symmetric(vertical: 0),
+                    itemCount: widget.itemBuilder != null
+                        ? widget.itemCount
+                        : widget.rows?.length ?? 0,
+                    itemBuilder: (context, index) {
+                      if (widget.itemBuilder != null) {
+                        return _buildRowWrapper(
+                          context,
+                          index,
+                          widget.itemBuilder!(context, index),
+                        );
+                      }
+                      return _buildRowFromData(
+                        context,
+                        index,
+                        widget.rows![index],
+                      );
+                    },
+                  ),
+                ),
+              ),
       ],
     );
   }
 
   Widget _buildRowWrapper(BuildContext context, int index, Widget child) {
     final isHighlighted = widget.highlightIndices.contains(index);
+    final isHovered = _hoveredIndex == index;
 
-    return Container(
-      decoration: BoxDecoration(
-        color: isHighlighted
-            ? const Color(0xFF00C853).withValues(alpha: 0.1)
-            : (index % 2 == 0
-                  ? Colors.transparent
-                  : Colors.white.withValues(alpha: 0.01)),
-        border: Border(
-          left: isHighlighted
-              ? const BorderSide(color: Color(0xFF00C853), width: 4)
-              : BorderSide.none,
-          bottom: BorderSide(
-            color: Colors.white.withValues(alpha: 0.05),
-            width: 0.5,
+    return MouseRegion(
+      onEnter: (_) => setState(() => _hoveredIndex = index),
+      onExit: (_) => setState(() => _hoveredIndex = null),
+      child: Container(
+        decoration: BoxDecoration(
+          color: isHighlighted
+              ? const Color(0xFF00C853).withValues(alpha: 0.1)
+              : isHovered
+              ? const Color(0xFF00C853).withValues(alpha: 0.05)
+              : (index % 2 == 0
+                    ? Colors.transparent
+                    : Colors.white.withValues(alpha: 0.01)),
+          border: Border(
+            left: isHighlighted
+                ? const BorderSide(color: Color(0xFF00C853), width: 4)
+                : BorderSide.none,
+            bottom: BorderSide(
+              color: Colors.white.withValues(alpha: 0.05),
+              width: 0.5,
+            ),
           ),
         ),
-      ),
-      child: Padding(
-        padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 20),
-        child: child,
+        child: Padding(
+          padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 20),
+          child: child,
+        ),
       ),
     );
   }

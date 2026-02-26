@@ -936,13 +936,15 @@ class Driver {
   final DateTime? transferListedAt;
   final int currentHighestBid;
   final String? highestBidderTeamId;
+  final String? highestBidderTeamName;
   final int negotiationAttempts;
+  final int priceAtListing;
 
   // Computed market value
   int get marketValue {
     int baseStatSum = DriverStats.drivingStats.fold(
       0,
-      (sum, stat) => sum + getStat(stat),
+      (acc, stat) => acc + getStat(stat),
     );
     int avgStat = DriverStats.drivingStats.isEmpty
         ? 50
@@ -969,7 +971,7 @@ class Driver {
   int get currentStars {
     int baseStatSum = DriverStats.drivingStats.fold(
       0,
-      (sum, stat) => sum + getStat(stat),
+      (acc, stat) => acc + getStat(stat),
     );
     int count = DriverStats.drivingStats.length;
     if (count == 0) return 1;
@@ -1019,7 +1021,9 @@ class Driver {
     this.transferListedAt,
     this.currentHighestBid = 0,
     this.highestBidderTeamId,
+    this.highestBidderTeamName,
     this.negotiationAttempts = 0,
+    this.priceAtListing = 0,
   });
 
   /// Retorna el potencial máximo de una estadística específica.
@@ -1078,7 +1082,9 @@ class Driver {
       'transferListedAt': transferListedAt?.toIso8601String(),
       'currentHighestBid': currentHighestBid,
       'highestBidderTeamId': highestBidderTeamId,
+      'highestBidderTeamName': highestBidderTeamName,
       'negotiationAttempts': negotiationAttempts,
+      'priceAtListing': priceAtListing,
     };
   }
 
@@ -1138,7 +1144,9 @@ class Driver {
           : null,
       currentHighestBid: map['currentHighestBid'] ?? 0,
       highestBidderTeamId: map['highestBidderTeamId'],
+      highestBidderTeamName: map['highestBidderTeamName'],
       negotiationAttempts: map['negotiationAttempts'] ?? 0,
+      priceAtListing: map['priceAtListing'] ?? 0,
     );
   }
 
@@ -1205,6 +1213,7 @@ class Driver {
     DateTime? transferListedAt,
     int? currentHighestBid,
     String? highestBidderTeamId,
+    String? highestBidderTeamName,
   }) {
     return Driver(
       id: id ?? this.id,
@@ -1235,6 +1244,8 @@ class Driver {
       transferListedAt: transferListedAt ?? this.transferListedAt,
       currentHighestBid: currentHighestBid ?? this.currentHighestBid,
       highestBidderTeamId: highestBidderTeamId ?? this.highestBidderTeamId,
+      highestBidderTeamName:
+          highestBidderTeamName ?? this.highestBidderTeamName,
     );
   }
 }

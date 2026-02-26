@@ -222,8 +222,8 @@ class _CreateManagerScreenState extends State<CreateManagerScreen> {
                                             context,
                                           ).countryLabel,
                                           style: GoogleFonts.raleway(
-                                            color: Colors.white.withOpacity(
-                                              0.5,
+                                            color: Colors.white.withValues(
+                                              alpha: 0.5,
                                             ),
                                             fontWeight: FontWeight.w400,
                                           ),
@@ -288,8 +288,8 @@ class _CreateManagerScreenState extends State<CreateManagerScreen> {
                                             context,
                                           ).genderLabel,
                                           style: GoogleFonts.raleway(
-                                            color: Colors.white.withOpacity(
-                                              0.5,
+                                            color: Colors.white.withValues(
+                                              alpha: 0.5,
                                             ),
                                             fontWeight: FontWeight.w400,
                                           ),

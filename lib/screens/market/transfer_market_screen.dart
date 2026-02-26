@@ -3,8 +3,10 @@ import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import '../../models/core_models.dart';
 import '../../services/transfer_market_service.dart';
+import '../../utils/currency_formatter.dart';
 import '../../widgets/common/onyx_table.dart';
 import '../../widgets/common/driver_stars.dart';
+import '../../widgets/common/onyx_skeleton.dart';
 import '../drivers/widgets/driver_card.dart';
 
 class TransferMarketScreen extends StatefulWidget {
@@ -18,12 +20,71 @@ class TransferMarketScreen extends StatefulWidget {
 
 class _TransferMarketScreenState extends State<TransferMarketScreen> {
   bool _isMarketOpen = true;
-  int _limit = 5;
+  bool _isFetching = true;
+  List<Driver> _drivers = [];
+  DocumentSnapshot? _lastDocument;
+  final List<DocumentSnapshot?> _pageHistory = [null];
+  int _currentPage = 0;
+  static const int _pageSize = 15;
+  final Set<String> _cancellingBidDriverIds = {};
 
   @override
   void initState() {
     super.initState();
     _checkMarketWindow();
+    _fetchPage(0);
+  }
+
+  Future<void> _fetchPage(int pageIndex) async {
+    setState(() => _isFetching = true);
+
+    try {
+      Query query = FirebaseFirestore.instance
+          .collection('drivers')
+          .where('isTransferListed', isEqualTo: true)
+          .orderBy('transferListedAt');
+
+      // Use cursor for pagination
+      if (pageIndex > 0 && _pageHistory[pageIndex] != null) {
+        query = query.startAfterDocument(_pageHistory[pageIndex]!);
+      }
+
+      final snapshot = await query.limit(_pageSize).get();
+      final docs = snapshot.docs;
+
+      if (mounted) {
+        setState(() {
+          _drivers = docs
+              .map((d) => Driver.fromMap(d.data() as Map<String, dynamic>))
+              .toList();
+          _isFetching = false;
+          _currentPage = pageIndex;
+          _lastDocument = docs.isNotEmpty ? docs.last : null;
+
+          // Update page history for next page's "startAfter"
+          if (_pageHistory.length <= pageIndex + 1) {
+            _pageHistory.add(_lastDocument);
+          } else {
+            _pageHistory[pageIndex + 1] = _lastDocument;
+          }
+        });
+      }
+    } catch (e) {
+      debugPrint("Error fetching market page: $e");
+      if (mounted) setState(() => _isFetching = false);
+    }
+  }
+
+  void _nextPage() {
+    if (_drivers.length == _pageSize) {
+      _fetchPage(_currentPage + 1);
+    }
+  }
+
+  void _prevPage() {
+    if (_currentPage > 0) {
+      _fetchPage(_currentPage - 1);
+    }
   }
 
   Future<void> _checkMarketWindow() async {
@@ -79,61 +140,26 @@ class _TransferMarketScreenState extends State<TransferMarketScreen> {
 
     return Scaffold(
       appBar: AppBar(title: const Text("Transfer Market")),
-      body: StreamBuilder<QuerySnapshot>(
-        stream: FirebaseFirestore.instance
-            .collection('drivers')
-            .where('isTransferListed', isEqualTo: true)
-            .orderBy('transferListedAt')
-            .limit(_limit)
-            .snapshots(),
-        builder: (context, snapshot) {
-          if (snapshot.connectionState == ConnectionState.waiting &&
-              !snapshot.hasData) {
-            return const Center(child: CircularProgressIndicator());
-          }
-
-          if (snapshot.hasError) {
-            return Center(child: Text("Error: ${snapshot.error}"));
-          }
-
-          final docs = snapshot.data?.docs ?? [];
-
-          if (docs.isEmpty) {
-            return const Center(
-              child: Text("No drivers currently listed on the market."),
-            );
-          }
-
-          return Padding(
-            padding: const EdgeInsets.all(16.0),
-            child: Container(
-              width: double.infinity,
-              decoration: BoxDecoration(
-                color: const Color(0xFF121212),
-                borderRadius: BorderRadius.circular(16),
-                gradient: const LinearGradient(
-                  begin: Alignment.topLeft,
-                  end: Alignment.bottomRight,
-                  colors: [Color(0xFF1E1E1E), Color(0xFF0A0A0A)],
-                ),
-                border: Border.all(color: Colors.white.withValues(alpha: 0.08)),
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.black.withValues(alpha: 0.4),
-                    blurRadius: 24,
-                    offset: const Offset(0, 12),
-                  ),
-                ],
-              ),
-              child: _buildDriverTable(docs),
-            ),
-          );
-        },
+      body: Column(
+        children: [
+          Expanded(
+            child: _isFetching
+                ? _buildSkeletonTable()
+                : _drivers.isEmpty
+                ? const Center(
+                    child: Text("No drivers currently listed on the market."),
+                  )
+                : _buildDriverTable(_drivers),
+          ),
+          if (!_isFetching &&
+              (_currentPage > 0 || _drivers.length == _pageSize))
+            _buildPaginationControls(),
+        ],
       ),
     );
   }
 
-  Widget _buildDriverTable(List<QueryDocumentSnapshot> docs) {
+  Widget _buildDriverTable(List<Driver> drivers) {
     return OnyxTable(
       flexValues: const [4, 1, 3, 2, 2, 2, 2],
       columns: const [
@@ -145,18 +171,15 @@ class _TransferMarketScreenState extends State<TransferMarketScreen> {
         "Time Left",
         "Action",
       ],
-      itemCount: docs.length,
+      itemCount: drivers.length,
       itemBuilder: (context, index) {
-        return _buildRow(docs[index]);
+        return _buildRow(drivers[index]);
       },
-      onReachEnd: _loadMore,
       highlightIndices: const [],
     );
   }
 
-  Widget _buildRow(QueryDocumentSnapshot doc) {
-    final driver = Driver.fromMap(doc.data() as Map<String, dynamic>);
-
+  Widget _buildRow(Driver driver) {
     final listedAt = driver.transferListedAt ?? DateTime.now();
     final expiresAt = listedAt.add(const Duration(hours: 24));
     final diff = expiresAt.difference(DateTime.now());
@@ -204,11 +227,11 @@ class _TransferMarketScreenState extends State<TransferMarketScreen> {
         maxStars: driver.potential,
       ),
       Text(
-        "\$${(driver.marketValue / 1000).toStringAsFixed(0)}k",
+        CurrencyFormatter.format(driver.marketValue),
         style: const TextStyle(fontSize: 13, color: Colors.white70),
       ),
       Text(
-        "\$${(driver.currentHighestBid / 1000).toStringAsFixed(0)}k",
+        CurrencyFormatter.format(driver.currentHighestBid),
         style: TextStyle(
           fontWeight: FontWeight.bold,
           fontSize: 13,
@@ -227,7 +250,7 @@ class _TransferMarketScreenState extends State<TransferMarketScreen> {
                   : () => _showBidModal(driver),
               style: FilledButton.styleFrom(
                 backgroundColor: const Color(0xFF00C853),
-                foregroundColor: Colors.yellow,
+                foregroundColor: Colors.white,
                 padding: const EdgeInsets.symmetric(horizontal: 12),
                 minimumSize: const Size(60, 32),
                 shape: RoundedRectangleBorder(
@@ -255,16 +278,119 @@ class _TransferMarketScreenState extends State<TransferMarketScreen> {
     );
   }
 
-  bool _isLoadingMore = false;
-  void _loadMore() async {
-    if (_isLoadingMore || !mounted) return;
-    _isLoadingMore = true;
-    setState(() {
-      _limit += 5;
-    });
-    // Small delay to allow the stream to react and avoid double triggers from scroll momentum
-    await Future.delayed(const Duration(milliseconds: 300));
-    _isLoadingMore = false;
+  Widget _buildPaginationControls() {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 16.0),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          IconButton(
+            onPressed: _currentPage > 0 ? _prevPage : null,
+            icon: const Icon(Icons.chevron_left),
+            color: Colors.white,
+          ),
+          const SizedBox(width: 16),
+          Text(
+            "Page ${_currentPage + 1}",
+            style: const TextStyle(
+              color: Colors.white,
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+          const SizedBox(width: 16),
+          IconButton(
+            onPressed: _drivers.length == _pageSize ? _nextPage : null,
+            icon: const Icon(Icons.chevron_right),
+            color: Colors.white,
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildSkeletonTable() {
+    return OnyxTable(
+      flexValues: const [4, 1, 3, 2, 2, 2, 2],
+      columns: const [
+        "Driver",
+        "Age",
+        "Potential",
+        "Market Value",
+        "Highest Bid",
+        "Time Left",
+        "Action",
+      ],
+      itemCount: 8,
+      itemBuilder: (context, index) {
+        return Row(
+          children: [
+            const Expanded(flex: 4, child: OnyxSkeleton(height: 20)),
+            const SizedBox(width: 12),
+            const Expanded(flex: 1, child: OnyxSkeleton(height: 20)),
+            const SizedBox(width: 12),
+            const Expanded(flex: 3, child: OnyxSkeleton(height: 20)),
+            const SizedBox(width: 12),
+            const Expanded(flex: 2, child: OnyxSkeleton(height: 20)),
+            const SizedBox(width: 12),
+            const Expanded(flex: 2, child: OnyxSkeleton(height: 20)),
+            const SizedBox(width: 12),
+            const Expanded(flex: 2, child: OnyxSkeleton(height: 20)),
+            const SizedBox(width: 12),
+            Expanded(
+              flex: 2,
+              child: OnyxSkeleton(height: 32, borderRadius: 100, width: 60),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  void _handleCancelTransfer(Driver driver) async {
+    try {
+      await TransferMarketService().cancelTransfer(widget.teamId, driver.id);
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text("Transfer cancelled successfully.")),
+        );
+        _fetchPage(_currentPage);
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text("Error: $e")));
+      }
+    }
+  }
+
+  void _handleCancelBid(Driver driver) async {
+    if (_cancellingBidDriverIds.contains(driver.id)) return;
+
+    setState(() => _cancellingBidDriverIds.add(driver.id));
+    try {
+      await TransferMarketService().cancelBid(widget.teamId, driver.id);
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text(
+              "Bid cancelled successfully. Funds were not returned.",
+            ),
+          ),
+        );
+        _fetchPage(_currentPage);
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text("Error: $e")));
+      }
+    } finally {
+      if (mounted) {
+        setState(() => _cancellingBidDriverIds.remove(driver.id));
+      }
+    }
   }
 
   void _showDriverDetail(Driver driver) {
@@ -275,23 +401,64 @@ class _TransferMarketScreenState extends State<TransferMarketScreen> {
         backgroundColor: Colors.transparent,
         insetPadding: const EdgeInsets.all(16),
         child: SingleChildScrollView(
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Align(
-                alignment: Alignment.topRight,
-                child: IconButton(
-                  icon: const Icon(Icons.close, color: Colors.white),
-                  onPressed: () => Navigator.pop(ctx),
-                ),
+          child: Center(
+            child: SizedBox(
+              width: screenWidth * 0.7,
+              child: Stack(
+                clipBehavior: Clip.none,
+                children: [
+                  StreamBuilder<DocumentSnapshot>(
+                    stream: FirebaseFirestore.instance
+                        .collection('drivers')
+                        .doc(driver.id)
+                        .snapshots(),
+                    builder: (context, snapshot) {
+                      if (!snapshot.hasData) {
+                        return DriverCard(
+                          driver: driver,
+                          currentTeamId: widget.teamId,
+                          isCancellingBid: _cancellingBidDriverIds.contains(
+                            driver.id,
+                          ),
+                        );
+                      }
+                      final updatedDriver = Driver.fromMap(
+                        snapshot.data!.data() as Map<String, dynamic>,
+                      );
+                      return DriverCard(
+                        driver: updatedDriver,
+                        currentTeamId: widget.teamId,
+                        onBid: () => _showBidModal(updatedDriver),
+                        onCancelTransfer: () =>
+                            _handleCancelTransfer(updatedDriver),
+                        onCancelBid: () => _handleCancelBid(updatedDriver),
+                        isCancellingBid: _cancellingBidDriverIds.contains(
+                          updatedDriver.id,
+                        ),
+                      );
+                    },
+                  ),
+                  Positioned(
+                    top: 12,
+                    right: 12,
+                    child: Material(
+                      color: Colors.black26,
+                      shape: const CircleBorder(),
+                      child: IconButton(
+                        icon: const Icon(
+                          Icons.close,
+                          color: Colors.white,
+                          size: 20,
+                        ),
+                        onPressed: () => Navigator.pop(ctx),
+                        constraints: const BoxConstraints(),
+                        padding: const EdgeInsets.all(8),
+                      ),
+                    ),
+                  ),
+                ],
               ),
-              Center(
-                child: SizedBox(
-                  width: screenWidth * 0.7,
-                  child: DriverCard(driver: driver),
-                ),
-              ),
-            ],
+            ),
           ),
         ),
       ),
@@ -317,7 +484,7 @@ class _TransferMarketScreenState extends State<TransferMarketScreen> {
                   Text("Bidding for ${driver.name}"),
                   const SizedBox(height: 16),
                   Text(
-                    "Current Highest Bid: \$${(driver.currentHighestBid / 1000).toStringAsFixed(0)}k",
+                    "Current Highest Bid: ${CurrencyFormatter.format(driver.currentHighestBid)}",
                   ),
                   const SizedBox(height: 16),
                   Row(
@@ -338,7 +505,7 @@ class _TransferMarketScreenState extends State<TransferMarketScreen> {
                         ),
                       ),
                       Text(
-                        "\$${(bidAmount / 1000).toStringAsFixed(0)}k",
+                        CurrencyFormatter.format(bidAmount),
                         style: const TextStyle(
                           fontSize: 20,
                           fontWeight: FontWeight.bold,
@@ -357,31 +524,11 @@ class _TransferMarketScreenState extends State<TransferMarketScreen> {
                   onPressed: () => Navigator.pop(ctx),
                   child: const Text("Cancel"),
                 ),
-                FilledButton(
-                  onPressed: () async {
-                    Navigator.pop(ctx);
-                    try {
-                      await TransferMarketService().placeBid(
-                        widget.teamId,
-                        driver.id,
-                        bidAmount,
-                      );
-                      if (mounted) {
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(
-                            content: Text("Bid placed successfully."),
-                          ),
-                        );
-                      }
-                    } catch (e) {
-                      if (mounted) {
-                        ScaffoldMessenger.of(
-                          context,
-                        ).showSnackBar(SnackBar(content: Text("Error: $e")));
-                      }
-                    }
-                  },
-                  child: const Text("Submit Bid"),
+                _BidButton(
+                  teamId: widget.teamId,
+                  driver: driver,
+                  bidAmount: bidAmount,
+                  onSuccess: () => Navigator.pop(ctx),
                 ),
               ],
             );
@@ -442,6 +589,75 @@ class _MarketCountdownState extends State<_MarketCountdown> {
         color: _diff.isNegative ? Colors.redAccent : Colors.white70,
         fontSize: 13,
       ),
+    );
+  }
+}
+
+class _BidButton extends StatefulWidget {
+  final String teamId;
+  final Driver driver;
+  final int bidAmount;
+  final VoidCallback onSuccess;
+
+  const _BidButton({
+    required this.teamId,
+    required this.driver,
+    required this.bidAmount,
+    required this.onSuccess,
+  });
+
+  @override
+  State<_BidButton> createState() => _BidButtonState();
+}
+
+class _BidButtonState extends State<_BidButton> {
+  bool _isLoading = false;
+
+  @override
+  Widget build(BuildContext context) {
+    return FilledButton(
+      onPressed: _isLoading
+          ? null
+          : () async {
+              final messenger = ScaffoldMessenger.of(context);
+              setState(() => _isLoading = true);
+              try {
+                await TransferMarketService().placeBid(
+                  widget.teamId,
+                  widget.driver.id,
+                  widget.bidAmount,
+                );
+                if (mounted) {
+                  widget.onSuccess();
+                  messenger.showSnackBar(
+                    const SnackBar(
+                      content: Text("Bid placed successfully."),
+                      backgroundColor: Colors.green,
+                    ),
+                  );
+                }
+              } catch (e) {
+                if (mounted) {
+                  setState(() => _isLoading = false);
+                  messenger.showSnackBar(
+                    SnackBar(
+                      content: Text("Error: $e"),
+                      backgroundColor: Colors.red,
+                    ),
+                  );
+                }
+              }
+            },
+      child: _isLoading
+          ? const SizedBox(
+              width: 20,
+              height: 20,
+              child: CircularProgressIndicator(
+                strokeWidth: 2,
+                color: Colors.white,
+              ),
+            )
+          : const Text("Submit Bid"),
     );
   }
 }

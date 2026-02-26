@@ -365,12 +365,13 @@ class _AdminScreenState extends State<AdminScreen> {
                           try {
                             await TransferMarketService()
                                 .generateAdminMarketDrivers(50);
-                            if (mounted)
+                            if (mounted) {
                               ScaffoldMessenger.of(context).showSnackBar(
                                 const SnackBar(
                                   content: Text("50 Drivers added to market!"),
                                 ),
                               );
+                            }
                           } catch (e) {
                             if (mounted)
                               ScaffoldMessenger.of(context).showSnackBar(
@@ -432,12 +433,13 @@ class _AdminScreenState extends State<AdminScreen> {
                           try {
                             await TransferMarketService()
                                 .clearAdminMarketDrivers();
-                            if (mounted)
+                            if (mounted) {
                               ScaffoldMessenger.of(context).showSnackBar(
                                 const SnackBar(
                                   content: Text("Admin drivers cleared!"),
                                 ),
                               );
+                            }
                           } catch (e) {
                             if (mounted)
                               ScaffoldMessenger.of(context).showSnackBar(

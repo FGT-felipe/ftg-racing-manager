@@ -8,7 +8,7 @@ import '../../services/auth_service.dart';
 import '../../models/user_models.dart';
 import '../../models/core_models.dart';
 import 'dashboard_widgets.dart';
-import '../office/finances_screen.dart';
+
 import '../race/garage_screen.dart';
 import '../race/qualifying_screen.dart';
 import '../race/race_live_screen.dart';
@@ -301,24 +301,6 @@ class _DashboardScreenState extends State<DashboardScreen> {
                     builder: (context, constraints) {
                       final isWide = constraints.maxWidth > 900;
 
-                      final budgetCard = FinanceCard(
-                        budget: team.budget,
-                        onTap: () {
-                          if (widget.onNavigate != null) {
-                            widget.onNavigate!('mgmt_finances');
-                            return;
-                          }
-                          if (team.id.isEmpty) return;
-                          Navigator.push(
-                            context,
-                            MaterialPageRoute(
-                              builder: (context) =>
-                                  FinancesScreen(teamId: team.id),
-                            ),
-                          );
-                        },
-                      );
-
                       final checklistCard = PreparationChecklist(
                         setupSubmitted:
                             driverSetups.length >= 2 &&
@@ -407,8 +389,6 @@ class _DashboardScreenState extends State<DashboardScreen> {
                         return Row(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            Expanded(child: budgetCard),
-                            const SizedBox(width: 16),
                             Expanded(child: checklistCard),
                             const SizedBox(width: 16),
                             Expanded(child: officeNewsColumn),
@@ -417,8 +397,6 @@ class _DashboardScreenState extends State<DashboardScreen> {
                       } else {
                         return Column(
                           children: [
-                            budgetCard,
-                            const SizedBox(height: 16),
                             checklistCard,
                             const SizedBox(height: 32),
                             officeNewsColumn,

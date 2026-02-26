@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../../../models/core_models.dart';
 import '../../../services/transfer_market_service.dart';
+import '../../../utils/currency_formatter.dart';
 
 class TransferOptionsModal extends StatelessWidget {
   final String teamId;
@@ -28,8 +29,8 @@ class TransferOptionsModal extends StatelessWidget {
       title: const Text("Transfer Market Options"),
       content: Text(
         "What would you like to do with ${driver.name}?\n\n"
-        "• List on Transfer Market (Fee: \$${(fee / 1000).toStringAsFixed(0)}k)\n"
-        "• Release Driver immediately (Fee: \$${(fee / 1000).toStringAsFixed(0)}k)\n\n"
+        "• List on Transfer Market (Fee: ${CurrencyFormatter.format(fee)})\n"
+        "• Release Driver immediately (Fee: ${CurrencyFormatter.format(fee)})\n\n"
         "Listing a driver puts them on the market for 24 hours. Releasing removes them permanently.",
       ),
       actionsAlignment: MainAxisAlignment.spaceBetween,

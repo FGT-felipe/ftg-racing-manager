@@ -473,8 +473,6 @@ class _RaceStatusHeroState extends State<RaceStatusHero>
 
   @override
   Widget build(BuildContext context) {
-    // We will compute days, hours, mins, secs dynamically for each countdown inline
-
     String statusText = AppLocalizations.of(context).paddockOpen;
     Color statusColor = const Color(0xFF00C853);
     String buttonLabel = AppLocalizations.of(context).weekendSetupBtn;

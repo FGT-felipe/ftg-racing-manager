@@ -142,7 +142,7 @@ class _RenewContractModalState extends State<RenewContractModal> {
             // Role
             const Text("Driver Role"),
             DropdownButtonFormField<String>(
-              value: _role,
+              initialValue: _role,
               items: const [
                 DropdownMenuItem(value: "Main", child: Text("Main Driver")),
                 DropdownMenuItem(

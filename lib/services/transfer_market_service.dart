@@ -49,6 +49,7 @@ class TransferMarketService {
       txn.update(driverRef, {
         'isTransferListed': true,
         'transferListedAt': FieldValue.serverTimestamp(),
+        'priceAtListing': marketValue,
         'currentHighestBid': 0,
         'highestBidderTeamId': FieldValue.delete(),
       });
@@ -156,6 +157,17 @@ class TransferMarketService {
     final driverRef = _db.collection('drivers').doc(driverId);
     final bidRef = _db.collection('transferBids').doc();
 
+    // 1. Enforce 5-driver limit (Check before transaction)
+    final teamDriversSnap = await _db
+        .collection('drivers')
+        .where('teamId', isEqualTo: biddingTeamId)
+        .get();
+    if (teamDriversSnap.docs.length >= 5) {
+      throw Exception(
+        "Team already has 5 drivers (limit reached). You cannot bid for more drivers.",
+      );
+    }
+
     await _db.runTransaction((txn) async {
       final teamSnap = await txn.get(teamRef);
       final driverSnap = await txn.get(driverRef);
@@ -165,14 +177,14 @@ class TransferMarketService {
       }
 
       final team = Team.fromMap(teamSnap.data() as Map<String, dynamic>);
-      final driver = Driver.fromMap(driverSnap.data() as Map<String, dynamic>);
+      final d = Driver.fromMap(driverSnap.data() as Map<String, dynamic>);
 
-      if (!driver.isTransferListed) {
+      if (!d.isTransferListed) {
         throw Exception("This driver is not available on the market.");
       }
 
       // Enforce 5-minute bidding lockout
-      final listedAt = driver.transferListedAt ?? DateTime.now();
+      final listedAt = d.transferListedAt ?? DateTime.now();
       final expiresAt = listedAt.add(const Duration(hours: 24));
       final diff = expiresAt.difference(DateTime.now());
 
@@ -182,20 +194,24 @@ class TransferMarketService {
         );
       }
 
-      if (team.id == driver.teamId) {
+      if (team.id == d.teamId) {
         throw Exception("You cannot bid on your own driver.");
       }
 
-      // Check minimum outbid (e.g., must be higher than current highest)
-      if (driver.currentHighestBid == 0) {
-        if (bidAmount < driver.marketValue) {
+      // Use persisted priceAtListing if available
+      final int referencePrice = d.priceAtListing > 0
+          ? d.priceAtListing
+          : d.marketValue;
+
+      if (d.currentHighestBid == 0) {
+        if (bidAmount < referencePrice) {
           throw Exception(
-            "The initial bid must be at least \$${(driver.marketValue / 1000).toStringAsFixed(0)}k (Market Value).",
+            "The initial bid must be at least \$${(referencePrice / 1000).toStringAsFixed(0)}k.",
           );
         }
-      } else if (bidAmount <= driver.currentHighestBid) {
+      } else if (bidAmount <= d.currentHighestBid) {
         throw Exception(
-          "Bid must be higher than the current highest bid (\$${(driver.currentHighestBid / 1000).toStringAsFixed(0)}k).",
+          "Bid must be higher than the current highest bid (\$${(d.currentHighestBid / 1000).toStringAsFixed(0)}k).",
         );
       }
 
@@ -209,11 +225,7 @@ class TransferMarketService {
         );
       }
 
-      final previousBidderId = driver.highestBidderTeamId;
-
-      // Ensure funds are somewhat locked or we just deduct them?
-      // If we deduct them now, we must refund the previous highest bidder.
-      // Doing full escrow in Firestore is robust. Let's do it:
+      final previousBidderId = d.highestBidderTeamId;
 
       if (previousBidderId != null && previousBidderId != biddingTeamId) {
         // Refund previous bidder
@@ -224,7 +236,7 @@ class TransferMarketService {
             prevSnap.data() as Map<String, dynamic>,
           );
           txn.update(prevBidderRef, {
-            'budget': prevTeam.budget + driver.currentHighestBid,
+            'budget': prevTeam.budget + d.currentHighestBid,
           });
 
           // Record refund transaction
@@ -233,19 +245,19 @@ class TransferMarketService {
             refundTransRef,
             Transaction(
               id: refundTransRef.id,
-              description: 'Transfer Bid Outbid: ${driver.name}',
-              amount: driver.currentHighestBid,
+              description: 'Transfer Bid Outbid: ${d.name}',
+              amount: d.currentHighestBid,
               date: DateTime.now(),
               type: 'TRANSFER_REFUND',
             ).toMap(),
           );
 
-          // Create Notification for Outbid
+          // Create Notification
           _notificationService.addNotification(
             teamId: previousBidderId,
             title: "Transfer Bid Surpassed",
             message:
-                "Your bid of \$${driver.currentHighestBid} for ${driver.name} has been surpassed by another team. Your funds have been refunded.",
+                "Your bid of \$${d.currentHighestBid} for ${d.name} has been surpassed. Your funds have been refunded.",
             type: "WARNING",
             actionRoute: "/market",
           );
@@ -255,23 +267,24 @@ class TransferMarketService {
       // Deduct from new bidder
       txn.update(teamRef, {'budget': team.budget - bidAmount});
 
-      // Record deduction transaction
+      // Record bid transaction
       final bidTransRef = teamRef.collection('transactions').doc();
       txn.set(
         bidTransRef,
         Transaction(
           id: bidTransRef.id,
-          description: 'Transfer Bid Placed: ${driver.name}',
+          description: 'Transfer Bid Placed: ${d.name}',
           amount: -bidAmount,
           date: DateTime.now(),
           type: 'TRANSFER_BID',
         ).toMap(),
       );
 
-      // Update driver with new highest bid
+      // Update driver
       txn.update(driverRef, {
         'currentHighestBid': bidAmount,
         'highestBidderTeamId': biddingTeamId,
+        'highestBidderTeamName': team.name,
       });
 
       // Save bid record
@@ -283,6 +296,48 @@ class TransferMarketService {
         createdAt: DateTime.now(),
       );
       txn.set(bidRef, bid.toMap());
+    });
+  }
+
+  // 4b. Cancel Bid
+  // Clears the current highest bid if the bidder wants to withdraw.
+  // Funs are NOT returned as per product rules.
+  Future<void> cancelBid(String teamId, String driverId) async {
+    final driverRef = _db.collection('drivers').doc(driverId);
+
+    await _db.runTransaction((txn) async {
+      final driverSnap = await txn.get(driverRef);
+
+      if (!driverSnap.exists) {
+        throw Exception("Driver not found.");
+      }
+
+      final driver = Driver.fromMap(driverSnap.data() as Map<String, dynamic>);
+
+      if (driver.highestBidderTeamId != teamId) {
+        throw Exception("You are not the highest bidder for this driver.");
+      }
+
+      // Enforce 5-minute bidding lockout (same as placeBid)
+      final listedAt = driver.transferListedAt ?? DateTime.now();
+      final expiresAt = listedAt.add(const Duration(hours: 24));
+      final diff = expiresAt.difference(DateTime.now());
+
+      if (diff.inMinutes < 5) {
+        throw Exception(
+          "Transfer is almost closed. You can no longer cancel your bid.",
+        );
+      }
+
+      // Clear bidding info on driver
+      txn.update(driverRef, {
+        'currentHighestBid': 0,
+        'highestBidderTeamId': FieldValue.delete(),
+        'highestBidderTeamName': FieldValue.delete(),
+      });
+
+      // We could also delete the TransferBid record, but keeping it as a "failed/cancelled" log might be better.
+      // For now, let's just clear the driver state.
     });
   }
 
@@ -313,10 +368,11 @@ class TransferMarketService {
       // Apply morale modifier: high morale accepts lower pay (up to 20% discount), low morale demands higher (up to 30% premium)
       final morale = driver.getStat(DriverStats.morale);
       double moraleMod = 1.0;
-      if (morale > 80)
+      if (morale > 80) {
         moraleMod = 0.8;
-      else if (morale < 50)
+      } else if (morale < 50) {
         moraleMod = 1.3;
+      }
 
       if (driver.negotiationAttempts >= 3) {
         throw Exception(
@@ -392,14 +448,15 @@ class TransferMarketService {
 
       int potential = 1;
       int r = rnd.nextInt(100);
-      if (r < 15)
+      if (r < 15) {
         potential = 5;
-      else if (r < 35)
+      } else if (r < 35) {
         potential = 4;
-      else if (r < 65)
+      } else if (r < 65) {
         potential = 3;
-      else if (r < 90)
+      } else if (r < 90) {
         potential = 2;
+      }
 
       final age = 18 + rnd.nextInt(15);
       final gender = rnd.nextBool() ? 'M' : 'F';

@@ -1,3 +1,4 @@
+import 'package:cloud_firestore/cloud_firestore.dart' hide Transaction;
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'home/dashboard_screen.dart';
@@ -480,6 +481,37 @@ class _MainLayoutState extends State<MainLayout> {
     }
   }
 
+  Widget _buildEconomyStat({
+    required String label,
+    required String value,
+    required Color color,
+  }) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        if (label.isNotEmpty)
+          Text(
+            label.toUpperCase(),
+            style: GoogleFonts.raleway(
+              fontSize: 9,
+              fontWeight: FontWeight.bold,
+              color: Colors.white54,
+              letterSpacing: 0.5,
+            ),
+          ),
+        Text(
+          value,
+          style: GoogleFonts.poppins(
+            fontSize: 14,
+            fontWeight: FontWeight.w700,
+            color: color,
+          ),
+        ),
+      ],
+    );
+  }
+
   void _onNodeSelected(NavNode node) {
     setState(() {
       if (node.screen != null) {
@@ -548,7 +580,47 @@ class _MainLayoutState extends State<MainLayout> {
 
     return Scaffold(
       appBar: AppBar(
-        title: AppLogo(size: 28, isDark: theme.brightness == Brightness.light),
+        title: Row(
+          children: [
+            AppLogo(size: 28, isDark: theme.brightness == Brightness.light),
+            const SizedBox(width: 24),
+            StreamBuilder<DocumentSnapshot>(
+              stream: FirebaseFirestore.instance
+                  .collection('teams')
+                  .doc(widget.teamId)
+                  .snapshots(),
+              builder: (context, snapshot) {
+                if (!snapshot.hasData || snapshot.data?.data() == null) {
+                  return const SizedBox.shrink();
+                }
+                final team = Team.fromMap(
+                  snapshot.data!.data() as Map<String, dynamic>,
+                );
+                final NumberFormat formatter = NumberFormat.simpleCurrency(
+                  decimalDigits: 0,
+                );
+                final transferBudget =
+                    (team.budget * team.transferBudgetPercentage / 100).round();
+
+                return Row(
+                  children: [
+                    _buildEconomyStat(
+                      label: AppLocalizations.of(context).totalBalance,
+                      value: formatter.format(team.budget),
+                      color: Colors.white,
+                    ),
+                    const SizedBox(width: 20),
+                    _buildEconomyStat(
+                      label: AppLocalizations.of(context).transferBudgetLabel,
+                      value: formatter.format(transferBudget),
+                      color: theme.colorScheme.secondary,
+                    ),
+                  ],
+                );
+              },
+            ),
+          ],
+        ),
         backgroundColor: theme.scaffoldBackgroundColor,
         elevation: 0,
         centerTitle: false,

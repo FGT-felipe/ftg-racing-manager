@@ -590,6 +590,7 @@ class _LastRaceStandingsTab extends StatelessWidget {
                           })
                           .map((e) => e.key)
                           .toList(),
+                      shrinkWrap: true,
                       rows: results.take(10).toList().asMap().entries.map((e) {
                         final pos = e.key + 1;
                         final points = [
@@ -651,6 +652,7 @@ class _LastRaceStandingsTab extends StatelessWidget {
                               })
                               .map((e) => e.key)
                               .toList(),
+                          shrinkWrap: true,
                           rows: constructorResults.asMap().entries.map((e) {
                             return <String>[
                               "${e.key + 1}",
