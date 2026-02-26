@@ -1,14 +1,21 @@
 import 'package:flutter/material.dart';
 import '../../../models/core_models.dart';
+import '../../../widgets/common/driver_stars.dart';
 import '../../../services/driver_portrait_service.dart';
 import '../../../services/driver_status_service.dart';
 import '../../../l10n/app_localizations.dart';
+import '../../../utils/currency_formatter.dart';
 
 class DriverCard extends StatelessWidget {
   final Driver driver;
   final VoidCallback? onRenew;
-  final VoidCallback? onFire;
+  final VoidCallback? onTransferMarket;
+  final VoidCallback? onCancelTransfer;
+  final VoidCallback? onBid;
+  final VoidCallback? onCancelBid;
+  final bool isCancellingBid;
   final String? teamName;
+  final String? currentTeamId;
   final String? leagueName;
   final int? currentYear;
 
@@ -16,8 +23,13 @@ class DriverCard extends StatelessWidget {
     super.key,
     required this.driver,
     this.onRenew,
-    this.onFire,
+    this.onTransferMarket,
+    this.onCancelTransfer,
+    this.onBid,
+    this.onCancelBid,
+    this.isCancellingBid = false,
     this.teamName,
+    this.currentTeamId,
     this.leagueName,
     this.currentYear,
   });
@@ -78,6 +90,38 @@ class DriverCard extends StatelessWidget {
                 ? _buildDesktopLayout(context)
                 : _buildMobileLayout(context),
           ),
+          if (driver.isTransferListed)
+            Positioned(
+              top: 12,
+              left: -30,
+              child: Transform.rotate(
+                angle: -0.785398, // -45 degrees
+                child: Container(
+                  width: 150,
+                  alignment: Alignment.center,
+                  padding: const EdgeInsets.symmetric(vertical: 4),
+                  decoration: const BoxDecoration(
+                    color: Colors.amber,
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black45,
+                        blurRadius: 4,
+                        offset: Offset(0, 2),
+                      ),
+                    ],
+                  ),
+                  child: const Text(
+                    "TRANSFER MARKET",
+                    style: TextStyle(
+                      color: Colors.black,
+                      fontWeight: FontWeight.bold,
+                      fontSize: 10,
+                      letterSpacing: 1.0,
+                    ),
+                  ),
+                ),
+              ),
+            ),
         ],
       ),
     );
@@ -206,7 +250,13 @@ class DriverCard extends StatelessWidget {
         ),
         const SizedBox(height: 8),
         // Potential Stars
-        Center(child: _buildPotentialStars(driver.potential)),
+        Center(
+          child: DriverStars(
+            currentStars: driver.currentStars,
+            maxStars: driver.potential,
+            size: 20,
+          ),
+        ),
         const SizedBox(height: 24),
         // Contract Details
         Text(
@@ -250,57 +300,217 @@ class DriverCard extends StatelessWidget {
           AppLocalizations.of(context).marketabilityLabel,
           '${(driver.stats[DriverStats.marketability] ?? 0) ~/ 5}/20',
         ),
+        _buildContractRow(
+          AppLocalizations.of(context).marketValueLabel,
+          CurrencyFormatter.format(driver.marketValue),
+        ),
+        if (driver.isTransferListed && driver.currentHighestBid > 0) ...[
+          const SizedBox(height: 8),
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+            decoration: BoxDecoration(
+              color: Colors.amber.withValues(alpha: 0.1),
+              borderRadius: BorderRadius.circular(8),
+              border: Border.all(color: Colors.amber.withValues(alpha: 0.3)),
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    const Text(
+                      "Highest Bid:",
+                      style: TextStyle(
+                        fontSize: 11,
+                        color: Colors.amber,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                    Text(
+                      CurrencyFormatter.format(driver.currentHighestBid),
+                      style: const TextStyle(
+                        fontSize: 11,
+                        color: Colors.white,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ],
+                ),
+                if (driver.highestBidderTeamName != null)
+                  Text(
+                    "(${driver.highestBidderTeamName})",
+                    style: TextStyle(
+                      fontSize: 10,
+                      color: Colors.white.withValues(alpha: 0.7),
+                      fontStyle: FontStyle.italic,
+                    ),
+                  ),
+                if (currentTeamId != null &&
+                    driver.highestBidderTeamId == currentTeamId)
+                  Padding(
+                    padding: const EdgeInsets.only(top: 8.0),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        const Text(
+                          "YOU HAVE THE HIGHEST BID",
+                          style: TextStyle(
+                            fontSize: 9,
+                            color: Colors.greenAccent,
+                            fontWeight: FontWeight.w900,
+                          ),
+                        ),
+                        InkWell(
+                          onTap: isCancellingBid ? null : onCancelBid,
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 6,
+                              vertical: 2,
+                            ),
+                            decoration: BoxDecoration(
+                              color: Colors.red.withValues(alpha: 0.2),
+                              borderRadius: BorderRadius.circular(4),
+                              border: Border.all(
+                                color: Colors.red.withValues(alpha: 0.5),
+                              ),
+                            ),
+                            child: isCancellingBid
+                                ? const SizedBox(
+                                    width: 10,
+                                    height: 10,
+                                    child: CircularProgressIndicator(
+                                      strokeWidth: 2,
+                                      color: Colors.redAccent,
+                                    ),
+                                  )
+                                : const Text(
+                                    "CANCEL BID",
+                                    style: TextStyle(
+                                      fontSize: 9,
+                                      color: Colors.redAccent,
+                                      fontWeight: FontWeight.bold,
+                                    ),
+                                  ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+              ],
+            ),
+          ),
+        ],
         const SizedBox(height: 16),
         Divider(
           color: theme.colorScheme.onSurface.withValues(alpha: 0.1),
           height: 1,
         ),
         const SizedBox(height: 24),
-        // Buttons
         Row(
-          children: [
-            Expanded(
-              child: FilledButton(
-                onPressed: onFire,
-                style: FilledButton.styleFrom(
-                  backgroundColor: theme.colorScheme.error,
-                  foregroundColor: Colors.white,
-                  padding: const EdgeInsets.symmetric(horizontal: 4),
-                  textStyle: const TextStyle(
-                    fontSize: 10,
-                    fontWeight: FontWeight.bold,
+          children: driver.isTransferListed
+              ? [
+                  if (currentTeamId == driver.teamId)
+                    Expanded(
+                      child: OutlinedButton(
+                        onPressed: onCancelTransfer,
+                        style: OutlinedButton.styleFrom(
+                          foregroundColor: theme.colorScheme.error,
+                          side: BorderSide(color: theme.colorScheme.error),
+                          padding: const EdgeInsets.symmetric(horizontal: 4),
+                          textStyle: const TextStyle(
+                            fontSize: 10,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                        child: const FittedBox(
+                          fit: BoxFit.scaleDown,
+                          child: Text("CANCEL TRANSFER"),
+                        ),
+                      ),
+                    )
+                  else ...[
+                    Expanded(
+                      child: FilledButton(
+                        onPressed: onBid,
+                        style: FilledButton.styleFrom(
+                          backgroundColor: Colors.amber,
+                          foregroundColor: Colors.black,
+                          padding: const EdgeInsets.symmetric(horizontal: 4),
+                          textStyle: const TextStyle(
+                            fontSize: 10,
+                            fontWeight: FontWeight.bold,
+                          ),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(100),
+                          ),
+                        ),
+                        child: const FittedBox(
+                          fit: BoxFit.scaleDown,
+                          child: Row(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              Icon(Icons.gavel, size: 14),
+                              SizedBox(width: 4),
+                              Text("PLACE BID"),
+                            ],
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
+                ]
+              : [
+                  Expanded(
+                    child: FilledButton(
+                      onPressed: onTransferMarket,
+                      style: FilledButton.styleFrom(
+                        backgroundColor: const Color(0xFF00C853),
+                        foregroundColor: Colors.yellow,
+                        padding: const EdgeInsets.symmetric(horizontal: 4),
+                        textStyle: const TextStyle(
+                          fontSize: 10,
+                          fontWeight: FontWeight.bold,
+                        ),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(100),
+                        ),
+                      ),
+                      child: const FittedBox(
+                        fit: BoxFit.scaleDown,
+                        child: Row(
+                          children: [
+                            Icon(Icons.shopping_cart, size: 14),
+                            SizedBox(width: 4),
+                            Text("Transfer Market"),
+                          ],
+                        ),
+                      ),
+                    ),
                   ),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(100),
+                  const SizedBox(width: 4),
+                  Expanded(
+                    child: FilledButton(
+                      onPressed: onRenew,
+                      style: FilledButton.styleFrom(
+                        padding: const EdgeInsets.symmetric(horizontal: 4),
+                        textStyle: const TextStyle(
+                          fontSize: 10,
+                          fontWeight: FontWeight.bold,
+                        ),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(100),
+                        ),
+                      ),
+                      child: FittedBox(
+                        fit: BoxFit.scaleDown,
+                        child: Text(
+                          AppLocalizations.of(context).renewContractBtn,
+                        ),
+                      ),
+                    ),
                   ),
-                ),
-                child: FittedBox(
-                  fit: BoxFit.scaleDown,
-                  child: Text(AppLocalizations.of(context).fireBtn),
-                ),
-              ),
-            ),
-            const SizedBox(width: 4),
-            Expanded(
-              child: FilledButton(
-                onPressed: onRenew,
-                style: FilledButton.styleFrom(
-                  padding: const EdgeInsets.symmetric(horizontal: 4),
-                  textStyle: const TextStyle(
-                    fontSize: 10,
-                    fontWeight: FontWeight.bold,
-                  ),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(100),
-                  ),
-                ),
-                child: FittedBox(
-                  fit: BoxFit.scaleDown,
-                  child: Text(AppLocalizations.of(context).renewContractBtn),
-                ),
-              ),
-            ),
-          ],
+                ],
         ),
       ],
     );
@@ -642,19 +852,6 @@ class DriverCard extends StatelessWidget {
           ),
         ],
       ),
-    );
-  }
-
-  Widget _buildPotentialStars(int potential) {
-    return Row(
-      mainAxisSize: MainAxisSize.min,
-      children: List.generate(5, (index) {
-        return Icon(
-          index < potential ? Icons.star : Icons.star_border,
-          color: Colors.amber,
-          size: 20,
-        );
-      }),
     );
   }
 

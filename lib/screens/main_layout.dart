@@ -1,3 +1,4 @@
+import 'package:cloud_firestore/cloud_firestore.dart' hide Transaction;
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'home/dashboard_screen.dart';
@@ -12,8 +13,10 @@ import 'calendar/calendar_screen.dart';
 import 'race/race_day_screen.dart';
 import 'hq/youth_academy_screen.dart';
 import 'management/personal_screen.dart';
+import 'market/transfer_market_screen.dart';
 import 'hq_screen.dart';
 import '../widgets/common/app_logo.dart';
+import '../widgets/common/new_badge.dart';
 import '../widgets/common/breadcrumbs.dart';
 import '../services/season_service.dart';
 import '../services/time_service.dart';
@@ -32,12 +35,14 @@ class NavNode {
   final Widget? screen;
   final List<NavNode>? children;
   final String id;
+  final bool showNewBadge;
 
   NavNode({
     required this.titleBuilder,
     this.screen,
     this.children,
     required this.id,
+    this.showNewBadge = false,
   });
 }
 
@@ -135,6 +140,12 @@ class _MainLayoutState extends State<MainLayout> {
             screen: RaceDayScreen(teamId: widget.teamId),
           ),
         ],
+      ),
+      NavNode(
+        id: 'market',
+        titleBuilder: (context) => "Transfer Market",
+        screen: TransferMarketScreen(teamId: widget.teamId),
+        showNewBadge: true,
       ),
       NavNode(
         id: 'management',
@@ -470,6 +481,37 @@ class _MainLayoutState extends State<MainLayout> {
     }
   }
 
+  Widget _buildEconomyStat({
+    required String label,
+    required String value,
+    required Color color,
+  }) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        if (label.isNotEmpty)
+          Text(
+            label.toUpperCase(),
+            style: GoogleFonts.raleway(
+              fontSize: 9,
+              fontWeight: FontWeight.bold,
+              color: Colors.white54,
+              letterSpacing: 0.5,
+            ),
+          ),
+        Text(
+          value,
+          style: GoogleFonts.poppins(
+            fontSize: 14,
+            fontWeight: FontWeight.w700,
+            color: color,
+          ),
+        ),
+      ],
+    );
+  }
+
   void _onNodeSelected(NavNode node) {
     setState(() {
       if (node.screen != null) {
@@ -538,7 +580,47 @@ class _MainLayoutState extends State<MainLayout> {
 
     return Scaffold(
       appBar: AppBar(
-        title: AppLogo(size: 28, isDark: theme.brightness == Brightness.light),
+        title: Row(
+          children: [
+            AppLogo(size: 28, isDark: theme.brightness == Brightness.light),
+            const SizedBox(width: 24),
+            StreamBuilder<DocumentSnapshot>(
+              stream: FirebaseFirestore.instance
+                  .collection('teams')
+                  .doc(widget.teamId)
+                  .snapshots(),
+              builder: (context, snapshot) {
+                if (!snapshot.hasData || snapshot.data?.data() == null) {
+                  return const SizedBox.shrink();
+                }
+                final team = Team.fromMap(
+                  snapshot.data!.data() as Map<String, dynamic>,
+                );
+                final NumberFormat formatter = NumberFormat.simpleCurrency(
+                  decimalDigits: 0,
+                );
+                final transferBudget =
+                    (team.budget * team.transferBudgetPercentage / 100).round();
+
+                return Row(
+                  children: [
+                    _buildEconomyStat(
+                      label: AppLocalizations.of(context).totalBalance,
+                      value: formatter.format(team.budget),
+                      color: Colors.white,
+                    ),
+                    const SizedBox(width: 20),
+                    _buildEconomyStat(
+                      label: AppLocalizations.of(context).transferBudgetLabel,
+                      value: formatter.format(transferBudget),
+                      color: theme.colorScheme.secondary,
+                    ),
+                  ],
+                );
+              },
+            ),
+          ],
+        ),
         backgroundColor: theme.scaffoldBackgroundColor,
         elevation: 0,
         centerTitle: false,
@@ -761,7 +843,13 @@ class _MainLayoutState extends State<MainLayout> {
           ? BottomNavigationBar(
               items: _navTree.map((node) {
                 return BottomNavigationBarItem(
-                  icon: const SizedBox.shrink(), // No icons
+                  icon: node.showNewBadge
+                      ? NewBadgeWidget(
+                          createdAt: DateTime.now(),
+                          forceShow: true,
+                          child: const SizedBox.shrink(),
+                        )
+                      : const SizedBox.shrink(),
                   label: node.titleBuilder(context).toUpperCase(),
                 );
               }).toList(),
@@ -872,25 +960,33 @@ class _Sidebar extends StatelessWidget {
     required double fontSize,
     required double paddingLeft,
   }) {
+    Widget titleWidget = Text(
+      node.titleBuilder(context).toUpperCase(),
+      style: depth == 0
+          ? GoogleFonts.poppins(
+              color: contentColor,
+              fontWeight: FontWeight.w900,
+              fontSize: fontSize,
+              letterSpacing: 1.2,
+            )
+          : GoogleFonts.raleway(
+              color: contentColor,
+              fontWeight: fontWeight,
+              fontSize: fontSize,
+            ),
+    );
+
+    if (node.showNewBadge) {
+      titleWidget = NewBadgeWidget(
+        createdAt: DateTime.now(),
+        forceShow: true,
+        child: titleWidget,
+      );
+    }
+
     return ListTile(
       contentPadding: EdgeInsets.only(left: paddingLeft, right: 16.0),
-      title: isCollapsed
-          ? null
-          : Text(
-              node.titleBuilder(context).toUpperCase(),
-              style: depth == 0
-                  ? GoogleFonts.poppins(
-                      color: contentColor,
-                      fontWeight: FontWeight.w900,
-                      fontSize: fontSize,
-                      letterSpacing: 1.2,
-                    )
-                  : GoogleFonts.raleway(
-                      color: contentColor,
-                      fontWeight: fontWeight,
-                      fontSize: fontSize,
-                    ),
-            ),
+      title: isCollapsed ? null : titleWidget,
       selected: isSelected,
       onTap: () => onNodeSelected(node),
     );

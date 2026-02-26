@@ -589,7 +589,30 @@ exports.scheduledQualifying = onSchedule({
             setupSubmitted = true;
           }
 
-          if (!team.isBot && ds && ds.qualifyingBestTime && ds.qualifyingBestTime > 0) {
+          if (driver.isTransferListed) {
+            const ySnap = await db.collection("teams").doc(team.id)
+                .collection("academy").doc("config")
+                .collection("selected").limit(1).get();
+            if (!ySnap.empty) {
+              const yData = ySnap.docs[0].data();
+              driver.name = yData.name + " (Academy)";
+              const base = yData.baseSkill || 50;
+              driver.stats = {
+                braking: base, cornering: base, smoothness: base,
+                overtaking: base, consistency: base, adaptability: base,
+                focus: base, feedback: base, fitness: 100,
+                morale: 100, marketability: 30,
+              };
+            } else {
+              // Generic bad
+              driver.stats = {braking: 1, cornering: 1, smoothness: 1, overtaking: 1, consistency: 1, adaptability: 1, focus: 1, feedback: 1, fitness: 1};
+              isCrashed = true; // Can't start properly without a driver
+            }
+            setup = {...DEFAULT_SETUP, frontWing: 50, rearWing: 50, suspension: 50, gearRatio: 50, qualifyingStyle: "normal"};
+            setupSubmitted = true;
+          }
+
+          if (!driver.isTransferListed && !team.isBot && ds && ds.qualifyingBestTime && ds.qualifyingBestTime > 0) {
             finalLapTime = ds.qualifyingBestTime;
             isCrashed = ds.qualifyingDnf || false;
             tyreCompound = ds.qualifyingBestCompound || setup.tyreCompound || "medium";
@@ -793,8 +816,30 @@ exports.scheduledRace = onSchedule({
             su = {...DEFAULT_SETUP, ...ds.race};
           }
         }
+
+        if (dData.isTransferListed) {
+          const ySnap = await db.collection("teams").doc(team.id)
+              .collection("academy").doc("config")
+              .collection("selected").limit(1).get();
+          if (!ySnap.empty) {
+            const yData = ySnap.docs[0].data();
+            dData.name = yData.name + " (Academy)";
+            const base = yData.baseSkill || 50;
+            dData.stats = {
+              braking: base, cornering: base, smoothness: base,
+              overtaking: base, consistency: base, adaptability: base,
+              focus: base, feedback: base, fitness: 100,
+              morale: 100, marketability: 30,
+            };
+          } else {
+            dData.stats = {braking: 1, cornering: 1, smoothness: 1, overtaking: 1, consistency: 1, adaptability: 1, focus: 1, feedback: 1, fitness: 1};
+          }
+          su = {...DEFAULT_SETUP, frontWing: 50, rearWing: 50, suspension: 50, gearRatio: 50, raceStyle: "defensive", pitStops: ["hard"], pitStopFuel: [50]};
+        }
+
         // Override tyreCompound with qualy best
         su.tyreCompound = g.tyreCompound || "medium";
+        if (dData.isTransferListed) su.tyreCompound = "hard";
         setupsMap[g.driverId] = su;
       }
 
@@ -1048,15 +1093,66 @@ exports.postRaceProcessing = onSchedule({
         }
       }
 
-      // Reset weekStatus and unlock
+      // Reset weekStatus, unlock, and process WEEKLY ECONOMY
       for (const tid of teamIdsSet) {
         // Read current weekStatus to preserve Bureaucrat cooldown
         const tDoc = await db.collection("teams").doc(tid).get();
-        const curWs = (tDoc.exists && tDoc.data().weekStatus) || {};
+        if (!tDoc.exists) continue;
+
+        const teamData = tDoc.data();
+        const curWs = teamData.weekStatus || {};
         let cooldown = curWs.upgradeCooldownWeeksLeft || 0;
         if (cooldown > 0) cooldown--; // Decrement each week
 
-        await db.collection("teams").doc(tid).update({
+        let weeklyIncome = 0;
+        let weeklyExpense = 0;
+
+        // 1. Sponsor Payouts & Contract decrement
+        const sponsors = teamData.sponsors || {};
+        const updatedSponsors = {};
+        for (const [slot, contract] of Object.entries(sponsors)) {
+          if (contract.racesRemaining > 0) {
+            weeklyIncome += contract.weeklyBasePayment || 0;
+            contract.racesRemaining -= 1;
+
+            if (contract.racesRemaining > 0) {
+              updatedSponsors[slot] = contract;
+            } else {
+              // Notification for expired contract
+              await addOfficeNews(tid, {
+                title: "Sponsor Contract Expired",
+                message: `The contract with ${contract.sponsorName} for the ${slot} slot has expired.`,
+                type: "INFO",
+              });
+            }
+          }
+        }
+
+        // 2. HQ Maintenance
+        const facilities = teamData.facilities || {};
+        for (const facility of Object.values(facilities)) {
+          const level = facility.level || 0;
+          if (level > 0) {
+            weeklyExpense += level * 15000;
+          }
+        }
+
+        // 3. Driver Salaries
+        const dSnap = await db.collection("drivers").where("teamId", "==", tid).get();
+        dSnap.forEach((doc) => {
+          const d = doc.data();
+          const salary = d.salary || 100000; // default $100k
+          weeklyExpense += Math.round(salary / 52); // weekly wage
+        });
+
+        // 4. Update Budget and Transactions
+        const currentBudget = teamData.budget || 0;
+        const newBudget = currentBudget + weeklyIncome - weeklyExpense;
+
+        const batch = db.batch();
+        const tRef = db.collection("teams").doc(tid);
+
+        batch.update(tRef, {
           "weekStatus": {
             practiceCompleted: false,
             strategySet: false,
@@ -1066,7 +1162,36 @@ exports.postRaceProcessing = onSchedule({
             upgradeCooldownWeeksLeft: cooldown,
             isLockedForProcessing: false,
           },
+          "sponsors": updatedSponsors,
+          "budget": newBudget,
         });
+
+        // Use ISO String for dates in JS so it matches Dart expectations
+        const nowIso = admin.firestore.FieldValue.serverTimestamp();
+
+        if (weeklyIncome > 0) {
+          const incTx = tRef.collection("transactions").doc();
+          batch.set(incTx, {
+            id: incTx.id,
+            description: "Weekly Sponsor Income",
+            amount: weeklyIncome,
+            date: nowIso,
+            type: "SPONSOR",
+          });
+        }
+
+        if (weeklyExpense > 0) {
+          const expTx = tRef.collection("transactions").doc();
+          batch.set(expTx, {
+            id: expTx.id,
+            description: "Weekly Operations & Salaries",
+            amount: -weeklyExpense,
+            date: nowIso,
+            type: "MAINTENANCE",
+          });
+        }
+
+        await batch.commit();
       }
 
       // AI team upgrades (30% chance per stat)
@@ -1146,7 +1271,7 @@ exports.scheduledDailyFitnessRecovery = onSchedule({
       const currentFitness = stats.fitness || 50;
 
       if (currentFitness < 100) {
-        const newFitness = Math.min(100, currentFitness + 2);
+        const newFitness = Math.min(100, currentFitness + 10);
 
         currentBatch.update(doc.ref, {
           "stats.fitness": newFitness,
@@ -1173,5 +1298,125 @@ exports.scheduledDailyFitnessRecovery = onSchedule({
     logger.info(`=== DAILY FITNESS RECOVERY COMPLETE. Batches: ${batches.length} ===`);
   } catch (error) {
     logger.error("Error in scheduledDailyFitnessRecovery:", error);
+  }
+});
+
+// ─────────────────────────────────────────────
+// 9. SCHEDULED TRANSFER MARKET RESOLVER (Hourly)
+// ─────────────────────────────────────────────
+exports.resolveTransferMarket = onSchedule({
+  schedule: "0 * * * *",
+  timeZone: "America/Bogota",
+  memory: "512MiB",
+  timeoutSeconds: 300,
+}, async () => {
+  logger.info("=== TRANSFER MARKET RESOLVER START ===");
+
+  try {
+    const now = admin.firestore.Timestamp.now();
+    // 24 hours ago
+    const yesterday = new Date(now.toDate().getTime() - (24 * 60 * 60 * 1000));
+    const yesterdayTs = admin.firestore.Timestamp.fromDate(yesterday);
+
+    const driversRef = db.collection("drivers");
+    const snapshot = await driversRef
+        .where("isTransferListed", "==", true)
+        .where("transferListedAt", "<=", yesterdayTs)
+        .get();
+
+    if (snapshot.empty) {
+      logger.info("No expired transfer listings found.");
+      return;
+    }
+
+    const batches = [];
+    let currentBatch = db.batch();
+    let opCount = 0;
+
+    for (const doc of snapshot.docs) {
+      const driver = doc.data();
+
+      const highestBid = driver.currentHighestBid || 0;
+      const highestBidderId = driver.highestBidderTeamId;
+      const originalTeamId = driver.teamId;
+
+      if (highestBid > 0 && highestBidderId) {
+        // Driver Sold
+
+        // Transfer driver to new team
+        currentBatch.update(doc.ref, {
+          isTransferListed: false,
+          transferListedAt: admin.firestore.FieldValue.delete(),
+          currentHighestBid: admin.firestore.FieldValue.delete(),
+          highestBidderTeamId: admin.firestore.FieldValue.delete(),
+          teamId: highestBidderId,
+          salary: Math.max(driver.salary || 100000, 100000), // maintain or set default
+          contractYearsRemaining: 1, // standard 1 year after transfer
+        });
+        opCount++;
+
+        // Give money to original team if it exists
+        if (originalTeamId) {
+          const sellerRef = db.collection("teams").doc(originalTeamId);
+          currentBatch.update(sellerRef, {
+            budget: admin.firestore.FieldValue.increment(highestBid),
+          });
+          opCount++;
+
+          // Notify Seller
+          await addOfficeNews(originalTeamId, {
+            title: "Driver Sold",
+            message: `${driver.name} was successfully sold in the transfer market for $${highestBid.toLocaleString()}.`,
+            type: "TRANSFER_SOLD",
+          });
+        }
+
+        // Notify Buyer
+        await addOfficeNews(highestBidderId, {
+          title: "Transfer Bid Won",
+          message: `You won the bid for ${driver.name} for $${highestBid.toLocaleString()}! They have joined your team.`,
+          type: "TRANSFER_WON",
+        });
+      } else {
+        // Driver Unsold
+        currentBatch.update(doc.ref, {
+          isTransferListed: false,
+          transferListedAt: admin.firestore.FieldValue.delete(),
+          currentHighestBid: admin.firestore.FieldValue.delete(),
+          highestBidderTeamId: admin.firestore.FieldValue.delete(),
+        });
+        opCount++;
+
+        if (originalTeamId) {
+          // Notify Seller
+          await addOfficeNews(originalTeamId, {
+            title: "Driver Unsold",
+            message: `Nobody bid on ${driver.name} in the transfer market. They remain in your team.`,
+            type: "TRANSFER_UNSOLD",
+          });
+        } else {
+          // If it was generated and no one bought him, he just hangs in the pool or we delete?
+          // Deleting keeps the pool clean from unsold admin generated drivers
+          currentBatch.delete(doc.ref);
+          opCount++;
+        }
+      }
+
+      if (opCount >= 400) {
+        batches.push(currentBatch.commit());
+        currentBatch = db.batch();
+        opCount = 0;
+      }
+    }
+
+    if (opCount > 0) {
+      batches.push(currentBatch.commit());
+    }
+
+    await Promise.all(batches);
+
+    logger.info(`=== TRANSFER MARKET RESOLVER COMPLETE. Batches: ${batches.length} ===`);
+  } catch (error) {
+    logger.error("Error in resolveTransferMarket:", error);
   }
 });

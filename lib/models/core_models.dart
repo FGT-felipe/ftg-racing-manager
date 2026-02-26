@@ -387,6 +387,7 @@ class Team {
   final Map<String, dynamic> weekStatus;
   final Map<String, ActiveContract> sponsors;
   final Map<String, Facility> facilities;
+  final int transferBudgetPercentage;
 
   Team({
     required this.id,
@@ -409,6 +410,7 @@ class Team {
     required this.weekStatus,
     this.sponsors = const {},
     this.facilities = const {},
+    this.transferBudgetPercentage = 20,
   });
 
   /// Check if a driver has submitted their setup for the current session.
@@ -442,6 +444,7 @@ class Team {
       'weekStatus': weekStatus,
       'sponsors': sponsors.map((k, v) => MapEntry(k, v.toMap())),
       'facilities': facilities.map((k, v) => MapEntry(k, v.toMap())),
+      'transferBudgetPercentage': transferBudgetPercentage,
     };
   }
 
@@ -513,6 +516,7 @@ class Team {
       facilities: (map['facilities'] as Map<String, dynamic>? ?? {}).map(
         (k, v) => MapEntry(k, Facility.fromMap(Map<String, dynamic>.from(v))),
       ),
+      transferBudgetPercentage: map['transferBudgetPercentage'] ?? 20,
     );
   }
 
@@ -537,6 +541,7 @@ class Team {
     Map<String, dynamic>? weekStatus,
     Map<String, ActiveContract>? sponsors,
     Map<String, Facility>? facilities,
+    int? transferBudgetPercentage,
   }) {
     return Team(
       id: id ?? this.id,
@@ -559,6 +564,8 @@ class Team {
       weekStatus: weekStatus ?? this.weekStatus,
       sponsors: sponsors ?? this.sponsors,
       facilities: facilities ?? this.facilities,
+      transferBudgetPercentage:
+          transferBudgetPercentage ?? this.transferBudgetPercentage,
     );
   }
 }
@@ -620,17 +627,24 @@ class Facility {
     if (level >= 5) return 0;
 
     // Youth Academy overrides base price when upgrading (level > 0).
-    // Level 0 (to buy) is 100000. Level 1->2 is 1M, 2->3 is 2M, etc.
     if (type == FacilityType.youthAcademy && level > 0) {
-      return 1000000 * level;
+      return 1500000 * level;
     }
 
-    // Base prices
-    int basePrice = 100000;
-    // level 0 (to buy): 100k
-    // level 1: 200k
-    // level 2: 300k
-    return basePrice * (level + 1);
+    switch (level) {
+      case 0:
+        return 250000;
+      case 1:
+        return 750000;
+      case 2:
+        return 1800000;
+      case 3:
+        return 3500000;
+      case 4:
+        return 6000000;
+      default:
+        return 0;
+    }
   }
 
   int get maintenanceCost {
@@ -917,6 +931,63 @@ class Driver {
   final String? portraitUrl;
   final String statusTitle;
 
+  // Transfer Market Fields
+  final bool isTransferListed;
+  final DateTime? transferListedAt;
+  final int currentHighestBid;
+  final String? highestBidderTeamId;
+  final String? highestBidderTeamName;
+  final int negotiationAttempts;
+  final int priceAtListing;
+
+  // Computed market value
+  int get marketValue {
+    int baseStatSum = DriverStats.drivingStats.fold(
+      0,
+      (acc, stat) => acc + getStat(stat),
+    );
+    int avgStat = DriverStats.drivingStats.isEmpty
+        ? 50
+        : baseStatSum ~/ DriverStats.drivingStats.length;
+
+    // Base value based on potential and avg stats
+    double value = (avgStat * 10000) * (potential * 0.5);
+
+    // Marketability bonus
+    value += getStat(DriverStats.marketability) * 5000;
+
+    // Age factor (younger = more expensive)
+    if (age < 23) {
+      value *= 1.5;
+    } else if (age > 35) {
+      value *= 0.5;
+    }
+
+    return value.toInt();
+  }
+
+  /// Calculates the current stars (1-5) based on the driver's current stats.
+  /// Stars are capped by the driver's maximum potential.
+  int get currentStars {
+    int baseStatSum = DriverStats.drivingStats.fold(
+      0,
+      (acc, stat) => acc + getStat(stat),
+    );
+    int count = DriverStats.drivingStats.length;
+    if (count == 0) return 1;
+    double avg = baseStatSum / count;
+
+    // Scale 1 to 5 based on 0-100
+    int stars = (avg / 20).ceil();
+    if (stars < 1) stars = 1;
+    if (stars > 5) stars = 5;
+
+    // Cap at potential
+    if (stars > potential) stars = potential;
+
+    return stars;
+  }
+
   Driver({
     required this.id,
     this.teamId,
@@ -946,6 +1017,13 @@ class Driver {
     this.weeklyGrowth = const {},
     this.portraitUrl,
     this.statusTitle = 'Unknown Status',
+    this.isTransferListed = false,
+    this.transferListedAt,
+    this.currentHighestBid = 0,
+    this.highestBidderTeamId,
+    this.highestBidderTeamName,
+    this.negotiationAttempts = 0,
+    this.priceAtListing = 0,
   });
 
   /// Retorna el potencial máximo de una estadística específica.
@@ -1000,6 +1078,13 @@ class Driver {
       'weeklyGrowth': weeklyGrowth,
       'portraitUrl': portraitUrl,
       'statusTitle': statusTitle,
+      'isTransferListed': isTransferListed,
+      'transferListedAt': transferListedAt?.toIso8601String(),
+      'currentHighestBid': currentHighestBid,
+      'highestBidderTeamId': highestBidderTeamId,
+      'highestBidderTeamName': highestBidderTeamName,
+      'negotiationAttempts': negotiationAttempts,
+      'priceAtListing': priceAtListing,
     };
   }
 
@@ -1051,6 +1136,17 @@ class Driver {
       ),
       portraitUrl: map['portraitUrl'],
       statusTitle: map['statusTitle'] ?? 'Unknown Status',
+      isTransferListed: map['isTransferListed'] ?? false,
+      transferListedAt: map['transferListedAt'] != null
+          ? (map['transferListedAt'] is Timestamp
+                ? (map['transferListedAt'] as Timestamp).toDate()
+                : DateTime.tryParse(map['transferListedAt'].toString()))
+          : null,
+      currentHighestBid: map['currentHighestBid'] ?? 0,
+      highestBidderTeamId: map['highestBidderTeamId'],
+      highestBidderTeamName: map['highestBidderTeamName'],
+      negotiationAttempts: map['negotiationAttempts'] ?? 0,
+      priceAtListing: map['priceAtListing'] ?? 0,
     );
   }
 
@@ -1113,6 +1209,11 @@ class Driver {
     Map<String, double>? weeklyGrowth,
     String? portraitUrl,
     String? statusTitle,
+    bool? isTransferListed,
+    DateTime? transferListedAt,
+    int? currentHighestBid,
+    String? highestBidderTeamId,
+    String? highestBidderTeamName,
   }) {
     return Driver(
       id: id ?? this.id,
@@ -1139,6 +1240,12 @@ class Driver {
       weeklyGrowth: weeklyGrowth ?? this.weeklyGrowth,
       portraitUrl: portraitUrl ?? this.portraitUrl,
       statusTitle: statusTitle ?? this.statusTitle,
+      isTransferListed: isTransferListed ?? this.isTransferListed,
+      transferListedAt: transferListedAt ?? this.transferListedAt,
+      currentHighestBid: currentHighestBid ?? this.currentHighestBid,
+      highestBidderTeamId: highestBidderTeamId ?? this.highestBidderTeamId,
+      highestBidderTeamName:
+          highestBidderTeamName ?? this.highestBidderTeamName,
     );
   }
 }

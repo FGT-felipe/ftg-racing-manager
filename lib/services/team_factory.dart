@@ -25,7 +25,7 @@ class TeamFactory {
       name: _generateTeamName(),
       managerId: null, // Bot team sin manager
       isBot: true,
-      budget: 5000000,
+      budget: 2500000,
       points: 0,
       races: 0,
       wins: 0,

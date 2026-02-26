@@ -893,6 +893,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get marketabilityLabel => 'Marketability';
 
   @override
+  String get marketValueLabel => 'Market Value';
+
+  @override
   String get fireBtn => 'Fire';
 
   @override
@@ -1333,6 +1336,12 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get navMarket => 'Market';
+
+  @override
+  String get totalBalance => 'Total Balance';
+
+  @override
+  String get transferBudgetLabel => 'Transfer Budget';
 
   @override
   String get personalManagement => 'Personal Management';

@@ -3,7 +3,9 @@ import 'package:cloud_firestore/cloud_firestore.dart' hide Transaction;
 import '../../models/core_models.dart';
 import '../../services/finance_service.dart';
 import 'package:intl/intl.dart';
+import 'dart:math' as math;
 import '../../l10n/app_localizations.dart';
+import '../../widgets/common/new_badge.dart';
 
 class FinancesScreen extends StatelessWidget {
   final String teamId;
@@ -31,6 +33,8 @@ class FinancesScreen extends StatelessWidget {
         final teamData = teamSnapshot.data!.data() as Map<String, dynamic>?;
         final budget = teamData?['budget'] ?? 0;
         final isNegative = budget < 0;
+        final int transferBudgetPercentage =
+            teamData?['transferBudgetPercentage'] ?? 20;
 
         return Column(
           children: [
@@ -81,6 +85,18 @@ class FinancesScreen extends StatelessWidget {
                     ),
                   ),
                 ],
+              ),
+            ),
+
+            const SizedBox(height: 12),
+
+            // Transfer Budget Slider Card
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 20),
+              child: _TransferBudgetCard(
+                initialPercentage: transferBudgetPercentage,
+                totalBudget: budget,
+                teamId: teamId,
               ),
             ),
 
@@ -243,6 +259,129 @@ class FinancesScreen extends StatelessWidget {
             fontWeight: FontWeight.bold,
             fontSize: 16,
           ),
+        ),
+      ),
+    );
+  }
+}
+
+class _TransferBudgetCard extends StatefulWidget {
+  final int initialPercentage;
+  final int totalBudget;
+  final String teamId;
+
+  const _TransferBudgetCard({
+    required this.initialPercentage,
+    required this.totalBudget,
+    required this.teamId,
+  });
+
+  @override
+  State<_TransferBudgetCard> createState() => _TransferBudgetCardState();
+}
+
+class _TransferBudgetCardState extends State<_TransferBudgetCard> {
+  late double _currentValue;
+
+  @override
+  void initState() {
+    super.initState();
+    _currentValue = widget.initialPercentage.toDouble();
+  }
+
+  @override
+  void didUpdateWidget(covariant _TransferBudgetCard oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.initialPercentage != widget.initialPercentage) {
+      _currentValue = widget.initialPercentage.toDouble();
+    }
+  }
+
+  void _onSave() {
+    FirebaseFirestore.instance.collection('teams').doc(widget.teamId).update({
+      'transferBudgetPercentage': _currentValue.toInt(),
+    });
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(content: Text("Transfer Budget Rule Updated!")),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final availableTransfers = (widget.totalBudget * (_currentValue / 100))
+        .round();
+
+    return NewBadgeWidget(
+      createdAt: DateTime.now(),
+      forceShow: true,
+      badgeAlignment: Alignment.bottomRight,
+      child: Container(
+        padding: const EdgeInsets.all(20),
+        decoration: BoxDecoration(
+          color: const Color(0xFF15151A),
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(
+            color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.2),
+          ),
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Text(
+                  "Transfer Market Budget",
+                  style: TextStyle(
+                    color: Theme.of(context).colorScheme.secondary,
+                    fontWeight: FontWeight.bold,
+                    letterSpacing: 1.1,
+                  ),
+                ),
+                FilledButton.tonal(
+                  onPressed: _currentValue.toInt() == widget.initialPercentage
+                      ? null
+                      : _onSave,
+                  style: FilledButton.styleFrom(
+                    visualDensity: VisualDensity.compact,
+                  ),
+                  child: const Text("Save"),
+                ),
+              ],
+            ),
+            const SizedBox(height: 16),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Text("Allocated: ${_currentValue.toInt()}%"),
+                Text(
+                  FinanceService().formatCurrency(
+                    math.max(0, availableTransfers),
+                  ),
+                  style: const TextStyle(
+                    fontWeight: FontWeight.bold,
+                    color: Colors.greenAccent,
+                  ),
+                ),
+              ],
+            ),
+            Slider(
+              value: _currentValue,
+              min: 10,
+              max: 90,
+              divisions: 80,
+              activeColor: Theme.of(context).colorScheme.primary,
+              onChanged: (val) {
+                setState(() {
+                  _currentValue = val;
+                });
+              },
+            ),
+            const Text(
+              "Set the maximum percentage of your total balance available for placing bids. (10% - 90%)",
+              style: TextStyle(fontSize: 10, color: Colors.grey),
+            ),
+          ],
         ),
       ),
     );

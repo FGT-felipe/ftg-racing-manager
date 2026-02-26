@@ -9,6 +9,7 @@ import '../../services/youth_academy_service.dart';
 import '../../services/season_service.dart';
 import '../../services/finance_service.dart';
 import '../../widgets/common/instruction_card.dart';
+import '../../widgets/common/driver_stars.dart';
 
 class YouthAcademyScreen extends StatefulWidget {
   final String teamId;
@@ -1080,17 +1081,11 @@ class _CandidateCard extends StatelessWidget {
                 ),
               ),
               const SizedBox(width: 8),
-              ...List.generate(5, (i) {
-                return Icon(
-                  i < driver.potentialStars
-                      ? Icons.star_rounded
-                      : Icons.star_outline_rounded,
-                  color: i < driver.potentialStars
-                      ? Colors.amber
-                      : Colors.white24,
-                  size: 16,
-                );
-              }),
+              DriverStars(
+                currentStars: 0,
+                maxStars: driver.potentialStars,
+                size: 16,
+              ),
             ],
           ),
           const SizedBox(height: 12),
@@ -1395,19 +1390,10 @@ class _SelectedDriverCard extends StatelessWidget {
                     ),
                   ),
                   const SizedBox(height: 4),
-                  Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: List.generate(5, (i) {
-                      return Icon(
-                        i < driver.potentialStars
-                            ? Icons.star_rounded
-                            : Icons.star_outline_rounded,
-                        color: i < driver.potentialStars
-                            ? Colors.amber
-                            : Colors.white24,
-                        size: 14,
-                      );
-                    }),
+                  DriverStars(
+                    currentStars: 0,
+                    maxStars: driver.potentialStars,
+                    size: 14,
                   ),
                 ],
               ),

@@ -8,6 +8,8 @@ import '../models/user_models.dart';
 import '../models/domain/domain_models.dart';
 import '../services/season_service.dart';
 import '../services/universe_service.dart';
+import '../widgets/common/onyx_table.dart';
+import '../widgets/common/driver_stars.dart';
 
 class StandingsScreen extends StatefulWidget {
   const StandingsScreen({super.key});
@@ -287,16 +289,16 @@ class _DriversStandingsTab extends StatelessWidget {
 
     final l10n = AppLocalizations.of(context);
 
-    return _StandingsTable(
-      flexValues: const [1, 4, 4, 1, 1, 1, 1, 2],
+    return OnyxTable(
+      flexValues: const [1, 4, 3, 4, 1, 1, 1, 2],
       columns: [
         l10n.standingsPos,
         l10n.standingsDriver,
+        "POT",
         l10n.standingsTeam,
         l10n.rHeader,
         l10n.wHeader,
         l10n.pHeader,
-        "Pl", // Pole
         l10n.standingsPoints,
       ],
       highlightIndices: drivers
@@ -307,14 +309,14 @@ class _DriversStandingsTab extends StatelessWidget {
           .toList(),
       rows: drivers
           .map(
-            (d) => <String>[
+            (d) => <dynamic>[
               "#${ranks[d.id] ?? '-'}",
               d.name,
+              DriverStars(currentStars: d.currentStars, maxStars: d.potential),
               teamMap[d.teamId] ?? '—',
               "${d.seasonRaces}",
               "${d.seasonWins}",
               "${d.seasonPodiums}",
-              "${d.seasonPoles}",
               "${d.seasonPoints}",
             ],
           )
@@ -421,7 +423,7 @@ class _ConstructorsStandingsTabState extends State<_ConstructorsStandingsTab> {
 
     final l10n = AppLocalizations.of(context);
 
-    return _StandingsTable(
+    return OnyxTable(
       flexValues: const [1, 7, 1, 1, 1, 1, 2],
       columns: [
         l10n.standingsPos,
@@ -568,7 +570,7 @@ class _LastRaceStandingsTab extends StatelessWidget {
                         fontSize: 13,
                       ),
                     ),
-                    _StandingsTable(
+                    OnyxTable(
                       flexValues: const [1, 4, 4, 2],
                       columns: [
                         l10n.standingsPos,
@@ -588,6 +590,7 @@ class _LastRaceStandingsTab extends StatelessWidget {
                           })
                           .map((e) => e.key)
                           .toList(),
+                      shrinkWrap: true,
                       rows: results.take(10).toList().asMap().entries.map((e) {
                         final pos = e.key + 1;
                         final points = [
@@ -633,7 +636,7 @@ class _LastRaceStandingsTab extends StatelessWidget {
                             teamPointsMap.entries.toList()
                               ..sort((a, b) => b.value.compareTo(a.value));
 
-                        return _StandingsTable(
+                        return OnyxTable(
                           flexValues: const [1, 7, 2],
                           columns: [
                             l10n.standingsPos,
@@ -649,6 +652,7 @@ class _LastRaceStandingsTab extends StatelessWidget {
                               })
                               .map((e) => e.key)
                               .toList(),
+                          shrinkWrap: true,
                           rows: constructorResults.asMap().entries.map((e) {
                             return <String>[
                               "${e.key + 1}",
@@ -666,155 +670,6 @@ class _LastRaceStandingsTab extends StatelessWidget {
           },
         );
       },
-    );
-  }
-}
-
-class _StandingsTable extends StatefulWidget {
-  final List<String> columns;
-  final List<List<dynamic>> rows;
-  final List<int> flexValues;
-  final List<int> highlightIndices;
-
-  const _StandingsTable({
-    required this.columns,
-    required this.rows,
-    required this.flexValues,
-    this.highlightIndices = const [],
-  });
-
-  @override
-  State<_StandingsTable> createState() => _StandingsTableState();
-}
-
-class _StandingsTableState extends State<_StandingsTable> {
-  final ScrollController _scrollController = ScrollController();
-
-  @override
-  void dispose() {
-    _scrollController.dispose();
-    super.dispose();
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return Column(
-      children: [
-        // FIXED HEADER
-        Container(
-          padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 20),
-          decoration: BoxDecoration(
-            color: Colors.white.withValues(alpha: 0.03),
-            border: Border(
-              bottom: BorderSide(color: Colors.white.withValues(alpha: 0.05)),
-            ),
-          ),
-          child: Row(
-            children: List.generate(widget.columns.length, (i) {
-              return Expanded(
-                flex: widget.flexValues[i],
-                child: Text(
-                  widget.columns[i].toUpperCase(),
-                  style: GoogleFonts.poppins(
-                    fontWeight: FontWeight.w900,
-                    fontSize: 10,
-                    letterSpacing: 1.1,
-                    color: Colors.white.withValues(alpha: 0.4),
-                  ),
-                ),
-              );
-            }),
-          ),
-        ),
-        // SCROLLABLE DATA ROWS
-        Expanded(
-          child: Scrollbar(
-            controller: _scrollController,
-            thumbVisibility: true,
-            child: ListView.builder(
-              controller: _scrollController,
-              padding: const EdgeInsets.symmetric(vertical: 0),
-              itemCount: widget.rows.length,
-              itemBuilder: (context, index) {
-                final row = widget.rows[index];
-                final isHighlighted = widget.highlightIndices.contains(index);
-
-                return Container(
-                  decoration: BoxDecoration(
-                    color: isHighlighted
-                        ? const Color(0xFF00C853).withValues(alpha: 0.1)
-                        : (index % 2 == 0
-                              ? Colors.transparent
-                              : Colors.white.withValues(alpha: 0.01)),
-                    border: Border(
-                      left: isHighlighted
-                          ? const BorderSide(color: Color(0xFF00C853), width: 4)
-                          : BorderSide.none,
-                      bottom: BorderSide(
-                        color: Colors.white.withValues(alpha: 0.05),
-                        width: 0.5,
-                      ),
-                    ),
-                  ),
-                  child: Padding(
-                    padding: const EdgeInsets.symmetric(
-                      vertical: 14,
-                      horizontal: 20,
-                    ),
-                    child: Row(
-                      children: List.generate(row.length, (i) {
-                        final isPoints = i == row.length - 1;
-                        final isPos = i == 0;
-
-                        final textStyle = (isPoints || isPos)
-                            ? GoogleFonts.jetBrainsMono(
-                                fontSize: 12,
-                                color: isHighlighted
-                                    ? const Color(0xFF00C853)
-                                    : (isPos
-                                          ? Colors.white.withValues(alpha: 0.5)
-                                          : Colors.white.withValues(
-                                              alpha: 0.9,
-                                            )),
-                                fontWeight: isHighlighted || isPoints
-                                    ? FontWeight.w900
-                                    : FontWeight.w500,
-                              )
-                            : GoogleFonts.inter(
-                                fontSize: 12,
-                                color: isHighlighted
-                                    ? const Color(0xFF00C853)
-                                    : Colors.white.withValues(alpha: 0.9),
-                                fontWeight: isHighlighted
-                                    ? FontWeight.w900
-                                    : FontWeight.w500,
-                              );
-
-                        final content = row[i];
-
-                        return Expanded(
-                          flex: widget.flexValues[i],
-                          child: content is InlineSpan
-                              ? Text.rich(
-                                  content,
-                                  style: textStyle,
-                                  overflow: TextOverflow.ellipsis,
-                                )
-                              : Text(
-                                  content.toString(),
-                                  style: textStyle,
-                                  overflow: TextOverflow.ellipsis,
-                                ),
-                        );
-                      }),
-                    ),
-                  ),
-                );
-              },
-            ),
-          ),
-        ),
-      ],
     );
   }
 }

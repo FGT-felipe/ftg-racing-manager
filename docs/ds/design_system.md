@@ -297,3 +297,22 @@ Utilizados para la negociación de contratos en la pantalla de Sponsorship.
 - **Padding Lateral**: 20px.
 - **Spacing vertical**: Sistema de 8px (8, 16, 24, 32).
 - **Responsive Shell**: Breakpoint de `600px`.
+
+---
+
+## 7. Flat Tables (Onyx Table)
+
+El estilo **Flat Table** se utiliza en pantallas de gestión densa de datos donde se requiere máxima visibilidad sin distracciones visuales pesadas.
+
+### Características Visuales
+- **Sin Contenedor Externo**: La tabla no debe estar envuelta en tarjetas o contenedores con sombras ni bordes pesados. Flota directamente sobre el fondo `#AppBackground`.
+- **Headers Centrados**: Los títulos de las columnas utilizan `TextAlign.center` para alinearse con los datos.
+- **Transparencia**: El fondo de las filas es mayoritariamente transparente, utilizando opacidades sutiles (`white.withValues(alpha: 0.01)`) para el efecto cebra.
+- **Interactividad (Hover)**: Al pasar el ratón sobre cualquier fila, esta debe resaltarse con un fondo verde suave (`Color(0xFF00C853).withValues(alpha: 0.05)`) para mejorar la trazabilidad visual.
+
+### Columnas y Datos
+- **Flex Layout**: Se utiliza un sistema de `flex` para distribuir el ancho de las columnas de forma proporcional.
+- **Alineación**: Todos los datos (incluyendo nombres) deben estar centrados dentro de su celda para mantener la jerarquía visual perfecta con el header.
+- **Badges**: Los indicadores (como Team Status) deben tener un ancho determinado por su contenido (`width: auto`) y estar centrados dentro de su columna.
+- **Cursor**: Las celdas interactivas (como el nombre del piloto) deben cambiar el cursor a `Pointer/Click` al hacer hover.
+- **Avatares**: Para mejorar la identidad visual, el nombre del piloto debe ir acompañado de su retrato (`portraitUrl`) en un `CircleAvatar` de tamaño pequeño (24x24 px) posicionado a la izquierda del texto, con un espaciado de `8px`.

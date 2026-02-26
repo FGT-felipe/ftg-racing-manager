@@ -96,7 +96,7 @@ class DriverAssignmentService {
         );
 
         // Assign role based on index
-        final role = i == 0 ? 'Main Driver' : 'Secondary Driver';
+        final role = i == 0 ? 'Main' : 'Second';
 
         // Mock weekly growth
         final mockGrowth = {
