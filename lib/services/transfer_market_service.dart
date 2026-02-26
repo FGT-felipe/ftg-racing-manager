@@ -3,7 +3,10 @@ import 'dart:math';
 
 import '../models/core_models.dart';
 import '../models/transfer_bid.dart';
+import '../models/domain/domain_models.dart';
 import 'notification_service.dart';
+import 'driver_name_service.dart';
+import 'driver_portrait_service.dart';
 
 class TransferMarketService {
   final FirebaseFirestore _db = FirebaseFirestore.instance;
@@ -168,14 +171,31 @@ class TransferMarketService {
         throw Exception("This driver is not available on the market.");
       }
 
+      // Enforce 5-minute bidding lockout
+      final listedAt = driver.transferListedAt ?? DateTime.now();
+      final expiresAt = listedAt.add(const Duration(hours: 24));
+      final diff = expiresAt.difference(DateTime.now());
+
+      if (diff.inMinutes < 5) {
+        throw Exception(
+          "Bidding is closed for this driver (less than 5 minutes remaining).",
+        );
+      }
+
       if (team.id == driver.teamId) {
         throw Exception("You cannot bid on your own driver.");
       }
 
       // Check minimum outbid (e.g., must be higher than current highest)
-      if (bidAmount <= driver.currentHighestBid) {
+      if (driver.currentHighestBid == 0) {
+        if (bidAmount < driver.marketValue) {
+          throw Exception(
+            "The initial bid must be at least \$${(driver.marketValue / 1000).toStringAsFixed(0)}k (Market Value).",
+          );
+        }
+      } else if (bidAmount <= driver.currentHighestBid) {
         throw Exception(
-          "Bid must be higher than the current highest bid (\$${driver.currentHighestBid.toString()}).",
+          "Bid must be higher than the current highest bid (\$${(driver.currentHighestBid / 1000).toStringAsFixed(0)}k).",
         );
       }
 
@@ -298,13 +318,19 @@ class TransferMarketService {
       else if (morale < 50)
         moraleMod = 1.3;
 
+      if (driver.negotiationAttempts >= 3) {
+        throw Exception(
+          "This driver has already rejected 3 offers and is no longer interested in negotiating today.",
+        );
+      }
+
       final int finalExpectedSalary = (baseExpectedSalary * moraleMod).round();
 
       if (salary >= finalExpectedSalary) {
         accepted = true;
 
         // Boost morale for a good contract
-        final newMorale = (morale + 10).clamp(0, 100);
+        final newMorale = (morale + 15).clamp(0, 100);
 
         txn.update(driverRef, {
           'salary': salary,
@@ -312,12 +338,24 @@ class TransferMarketService {
               driver.contractYearsRemaining + durationYears,
           'role': role,
           'stats.${DriverStats.morale}': newMorale,
+          'negotiationAttempts': 0, // Reset on success
         });
       } else {
         accepted = false;
-        // Penalize morale for lowball offer
-        final newMorale = (morale - 10).clamp(0, 100);
-        txn.update(driverRef, {'stats.${DriverStats.morale}': newMorale});
+        final newAttempts = driver.negotiationAttempts + 1;
+
+        // Penalize morale for rejection
+        // If it's the 3rd strike, drop morale even more
+        int moraleDrop = 10;
+        if (newAttempts >= 3) {
+          moraleDrop = 25;
+        }
+        final newMorale = (morale - moraleDrop).clamp(0, 100);
+
+        txn.update(driverRef, {
+          'stats.${DriverStats.morale}': newMorale,
+          'negotiationAttempts': newAttempts,
+        });
       }
     });
 
@@ -329,45 +367,83 @@ class TransferMarketService {
     final batch = _db.batch();
     int opCount = 0;
 
-    // Simplistic driver generation for the market
     final Random rnd = Random();
+    final nameService = DriverNameService();
+    final portraitService = DriverPortraitService();
+
+    final countryPool = [
+      Country(code: 'BR', name: 'Brasil', flagEmoji: '🇧🇷'),
+      Country(code: 'AR', name: 'Argentina', flagEmoji: '🇦🇷'),
+      Country(code: 'CO', name: 'Colombia', flagEmoji: '🇨🇴'),
+      Country(code: 'MX', name: 'México', flagEmoji: '🇲🇽'),
+      Country(code: 'CL', name: 'Chile', flagEmoji: '🇨🇱'),
+      Country(code: 'UY', name: 'Uruguay', flagEmoji: '🇺🇾'),
+      Country(code: 'ES', name: 'España', flagEmoji: '🇪🇸'),
+      Country(code: 'IT', name: 'Italia', flagEmoji: '🇮🇹'),
+      Country(code: 'GB', name: 'United Kingdom', flagEmoji: '🇬🇧'),
+      Country(code: 'DE', name: 'Germany', flagEmoji: '🇩🇪'),
+      Country(code: 'FR', name: 'France', flagEmoji: '🇫🇷'),
+      Country(code: 'US', name: 'USA', flagEmoji: '🇺🇸'),
+      Country(code: 'JP', name: 'Japan', flagEmoji: '🇯🇵'),
+    ];
 
     for (int i = 0; i < count; i++) {
       final driverRef = _db.collection('drivers').doc();
 
       int potential = 1;
       int r = rnd.nextInt(100);
-      if (r < 10)
+      if (r < 15)
         potential = 5;
-      else if (r < 30)
+      else if (r < 35)
         potential = 4;
-      else if (r < 60)
+      else if (r < 65)
         potential = 3;
-      else if (r < 85)
+      else if (r < 90)
         potential = 2;
 
       final age = 18 + rnd.nextInt(15);
+      final gender = rnd.nextBool() ? 'M' : 'F';
+      final country = countryPool[rnd.nextInt(countryPool.length)];
 
       final stats = <String, int>{};
       final statPotentials = <String, int>{};
 
       for (final key in DriverStats.all) {
-        final pot = (potential * 20).clamp(0, 100);
+        final pot = (potential * 20).clamp(10, 100);
         statPotentials[key] = pot;
-        stats[key] = max(10, pot - rnd.nextInt(30));
+        // Current skill depends on age and potential
+        stats[key] = (pot - 15 - rnd.nextInt(20)).clamp(5, 100);
       }
+
+      final name = nameService.generateName(
+        gender: gender,
+        countryCode: country.code,
+      );
+
+      // Staggered listing time:
+      // First driver listed "now" (expires in 24h)
+      // Second driver listed "in 24h" (expires in 48h)
+      // etc...
+      final staggeredListingTime = DateTime.now().add(Duration(hours: 24 * i));
 
       final d = Driver(
         id: driverRef.id,
-        name: "Market Driver ${rnd.nextInt(9999)}",
+        name: name,
         age: age,
         potential: potential,
         points: 0,
-        gender: rnd.nextBool() ? 'M' : 'F',
+        gender: gender,
         stats: stats,
         statPotentials: statPotentials,
         isTransferListed: true,
-        transferListedAt: DateTime.now(),
+        transferListedAt: staggeredListingTime,
+        countryCode: country.code,
+        portraitUrl: portraitService.getPortraitUrl(
+          driverId: driverRef.id,
+          gender: gender,
+          countryCode: country.code,
+          age: age,
+        ),
       );
 
       batch.set(driverRef, d.toMap());
@@ -382,5 +458,20 @@ class TransferMarketService {
     if (opCount > 0) {
       await batch.commit();
     }
+  }
+
+  // 7. Clear Admin Market Drivers
+  Future<void> clearAdminMarketDrivers() async {
+    final snapshot = await _db
+        .collection('drivers')
+        .where('isTransferListed', isEqualTo: true)
+        .where('teamId', isNull: true)
+        .get();
+
+    final batch = _db.batch();
+    for (var doc in snapshot.docs) {
+      batch.delete(doc.reference);
+    }
+    await batch.commit();
   }
 }

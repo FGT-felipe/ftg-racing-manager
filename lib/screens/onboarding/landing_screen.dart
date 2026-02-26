@@ -337,7 +337,7 @@ class _LandingScreenState extends State<LandingScreen>
           await FirebaseFirestore.instance.collection('teams').add({
             'managerId': user.uid,
             'name': 'Dev Racing',
-            'budget': 50000000,
+            'budget': 2500000,
             'chassisLevel': 50,
             'engineLevel': 50,
             'aeroLevel': 50,

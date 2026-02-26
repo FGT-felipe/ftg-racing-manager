@@ -6,6 +6,7 @@ import '../services/driver_assignment_service.dart';
 import '../services/team_assignment_service.dart';
 import '../services/universe_service.dart';
 import '../services/transfer_market_service.dart';
+import '../services/finance_service.dart';
 import '../models/domain/domain_models.dart';
 
 class AdminScreen extends StatefulWidget {
@@ -185,243 +186,403 @@ class _AdminScreenState extends State<AdminScreen> {
         title: const Text("ADMIN CONTROL PANEL"),
         backgroundColor: Colors.black87,
       ),
-      body: Container(
-        padding: const EdgeInsets.all(24),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            const Text(
-              "CURRENT SEASON STATUS",
-              style: TextStyle(
-                fontSize: 18,
-                fontWeight: FontWeight.bold,
-                color: Colors.tealAccent,
-              ),
-            ),
-            const SizedBox(height: 16),
-            StreamBuilder<QuerySnapshot>(
-              stream: FirebaseFirestore.instance
-                  .collection('seasons')
-                  .limit(1)
-                  .snapshots(),
-              builder: (context, snapshot) {
-                if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
-                  return const Card(
-                    child: ListTile(title: Text("No active season found")),
-                  );
-                }
-                final data =
-                    snapshot.data!.docs.first.data() as Map<String, dynamic>;
-                final rawStart = data['startDate'];
-                DateTime? start;
-
-                // Extremely robust date parsing for Web/Mobile mixed formats
-                if (rawStart != null) {
-                  final typeStr = rawStart.runtimeType.toString();
-                  if (typeStr.contains('Timestamp') || rawStart is Timestamp) {
-                    start = (rawStart as dynamic).toDate();
-                  } else if (rawStart is String) {
-                    start = DateTime.tryParse(rawStart);
-                  }
-                }
-
-                return Card(
-                  child: ListTile(
-                    title: Text("Season ${data['year'] ?? ''}"),
-                    subtitle: Text(
-                      "Starts: ${start != null ? DateFormat('MMM d, yyyy').format(start) : 'N/A'}",
-                    ),
-                    trailing: const Icon(Icons.info_outline),
-                  ),
-                );
-              },
-            ),
-            const SizedBox(height: 32),
-            const Text(
-              "NEW SEASON CONFIGURATION",
-              style: TextStyle(
-                fontSize: 18,
-                fontWeight: FontWeight.bold,
-                color: Colors.tealAccent,
-              ),
-            ),
-            const SizedBox(height: 16),
-            Card(
-              child: ListTile(
-                title: const Text("Season 1 Start Date"),
-                subtitle: Text(
-                  DateFormat('EEEE, MMMM d, yyyy').format(_selectedDate),
+      body: SingleChildScrollView(
+        child: Container(
+          padding: const EdgeInsets.all(24),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const Text(
+                "CURRENT SEASON STATUS",
+                style: TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.bold,
+                  color: Colors.tealAccent,
                 ),
-                trailing: const Icon(Icons.calendar_today),
-                onTap: () async {
-                  final picked = await showDatePicker(
-                    context: context,
-                    initialDate: _selectedDate,
-                    firstDate: DateTime(2025),
-                    lastDate: DateTime(2030),
-                  );
-                  if (picked != null) {
-                    setState(
-                      () => _selectedDate = MathUtils.getNearestSunday(picked),
+              ),
+              const SizedBox(height: 16),
+              StreamBuilder<QuerySnapshot>(
+                stream: FirebaseFirestore.instance
+                    .collection('seasons')
+                    .limit(1)
+                    .snapshots(),
+                builder: (context, snapshot) {
+                  if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
+                    return const Card(
+                      child: ListTile(title: Text("No active season found")),
                     );
                   }
+                  final data =
+                      snapshot.data!.docs.first.data() as Map<String, dynamic>;
+                  final rawStart = data['startDate'];
+                  DateTime? start;
+
+                  // Extremely robust date parsing for Web/Mobile mixed formats
+                  if (rawStart != null) {
+                    final typeStr = rawStart.runtimeType.toString();
+                    if (typeStr.contains('Timestamp') ||
+                        rawStart is Timestamp) {
+                      start = (rawStart as dynamic).toDate();
+                    } else if (rawStart is String) {
+                      start = DateTime.tryParse(rawStart);
+                    }
+                  }
+
+                  return Card(
+                    child: ListTile(
+                      title: Text("Season ${data['year'] ?? ''}"),
+                      subtitle: Text(
+                        "Starts: ${start != null ? DateFormat('MMM d, yyyy').format(start) : 'N/A'}",
+                      ),
+                      trailing: const Icon(Icons.info_outline),
+                    ),
+                  );
                 },
               ),
-            ),
-            const SizedBox(height: 32),
-            const Text(
-              "NEW LEAGUE TIER CREATION",
-              style: TextStyle(
-                fontSize: 18,
-                fontWeight: FontWeight.bold,
-                color: Colors.greenAccent,
-              ),
-            ),
-            const SizedBox(height: 16),
-            const Text(
-              "Incrementally adds a new League, generates 11 default teams, and 22 default drivers.",
-              style: TextStyle(color: Colors.grey, fontSize: 13),
-            ),
-            const SizedBox(height: 16),
-            TextField(
-              controller: _newLeagueNameController,
-              decoration: const InputDecoration(
-                labelText: "League Name (e.g. FTG 2.2 Series)",
-                border: OutlineInputBorder(),
-              ),
-              enabled: !_isCreatingLeague,
-            ),
-            const SizedBox(height: 16),
-            DropdownButtonFormField<int>(
-              initialValue: _newLeagueTier,
-              decoration: const InputDecoration(
-                labelText: "Tier Level",
-                border: OutlineInputBorder(),
-              ),
-              items: const [
-                DropdownMenuItem(value: 1, child: Text("Tier 1")),
-                DropdownMenuItem(value: 2, child: Text("Tier 2")),
-                DropdownMenuItem(value: 3, child: Text("Tier 3")),
-              ],
-              onChanged: _isCreatingLeague
-                  ? null
-                  : (val) {
-                      if (val != null) setState(() => _newLeagueTier = val);
-                    },
-            ),
-            const SizedBox(height: 16),
-            SizedBox(
-              width: double.infinity,
-              child: ElevatedButton.icon(
-                onPressed: _isCreatingLeague ? null : _handleCreateNewLeague,
-                icon: _isCreatingLeague
-                    ? const SizedBox(
-                        width: 20,
-                        height: 20,
-                        child: CircularProgressIndicator(
-                          strokeWidth: 2,
-                          color: Colors.black,
-                        ),
-                      )
-                    : const Icon(Icons.add),
-                label: Text(
-                  _isCreatingLeague
-                      ? "GENERATING ENTITIES..."
-                      : "CREATE LEAGUE & GENERATE ENTITIES",
-                ),
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: Colors.greenAccent,
-                  foregroundColor: Colors.black,
-                  padding: const EdgeInsets.symmetric(vertical: 16),
+              const SizedBox(height: 32),
+              const Text(
+                "NEW SEASON CONFIGURATION",
+                style: TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.bold,
+                  color: Colors.tealAccent,
                 ),
               ),
-            ),
-            const SizedBox(height: 32),
-            const Text(
-              "TRANSFER MARKET",
-              style: TextStyle(
-                fontSize: 18,
-                fontWeight: FontWeight.bold,
-                color: Colors.blueAccent,
+              const SizedBox(height: 16),
+              Card(
+                child: ListTile(
+                  title: const Text("Season 1 Start Date"),
+                  subtitle: Text(
+                    DateFormat('EEEE, MMMM d, yyyy').format(_selectedDate),
+                  ),
+                  trailing: const Icon(Icons.calendar_today),
+                  onTap: () async {
+                    final picked = await showDatePicker(
+                      context: context,
+                      initialDate: _selectedDate,
+                      firstDate: DateTime(2025),
+                      lastDate: DateTime(2030),
+                    );
+                    if (picked != null) {
+                      setState(
+                        () =>
+                            _selectedDate = MathUtils.getNearestSunday(picked),
+                      );
+                    }
+                  },
+                ),
               ),
-            ),
-            const SizedBox(height: 16),
-            const Text(
-              "Populates the transfer market with new randomly generated drivers.",
-              style: TextStyle(color: Colors.grey, fontSize: 13),
-            ),
-            const SizedBox(height: 16),
-            SizedBox(
-              width: double.infinity,
-              child: ElevatedButton.icon(
-                onPressed: _isProcessing
+              const SizedBox(height: 32),
+              const Text(
+                "NEW LEAGUE TIER CREATION",
+                style: TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.bold,
+                  color: Colors.greenAccent,
+                ),
+              ),
+              const SizedBox(height: 16),
+              const Text(
+                "Incrementally adds a new League, generates 11 default teams, and 22 default drivers.",
+                style: TextStyle(color: Colors.grey, fontSize: 13),
+              ),
+              const SizedBox(height: 16),
+              TextField(
+                controller: _newLeagueNameController,
+                decoration: const InputDecoration(
+                  labelText: "League Name (e.g. FTG 2.2 Series)",
+                  border: OutlineInputBorder(),
+                ),
+                enabled: !_isCreatingLeague,
+              ),
+              const SizedBox(height: 16),
+              DropdownButtonFormField<int>(
+                initialValue: _newLeagueTier,
+                decoration: const InputDecoration(
+                  labelText: "Tier Level",
+                  border: OutlineInputBorder(),
+                ),
+                items: const [
+                  DropdownMenuItem(value: 1, child: Text("Tier 1")),
+                  DropdownMenuItem(value: 2, child: Text("Tier 2")),
+                  DropdownMenuItem(value: 3, child: Text("Tier 3")),
+                ],
+                onChanged: _isCreatingLeague
                     ? null
-                    : () async {
-                        setState(() => _isProcessing = true);
-                        try {
-                          await TransferMarketService()
-                              .generateAdminMarketDrivers(50);
-                          if (mounted)
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              const SnackBar(
-                                content: Text("50 Drivers added to market!"),
-                              ),
-                            );
-                        } catch (e) {
-                          if (mounted)
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              SnackBar(content: Text("Error: $e")),
-                            );
-                        } finally {
-                          if (mounted) setState(() => _isProcessing = false);
-                        }
+                    : (val) {
+                        if (val != null) setState(() => _newLeagueTier = val);
                       },
-                icon: const Icon(Icons.people),
-                label: const Text("GENERATE 50 MARKET DRIVERS"),
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: Colors.blueAccent,
-                  foregroundColor: Colors.white,
-                  padding: const EdgeInsets.symmetric(vertical: 16),
+              ),
+              const SizedBox(height: 16),
+              SizedBox(
+                width: double.infinity,
+                child: ElevatedButton.icon(
+                  onPressed: _isCreatingLeague ? null : _handleCreateNewLeague,
+                  icon: _isCreatingLeague
+                      ? const SizedBox(
+                          width: 20,
+                          height: 20,
+                          child: CircularProgressIndicator(
+                            strokeWidth: 2,
+                            color: Colors.black,
+                          ),
+                        )
+                      : const Icon(Icons.add),
+                  label: Text(
+                    _isCreatingLeague
+                        ? "GENERATING ENTITIES..."
+                        : "CREATE LEAGUE & GENERATE ENTITIES",
+                  ),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Colors.greenAccent,
+                    foregroundColor: Colors.black,
+                    padding: const EdgeInsets.symmetric(vertical: 16),
+                  ),
                 ),
               ),
-            ),
-            const SizedBox(height: 32),
-            const Text(
-              "DATABASE ACTIONS",
-              style: TextStyle(
-                fontSize: 18,
-                fontWeight: FontWeight.bold,
-                color: Colors.redAccent,
-              ),
-            ),
-            const SizedBox(height: 16),
-            const Text(
-              "Warning: Nuking the database will delete all existing data (teams, seasonal progress, etc.) and recreate the world based on the start date above.",
-              style: TextStyle(color: Colors.grey, fontSize: 13),
-            ),
-            const SizedBox(height: 16),
-            SizedBox(
-              width: double.infinity,
-              child: ElevatedButton.icon(
-                onPressed: _isProcessing ? null : _showConfirmNukeDialog,
-                icon: _isProcessing
-                    ? const SizedBox(
-                        width: 20,
-                        height: 20,
-                        child: CircularProgressIndicator(strokeWidth: 2),
-                      )
-                    : const Icon(Icons.dangerous),
-                label: Text(
-                  _isProcessing ? "PROCESSING..." : "NUKE AND RESEED WORLD",
-                ),
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: Colors.redAccent,
-                  foregroundColor: Colors.white,
-                  padding: const EdgeInsets.symmetric(vertical: 16),
+              const SizedBox(height: 32),
+              const Text(
+                "TRANSFER MARKET",
+                style: TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.bold,
+                  color: Colors.blueAccent,
                 ),
               ),
-            ),
-          ],
+              const SizedBox(height: 16),
+              const Text(
+                "Populates the transfer market with new randomly generated drivers.",
+                style: TextStyle(color: Colors.grey, fontSize: 13),
+              ),
+              const SizedBox(height: 16),
+              SizedBox(
+                width: double.infinity,
+                child: ElevatedButton.icon(
+                  onPressed: _isProcessing
+                      ? null
+                      : () async {
+                          setState(() => _isProcessing = true);
+                          try {
+                            await TransferMarketService()
+                                .generateAdminMarketDrivers(50);
+                            if (mounted)
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                const SnackBar(
+                                  content: Text("50 Drivers added to market!"),
+                                ),
+                              );
+                          } catch (e) {
+                            if (mounted)
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                SnackBar(content: Text("Error: $e")),
+                              );
+                          } finally {
+                            if (mounted) setState(() => _isProcessing = false);
+                          }
+                        },
+                  icon: const Icon(Icons.people),
+                  label: const Text("GENERATE 50 MARKET DRIVERS"),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Colors.blueAccent,
+                    foregroundColor: Colors.white,
+                    padding: const EdgeInsets.symmetric(vertical: 16),
+                  ),
+                ),
+              ),
+              const SizedBox(height: 12),
+              SizedBox(
+                width: double.infinity,
+                child: OutlinedButton.icon(
+                  onPressed: _isProcessing
+                      ? null
+                      : () async {
+                          bool confirm =
+                              await showDialog(
+                                context: context,
+                                builder: (c) => AlertDialog(
+                                  backgroundColor: Colors.black,
+                                  title: const Text(
+                                    "Clear Market Drivers",
+                                    style: TextStyle(color: Colors.redAccent),
+                                  ),
+                                  content: const Text(
+                                    "This will delete ONLY the drivers created by the system. Drivers listed by players will remain. Continue?",
+                                    style: TextStyle(color: Colors.white70),
+                                  ),
+                                  actions: [
+                                    TextButton(
+                                      onPressed: () => Navigator.pop(c, false),
+                                      child: const Text("CANCEL"),
+                                    ),
+                                    ElevatedButton(
+                                      style: ElevatedButton.styleFrom(
+                                        backgroundColor: Colors.redAccent,
+                                      ),
+                                      onPressed: () => Navigator.pop(c, true),
+                                      child: const Text("CLEAR ADMIN DRIVERS"),
+                                    ),
+                                  ],
+                                ),
+                              ) ??
+                              false;
+
+                          if (!confirm) return;
+
+                          setState(() => _isProcessing = true);
+                          try {
+                            await TransferMarketService()
+                                .clearAdminMarketDrivers();
+                            if (mounted)
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                const SnackBar(
+                                  content: Text("Admin drivers cleared!"),
+                                ),
+                              );
+                          } catch (e) {
+                            if (mounted)
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                SnackBar(content: Text("Error: $e")),
+                              );
+                          } finally {
+                            if (mounted) setState(() => _isProcessing = false);
+                          }
+                        },
+                  icon: const Icon(Icons.delete_sweep, color: Colors.redAccent),
+                  label: const Text(
+                    "CLEAR ADMIN MARKET DRIVERS",
+                    style: TextStyle(color: Colors.redAccent),
+                  ),
+                  style: OutlinedButton.styleFrom(
+                    side: const BorderSide(color: Colors.redAccent),
+                    padding: const EdgeInsets.symmetric(vertical: 16),
+                  ),
+                ),
+              ),
+              const SizedBox(height: 32),
+              const Text(
+                "ECONOMIC REBALANCE",
+                style: TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.bold,
+                  color: Colors.orangeAccent,
+                ),
+              ),
+              const SizedBox(height: 16),
+              const Text(
+                "Applies the 'Great Rebalance Tax': limits max cash to \$3M (80% tax on excess), rescues teams below \$1.5M, and wipes all active sponsors to force renegotiation at new prices.",
+                style: TextStyle(color: Colors.grey, fontSize: 13),
+              ),
+              const SizedBox(height: 16),
+              SizedBox(
+                width: double.infinity,
+                child: ElevatedButton.icon(
+                  onPressed: _isProcessing
+                      ? null
+                      : () async {
+                          // Confirm Dialog
+                          bool confirm =
+                              await showDialog(
+                                context: context,
+                                builder: (c) => AlertDialog(
+                                  backgroundColor: Colors.black,
+                                  title: const Text(
+                                    "Confirm Great Tax",
+                                    style: TextStyle(color: Colors.orange),
+                                  ),
+                                  content: const Text(
+                                    "Are you sure you want to apply the rebalance tax to all teams?",
+                                    style: TextStyle(color: Colors.white70),
+                                  ),
+                                  actions: [
+                                    TextButton(
+                                      onPressed: () => Navigator.pop(c, false),
+                                      child: const Text("CANCEL"),
+                                    ),
+                                    ElevatedButton(
+                                      style: ElevatedButton.styleFrom(
+                                        backgroundColor: Colors.orange,
+                                      ),
+                                      onPressed: () => Navigator.pop(c, true),
+                                      child: const Text("APPLY TAX"),
+                                    ),
+                                  ],
+                                ),
+                              ) ??
+                              false;
+
+                          if (!confirm) return;
+
+                          setState(() => _isProcessing = true);
+                          try {
+                            await FinanceService().applyGreatRebalanceTax();
+                            if (mounted) {
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                const SnackBar(
+                                  content: Text("Economic Rebalance Applied!"),
+                                  backgroundColor: Colors.green,
+                                ),
+                              );
+                            }
+                          } catch (e) {
+                            if (mounted) {
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                SnackBar(
+                                  content: Text("Error: $e"),
+                                  backgroundColor: Colors.red,
+                                ),
+                              );
+                            }
+                          } finally {
+                            if (mounted) setState(() => _isProcessing = false);
+                          }
+                        },
+                  icon: const Icon(Icons.account_balance),
+                  label: const Text("APPLY GREAT REBALANCE TAX"),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Colors.orangeAccent,
+                    foregroundColor: Colors.black,
+                    padding: const EdgeInsets.symmetric(vertical: 16),
+                  ),
+                ),
+              ),
+              const SizedBox(height: 32),
+              const Text(
+                "DATABASE ACTIONS",
+                style: TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.bold,
+                  color: Colors.redAccent,
+                ),
+              ),
+              const SizedBox(height: 16),
+              const Text(
+                "Warning: Nuking the database will delete all existing data (teams, seasonal progress, etc.) and recreate the world based on the start date above.",
+                style: TextStyle(color: Colors.grey, fontSize: 13),
+              ),
+              const SizedBox(height: 16),
+              SizedBox(
+                width: double.infinity,
+                child: ElevatedButton.icon(
+                  onPressed: _isProcessing ? null : _showConfirmNukeDialog,
+                  icon: _isProcessing
+                      ? const SizedBox(
+                          width: 20,
+                          height: 20,
+                          child: CircularProgressIndicator(strokeWidth: 2),
+                        )
+                      : const Icon(Icons.dangerous),
+                  label: Text(
+                    _isProcessing ? "PROCESSING..." : "NUKE AND RESEED WORLD",
+                  ),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Colors.redAccent,
+                    foregroundColor: Colors.white,
+                    padding: const EdgeInsets.symmetric(vertical: 16),
+                  ),
+                ),
+              ),
+            ],
+          ),
         ),
       ),
     );

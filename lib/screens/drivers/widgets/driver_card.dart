@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../../../models/core_models.dart';
+import '../../../widgets/common/driver_stars.dart';
 import '../../../services/driver_portrait_service.dart';
 import '../../../services/driver_status_service.dart';
 import '../../../l10n/app_localizations.dart';
@@ -240,7 +241,13 @@ class DriverCard extends StatelessWidget {
         ),
         const SizedBox(height: 8),
         // Potential Stars
-        Center(child: _buildPotentialStars(driver.potential)),
+        Center(
+          child: DriverStars(
+            currentStars: driver.currentStars,
+            maxStars: driver.potential,
+            size: 20,
+          ),
+        ),
         const SizedBox(height: 24),
         // Contract Details
         Text(
@@ -321,9 +328,8 @@ class DriverCard extends StatelessWidget {
                     child: FilledButton(
                       onPressed: onTransferMarket,
                       style: FilledButton.styleFrom(
-                        backgroundColor:
-                            theme.colorScheme.surfaceContainerHighest,
-                        foregroundColor: Colors.white,
+                        backgroundColor: const Color(0xFF00C853),
+                        foregroundColor: Colors.yellow,
                         padding: const EdgeInsets.symmetric(horizontal: 4),
                         textStyle: const TextStyle(
                           fontSize: 10,
@@ -335,7 +341,13 @@ class DriverCard extends StatelessWidget {
                       ),
                       child: const FittedBox(
                         fit: BoxFit.scaleDown,
-                        child: Text("Transfer Market"),
+                        child: Row(
+                          children: [
+                            Icon(Icons.shopping_cart, size: 14),
+                            SizedBox(width: 4),
+                            Text("Transfer Market"),
+                          ],
+                        ),
                       ),
                     ),
                   ),
@@ -703,19 +715,6 @@ class DriverCard extends StatelessWidget {
           ),
         ],
       ),
-    );
-  }
-
-  Widget _buildPotentialStars(int potential) {
-    return Row(
-      mainAxisSize: MainAxisSize.min,
-      children: List.generate(5, (index) {
-        return Icon(
-          index < potential ? Icons.star : Icons.star_border,
-          color: Colors.amber,
-          size: 20,
-        );
-      }),
     );
   }
 

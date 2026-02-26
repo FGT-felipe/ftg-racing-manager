@@ -627,17 +627,24 @@ class Facility {
     if (level >= 5) return 0;
 
     // Youth Academy overrides base price when upgrading (level > 0).
-    // Level 0 (to buy) is 100000. Level 1->2 is 1M, 2->3 is 2M, etc.
     if (type == FacilityType.youthAcademy && level > 0) {
-      return 1000000 * level;
+      return 1500000 * level;
     }
 
-    // Base prices
-    int basePrice = 100000;
-    // level 0 (to buy): 100k
-    // level 1: 200k
-    // level 2: 300k
-    return basePrice * (level + 1);
+    switch (level) {
+      case 0:
+        return 250000;
+      case 1:
+        return 750000;
+      case 2:
+        return 1800000;
+      case 3:
+        return 3500000;
+      case 4:
+        return 6000000;
+      default:
+        return 0;
+    }
   }
 
   int get maintenanceCost {
@@ -929,6 +936,7 @@ class Driver {
   final DateTime? transferListedAt;
   final int currentHighestBid;
   final String? highestBidderTeamId;
+  final int negotiationAttempts;
 
   // Computed market value
   int get marketValue {
@@ -954,6 +962,28 @@ class Driver {
     }
 
     return value.toInt();
+  }
+
+  /// Calculates the current stars (1-5) based on the driver's current stats.
+  /// Stars are capped by the driver's maximum potential.
+  int get currentStars {
+    int baseStatSum = DriverStats.drivingStats.fold(
+      0,
+      (sum, stat) => sum + getStat(stat),
+    );
+    int count = DriverStats.drivingStats.length;
+    if (count == 0) return 1;
+    double avg = baseStatSum / count;
+
+    // Scale 1 to 5 based on 0-100
+    int stars = (avg / 20).ceil();
+    if (stars < 1) stars = 1;
+    if (stars > 5) stars = 5;
+
+    // Cap at potential
+    if (stars > potential) stars = potential;
+
+    return stars;
   }
 
   Driver({
@@ -989,6 +1019,7 @@ class Driver {
     this.transferListedAt,
     this.currentHighestBid = 0,
     this.highestBidderTeamId,
+    this.negotiationAttempts = 0,
   });
 
   /// Retorna el potencial máximo de una estadística específica.
@@ -1047,6 +1078,7 @@ class Driver {
       'transferListedAt': transferListedAt?.toIso8601String(),
       'currentHighestBid': currentHighestBid,
       'highestBidderTeamId': highestBidderTeamId,
+      'negotiationAttempts': negotiationAttempts,
     };
   }
 
@@ -1100,10 +1132,13 @@ class Driver {
       statusTitle: map['statusTitle'] ?? 'Unknown Status',
       isTransferListed: map['isTransferListed'] ?? false,
       transferListedAt: map['transferListedAt'] != null
-          ? DateTime.tryParse(map['transferListedAt'])
+          ? (map['transferListedAt'] is Timestamp
+                ? (map['transferListedAt'] as Timestamp).toDate()
+                : DateTime.tryParse(map['transferListedAt'].toString()))
           : null,
       currentHighestBid: map['currentHighestBid'] ?? 0,
       highestBidderTeamId: map['highestBidderTeamId'],
+      negotiationAttempts: map['negotiationAttempts'] ?? 0,
     );
   }
 

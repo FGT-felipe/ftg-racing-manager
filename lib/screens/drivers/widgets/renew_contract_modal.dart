@@ -28,12 +28,31 @@ class _RenewContractModalState extends State<RenewContractModal> {
   int _salary = 500000;
   String _role = 'Equal Status';
   bool _isProcessing = false;
+  int _attempts = 0;
 
   @override
   void initState() {
     super.initState();
     _salary = widget.driver.salary;
-    _role = widget.driver.role;
+
+    // Normalizar roles antiguos para evitar crashes en el dropdown
+    String currentRole = widget.driver.role;
+    if (currentRole == 'Main Driver') {
+      _role = 'Main';
+    } else if (currentRole == 'Secondary Driver' ||
+        currentRole == 'Secondary') {
+      _role = 'Second';
+    } else if ([
+      'Main',
+      'Equal Status',
+      'Second',
+      'Reserve',
+    ].contains(currentRole)) {
+      _role = currentRole;
+    } else {
+      _role = 'Equal Status'; // Fallback
+    }
+    _attempts = widget.driver.negotiationAttempts;
   }
 
   Future<void> _submitOffer() async {
@@ -56,11 +75,26 @@ class _RenewContractModalState extends State<RenewContractModal> {
             ),
           );
         } else {
+          setState(() {
+            _attempts++;
+            _isProcessing = false;
+          });
           ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text("Contract offer REJECTED. Morale decreased."),
+            SnackBar(
+              content: Text(
+                _attempts >= 3
+                    ? "Contract offer REJECTED. Negotiation FAILED."
+                    : "Contract offer REJECTED. You have ${3 - _attempts} attempts left.",
+              ),
+              backgroundColor: Colors.redAccent,
             ),
           );
+          if (_attempts >= 3) {
+            // Wait a bit then close? Or just let them see the 3 reds
+            Future.delayed(const Duration(seconds: 2), () {
+              if (mounted) Navigator.pop(context);
+            });
+          }
         }
       }
     } catch (e) {
@@ -82,7 +116,12 @@ class _RenewContractModalState extends State<RenewContractModal> {
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text("Negotiating with ${widget.driver.name}"),
+            Row(
+              children: [
+                Expanded(child: Text("Negotiating with ${widget.driver.name}")),
+                _buildNegotiationSemaphore(),
+              ],
+            ),
             const SizedBox(height: 16),
 
             // Duration
@@ -147,25 +186,53 @@ class _RenewContractModalState extends State<RenewContractModal> {
           ],
         ),
       ),
-      actions: [
-        TextButton(
-          onPressed: _isProcessing ? null : () => Navigator.pop(context),
-          child: const Text("Cancel"),
-        ),
-        FilledButton(
-          onPressed: _isProcessing ? null : _submitOffer,
-          child: _isProcessing
-              ? const SizedBox(
-                  width: 16,
-                  height: 16,
-                  child: CircularProgressIndicator(
-                    strokeWidth: 2,
-                    color: Colors.white,
-                  ),
-                )
-              : const Text("Offer Contract"),
-        ),
-      ],
+      actions: _attempts >= 3
+          ? [
+              TextButton(
+                onPressed: () => Navigator.pop(context),
+                child: const Text("CLOSE"),
+              ),
+            ]
+          : [
+              TextButton(
+                onPressed: _isProcessing ? null : () => Navigator.pop(context),
+                child: const Text("Cancel"),
+              ),
+              FilledButton(
+                onPressed: _isProcessing ? null : _submitOffer,
+                child: _isProcessing
+                    ? const SizedBox(
+                        width: 16,
+                        height: 16,
+                        child: CircularProgressIndicator(
+                          strokeWidth: 2,
+                          color: Colors.white,
+                        ),
+                      )
+                    : const Text("Offer Contract"),
+              ),
+            ],
+    );
+  }
+
+  Widget _buildNegotiationSemaphore() {
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: List.generate(3, (index) {
+        final isRed = index < _attempts;
+        return Container(
+          margin: const EdgeInsets.only(left: 4),
+          width: 12,
+          height: 12,
+          decoration: BoxDecoration(
+            shape: BoxShape.circle,
+            color: isRed ? Colors.red : Colors.grey.withValues(alpha: 0.3),
+            border: Border.all(
+              color: isRed ? Colors.redAccent : Colors.white24,
+            ),
+          ),
+        );
+      }),
     );
   }
 }
