@@ -758,6 +758,30 @@ abstract class AppLocalizations {
   /// **'Gear Ratio'**
   String get setupGearRatio;
 
+  /// No description provided for @hintFrontWing.
+  ///
+  /// In en, this message translates to:
+  /// **'0: Understeer (Lazy entry)\n100: Oversteer (Sharp/Aggressive entry)'**
+  String get hintFrontWing;
+
+  /// No description provided for @hintRearWing.
+  ///
+  /// In en, this message translates to:
+  /// **'0: High Top Speed / Less Stability\n100: Low Top Speed / More Stability'**
+  String get hintRearWing;
+
+  /// No description provided for @hintSuspension.
+  ///
+  /// In en, this message translates to:
+  /// **'0: Soft (Better for bumps/kerbs)\n100: Stiff (Better for high speed/flat tracks)'**
+  String get hintSuspension;
+
+  /// No description provided for @hintGearRatio.
+  ///
+  /// In en, this message translates to:
+  /// **'0: Long (Higher Top Speed)\n100: Short (Faster Acceleration)'**
+  String get hintGearRatio;
+
   /// No description provided for @styleRisky.
   ///
   /// In en, this message translates to:
@@ -889,6 +913,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'PRACTICE CLOSED: Qualifying session has started.'**
   String get garagePracticeClosedQualy;
+
+  /// No description provided for @garageQualyClosedRace.
+  ///
+  /// In en, this message translates to:
+  /// **'QUALIFYING CLOSED: Race setup has been submitted.'**
+  String get garageQualyClosedRace;
 
   /// No description provided for @garageQualyIntro.
   ///
@@ -1649,7 +1679,7 @@ abstract class AppLocalizations {
   /// No description provided for @driverStatsSectionTitle.
   ///
   /// In en, this message translates to:
-  /// **'Driver Stats Section'**
+  /// **'Driver Stats'**
   String get driverStatsSectionTitle;
 
   /// No description provided for @careerStatsTitle.
@@ -1757,7 +1787,7 @@ abstract class AppLocalizations {
   /// No description provided for @historyIndividual.
   ///
   /// In en, this message translates to:
-  /// **'History Individual'**
+  /// **'Individual'**
   String get historyIndividual;
 
   /// No description provided for @noDataAvailableYet.
@@ -1769,7 +1799,7 @@ abstract class AppLocalizations {
   /// No description provided for @historyLowerDivision.
   ///
   /// In en, this message translates to:
-  /// **'History Lower Division'**
+  /// **'Lower Division'**
   String get historyLowerDivision;
 
   /// No description provided for @historyChampionBadge.
@@ -1847,31 +1877,31 @@ abstract class AppLocalizations {
   /// No description provided for @roleMain.
   ///
   /// In en, this message translates to:
-  /// **'Role Main'**
+  /// **'Main Driver'**
   String get roleMain;
 
   /// No description provided for @roleSecond.
   ///
   /// In en, this message translates to:
-  /// **'Role Second'**
+  /// **'Second Driver'**
   String get roleSecond;
 
   /// No description provided for @roleEqual.
   ///
   /// In en, this message translates to:
-  /// **'Role Equal'**
+  /// **'Equal Status'**
   String get roleEqual;
 
   /// No description provided for @roleReserve.
   ///
   /// In en, this message translates to:
-  /// **'Role Reserve'**
+  /// **'Reserve Driver'**
   String get roleReserve;
 
   /// No description provided for @engineeringDescription.
   ///
   /// In en, this message translates to:
-  /// **'Engineering Description'**
+  /// **'Technical development and car performance upgrades.'**
   String get engineeringDescription;
 
   /// No description provided for @budgetLabel.
@@ -1919,7 +1949,7 @@ abstract class AppLocalizations {
   /// No description provided for @carPerformanceTitle.
   ///
   /// In en, this message translates to:
-  /// **'Car Performance Title {arg0}'**
+  /// **'Car Performance: {arg0}'**
   String carPerformanceTitle(String arg0);
 
   /// No description provided for @aero.
@@ -1949,7 +1979,7 @@ abstract class AppLocalizations {
   /// No description provided for @costLabel.
   ///
   /// In en, this message translates to:
-  /// **'Cost Label {arg0} {arg1}'**
+  /// **'Cost: {arg0} {arg1}'**
   String costLabel(String arg0, String arg1);
 
   /// No description provided for @upgradeBtn.
@@ -2231,19 +2261,19 @@ abstract class AppLocalizations {
   /// No description provided for @hqDescription.
   ///
   /// In en, this message translates to:
-  /// **'Hq Description'**
+  /// **'Manage your team\'s facilities and technical development.'**
   String get hqDescription;
 
   /// No description provided for @facilitiesSectionTitle.
   ///
   /// In en, this message translates to:
-  /// **'Facilities Section'**
+  /// **'Facilities'**
   String get facilitiesSectionTitle;
 
   /// No description provided for @levelLabel.
   ///
   /// In en, this message translates to:
-  /// **'Level Label {arg0}'**
+  /// **'Level: {arg0}'**
   String levelLabel(String arg0);
 
   /// No description provided for @nextLevelLabel.
@@ -2273,7 +2303,7 @@ abstract class AppLocalizations {
   /// No description provided for @comingSoonBanner.
   ///
   /// In en, this message translates to:
-  /// **'Coming Soon Banner'**
+  /// **'COMING SOON'**
   String get comingSoonBanner;
 
   /// No description provided for @facilityImproved.
@@ -2615,7 +2645,7 @@ abstract class AppLocalizations {
   /// No description provided for @negotiationRulesDesc.
   ///
   /// In en, this message translates to:
-  /// **'Negotiation Rules'**
+  /// **'Set the terms before signing the contract.'**
   String get negotiationRulesDesc;
 
   /// No description provided for @signingBonusLabel.
@@ -2687,49 +2717,49 @@ abstract class AppLocalizations {
   /// No description provided for @roleExDriverTitle.
   ///
   /// In en, this message translates to:
-  /// **'Role Ex Driver'**
+  /// **'Ex-Driver'**
   String get roleExDriverTitle;
 
   /// No description provided for @roleExDriverDesc.
   ///
   /// In en, this message translates to:
-  /// **'Role Ex Driver'**
+  /// **'Brings technical track experience.'**
   String get roleExDriverDesc;
 
   /// No description provided for @roleBusinessTitle.
   ///
   /// In en, this message translates to:
-  /// **'Role Business'**
+  /// **'Businessman'**
   String get roleBusinessTitle;
 
   /// No description provided for @roleBusinessDesc.
   ///
   /// In en, this message translates to:
-  /// **'Role Business'**
+  /// **'Optimizes income and marketing.'**
   String get roleBusinessDesc;
 
   /// No description provided for @roleBureaucratTitle.
   ///
   /// In en, this message translates to:
-  /// **'Role Bureaucrat'**
+  /// **'Bureaucrat'**
   String get roleBureaucratTitle;
 
   /// No description provided for @roleBureaucratDesc.
   ///
   /// In en, this message translates to:
-  /// **'Role Bureaucrat'**
+  /// **'Expert in regulations and politics.'**
   String get roleBureaucratDesc;
 
   /// No description provided for @roleEngineerTitle.
   ///
   /// In en, this message translates to:
-  /// **'Role Engineer'**
+  /// **'Engineer'**
   String get roleEngineerTitle;
 
   /// No description provided for @roleEngineerDesc.
   ///
   /// In en, this message translates to:
-  /// **'Role Engineer'**
+  /// **'Maximizes technical development.'**
   String get roleEngineerDesc;
 
   /// No description provided for @createManagerProfile.
@@ -2807,7 +2837,7 @@ abstract class AppLocalizations {
   /// No description provided for @createManagerDesc.
   ///
   /// In en, this message translates to:
-  /// **'Create Manager'**
+  /// **'Customize your profile and professional background.'**
   String get createManagerDesc;
 
   /// No description provided for @establishCareerBtn.
@@ -3119,7 +3149,7 @@ abstract class AppLocalizations {
   /// No description provided for @liveryDescription.
   ///
   /// In en, this message translates to:
-  /// **'Livery Description'**
+  /// **'Configure the visual appearance of your cars on track.'**
   String get liveryDescription;
 
   /// No description provided for @managerProfileSectionTitle.
@@ -3185,193 +3215,193 @@ abstract class AppLocalizations {
   /// No description provided for @statusLivingLegend.
   ///
   /// In en, this message translates to:
-  /// **'Status Living Legend'**
+  /// **'LIVING LEGEND'**
   String get statusLivingLegend;
 
   /// No description provided for @statusEraDominator.
   ///
   /// In en, this message translates to:
-  /// **'Status Era Dominator'**
+  /// **'ERA DOMINATOR'**
   String get statusEraDominator;
 
   /// No description provided for @statusTheHeir.
   ///
   /// In en, this message translates to:
-  /// **'Status The Heir'**
+  /// **'THE HEIR'**
   String get statusTheHeir;
 
   /// No description provided for @statusTheHeiress.
   ///
   /// In en, this message translates to:
-  /// **'Status The Heiress'**
+  /// **'THE HEIRESS'**
   String get statusTheHeiress;
 
   /// No description provided for @statusEliteVeteran.
   ///
   /// In en, this message translates to:
-  /// **'Status Elite Veteran'**
+  /// **'ELITE VETERAN'**
   String get statusEliteVeteran;
 
   /// No description provided for @statusLastDance.
   ///
   /// In en, this message translates to:
-  /// **'Status Last Dance'**
+  /// **'LAST DANCE'**
   String get statusLastDance;
 
   /// No description provided for @statusSolidSpecialist.
   ///
   /// In en, this message translates to:
-  /// **'Status Solid Specialist'**
+  /// **'Solid Specialist'**
   String get statusSolidSpecialist;
 
   /// No description provided for @statusYoungWonder.
   ///
   /// In en, this message translates to:
-  /// **'Status Young Wonder'**
+  /// **'Young Wonder'**
   String get statusYoungWonder;
 
   /// No description provided for @statusRisingStar.
   ///
   /// In en, this message translates to:
-  /// **'Status Rising Star'**
+  /// **'RISING STAR'**
   String get statusRisingStar;
 
   /// No description provided for @statusStuckPromise.
   ///
   /// In en, this message translates to:
-  /// **'Status Stuck Promise'**
+  /// **'Stuck Promise'**
   String get statusStuckPromise;
 
   /// No description provided for @statusJourneyman.
   ///
   /// In en, this message translates to:
-  /// **'Status Journeyman'**
+  /// **'JOURNEYMAN'**
   String get statusJourneyman;
 
   /// No description provided for @statusJourneywoman.
   ///
   /// In en, this message translates to:
-  /// **'Status Journeywoman'**
+  /// **'JOURNEYWOMAN'**
   String get statusJourneywoman;
 
   /// No description provided for @statusUnsungDriver.
   ///
   /// In en, this message translates to:
-  /// **'Status Unsung Driver'**
+  /// **'UNSUNG HERO'**
   String get statusUnsungDriver;
 
   /// No description provided for @statusMidfieldSpark.
   ///
   /// In en, this message translates to:
-  /// **'Status Midfield Spark'**
+  /// **'MIDFIELD SPARK'**
   String get statusMidfieldSpark;
 
   /// No description provided for @statusPastGlory.
   ///
   /// In en, this message translates to:
-  /// **'Status Past Glory'**
+  /// **'PAST GLORY'**
   String get statusPastGlory;
 
   /// No description provided for @statusGridFiller.
   ///
   /// In en, this message translates to:
-  /// **'Status Grid Filler'**
+  /// **'GRID FILLER'**
   String get statusGridFiller;
 
   /// No description provided for @statusUnknown.
   ///
   /// In en, this message translates to:
-  /// **'Status Unknown'**
+  /// **'Unknown'**
   String get statusUnknown;
 
   /// No description provided for @descLivingLegend.
   ///
   /// In en, this message translates to:
-  /// **'Desc Living Legend'**
+  /// **'One of the greatest in history.'**
   String get descLivingLegend;
 
   /// No description provided for @descEraDominator.
   ///
   /// In en, this message translates to:
-  /// **'Desc Era Dominator'**
+  /// **'Dominates their era with an iron fist.'**
   String get descEraDominator;
 
   /// No description provided for @descTheHeir.
   ///
   /// In en, this message translates to:
-  /// **'Desc The Heir'**
+  /// **'Heir to a winning dynasty.'**
   String get descTheHeir;
 
   /// No description provided for @descEliteVeteran.
   ///
   /// In en, this message translates to:
-  /// **'Desc Elite Veteran'**
+  /// **'Years of experience at the highest level.'**
   String get descEliteVeteran;
 
   /// No description provided for @descLastDance.
   ///
   /// In en, this message translates to:
-  /// **'Desc Last Dance'**
+  /// **'Their final shot at glory.'**
   String get descLastDance;
 
   /// No description provided for @descSolidSpecialist.
   ///
   /// In en, this message translates to:
-  /// **'Desc Solid Specialist'**
+  /// **'Reliable in any circumstance.'**
   String get descSolidSpecialist;
 
   /// No description provided for @descYoungWonder.
   ///
   /// In en, this message translates to:
-  /// **'Desc Young Wonder'**
+  /// **'The future of motorsport.'**
   String get descYoungWonder;
 
   /// No description provided for @descRisingStar.
   ///
   /// In en, this message translates to:
-  /// **'Desc Rising Star'**
+  /// **'A talent rising through the ranks.'**
   String get descRisingStar;
 
   /// No description provided for @descStuckPromise.
   ///
   /// In en, this message translates to:
-  /// **'Desc Stuck Promise'**
+  /// **'Lots of talent, few results.'**
   String get descStuckPromise;
 
   /// No description provided for @descJourneyman.
   ///
   /// In en, this message translates to:
-  /// **'Desc Journeyman'**
+  /// **'Has been through almost every garage.'**
   String get descJourneyman;
 
   /// No description provided for @descUnsungDriver.
   ///
   /// In en, this message translates to:
-  /// **'Desc Unsung Driver'**
+  /// **'Deserves more attention from the press.'**
   String get descUnsungDriver;
 
   /// No description provided for @descMidfieldSpark.
   ///
   /// In en, this message translates to:
-  /// **'Desc Midfield Spark'**
+  /// **'Capable of miracles in average cars.'**
   String get descMidfieldSpark;
 
   /// No description provided for @descPastGlory.
   ///
   /// In en, this message translates to:
-  /// **'Desc Past Glory'**
+  /// **'Their best days are behind them.'**
   String get descPastGlory;
 
   /// No description provided for @descGridFiller.
   ///
   /// In en, this message translates to:
-  /// **'Desc Grid Filler'**
+  /// **'Just here to race.'**
   String get descGridFiller;
 
   /// No description provided for @descUnknown.
   ///
   /// In en, this message translates to:
-  /// **'Desc Unknown'**
+  /// **'No notable biographical data.'**
   String get descUnknown;
 
   /// No description provided for @errorLoadingProfile.

@@ -670,7 +670,7 @@ class _LastRaceStandingsTab extends StatelessWidget {
   }
 }
 
-class _StandingsTable extends StatelessWidget {
+class _StandingsTable extends StatefulWidget {
   final List<String> columns;
   final List<List<dynamic>> rows;
   final List<int> flexValues;
@@ -682,6 +682,19 @@ class _StandingsTable extends StatelessWidget {
     required this.flexValues,
     this.highlightIndices = const [],
   });
+
+  @override
+  State<_StandingsTable> createState() => _StandingsTableState();
+}
+
+class _StandingsTableState extends State<_StandingsTable> {
+  final ScrollController _scrollController = ScrollController();
+
+  @override
+  void dispose() {
+    _scrollController.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -697,11 +710,11 @@ class _StandingsTable extends StatelessWidget {
             ),
           ),
           child: Row(
-            children: List.generate(columns.length, (i) {
+            children: List.generate(widget.columns.length, (i) {
               return Expanded(
-                flex: flexValues[i],
+                flex: widget.flexValues[i],
                 child: Text(
-                  columns[i].toUpperCase(),
+                  widget.columns[i].toUpperCase(),
                   style: GoogleFonts.poppins(
                     fontWeight: FontWeight.w900,
                     fontSize: 10,
@@ -716,13 +729,15 @@ class _StandingsTable extends StatelessWidget {
         // SCROLLABLE DATA ROWS
         Expanded(
           child: Scrollbar(
+            controller: _scrollController,
             thumbVisibility: true,
             child: ListView.builder(
+              controller: _scrollController,
               padding: const EdgeInsets.symmetric(vertical: 0),
-              itemCount: rows.length,
+              itemCount: widget.rows.length,
               itemBuilder: (context, index) {
-                final row = rows[index];
-                final isHighlighted = highlightIndices.contains(index);
+                final row = widget.rows[index];
+                final isHighlighted = widget.highlightIndices.contains(index);
 
                 return Container(
                   decoration: BoxDecoration(
@@ -778,7 +793,7 @@ class _StandingsTable extends StatelessWidget {
                         final content = row[i];
 
                         return Expanded(
-                          flex: flexValues[i],
+                          flex: widget.flexValues[i],
                           child: content is InlineSpan
                               ? Text.rich(
                                   content,

@@ -416,6 +416,19 @@ class _GarageScreenState extends State<GarageScreen>
     if (_circuit == null || _selectedDriverId == null) return;
     final l10n = AppLocalizations.of(context);
 
+    // Block if race setup already submitted
+    if (_raceSetupsSubmitted[_selectedDriverId] == true) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(l10n.garagePracticeClosedRace),
+            backgroundColor: Colors.orange,
+          ),
+        );
+      }
+      return;
+    }
+
     // Block if driver has DNF'd in practice
     if (_practiceDnfs.contains(_selectedDriverId)) {
       if (mounted) {
@@ -960,6 +973,21 @@ class _GarageScreenState extends State<GarageScreen>
   Future<void> _runQualifyingAttempt() async {
     if (_selectedDriverId == null || _circuit == null) return;
     final l10n = AppLocalizations.of(context);
+
+    // Block if race setup already submitted
+    if (_raceSetupsSubmitted[_selectedDriverId] == true) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              l10n.garageQualyClosedRace,
+            ), // Assuming this key exists or similar
+            backgroundColor: Colors.orange,
+          ),
+        );
+      }
+      return;
+    }
 
     // Block if driver has DNF'd in qualifying
     if (_qualifyingDnfs.contains(_selectedDriverId)) {
@@ -1549,9 +1577,11 @@ class _GarageScreenState extends State<GarageScreen>
 
   Widget _buildQualifyingTab(ThemeData theme, bool isPaddockOpen) {
     final driverId = _selectedDriverId;
-    final isParcFerme = _qualifyingParcFerme[driverId] == true;
+    final isRaceSent =
+        driverId != null && _raceSetupsSubmitted[driverId] == true;
+    final isParcFerme = _qualifyingParcFerme[driverId] == true || isRaceSent;
     final attempts = _qualifyingAttempts[driverId] ?? 0;
-    final hasAttemptsLeft = attempts < kMaxQualifyingAttempts;
+    final hasAttemptsLeft = attempts < kMaxQualifyingAttempts && !isRaceSent;
     final l10n = AppLocalizations.of(context);
 
     return Row(
@@ -1565,6 +1595,39 @@ class _GarageScreenState extends State<GarageScreen>
               // Driver selector
               _buildDriverSelector(theme),
               const SizedBox(height: 12),
+
+              if (isRaceSent)
+                Container(
+                  margin: const EdgeInsets.only(bottom: 12),
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: Colors.orange.withValues(alpha: 0.1),
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(
+                      color: Colors.orange.withValues(alpha: 0.3),
+                    ),
+                  ),
+                  child: Row(
+                    children: [
+                      const Icon(
+                        Icons.lock_clock,
+                        color: Colors.orange,
+                        size: 20,
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: Text(
+                          l10n.garageQualyClosedRace,
+                          style: const TextStyle(
+                            color: Colors.orange,
+                            fontWeight: FontWeight.bold,
+                            fontSize: 12,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
 
               // Circuit intel
               if (_circuit != null)
@@ -1753,7 +1816,8 @@ class _GarageScreenState extends State<GarageScreen>
                 _buildQualifyingSetupCard(
                   theme,
                   isParcFerme,
-                  onCopyToRace: isPaddockOpen && !_isLoading
+                  isRaceSent: isRaceSent,
+                  onCopyToRace: isPaddockOpen && !_isLoading && !isRaceSent
                       ? _saveRaceSetupDraft
                       : null,
                 ),
@@ -1763,7 +1827,7 @@ class _GarageScreenState extends State<GarageScreen>
                 _buildDriverStyleCard(
                   theme: theme,
                   currentStyle: _currentDriverQualifyingSetup.qualifyingStyle,
-                  editable: isPaddockOpen,
+                  editable: isPaddockOpen && !isRaceSent,
                   onStyleChanged: (style) {
                     setState(() {
                       final s = _currentDriverQualifyingSetup;
@@ -2092,6 +2156,7 @@ class _GarageScreenState extends State<GarageScreen>
   Widget _buildQualifyingSetupCard(
     ThemeData theme,
     bool isParcFerme, {
+    bool isRaceSent = false,
     VoidCallback? onCopyToRace,
   }) {
     final setup = _currentDriverQualifyingSetup;
@@ -2100,7 +2165,7 @@ class _GarageScreenState extends State<GarageScreen>
       theme,
       l10n.garageSetupQualifying.toUpperCase(),
       setup,
-      true,
+      !isRaceSent,
       (field, val) {
         if (isParcFerme && field != 'frontWing') return;
         setState(() {
@@ -3327,12 +3392,18 @@ class _GarageScreenState extends State<GarageScreen>
     onPitStopsChanged,
   }) {
     final l10n = AppLocalizations.of(context);
-    Widget buildSlider(String label, int value, String fieldId) {
+    Widget buildSlider(
+      String label,
+      int value,
+      String fieldId, {
+      String? hint,
+    }) {
       return _buildCompactSlider(
         theme,
         label,
         value,
         (v) => onChanged(fieldId, v),
+        hint: hint,
       );
     }
 
@@ -3480,21 +3551,25 @@ class _GarageScreenState extends State<GarageScreen>
                               l10n.setupFrontWing,
                               setup.frontWing,
                               'frontWing',
+                              hint: l10n.hintFrontWing,
                             ),
                             buildSlider(
                               l10n.setupRearWing,
                               setup.rearWing,
                               'rearWing',
+                              hint: l10n.hintRearWing,
                             ),
                             buildSlider(
                               l10n.setupSuspension,
                               setup.suspension,
                               'suspension',
+                              hint: l10n.hintSuspension,
                             ),
                             buildSlider(
                               l10n.setupGearRatio,
                               setup.gearRatio,
                               'gearRatio',
+                              hint: l10n.hintGearRatio,
                             ),
                           ],
                         ),
@@ -3817,36 +3892,39 @@ class _GarageScreenState extends State<GarageScreen>
     VoidCallback? onCopyToRace,
   }) {
     final l10n = AppLocalizations.of(context);
-    Widget buildSlider(String label, int value, String fieldId) {
-      final isLocked = parcFermeFields?.contains(fieldId) ?? false;
+    Widget buildSlider(
+      String label,
+      int value,
+      String fieldId, {
+      String? hint,
+    }) {
+      final isLocked =
+          (parcFermeFields?.contains(fieldId) ?? false) || !editable;
       return Opacity(
         opacity: isLocked ? 0.4 : 1.0,
-        child: AbsorbPointer(
-          absorbing: isLocked,
-          child: Row(
-            children: [
-              Expanded(
-                child: _buildCompactSlider(
-                  theme,
-                  label,
-                  value,
-                  (v) => onChanged(fieldId, v),
+        child: Row(
+          children: [
+            Expanded(
+              child: _buildCompactSlider(
+                theme,
+                label,
+                value,
+                (v) => onChanged(fieldId, v),
+                hint: hint,
+                isLocked: isLocked,
+              ),
+            ),
+            if (parcFermeFields?.contains(fieldId) ?? false)
+              Padding(
+                padding: const EdgeInsets.only(left: 4),
+                child: Tooltip(
+                  message: l10n.garageParcFermeLockedTooltip,
+                  preferBelow: false,
+                  verticalOffset: 12,
+                  child: const Icon(Icons.lock, size: 12, color: Colors.orange),
                 ),
               ),
-              if (isLocked)
-                Padding(
-                  padding: const EdgeInsets.only(left: 4),
-                  child: Tooltip(
-                    message: l10n.garageParcFermeLockedTooltip,
-                    child: const Icon(
-                      Icons.lock,
-                      size: 12,
-                      color: Colors.orange,
-                    ),
-                  ),
-                ),
-            ],
-          ),
+          ],
         ),
       );
     }
@@ -3885,70 +3963,129 @@ class _GarageScreenState extends State<GarageScreen>
             ),
             Padding(
               padding: const EdgeInsets.all(20),
-              child: AbsorbPointer(
-                absorbing: !editable,
-                child: Opacity(
-                  opacity: editable ? 1.0 : 0.6,
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      // Title row with copy badge buttons
-                      Row(
-                        crossAxisAlignment: CrossAxisAlignment.center,
-                        children: [
-                          Text(
-                            title.toUpperCase(),
-                            style: const TextStyle(
-                              color: Colors.white,
-                              fontSize: 13,
-                              fontWeight: FontWeight.w900,
-                              letterSpacing: 2.0,
+              child: Opacity(
+                opacity: editable ? 1.0 : 0.6,
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    // Title row with copy badge buttons
+                    Row(
+                      crossAxisAlignment: CrossAxisAlignment.center,
+                      children: [
+                        Text(
+                          title.toUpperCase(),
+                          style: const TextStyle(
+                            color: Colors.white,
+                            fontSize: 13,
+                            fontWeight: FontWeight.w900,
+                            letterSpacing: 2.0,
+                          ),
+                        ),
+                        const Spacer(),
+                        if (onCopyToQualifying != null)
+                          _buildCopyBadge(
+                            label: l10n.garageSetQualy.toUpperCase(),
+                            icon: Icons.timer_outlined,
+                            color: theme.primaryColor,
+                            onTap: onCopyToQualifying,
+                          ),
+                        if (onCopyToQualifying != null && onCopyToRace != null)
+                          const SizedBox(width: 6),
+                        if (onCopyToRace != null)
+                          _buildCopyBadge(
+                            label: l10n.garageSetRace.toUpperCase(),
+                            icon: Icons.flag_outlined,
+                            color: Colors.redAccent,
+                            onTap: onCopyToRace,
+                          ),
+                      ],
+                    ),
+                    const SizedBox(height: 20),
+                    buildSlider(
+                      l10n.setupFrontWing,
+                      setup.frontWing,
+                      'frontWing',
+                      hint: l10n.hintFrontWing,
+                    ),
+                    buildSlider(
+                      l10n.setupRearWing,
+                      setup.rearWing,
+                      'rearWing',
+                      hint: l10n.hintRearWing,
+                    ),
+                    buildSlider(
+                      l10n.setupSuspension,
+                      setup.suspension,
+                      'suspension',
+                      hint: l10n.hintSuspension,
+                    ),
+                    buildSlider(
+                      l10n.setupGearRatio,
+                      setup.gearRatio,
+                      'gearRatio',
+                      hint: l10n.hintGearRatio,
+                    ),
+                    const SizedBox(height: 20),
+                    Text(
+                      l10n.setupTyreCompound.toUpperCase(),
+                      style: const TextStyle(
+                        fontSize: 9,
+                        fontWeight: FontWeight.w900,
+                        color: Colors.white54,
+                        letterSpacing: 1.0,
+                      ),
+                    ),
+                    const SizedBox(height: 10),
+                    Wrap(
+                      spacing: 8,
+                      runSpacing: 8,
+                      children: TyreCompound.values.map((compound) {
+                        final isSelected = setup.tyreCompound == compound;
+                        final compoundColor = _getTyreColor(compound);
+
+                        return InkWell(
+                          onTap: () => onCompoundChanged?.call(compound),
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 10,
+                              vertical: 6,
+                            ),
+                            decoration: BoxDecoration(
+                              color: isSelected
+                                  ? compoundColor.withValues(alpha: 0.15)
+                                  : Colors.white.withValues(alpha: 0.02),
+                              border: Border.all(
+                                color: isSelected
+                                    ? compoundColor
+                                    : Colors.white.withValues(alpha: 0.05),
+                              ),
+                              borderRadius: BorderRadius.circular(6),
+                            ),
+                            child: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                _buildSmallTyreIcon(compound),
+                                const SizedBox(width: 8),
+                                Text(
+                                  compound.name.toUpperCase(),
+                                  style: TextStyle(
+                                    fontSize: 10,
+                                    fontWeight: FontWeight.w900,
+                                    color: isSelected
+                                        ? compoundColor
+                                        : Colors.white38,
+                                  ),
+                                ),
+                              ],
                             ),
                           ),
-                          const Spacer(),
-                          if (onCopyToQualifying != null)
-                            _buildCopyBadge(
-                              label: l10n.garageSetQualy.toUpperCase(),
-                              icon: Icons.timer_outlined,
-                              color: theme.primaryColor,
-                              onTap: onCopyToQualifying,
-                            ),
-                          if (onCopyToQualifying != null &&
-                              onCopyToRace != null)
-                            const SizedBox(width: 6),
-                          if (onCopyToRace != null)
-                            _buildCopyBadge(
-                              label: l10n.garageSetRace.toUpperCase(),
-                              icon: Icons.flag_outlined,
-                              color: Colors.redAccent,
-                              onTap: onCopyToRace,
-                            ),
-                        ],
-                      ),
-                      const SizedBox(height: 20),
-                      buildSlider(
-                        l10n.setupFrontWing,
-                        setup.frontWing,
-                        'frontWing',
-                      ),
-                      buildSlider(
-                        l10n.setupRearWing,
-                        setup.rearWing,
-                        'rearWing',
-                      ),
-                      buildSlider(
-                        l10n.setupSuspension,
-                        setup.suspension,
-                        'suspension',
-                      ),
-                      buildSlider(
-                        l10n.setupGearRatio,
-                        setup.gearRatio,
-                        'gearRatio',
-                      ),
+                        );
+                      }).toList(),
+                    ),
+                    if (onPitStopsChanged != null) ...[
                       const SizedBox(height: 20),
                       Text(
-                        l10n.setupTyreCompound.toUpperCase(),
+                        l10n.garageRaceStrategy.toUpperCase(),
                         style: const TextStyle(
                           fontSize: 9,
                           fontWeight: FontWeight.w900,
@@ -3957,213 +4094,149 @@ class _GarageScreenState extends State<GarageScreen>
                         ),
                       ),
                       const SizedBox(height: 10),
-                      Wrap(
-                        spacing: 8,
-                        runSpacing: 8,
-                        children: TyreCompound.values.map((compound) {
-                          final isSelected = setup.tyreCompound == compound;
-                          final compoundColor = _getTyreColor(compound);
-
-                          return InkWell(
-                            onTap: () => onCompoundChanged?.call(compound),
-                            child: Container(
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: 10,
-                                vertical: 6,
-                              ),
-                              decoration: BoxDecoration(
-                                color: isSelected
-                                    ? compoundColor.withValues(alpha: 0.15)
-                                    : Colors.white.withValues(alpha: 0.02),
-                                border: Border.all(
-                                  color: isSelected
-                                      ? compoundColor
-                                      : Colors.white.withValues(alpha: 0.05),
-                                ),
-                                borderRadius: BorderRadius.circular(6),
-                              ),
+                      Column(
+                        children: [
+                          ...List.generate(setup.pitStops.length, (index) {
+                            final currentStop = setup.pitStops[index];
+                            return Padding(
+                              padding: const EdgeInsets.only(bottom: 12.0),
                               child: Row(
-                                mainAxisSize: MainAxisSize.min,
                                 children: [
-                                  _buildSmallTyreIcon(compound),
+                                  SizedBox(
+                                    width: 90,
+                                    child: Row(
+                                      children: [
+                                        Text(
+                                          l10n.garagePitStop(index + 1),
+                                          style: const TextStyle(
+                                            fontSize: 10,
+                                            fontWeight: FontWeight.w900,
+                                            color: Colors.white54,
+                                          ),
+                                        ),
+                                        const Spacer(),
+                                        if (editable)
+                                          IconButton(
+                                            icon: const Icon(
+                                              Icons.remove_circle_outline,
+                                              size: 16,
+                                              color: Colors.redAccent,
+                                            ),
+                                            padding: EdgeInsets.zero,
+                                            constraints: const BoxConstraints(),
+                                            onPressed: () {
+                                              final newStops =
+                                                  List<TyreCompound>.from(
+                                                    setup.pitStops,
+                                                  );
+                                              newStops.removeAt(index);
+                                              onPitStopsChanged(newStops);
+                                            },
+                                          ),
+                                      ],
+                                    ),
+                                  ),
                                   const SizedBox(width: 8),
-                                  Text(
-                                    compound.name.toUpperCase(),
-                                    style: TextStyle(
-                                      fontSize: 10,
-                                      fontWeight: FontWeight.w900,
-                                      color: isSelected
-                                          ? compoundColor
-                                          : Colors.white38,
+                                  Expanded(
+                                    child: Wrap(
+                                      spacing: 4,
+                                      runSpacing: 4,
+                                      children: TyreCompound.values.map((
+                                        compound,
+                                      ) {
+                                        final isSelected =
+                                            currentStop == compound;
+                                        Color compoundColor = _getTyreColor(
+                                          compound,
+                                        );
+
+                                        return InkWell(
+                                          onTap: editable
+                                              ? () {
+                                                  final newStops =
+                                                      List<TyreCompound>.from(
+                                                        setup.pitStops,
+                                                      );
+                                                  newStops[index] = compound;
+                                                  onPitStopsChanged(newStops);
+                                                }
+                                              : null,
+                                          child: AnimatedContainer(
+                                            duration: const Duration(
+                                              milliseconds: 200,
+                                            ),
+                                            padding: const EdgeInsets.symmetric(
+                                              horizontal: 10,
+                                              vertical: 6,
+                                            ),
+                                            decoration: BoxDecoration(
+                                              color: isSelected
+                                                  ? compoundColor.withValues(
+                                                      alpha: 0.15,
+                                                    )
+                                                  : Colors.white.withValues(
+                                                      alpha: 0.05,
+                                                    ),
+                                              border: Border.all(
+                                                color: isSelected
+                                                    ? compoundColor
+                                                    : Colors.transparent,
+                                              ),
+                                              borderRadius:
+                                                  BorderRadius.circular(12),
+                                            ),
+                                            child: Text(
+                                              compound.name.toUpperCase(),
+                                              style: TextStyle(
+                                                fontSize: 9,
+                                                fontWeight: FontWeight.bold,
+                                                color: isSelected
+                                                    ? compoundColor
+                                                    : Colors.white24,
+                                              ),
+                                            ),
+                                          ),
+                                        );
+                                      }).toList(),
                                     ),
                                   ),
                                 ],
                               ),
-                            ),
-                          );
-                        }).toList(),
-                      ),
-                      if (onPitStopsChanged != null) ...[
-                        const SizedBox(height: 20),
-                        Text(
-                          l10n.garageRaceStrategy.toUpperCase(),
-                          style: const TextStyle(
-                            fontSize: 9,
-                            fontWeight: FontWeight.w900,
-                            color: Colors.white54,
-                            letterSpacing: 1.0,
-                          ),
-                        ),
-                        const SizedBox(height: 10),
-                        Column(
-                          children: [
-                            ...List.generate(setup.pitStops.length, (index) {
-                              final currentStop = setup.pitStops[index];
-                              return Padding(
-                                padding: const EdgeInsets.only(bottom: 12.0),
-                                child: Row(
-                                  children: [
-                                    SizedBox(
-                                      width: 90,
-                                      child: Row(
-                                        children: [
-                                          Text(
-                                            l10n.garagePitStop(index + 1),
-                                            style: const TextStyle(
-                                              fontSize: 10,
-                                              fontWeight: FontWeight.w900,
-                                              color: Colors.white54,
-                                            ),
-                                          ),
-                                          const Spacer(),
-                                          if (editable)
-                                            IconButton(
-                                              icon: const Icon(
-                                                Icons.remove_circle_outline,
-                                                size: 16,
-                                                color: Colors.redAccent,
-                                              ),
-                                              padding: EdgeInsets.zero,
-                                              constraints:
-                                                  const BoxConstraints(),
-                                              onPressed: () {
-                                                final newStops =
-                                                    List<TyreCompound>.from(
-                                                      setup.pitStops,
-                                                    );
-                                                newStops.removeAt(index);
-                                                onPitStopsChanged(newStops);
-                                              },
-                                            ),
-                                        ],
-                                      ),
-                                    ),
-                                    const SizedBox(width: 8),
-                                    Expanded(
-                                      child: Wrap(
-                                        spacing: 4,
-                                        runSpacing: 4,
-                                        children: TyreCompound.values.map((
-                                          compound,
-                                        ) {
-                                          final isSelected =
-                                              currentStop == compound;
-                                          Color compoundColor = _getTyreColor(
-                                            compound,
-                                          );
-
-                                          return InkWell(
-                                            onTap: editable
-                                                ? () {
-                                                    final newStops =
-                                                        List<TyreCompound>.from(
-                                                          setup.pitStops,
-                                                        );
-                                                    newStops[index] = compound;
-                                                    onPitStopsChanged(newStops);
-                                                  }
-                                                : null,
-                                            child: AnimatedContainer(
-                                              duration: const Duration(
-                                                milliseconds: 200,
-                                              ),
-                                              padding:
-                                                  const EdgeInsets.symmetric(
-                                                    horizontal: 10,
-                                                    vertical: 6,
-                                                  ),
-                                              decoration: BoxDecoration(
-                                                color: isSelected
-                                                    ? compoundColor.withValues(
-                                                        alpha: 0.15,
-                                                      )
-                                                    : Colors.white.withValues(
-                                                        alpha: 0.05,
-                                                      ),
-                                                border: Border.all(
-                                                  color: isSelected
-                                                      ? compoundColor
-                                                      : Colors.transparent,
-                                                ),
-                                                borderRadius:
-                                                    BorderRadius.circular(12),
-                                              ),
-                                              child: Text(
-                                                compound.name.toUpperCase(),
-                                                style: TextStyle(
-                                                  fontSize: 9,
-                                                  fontWeight: FontWeight.bold,
-                                                  color: isSelected
-                                                      ? compoundColor
-                                                      : Colors.white24,
-                                                ),
-                                              ),
-                                            ),
-                                          );
-                                        }).toList(),
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                              );
-                            }),
-                            if (editable && setup.pitStops.length < 5)
-                              Padding(
-                                padding: const EdgeInsets.only(top: 8.0),
-                                child: OutlinedButton.icon(
-                                  onPressed: () {
-                                    final newStops = List<TyreCompound>.from(
-                                      setup.pitStops,
-                                    );
-                                    newStops.add(TyreCompound.hard);
-                                    onPitStopsChanged(newStops);
-                                  },
-                                  icon: const Icon(Icons.add, size: 16),
-                                  label: Text(
-                                    l10n.garageAddPitStop.toUpperCase(),
-                                    style: const TextStyle(
-                                      fontSize: 10,
-                                      fontWeight: FontWeight.bold,
-                                    ),
+                            );
+                          }),
+                          if (editable && setup.pitStops.length < 5)
+                            Padding(
+                              padding: const EdgeInsets.only(top: 8.0),
+                              child: OutlinedButton.icon(
+                                onPressed: () {
+                                  final newStops = List<TyreCompound>.from(
+                                    setup.pitStops,
+                                  );
+                                  newStops.add(TyreCompound.hard);
+                                  onPitStopsChanged(newStops);
+                                },
+                                icon: const Icon(Icons.add, size: 16),
+                                label: Text(
+                                  l10n.garageAddPitStop.toUpperCase(),
+                                  style: const TextStyle(
+                                    fontSize: 10,
+                                    fontWeight: FontWeight.bold,
                                   ),
-                                  style: OutlinedButton.styleFrom(
-                                    minimumSize: const Size(
-                                      double.infinity,
-                                      36,
-                                    ),
-                                    side: BorderSide(
-                                      color: theme.primaryColor.withValues(
-                                        alpha: 0.5,
-                                      ),
+                                ),
+                                style: OutlinedButton.styleFrom(
+                                  minimumSize: const Size(double.infinity, 36),
+                                  side: BorderSide(
+                                    color: theme.primaryColor.withValues(
+                                      alpha: 0.5,
                                     ),
                                   ),
                                 ),
                               ),
-                          ],
-                        ),
-                      ],
+                            ),
+                        ],
+                      ),
                     ],
-                  ),
+                  ],
                 ),
               ),
             ),
@@ -4177,43 +4250,81 @@ class _GarageScreenState extends State<GarageScreen>
     ThemeData theme,
     String label,
     int value,
-    ValueChanged<int> onChanged,
-  ) {
+    ValueChanged<int> onChanged, {
+    String? hint,
+    bool isLocked = false,
+  }) {
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 2),
       child: Row(
         children: [
           SizedBox(
-            width: 90,
-            child: Text(
-              label,
-              style: TextStyle(
-                fontSize: 12,
-                color: theme.colorScheme.onSurface.withValues(alpha: 0.5),
+            width: 100, // Increased slightly to accommodate icon better
+            child: Tooltip(
+              message: hint ?? '',
+              preferBelow: false,
+              verticalOffset: 20,
+              // Adjusting margin to allow some space, but standard Tooltip is centered by default.
+              // To move to the right, we'd need a custom implementation or a child that is shifted.
+              child: Container(
+                color: Colors
+                    .transparent, // Required for hit-testing on the entire row area
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Text(
+                      label,
+                      style: TextStyle(
+                        fontSize: 12,
+                        color: theme.colorScheme.onSurface.withValues(
+                          alpha: 0.5,
+                        ),
+                      ),
+                    ),
+                    if (hint != null)
+                      Icon(
+                        Icons.help_outline,
+                        size: 14,
+                        color: theme.colorScheme.onSurface.withValues(
+                          alpha: 0.3,
+                        ),
+                      ),
+                  ],
+                ),
               ),
             ),
           ),
+          const SizedBox(width: 8),
           Expanded(
-            child: SliderTheme(
-              data: SliderThemeData(
-                activeTrackColor: theme.colorScheme.secondary,
-                inactiveTrackColor: theme.colorScheme.onSurface.withValues(
-                  alpha: 0.1,
+            child: AbsorbPointer(
+              absorbing: isLocked,
+              child: SliderTheme(
+                data: SliderThemeData(
+                  activeTrackColor: theme.colorScheme.secondary,
+                  inactiveTrackColor: theme.colorScheme.onSurface.withValues(
+                    alpha: 0.1,
+                  ),
+                  thumbColor: theme.colorScheme.secondary,
+                  overlayColor: theme.colorScheme.secondary.withValues(
+                    alpha: 0.2,
+                  ),
+                  trackHeight: 3,
+                  thumbShape: const RoundSliderThumbShape(
+                    enabledThumbRadius: 6,
+                  ),
+                  overlayShape: const RoundSliderOverlayShape(
+                    overlayRadius: 12,
+                  ),
                 ),
-                thumbColor: theme.colorScheme.secondary,
-                overlayColor: theme.colorScheme.secondary.withValues(
-                  alpha: 0.2,
+                child: Slider(
+                  value: value.toDouble(),
+                  min: 0,
+                  max: 100,
+                  divisions: 100,
+                  onChanged: (v) {
+                    if (!isLocked) onChanged(v.round());
+                  },
                 ),
-                trackHeight: 3,
-                thumbShape: const RoundSliderThumbShape(enabledThumbRadius: 6),
-                overlayShape: const RoundSliderOverlayShape(overlayRadius: 12),
-              ),
-              child: Slider(
-                value: value.toDouble(),
-                min: 0,
-                max: 100,
-                divisions: 100,
-                onChanged: (v) => onChanged(v.round()),
               ),
             ),
           ),

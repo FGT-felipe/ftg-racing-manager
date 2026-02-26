@@ -372,6 +372,22 @@ class AppLocalizationsEn extends AppLocalizations {
   String get setupGearRatio => 'Gear Ratio';
 
   @override
+  String get hintFrontWing =>
+      '0: Understeer (Lazy entry)\n100: Oversteer (Sharp/Aggressive entry)';
+
+  @override
+  String get hintRearWing =>
+      '0: High Top Speed / Less Stability\n100: Low Top Speed / More Stability';
+
+  @override
+  String get hintSuspension =>
+      '0: Soft (Better for bumps/kerbs)\n100: Stiff (Better for high speed/flat tracks)';
+
+  @override
+  String get hintGearRatio =>
+      '0: Long (Higher Top Speed)\n100: Short (Faster Acceleration)';
+
+  @override
   String get styleRisky => 'RISKY';
 
   @override
@@ -453,6 +469,10 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get garagePracticeClosedQualy =>
       'PRACTICE CLOSED: Qualifying session has started.';
+
+  @override
+  String get garageQualyClosedRace =>
+      'QUALIFYING CLOSED: Race setup has been submitted.';
 
   @override
   String garageQualyIntro(int total) {
@@ -879,7 +899,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get renewContractBtn => 'Renew';
 
   @override
-  String get driverStatsSectionTitle => 'Driver Stats Section';
+  String get driverStatsSectionTitle => 'Driver Stats';
 
   @override
   String get careerStatsTitle => 'Career Stats';
@@ -933,13 +953,13 @@ class AppLocalizationsEn extends AppLocalizations {
   String get wHeader => 'W';
 
   @override
-  String get historyIndividual => 'History Individual';
+  String get historyIndividual => 'Individual';
 
   @override
   String get noDataAvailableYet => 'No Data Available Yet';
 
   @override
-  String get historyLowerDivision => 'History Lower Division';
+  String get historyLowerDivision => 'Lower Division';
 
   @override
   String get historyChampionBadge => 'CHAMPION';
@@ -978,19 +998,20 @@ class AppLocalizationsEn extends AppLocalizations {
   String get statMarketability => 'Marketability';
 
   @override
-  String get roleMain => 'Role Main';
+  String get roleMain => 'Main Driver';
 
   @override
-  String get roleSecond => 'Role Second';
+  String get roleSecond => 'Second Driver';
 
   @override
-  String get roleEqual => 'Role Equal';
+  String get roleEqual => 'Equal Status';
 
   @override
-  String get roleReserve => 'Role Reserve';
+  String get roleReserve => 'Reserve Driver';
 
   @override
-  String get engineeringDescription => 'Engineering Description';
+  String get engineeringDescription =>
+      'Technical development and car performance upgrades.';
 
   @override
   String get budgetLabel => 'Budget';
@@ -1015,7 +1036,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String carPerformanceTitle(String arg0) {
-    return 'Car Performance Title $arg0';
+    return 'Car Performance: $arg0';
   }
 
   @override
@@ -1032,7 +1053,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String costLabel(String arg0, String arg1) {
-    return 'Cost Label $arg0 $arg1';
+    return 'Cost: $arg0 $arg1';
   }
 
   @override
@@ -1186,14 +1207,15 @@ class AppLocalizationsEn extends AppLocalizations {
   String get pendingStatus => 'Pending Status';
 
   @override
-  String get hqDescription => 'Hq Description';
+  String get hqDescription =>
+      'Manage your team\'s facilities and technical development.';
 
   @override
-  String get facilitiesSectionTitle => 'Facilities Section';
+  String get facilitiesSectionTitle => 'Facilities';
 
   @override
   String levelLabel(String arg0) {
-    return 'Level Label $arg0';
+    return 'Level: $arg0';
   }
 
   @override
@@ -1209,7 +1231,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get buyBtn => 'Buy';
 
   @override
-  String get comingSoonBanner => 'Coming Soon Banner';
+  String get comingSoonBanner => 'COMING SOON';
 
   @override
   String facilityImproved(String arg0) {
@@ -1386,7 +1408,8 @@ class AppLocalizationsEn extends AppLocalizations {
   String get negotiationRulesTitle => 'Negotiation Rules';
 
   @override
-  String get negotiationRulesDesc => 'Negotiation Rules';
+  String get negotiationRulesDesc =>
+      'Set the terms before signing the contract.';
 
   @override
   String get signingBonusLabel => 'Signing Bonus';
@@ -1426,28 +1449,28 @@ class AppLocalizationsEn extends AppLocalizations {
   String get availableSponsorsTitle => 'Available Sponsors';
 
   @override
-  String get roleExDriverTitle => 'Role Ex Driver';
+  String get roleExDriverTitle => 'Ex-Driver';
 
   @override
-  String get roleExDriverDesc => 'Role Ex Driver';
+  String get roleExDriverDesc => 'Brings technical track experience.';
 
   @override
-  String get roleBusinessTitle => 'Role Business';
+  String get roleBusinessTitle => 'Businessman';
 
   @override
-  String get roleBusinessDesc => 'Role Business';
+  String get roleBusinessDesc => 'Optimizes income and marketing.';
 
   @override
-  String get roleBureaucratTitle => 'Role Bureaucrat';
+  String get roleBureaucratTitle => 'Bureaucrat';
 
   @override
-  String get roleBureaucratDesc => 'Role Bureaucrat';
+  String get roleBureaucratDesc => 'Expert in regulations and politics.';
 
   @override
-  String get roleEngineerTitle => 'Role Engineer';
+  String get roleEngineerTitle => 'Engineer';
 
   @override
-  String get roleEngineerDesc => 'Role Engineer';
+  String get roleEngineerDesc => 'Maximizes technical development.';
 
   @override
   String get createManagerProfile => 'Create Manager Profile';
@@ -1486,7 +1509,8 @@ class AppLocalizationsEn extends AppLocalizations {
   String get selectBackgroundTitle => 'Select Background';
 
   @override
-  String get createManagerDesc => 'Create Manager';
+  String get createManagerDesc =>
+      'Customize your profile and professional background.';
 
   @override
   String get establishCareerBtn => 'Establish Career';
@@ -1655,7 +1679,8 @@ class AppLocalizationsEn extends AppLocalizations {
   String get selectYourColors => 'Select Your Colors';
 
   @override
-  String get liveryDescription => 'Livery Description';
+  String get liveryDescription =>
+      'Configure the visual appearance of your cars on track.';
 
   @override
   String get managerProfileSectionTitle => 'Manager Profile Section';
@@ -1688,100 +1713,100 @@ class AppLocalizationsEn extends AppLocalizations {
   String get circuitBuenosAires => 'Circuit Buenos Aires';
 
   @override
-  String get statusLivingLegend => 'Status Living Legend';
+  String get statusLivingLegend => 'LIVING LEGEND';
 
   @override
-  String get statusEraDominator => 'Status Era Dominator';
+  String get statusEraDominator => 'ERA DOMINATOR';
 
   @override
-  String get statusTheHeir => 'Status The Heir';
+  String get statusTheHeir => 'THE HEIR';
 
   @override
-  String get statusTheHeiress => 'Status The Heiress';
+  String get statusTheHeiress => 'THE HEIRESS';
 
   @override
-  String get statusEliteVeteran => 'Status Elite Veteran';
+  String get statusEliteVeteran => 'ELITE VETERAN';
 
   @override
-  String get statusLastDance => 'Status Last Dance';
+  String get statusLastDance => 'LAST DANCE';
 
   @override
-  String get statusSolidSpecialist => 'Status Solid Specialist';
+  String get statusSolidSpecialist => 'Solid Specialist';
 
   @override
-  String get statusYoungWonder => 'Status Young Wonder';
+  String get statusYoungWonder => 'Young Wonder';
 
   @override
-  String get statusRisingStar => 'Status Rising Star';
+  String get statusRisingStar => 'RISING STAR';
 
   @override
-  String get statusStuckPromise => 'Status Stuck Promise';
+  String get statusStuckPromise => 'Stuck Promise';
 
   @override
-  String get statusJourneyman => 'Status Journeyman';
+  String get statusJourneyman => 'JOURNEYMAN';
 
   @override
-  String get statusJourneywoman => 'Status Journeywoman';
+  String get statusJourneywoman => 'JOURNEYWOMAN';
 
   @override
-  String get statusUnsungDriver => 'Status Unsung Driver';
+  String get statusUnsungDriver => 'UNSUNG HERO';
 
   @override
-  String get statusMidfieldSpark => 'Status Midfield Spark';
+  String get statusMidfieldSpark => 'MIDFIELD SPARK';
 
   @override
-  String get statusPastGlory => 'Status Past Glory';
+  String get statusPastGlory => 'PAST GLORY';
 
   @override
-  String get statusGridFiller => 'Status Grid Filler';
+  String get statusGridFiller => 'GRID FILLER';
 
   @override
-  String get statusUnknown => 'Status Unknown';
+  String get statusUnknown => 'Unknown';
 
   @override
-  String get descLivingLegend => 'Desc Living Legend';
+  String get descLivingLegend => 'One of the greatest in history.';
 
   @override
-  String get descEraDominator => 'Desc Era Dominator';
+  String get descEraDominator => 'Dominates their era with an iron fist.';
 
   @override
-  String get descTheHeir => 'Desc The Heir';
+  String get descTheHeir => 'Heir to a winning dynasty.';
 
   @override
-  String get descEliteVeteran => 'Desc Elite Veteran';
+  String get descEliteVeteran => 'Years of experience at the highest level.';
 
   @override
-  String get descLastDance => 'Desc Last Dance';
+  String get descLastDance => 'Their final shot at glory.';
 
   @override
-  String get descSolidSpecialist => 'Desc Solid Specialist';
+  String get descSolidSpecialist => 'Reliable in any circumstance.';
 
   @override
-  String get descYoungWonder => 'Desc Young Wonder';
+  String get descYoungWonder => 'The future of motorsport.';
 
   @override
-  String get descRisingStar => 'Desc Rising Star';
+  String get descRisingStar => 'A talent rising through the ranks.';
 
   @override
-  String get descStuckPromise => 'Desc Stuck Promise';
+  String get descStuckPromise => 'Lots of talent, few results.';
 
   @override
-  String get descJourneyman => 'Desc Journeyman';
+  String get descJourneyman => 'Has been through almost every garage.';
 
   @override
-  String get descUnsungDriver => 'Desc Unsung Driver';
+  String get descUnsungDriver => 'Deserves more attention from the press.';
 
   @override
-  String get descMidfieldSpark => 'Desc Midfield Spark';
+  String get descMidfieldSpark => 'Capable of miracles in average cars.';
 
   @override
-  String get descPastGlory => 'Desc Past Glory';
+  String get descPastGlory => 'Their best days are behind them.';
 
   @override
-  String get descGridFiller => 'Desc Grid Filler';
+  String get descGridFiller => 'Just here to race.';
 
   @override
-  String get descUnknown => 'Desc Unknown';
+  String get descUnknown => 'No notable biographical data.';
 
   @override
   String errorLoadingProfile(String arg0) {

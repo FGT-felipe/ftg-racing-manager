@@ -372,6 +372,22 @@ class AppLocalizationsEs extends AppLocalizations {
   String get setupGearRatio => 'Relación Marchas';
 
   @override
+  String get hintFrontWing =>
+      '0: Subviraje (Barca lenta en entrada)\n100: Sobreviraje (Barca agresiva/afilada)';
+
+  @override
+  String get hintRearWing =>
+      '0: Alta Velocidad Punta / Menos Estabilidad\n100: Baja Velocidad Punta / Más Estabilidad';
+
+  @override
+  String get hintSuspension =>
+      '0: Blanda (Mejor para baches/pianos)\n100: Rígida (Mejor para curvas rápidas/pista plana)';
+
+  @override
+  String get hintGearRatio =>
+      '0: Largas (Más Velocidad Punta)\n100: Cortas (Más Aceleración)';
+
+  @override
   String get styleRisky => 'RIESGO';
 
   @override
@@ -453,6 +469,10 @@ class AppLocalizationsEs extends AppLocalizations {
   @override
   String get garagePracticeClosedQualy =>
       'PRÁCTICA CERRADA: La sesión de clasificación ha comenzado.';
+
+  @override
+  String get garageQualyClosedRace =>
+      'CLASIFICACIÓN CERRADA: La configuración de carrera ha sido enviada.';
 
   @override
   String garageQualyIntro(int total) {
