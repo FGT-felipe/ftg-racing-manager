@@ -7,7 +7,8 @@ import '../../../l10n/app_localizations.dart';
 class DriverCard extends StatelessWidget {
   final Driver driver;
   final VoidCallback? onRenew;
-  final VoidCallback? onFire;
+  final VoidCallback? onTransferMarket;
+  final VoidCallback? onCancelTransfer;
   final String? teamName;
   final String? leagueName;
   final int? currentYear;
@@ -16,7 +17,8 @@ class DriverCard extends StatelessWidget {
     super.key,
     required this.driver,
     this.onRenew,
-    this.onFire,
+    this.onTransferMarket,
+    this.onCancelTransfer,
     this.teamName,
     this.leagueName,
     this.currentYear,
@@ -78,6 +80,38 @@ class DriverCard extends StatelessWidget {
                 ? _buildDesktopLayout(context)
                 : _buildMobileLayout(context),
           ),
+          if (driver.isTransferListed)
+            Positioned(
+              top: 12,
+              left: -30,
+              child: Transform.rotate(
+                angle: -0.785398, // -45 degrees
+                child: Container(
+                  width: 150,
+                  alignment: Alignment.center,
+                  padding: const EdgeInsets.symmetric(vertical: 4),
+                  decoration: const BoxDecoration(
+                    color: Colors.amber,
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black45,
+                        blurRadius: 4,
+                        offset: Offset(0, 2),
+                      ),
+                    ],
+                  ),
+                  child: const Text(
+                    "TRANSFER MARKET",
+                    style: TextStyle(
+                      color: Colors.black,
+                      fontWeight: FontWeight.bold,
+                      fontSize: 10,
+                      letterSpacing: 1.0,
+                    ),
+                  ),
+                ),
+              ),
+            ),
         ],
       ),
     );
@@ -250,57 +284,84 @@ class DriverCard extends StatelessWidget {
           AppLocalizations.of(context).marketabilityLabel,
           '${(driver.stats[DriverStats.marketability] ?? 0) ~/ 5}/20',
         ),
+        _buildContractRow(
+          "Market Value", // TODO localized
+          '\$${(driver.marketValue / 1000).toStringAsFixed(0)}k',
+        ),
         const SizedBox(height: 16),
         Divider(
           color: theme.colorScheme.onSurface.withValues(alpha: 0.1),
           height: 1,
         ),
         const SizedBox(height: 24),
-        // Buttons
         Row(
-          children: [
-            Expanded(
-              child: FilledButton(
-                onPressed: onFire,
-                style: FilledButton.styleFrom(
-                  backgroundColor: theme.colorScheme.error,
-                  foregroundColor: Colors.white,
-                  padding: const EdgeInsets.symmetric(horizontal: 4),
-                  textStyle: const TextStyle(
-                    fontSize: 10,
-                    fontWeight: FontWeight.bold,
+          children: driver.isTransferListed
+              ? [
+                  Expanded(
+                    child: OutlinedButton(
+                      onPressed: onCancelTransfer,
+                      style: OutlinedButton.styleFrom(
+                        foregroundColor: theme.colorScheme.error,
+                        side: BorderSide(color: theme.colorScheme.error),
+                        padding: const EdgeInsets.symmetric(horizontal: 4),
+                        textStyle: const TextStyle(
+                          fontSize: 10,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                      child: const FittedBox(
+                        fit: BoxFit.scaleDown,
+                        child: Text("CANCEL TRANSFER"),
+                      ),
+                    ),
                   ),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(100),
+                ]
+              : [
+                  Expanded(
+                    child: FilledButton(
+                      onPressed: onTransferMarket,
+                      style: FilledButton.styleFrom(
+                        backgroundColor:
+                            theme.colorScheme.surfaceContainerHighest,
+                        foregroundColor: Colors.white,
+                        padding: const EdgeInsets.symmetric(horizontal: 4),
+                        textStyle: const TextStyle(
+                          fontSize: 10,
+                          fontWeight: FontWeight.bold,
+                        ),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(100),
+                        ),
+                      ),
+                      child: const FittedBox(
+                        fit: BoxFit.scaleDown,
+                        child: Text("Transfer Market"),
+                      ),
+                    ),
                   ),
-                ),
-                child: FittedBox(
-                  fit: BoxFit.scaleDown,
-                  child: Text(AppLocalizations.of(context).fireBtn),
-                ),
-              ),
-            ),
-            const SizedBox(width: 4),
-            Expanded(
-              child: FilledButton(
-                onPressed: onRenew,
-                style: FilledButton.styleFrom(
-                  padding: const EdgeInsets.symmetric(horizontal: 4),
-                  textStyle: const TextStyle(
-                    fontSize: 10,
-                    fontWeight: FontWeight.bold,
+                  const SizedBox(width: 4),
+                  Expanded(
+                    child: FilledButton(
+                      onPressed: onRenew,
+                      style: FilledButton.styleFrom(
+                        padding: const EdgeInsets.symmetric(horizontal: 4),
+                        textStyle: const TextStyle(
+                          fontSize: 10,
+                          fontWeight: FontWeight.bold,
+                        ),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(100),
+                        ),
+                      ),
+                      child: FittedBox(
+                        fit: BoxFit.scaleDown,
+                        child: Text(
+                          AppLocalizations.of(context).renewContractBtn,
+                        ),
+                      ),
+                    ),
                   ),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(100),
-                  ),
-                ),
-                child: FittedBox(
-                  fit: BoxFit.scaleDown,
-                  child: Text(AppLocalizations.of(context).renewContractBtn),
-                ),
-              ),
-            ),
-          ],
+                ],
         ),
       ],
     );

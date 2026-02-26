@@ -4,8 +4,10 @@ import '../../models/core_models.dart';
 import '../../services/driver_assignment_service.dart';
 import '../../services/universe_service.dart';
 import '../../services/season_service.dart';
-import '../../services/notification_service.dart';
+import '../../services/transfer_market_service.dart';
 import 'widgets/driver_card.dart';
+import 'widgets/transfer_options_modal.dart';
+import 'widgets/renew_contract_modal.dart';
 import '../../l10n/app_localizations.dart';
 
 class DriversScreen extends StatefulWidget {
@@ -113,42 +115,30 @@ class _DriversScreenState extends State<DriversScreen> {
               teamName: _teamName,
               leagueName: _leagueName,
               currentYear: _currentYear,
-              onRenew: () {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(
-                    content: Text(
-                      AppLocalizations.of(
-                        context,
-                      ).renewingContractSimulated(driver.name),
-                    ),
-                  ),
-                );
-                NotificationService().addNotification(
-                  teamId: widget.teamId,
-                  title: "Contract Renewed",
-                  message:
-                      "The contract for ${driver.name} has been renewed successfully.",
-                  type: 'SUCCESS',
-                  actionRoute: '/drivers',
-                );
-              },
-              onFire: () {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(
-                    content: Text(
-                      AppLocalizations.of(
-                        context,
-                      ).firingDriverSimulated(driver.name),
-                    ),
-                  ),
-                );
-                NotificationService().addNotification(
-                  teamId: widget.teamId,
-                  title: "Driver Fired",
-                  message: "${driver.name} has been fired from the team.",
-                  type: 'ALERT',
-                  actionRoute: '/drivers',
-                );
+              onRenew: () =>
+                  RenewContractModal.show(context, widget.teamId, driver),
+              onTransferMarket: () =>
+                  TransferOptionsModal.show(context, widget.teamId, driver),
+              onCancelTransfer: () async {
+                try {
+                  await TransferMarketService().cancelTransfer(
+                    widget.teamId,
+                    driver.id,
+                  );
+                  if (context.mounted) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(
+                        content: Text("Transfer cancelled! Morale decreased."),
+                      ),
+                    );
+                  }
+                } catch (e) {
+                  if (context.mounted) {
+                    ScaffoldMessenger.of(
+                      context,
+                    ).showSnackBar(SnackBar(content: Text("Error: $e")));
+                  }
+                }
               },
             );
           },

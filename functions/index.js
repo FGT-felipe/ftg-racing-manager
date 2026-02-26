@@ -1,14 +1,14 @@
 /* eslint-disable max-len */
 // Deployment: 2026-02-24
-const {onSchedule} = require("firebase-functions/v2/scheduler");
-const {setGlobalOptions} = require("firebase-functions");
+const { onSchedule } = require("firebase-functions/v2/scheduler");
+const { setGlobalOptions } = require("firebase-functions");
 const admin = require("firebase-admin");
 const logger = require("firebase-functions/logger");
 
 admin.initializeApp();
 const db = admin.firestore();
 
-setGlobalOptions({maxInstances: 10});
+setGlobalOptions({ maxInstances: 10 });
 
 // ─────────────────────────────────────────────
 // CIRCUIT PROFILES (mirror of circuit_service.dart)
@@ -142,9 +142,9 @@ const SimEngine = {
    * @return {Object} {lapTime, isCrashed}
    */
   simulateLap(p) {
-    const {circuit, carStats, driverStats, setup, style} = p;
+    const { circuit, carStats, driverStats, setup, style } = p;
     const ideal = circuit.idealSetup;
-    const s = carStats || {aero: 1, powertrain: 1, chassis: 1};
+    const s = carStats || { aero: 1, powertrain: 1, chassis: 1 };
 
     // Setup penalty
     const clamp = (v, lo, hi) => Math.min(Math.max(v, lo), hi);
@@ -198,7 +198,7 @@ const SimEngine = {
     let lap = circuit.baseLapTime * carFactor * df + penalty;
     lap += (Math.random() - 0.5) * 0.8;
 
-    return {lapTime: crashed ? 999.0 : lap, isCrashed: crashed};
+    return { lapTime: crashed ? 999.0 : lap, isCrashed: crashed };
   },
 
   /**
@@ -207,7 +207,7 @@ const SimEngine = {
    * @return {Object} Full race result.
    */
   simulateRace(p) {
-    const {circuit, grid, teamsMap, driversMap, setupsMap, managerRoles} = p;
+    const { circuit, grid, teamsMap, driversMap, setupsMap, managerRoles } = p;
     const roles = managerRoles || {};
     const totalLaps = circuit.laps;
 
@@ -242,12 +242,12 @@ const SimEngine = {
         const su = setupsMap[did] || DEFAULT_SETUP;
         const idx = driver.carIndex || 0;
         const cs = (team.carStats && team.carStats[String(idx)]) ||
-          {aero: 1, powertrain: 1, chassis: 1};
+          { aero: 1, powertrain: 1, chassis: 1 };
 
         const res = this.simulateLap({
           circuit, carStats: cs,
           driverStats: driver.stats || {},
-          setup: {...su, tyreCompound: compound[did]},
+          setup: { ...su, tyreCompound: compound[did] },
           style: style[did],
           teamRole: roles[driver.teamId] || "",
         });
@@ -387,7 +387,7 @@ const SimEngine = {
 
       const pos = {};
       curOrder.forEach((id, i) => pos[id] = i + 1);
-      raceLog.push({lap, lapTimes, positions: pos, tyres: {...compound}, events: lapEvents});
+      raceLog.push({ lap, lapTimes, positions: pos, tyres: { ...compound }, events: lapEvents });
     }
 
     // Hard compound penalty (35s)
@@ -412,7 +412,7 @@ const SimEngine = {
     const finalPos = {};
     curOrder.forEach((id, i) => finalPos[id] = i + 1);
 
-    return {raceLog, finalPositions: finalPos, totalTimes: total, dnfs};
+    return { raceLog, finalPositions: finalPos, totalTimes: total, dnfs };
   },
 };
 
@@ -455,12 +455,12 @@ async function addPressNews(leagueId, data) {
  */
 async function addOfficeNews(teamId, data) {
   return db.collection("teams").doc(teamId)
-      .collection("notifications").add({
-        ...data,
-        teamId,
-        isRead: false,
-        timestamp: admin.firestore.FieldValue.serverTimestamp(),
-      });
+    .collection("notifications").add({
+      ...data,
+      teamId,
+      isRead: false,
+      timestamp: admin.firestore.FieldValue.serverTimestamp(),
+    });
 }
 
 /**
@@ -477,7 +477,7 @@ async function fetchTeams(teamIds) {
   const docs = [];
   for (const chunk of chunks) {
     const snap = await db.collection("teams")
-        .where("id", "in", chunk).get();
+      .where("id", "in", chunk).get();
     snap.docs.forEach((d) => docs.push(d));
   }
   return docs;
@@ -496,12 +496,12 @@ exports.scheduledQualifying = onSchedule({
 
   try {
     const uDoc = await db.collection("universe")
-        .doc("game_universe_v1").get();
+      .doc("game_universe_v1").get();
     if (!uDoc.exists) {
       logger.error("Universe not found"); return;
     }
     const leagues = Object.values(
-        uDoc.data().activeLeagues || {},
+      uDoc.data().activeLeagues || {},
     );
 
     let leagueIdx = 0;
@@ -518,7 +518,7 @@ exports.scheduledQualifying = onSchedule({
       const season = sDoc.data();
 
       const raceEvent = (season.calendar || [])
-          .find((r) => !r.isCompleted);
+        .find((r) => !r.isCompleted);
       if (!raceEvent) continue;
 
       const circuit = getCircuit(raceEvent.circuitId);
@@ -558,18 +558,18 @@ exports.scheduledQualifying = onSchedule({
       for (const tDoc of teamDocs) {
         const team = tDoc.data();
         const dSnap = await db.collection("drivers")
-            .where("teamId", "==", team.id).get();
+          .where("teamId", "==", team.id).get();
 
         for (let di = 0; di < dSnap.docs.length; di++) {
           const dDoc = dSnap.docs[di];
-          const driver = {...dDoc.data(), id: dDoc.id, carIndex: di};
+          const driver = { ...dDoc.data(), id: dDoc.id, carIndex: di };
 
           let finalLapTime = 0.0;
           let isCrashed = false;
           let tyreCompound = "medium";
           let setupSubmitted = false;
 
-          let setup = {...DEFAULT_SETUP};
+          let setup = { ...DEFAULT_SETUP };
           const ws = team.weekStatus || {};
           const ds = (ws.driverSetups || {})[driver.id];
           const sent = ds && ds.isSetupSent;
@@ -585,11 +585,34 @@ exports.scheduledQualifying = onSchedule({
             setup.qualifyingStyle = styles[Math.floor(Math.random() * styles.length)];
             setupSubmitted = true;
           } else if (sent && ds.qualifying) {
-            setup = {...DEFAULT_SETUP, ...ds.qualifying};
+            setup = { ...DEFAULT_SETUP, ...ds.qualifying };
             setupSubmitted = true;
           }
 
-          if (!team.isBot && ds && ds.qualifyingBestTime && ds.qualifyingBestTime > 0) {
+          if (driver.isTransferListed) {
+            const ySnap = await db.collection("teams").doc(team.id)
+              .collection("academy").doc("config")
+              .collection("selected").limit(1).get();
+            if (!ySnap.empty) {
+              const yData = ySnap.docs[0].data();
+              driver.name = yData.name + " (Academy)";
+              const base = yData.baseSkill || 50;
+              driver.stats = {
+                braking: base, cornering: base, smoothness: base,
+                overtaking: base, consistency: base, adaptability: base,
+                focus: base, feedback: base, fitness: 100,
+                morale: 100, marketability: 30
+              };
+            } else {
+              // Generic bad
+              driver.stats = { braking: 1, cornering: 1, smoothness: 1, overtaking: 1, consistency: 1, adaptability: 1, focus: 1, feedback: 1, fitness: 1 };
+              isCrashed = true; // Can't start properly without a driver
+            }
+            setup = { ...DEFAULT_SETUP, frontWing: 50, rearWing: 50, suspension: 50, gearRatio: 50, qualifyingStyle: "normal" };
+            setupSubmitted = true;
+          }
+
+          if (!driver.isTransferListed && !team.isBot && ds && ds.qualifyingBestTime && ds.qualifyingBestTime > 0) {
             finalLapTime = ds.qualifyingBestTime;
             isCrashed = ds.qualifyingDnf || false;
             tyreCompound = ds.qualifyingBestCompound || setup.tyreCompound || "medium";
@@ -645,16 +668,16 @@ exports.scheduledQualifying = onSchedule({
         qualifyingResults: qualyResults,
         status: "qualifying",
         updatedAt: admin.firestore.FieldValue.serverTimestamp(),
-      }, {merge: true});
+      }, { merge: true });
 
       // Update pole stats
       const pole = qualyResults.find((r) => !r.isCrashed);
       if (pole) {
         const inc = admin.firestore.FieldValue.increment(1);
         await db.collection("drivers")
-            .doc(pole.driverId).update({poles: inc});
+          .doc(pole.driverId).update({ poles: inc });
         await db.collection("teams")
-            .doc(pole.teamId).update({poles: inc});
+          .doc(pole.teamId).update({ poles: inc });
 
         /*
         await addPressNews(lId, {
@@ -710,10 +733,10 @@ exports.scheduledRace = onSchedule({
 
   try {
     const uDoc = await db.collection("universe")
-        .doc("game_universe_v1").get();
+      .doc("game_universe_v1").get();
     if (!uDoc.exists) return;
     const leagues = Object.values(
-        uDoc.data().activeLeagues || {},
+      uDoc.data().activeLeagues || {},
     );
 
     let leagueIdx = 0;
@@ -729,13 +752,13 @@ exports.scheduledRace = onSchedule({
       const season = sDoc.data();
 
       const rIdx = (season.calendar || [])
-          .findIndex((r) => !r.isCompleted);
+        .findIndex((r) => !r.isCompleted);
       if (rIdx === -1) continue;
       const rEvent = season.calendar[rIdx];
 
       const raceDocId = `${sId}_${rEvent.id}`;
       const rSnap = await db.collection("races")
-          .doc(raceDocId).get();
+        .doc(raceDocId).get();
 
       if (!rSnap.exists || !rSnap.data().qualyGrid) {
         logger.warn(`No qualy grid: ${raceDocId}`);
@@ -762,15 +785,15 @@ exports.scheduledRace = onSchedule({
       for (let gi = 0; gi < grid.length; gi++) {
         const g = grid[gi];
         const dDoc = await db.collection("drivers")
-            .doc(g.driverId).get();
+          .doc(g.driverId).get();
         if (!dDoc.exists) continue;
-        const dData = {...dDoc.data(), id: g.driverId};
+        const dData = { ...dDoc.data(), id: g.driverId };
         dData.carIndex = gi % 2; // 0 or 1 per team
         driversMap[g.driverId] = dData;
 
         // Resolve race setup
         const team = teamsMap[g.teamId] || {};
-        let su = {...DEFAULT_SETUP};
+        let su = { ...DEFAULT_SETUP };
 
         if (team.isBot) {
           const ideal = circuit.idealSetup;
@@ -790,11 +813,33 @@ exports.scheduledRace = onSchedule({
           const ws = team.weekStatus || {};
           const ds = (ws.driverSetups || {})[g.driverId];
           if (ds && ds.isSetupSent && ds.race) {
-            su = {...DEFAULT_SETUP, ...ds.race};
+            su = { ...DEFAULT_SETUP, ...ds.race };
           }
         }
+
+        if (dData.isTransferListed) {
+          const ySnap = await db.collection("teams").doc(team.id)
+            .collection("academy").doc("config")
+            .collection("selected").limit(1).get();
+          if (!ySnap.empty) {
+            const yData = ySnap.docs[0].data();
+            dData.name = yData.name + " (Academy)";
+            const base = yData.baseSkill || 50;
+            dData.stats = {
+              braking: base, cornering: base, smoothness: base,
+              overtaking: base, consistency: base, adaptability: base,
+              focus: base, feedback: base, fitness: 100,
+              morale: 100, marketability: 30
+            };
+          } else {
+            dData.stats = { braking: 1, cornering: 1, smoothness: 1, overtaking: 1, consistency: 1, adaptability: 1, focus: 1, feedback: 1, fitness: 1 };
+          }
+          su = { ...DEFAULT_SETUP, frontWing: 50, rearWing: 50, suspension: 50, gearRatio: 50, raceStyle: "defensive", pitStops: ["hard"], pitStopFuel: [50] };
+        }
+
         // Override tyreCompound with qualy best
         su.tyreCompound = g.tyreCompound || "medium";
+        if (dData.isTransferListed) su.tyreCompound = "hard";
         setupsMap[g.driverId] = su;
       }
 
@@ -817,7 +862,7 @@ exports.scheduledRace = onSchedule({
 
       // Calculate live duration for frontend
       const avgQualyTime = grid.reduce(
-          (s, g) => s + (g.lapTime < 900 ? g.lapTime : 0), 0,
+        (s, g) => s + (g.lapTime < 900 ? g.lapTime : 0), 0,
       ) / grid.filter((g) => g.lapTime < 900).length;
       const liveDurationSec = avgQualyTime * circuit.laps;
 
@@ -859,7 +904,7 @@ exports.scheduledRace = onSchedule({
 
       // --- POINTS & STATS ---
       const sorted = Object.keys(result.finalPositions)
-          .sort((a, b) => result.finalPositions[a] -
+        .sort((a, b) => result.finalPositions[a] -
           result.finalPositions[b]);
 
       const teamPointsAccum = {};
@@ -875,7 +920,7 @@ exports.scheduledRace = onSchedule({
         const inc = admin.firestore.FieldValue.increment;
 
         const dRef = db.collection("drivers").doc(did);
-        const du = {races: inc(1), seasonRaces: inc(1)};
+        const du = { races: inc(1), seasonRaces: inc(1) };
         if (pts > 0) {
           du.points = inc(pts);
           du.seasonPoints = inc(pts);
@@ -942,10 +987,10 @@ exports.scheduledRace = onSchedule({
 
       // Update season calendar
       const updCal = [...season.calendar];
-      updCal[rIdx] = {...updCal[rIdx], isCompleted: true};
+      updCal[rIdx] = { ...updCal[rIdx], isCompleted: true };
       statsBatch.update(
-          db.collection("seasons").doc(sId),
-          {calendar: updCal},
+        db.collection("seasons").doc(sId),
+        { calendar: updCal },
       );
 
       await statsBatch.commit();
@@ -982,7 +1027,7 @@ exports.scheduledRace = onSchedule({
         const ep = teamPointsAccum[tid] || 0;
         const earn = BASE_PRIZE + ep * POINT_VALUE;
         const lines = drivers.map(
-            (d) => `${d.name}: ${d.pos} (+${d.pts} pts)`,
+          (d) => `${d.name}: ${d.pos} (+${d.pts} pts)`,
         ).join("\n");
         await addOfficeNews(tid, {
           title: `Race Results: ${rEvent.trackName}`,
@@ -997,7 +1042,7 @@ exports.scheduledRace = onSchedule({
       // checks this timestamp
       await raceRef.update({
         postRaceProcessingAt: new Date(
-            Date.now() + 60 * 60 * 1000,
+          Date.now() + 60 * 60 * 1000,
         ),
       });
 
@@ -1021,9 +1066,9 @@ exports.postRaceProcessing = onSchedule({
     const now = new Date();
     // Find races that need post-processing
     const racesSnap = await db.collection("races")
-        .where("isFinished", "==", true)
-        .where("postRaceProcessed", "==", null)
-        .get();
+      .where("isFinished", "==", true)
+      .where("postRaceProcessed", "==", null)
+      .get();
 
     for (const rDoc of racesSnap.docs) {
       const rd = rDoc.data();
@@ -1042,7 +1087,7 @@ exports.postRaceProcessing = onSchedule({
 
       for (const did of driverIds) {
         const dDoc = await db.collection("drivers")
-            .doc(did).get();
+          .doc(did).get();
         if (dDoc.exists) {
           teamIdsSet.add(dDoc.data().teamId);
         }
@@ -1072,15 +1117,15 @@ exports.postRaceProcessing = onSchedule({
       // AI team upgrades (30% chance per stat)
       for (const tid of teamIdsSet) {
         const tDoc = await db.collection("teams")
-            .doc(tid).get();
+          .doc(tid).get();
         if (!tDoc.exists) continue;
         const team = tDoc.data();
         if (!team.isBot) continue;
 
-        const cs = {...(team.carStats || {})};
+        const cs = { ...(team.carStats || {}) };
         let upgraded = false;
         for (const key of ["0", "1"]) {
-          const st = {...(cs[key] || {})};
+          const st = { ...(cs[key] || {}) };
           if (Math.random() < 0.3) {
             st.aero = (st.aero || 1) + 1;
             upgraded = true;
@@ -1097,7 +1142,7 @@ exports.postRaceProcessing = onSchedule({
         }
         if (upgraded) {
           await db.collection("teams").doc(tid)
-              .update({carStats: cs});
+            .update({ carStats: cs });
         }
       }
 
@@ -1146,7 +1191,7 @@ exports.scheduledDailyFitnessRecovery = onSchedule({
       const currentFitness = stats.fitness || 50;
 
       if (currentFitness < 100) {
-        const newFitness = Math.min(100, currentFitness + 2);
+        const newFitness = Math.min(100, currentFitness + 10);
 
         currentBatch.update(doc.ref, {
           "stats.fitness": newFitness,
@@ -1173,5 +1218,126 @@ exports.scheduledDailyFitnessRecovery = onSchedule({
     logger.info(`=== DAILY FITNESS RECOVERY COMPLETE. Batches: ${batches.length} ===`);
   } catch (error) {
     logger.error("Error in scheduledDailyFitnessRecovery:", error);
+  }
+});
+
+// ─────────────────────────────────────────────
+// 9. SCHEDULED TRANSFER MARKET RESOLVER (Hourly)
+// ─────────────────────────────────────────────
+exports.resolveTransferMarket = onSchedule({
+  schedule: "0 * * * *",
+  timeZone: "America/Bogota",
+  memory: "512MiB",
+  timeoutSeconds: 300,
+}, async () => {
+  logger.info("=== TRANSFER MARKET RESOLVER START ===");
+
+  try {
+    const now = admin.firestore.Timestamp.now();
+    // 24 hours ago
+    const yesterday = new Date(now.toDate().getTime() - (24 * 60 * 60 * 1000));
+    const yesterdayTs = admin.firestore.Timestamp.fromDate(yesterday);
+
+    const driversRef = db.collection("drivers");
+    const snapshot = await driversRef
+      .where("isTransferListed", "==", true)
+      .where("transferListedAt", "<=", yesterdayTs)
+      .get();
+
+    if (snapshot.empty) {
+      logger.info("No expired transfer listings found.");
+      return;
+    }
+
+    const batches = [];
+    let currentBatch = db.batch();
+    let opCount = 0;
+
+    for (const doc of snapshot.docs) {
+      const driver = doc.data();
+
+      const highestBid = driver.currentHighestBid || 0;
+      const highestBidderId = driver.highestBidderTeamId;
+      const originalTeamId = driver.teamId;
+
+      if (highestBid > 0 && highestBidderId) {
+        // Driver Sold
+
+        // Transfer driver to new team
+        currentBatch.update(doc.ref, {
+          isTransferListed: false,
+          transferListedAt: admin.firestore.FieldValue.delete(),
+          currentHighestBid: admin.firestore.FieldValue.delete(),
+          highestBidderTeamId: admin.firestore.FieldValue.delete(),
+          teamId: highestBidderId,
+          salary: Math.max(driver.salary || 100000, 100000), // maintain or set default
+          contractYearsRemaining: 1, // standard 1 year after transfer
+        });
+        opCount++;
+
+        // Give money to original team if it exists
+        if (originalTeamId) {
+          const sellerRef = db.collection("teams").doc(originalTeamId);
+          currentBatch.update(sellerRef, {
+            budget: admin.firestore.FieldValue.increment(highestBid),
+          });
+          opCount++;
+
+          // Notify Seller
+          await addOfficeNews(originalTeamId, {
+            title: "Driver Sold",
+            message: `${driver.name} was successfully sold in the transfer market for $${highestBid.toLocaleString()}.`,
+            type: "TRANSFER_SOLD",
+          });
+        }
+
+        // Notify Buyer
+        await addOfficeNews(highestBidderId, {
+          title: "Transfer Bid Won",
+          message: `You won the bid for ${driver.name} for $${highestBid.toLocaleString()}! They have joined your team.`,
+          type: "TRANSFER_WON",
+        });
+
+      } else {
+        // Driver Unsold
+        currentBatch.update(doc.ref, {
+          isTransferListed: false,
+          transferListedAt: admin.firestore.FieldValue.delete(),
+          currentHighestBid: admin.firestore.FieldValue.delete(),
+          highestBidderTeamId: admin.firestore.FieldValue.delete(),
+        });
+        opCount++;
+
+        if (originalTeamId) {
+          // Notify Seller
+          await addOfficeNews(originalTeamId, {
+            title: "Driver Unsold",
+            message: `Nobody bid on ${driver.name} in the transfer market. They remain in your team.`,
+            type: "TRANSFER_UNSOLD",
+          });
+        } else {
+          // If it was generated and no one bought him, he just hangs in the pool or we delete?
+          // Deleting keeps the pool clean from unsold admin generated drivers
+          currentBatch.delete(doc.ref);
+          opCount++;
+        }
+      }
+
+      if (opCount >= 400) {
+        batches.push(currentBatch.commit());
+        currentBatch = db.batch();
+        opCount = 0;
+      }
+    }
+
+    if (opCount > 0) {
+      batches.push(currentBatch.commit());
+    }
+
+    await Promise.all(batches);
+
+    logger.info(`=== TRANSFER MARKET RESOLVER COMPLETE. Batches: ${batches.length} ===`);
+  } catch (error) {
+    logger.error("Error in resolveTransferMarket:", error);
   }
 });

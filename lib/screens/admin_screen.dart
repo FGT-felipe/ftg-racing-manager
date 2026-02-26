@@ -5,6 +5,7 @@ import '../services/database_seeder.dart';
 import '../services/driver_assignment_service.dart';
 import '../services/team_assignment_service.dart';
 import '../services/universe_service.dart';
+import '../services/transfer_market_service.dart';
 import '../models/domain/domain_models.dart';
 
 class AdminScreen extends StatefulWidget {
@@ -331,6 +332,55 @@ class _AdminScreenState extends State<AdminScreen> {
                 style: ElevatedButton.styleFrom(
                   backgroundColor: Colors.greenAccent,
                   foregroundColor: Colors.black,
+                  padding: const EdgeInsets.symmetric(vertical: 16),
+                ),
+              ),
+            ),
+            const SizedBox(height: 32),
+            const Text(
+              "TRANSFER MARKET",
+              style: TextStyle(
+                fontSize: 18,
+                fontWeight: FontWeight.bold,
+                color: Colors.blueAccent,
+              ),
+            ),
+            const SizedBox(height: 16),
+            const Text(
+              "Populates the transfer market with new randomly generated drivers.",
+              style: TextStyle(color: Colors.grey, fontSize: 13),
+            ),
+            const SizedBox(height: 16),
+            SizedBox(
+              width: double.infinity,
+              child: ElevatedButton.icon(
+                onPressed: _isProcessing
+                    ? null
+                    : () async {
+                        setState(() => _isProcessing = true);
+                        try {
+                          await TransferMarketService()
+                              .generateAdminMarketDrivers(50);
+                          if (mounted)
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              const SnackBar(
+                                content: Text("50 Drivers added to market!"),
+                              ),
+                            );
+                        } catch (e) {
+                          if (mounted)
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              SnackBar(content: Text("Error: $e")),
+                            );
+                        } finally {
+                          if (mounted) setState(() => _isProcessing = false);
+                        }
+                      },
+                icon: const Icon(Icons.people),
+                label: const Text("GENERATE 50 MARKET DRIVERS"),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Colors.blueAccent,
+                  foregroundColor: Colors.white,
                   padding: const EdgeInsets.symmetric(vertical: 16),
                 ),
               ),
