@@ -1,5 +1,6 @@
 import 'package:cloud_firestore/cloud_firestore.dart' hide Transaction;
 import 'package:flutter/widgets.dart';
+import 'notification_service.dart';
 import '../models/core_models.dart';
 import '../models/user_models.dart';
 import '../models/domain/domain_models.dart';
@@ -166,6 +167,15 @@ class YouthAcademyService {
     batch.set(_selectedRef(teamId).doc(candidateId), selectedDriver.toMap());
     batch.delete(_candidatesRef(teamId).doc(candidateId));
     await batch.commit();
+
+    // Add "Office News" notification
+    await NotificationService().addNotification(
+      teamId: teamId,
+      title: "New Academy Driver",
+      message: "The prospect ${candidate.name} has been signed to the academy.",
+      type: 'SUCCESS',
+      actionRoute: '/hq/academy',
+    );
 
     // Record salary transaction
     final teamRef = _db.collection('teams').doc(teamId);

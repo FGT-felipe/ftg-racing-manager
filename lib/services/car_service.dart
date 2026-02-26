@@ -1,4 +1,5 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'notification_service.dart';
 import '../models/user_models.dart';
 
 class CarService {
@@ -133,6 +134,16 @@ class CarService {
         'date': DateTime.now().toIso8601String(),
         'type': 'UPGRADE',
       });
+
+      // Add "Office News" notification
+      await NotificationService().addNotification(
+        teamId: teamId,
+        title: "Car Updated",
+        message:
+            "Upgraded $partKey to LVL $newLevel on ${carIndex == 0 ? 'Car A' : 'Car B'}.",
+        type: 'SUCCESS',
+        actionRoute: '/engineering',
+      );
     });
   }
 }

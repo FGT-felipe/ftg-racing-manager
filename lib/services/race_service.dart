@@ -4,6 +4,7 @@ import '../models/core_models.dart';
 import '../models/simulation_models.dart';
 import '../services/circuit_service.dart';
 import '../services/season_service.dart';
+import '../services/notification_service.dart';
 
 class RaceService {
   static final RaceService _instance = RaceService._internal();
@@ -192,6 +193,19 @@ class RaceService {
               await tRef.update({
                 'weekStatus.driverSetups.$dId.qualifyingBestCompound': compound,
               });
+
+              // Add "Office News" notification for human teams
+              final pos =
+                  qualyResults.indexWhere((r) => r['driverId'] == dId) + 1;
+              final driverName = res['driverName'] as String;
+              await NotificationService().addNotification(
+                teamId: tId,
+                title: "Qualifying Finished",
+                message:
+                    "$driverName qualified P$pos for the ${currentRace.trackName}!",
+                type: 'NEWS',
+                actionRoute: '/race_week/garage',
+              );
             }
           }
         }
@@ -1468,6 +1482,52 @@ class RaceService {
 
       if (!team.isBot) {
         playerEarnings = earnings;
+
+        // Add "Office News" notifications for human teams
+        // 1. Race Result Notification for each driver
+        for (int i = 0; i < sortedDriverIds.length; i++) {
+          final dId = sortedDriverIds[i];
+          if (driverTeamIds[dId] == teamId) {
+            final driverName =
+                (await _db.collection('drivers').doc(dId).get())
+                    .data()?['name'] ??
+                "Driver";
+            final pos = i + 1;
+            await NotificationService().addNotification(
+              teamId: teamId,
+              title: "Race Result: $driverName",
+              message:
+                  "$driverName finished P$pos in the ${currentRace.trackName}.",
+              type: pos <= 3 ? 'SUCCESS' : 'NEWS',
+              actionRoute: '/standings',
+            );
+
+            // 2. Expiring Contract Check (1 race remaining)
+            final driverDoc = await _db.collection('drivers').doc(dId).get();
+            final contractRemaining =
+                driverDoc.data()?['contractYearsRemaining'] ?? 0;
+            if (contractRemaining == 1) {
+              await NotificationService().addNotification(
+                teamId: teamId,
+                title: "Contract Expiring",
+                message:
+                    "The contract for $driverName has only 1 race remaining. Consider renewing!",
+                type: 'ALERT',
+                actionRoute: '/drivers',
+              );
+            }
+          }
+        }
+
+        // 3. Weekly Summary Notification
+        await NotificationService().addNotification(
+          teamId: teamId,
+          title: "Weekly Summary",
+          message:
+              "The race week is over. Total earnings: \$${(earnings / 1000).toStringAsFixed(0)}k. Week status has been reset.",
+          type: 'NEWS',
+          actionRoute: '/',
+        );
       }
     }
 

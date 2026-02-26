@@ -1487,7 +1487,7 @@ abstract class AppLocalizations {
   /// No description provided for @ftgSlogan.
   ///
   /// In en, this message translates to:
-  /// **'Ftg Slogan'**
+  /// **'Your team, your strategy, your glory.'**
   String get ftgSlogan;
 
   /// No description provided for @alreadyHaveAccount.

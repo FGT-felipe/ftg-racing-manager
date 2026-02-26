@@ -7,7 +7,6 @@ import '../../models/user_models.dart';
 import '../../services/auth_service.dart';
 import '../../services/driver_assignment_service.dart';
 import '../../services/universe_service.dart';
-import '../../widgets/car_selector.dart';
 import '../../l10n/app_localizations.dart';
 
 class TeamScreen extends StatefulWidget {
@@ -26,7 +25,6 @@ class _TeamScreenState extends State<TeamScreen> {
   String _currentName = '';
   int _nameChangeCount = 0;
   ManagerProfile? _managerProfile;
-  int _liveryIndex = 0;
 
   @override
   void initState() {
@@ -52,7 +50,6 @@ class _TeamScreenState extends State<TeamScreen> {
         _currentName = data['name'] ?? '';
         _nameController.text = _currentName;
         _nameChangeCount = data['nameChangeCount'] ?? 0;
-        _liveryIndex = data['liveryIndex'] ?? 0;
       });
     }
   }
@@ -780,127 +777,6 @@ class _TeamScreenState extends State<TeamScreen> {
         ),
       ),
     );
-  }
-
-  Widget _buildLiveryCard(BuildContext context) {
-    final theme = Theme.of(context);
-    final accentColor = theme.colorScheme.secondary;
-
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        gradient: const LinearGradient(
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-          colors: [Color(0xFF1E1E1E), Color(0xFF0A0A0A)],
-        ),
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(
-          color: Colors.white.withValues(alpha: 0.1),
-          width: 1,
-        ),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.4),
-            blurRadius: 12,
-            offset: const Offset(0, 6),
-          ),
-        ],
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          // Header
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Text(
-                AppLocalizations.of(context).teamLiveryTitle,
-                style: GoogleFonts.poppins(
-                  fontSize: 12,
-                  fontWeight: FontWeight.w900,
-                  color: accentColor,
-                  letterSpacing: 1.2,
-                ),
-              ),
-              Container(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 10,
-                  vertical: 4,
-                ),
-                decoration: BoxDecoration(
-                  color: accentColor.withValues(alpha: 0.1),
-                  borderRadius: BorderRadius.circular(12),
-                  border: Border.all(color: accentColor.withValues(alpha: 0.2)),
-                ),
-                child: Text(
-                  AppLocalizations.of(context).selectYourColors,
-                  style: GoogleFonts.poppins(
-                    fontSize: 9,
-                    fontWeight: FontWeight.w700,
-                    color: accentColor.withValues(alpha: 0.8),
-                    letterSpacing: 0.8,
-                  ),
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 16),
-
-          // Car Selector Widget — fills remaining space
-          Expanded(
-            child: Center(
-              child: CarSelector(
-                assetPath: 'liverys/livery_map2.png',
-                columns: 6,
-                rows: 3,
-                initialIndex: _liveryIndex,
-                onChanged: (index) {
-                  setState(() => _liveryIndex = index);
-                  _saveLivery(index);
-                },
-              ),
-            ),
-          ),
-
-          const SizedBox(height: 12),
-          Divider(color: Colors.white.withValues(alpha: 0.08)),
-          const SizedBox(height: 8),
-
-          // Info
-          Row(
-            children: [
-              Icon(
-                Icons.palette_outlined,
-                size: 14,
-                color: Colors.white.withValues(alpha: 0.3),
-              ),
-              const SizedBox(width: 8),
-              Text(
-                AppLocalizations.of(context).liveryDescription,
-                style: GoogleFonts.raleway(
-                  fontSize: 11,
-                  fontWeight: FontWeight.w500,
-                  color: Colors.white.withValues(alpha: 0.4),
-                  fontStyle: FontStyle.italic,
-                ),
-              ),
-            ],
-          ),
-        ],
-      ),
-    );
-  }
-
-  Future<void> _saveLivery(int index) async {
-    try {
-      await FirebaseFirestore.instance
-          .collection('teams')
-          .doc(widget.teamId)
-          .update({'liveryIndex': index});
-    } catch (e) {
-      debugPrint('Error saving livery: $e');
-    }
   }
 
   Widget _buildManagerCard(BuildContext context) {

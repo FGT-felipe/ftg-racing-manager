@@ -1,5 +1,6 @@
 import 'dart:math';
-import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:cloud_firestore/cloud_firestore.dart' hide Transaction;
+import 'notification_service.dart';
 import '../models/core_models.dart';
 import '../models/user_models.dart';
 
@@ -336,6 +337,16 @@ class SponsorService {
         'date': DateTime.now().toIso8601String(),
         'type': 'SPONSOR',
       });
+
+      // Add "Office News" notification
+      await NotificationService().addNotification(
+        teamId: teamId,
+        title: "New Sponsor",
+        message:
+            "Signed a new contract with ${offer.name} for the ${slot.name} slot.",
+        type: 'SUCCESS',
+        actionRoute: '/sponsors',
+      );
     });
   }
 }
