@@ -329,7 +329,7 @@ class _TransferBudgetCardState extends State<_TransferBudgetCard> {
               NewBadgeWidget(
                 createdAt: DateTime.now(),
                 forceShow: true,
-                badgeAlignment: Alignment.topRight,
+                badgeAlignment: Alignment.topLeft,
                 child: Text(
                   "Transfer Market Budget",
                   style: TextStyle(
