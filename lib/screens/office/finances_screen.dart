@@ -5,6 +5,7 @@ import '../../services/finance_service.dart';
 import 'package:intl/intl.dart';
 import 'dart:math' as math;
 import '../../l10n/app_localizations.dart';
+import '../../widgets/common/new_badge.dart';
 
 class FinancesScreen extends StatelessWidget {
   final String teamId;
@@ -325,12 +326,17 @@ class _TransferBudgetCardState extends State<_TransferBudgetCard> {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Text(
-                "Transfer Market Budget",
-                style: TextStyle(
-                  color: Theme.of(context).colorScheme.secondary,
-                  fontWeight: FontWeight.bold,
-                  letterSpacing: 1.1,
+              NewBadgeWidget(
+                createdAt: DateTime.now(),
+                forceShow: true,
+                badgeAlignment: Alignment.topRight,
+                child: Text(
+                  "Transfer Market Budget",
+                  style: TextStyle(
+                    color: Theme.of(context).colorScheme.secondary,
+                    fontWeight: FontWeight.bold,
+                    letterSpacing: 1.1,
+                  ),
                 ),
               ),
               FilledButton.tonal(
