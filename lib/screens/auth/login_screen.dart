@@ -79,6 +79,7 @@ class _LoginScreenState extends State<LoginScreen> {
         );
       }
     } on FirebaseAuthException catch (e) {
+      if (!mounted) return;
       String message = AppLocalizations.of(context).authError(e.message ?? '');
       if (e.code == 'email-already-in-use') {
         message = AppLocalizations.of(context).emailAlreadyRegistered;

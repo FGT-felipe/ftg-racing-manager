@@ -795,7 +795,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get formulaTrackGlory => 'Formula Track Glory';
 
   @override
-  String get ftgSlogan => 'Ftg Slogan';
+  String get ftgSlogan => 'Your team, your strategy, your glory.';
 
   @override
   String get alreadyHaveAccount => 'Already Have Account';

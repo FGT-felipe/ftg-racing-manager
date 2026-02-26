@@ -205,7 +205,9 @@ class _CreateManagerScreenState extends State<CreateManagerScreen> {
                                     hint: Text(
                                       AppLocalizations.of(context).countryLabel,
                                       style: GoogleFonts.raleway(
-                                        color: Colors.white.withOpacity(0.5),
+                                        color: Colors.white.withValues(
+                                          alpha: 0.5,
+                                        ),
                                         fontWeight: FontWeight.w600,
                                       ),
                                     ),
@@ -269,7 +271,9 @@ class _CreateManagerScreenState extends State<CreateManagerScreen> {
                                     hint: Text(
                                       AppLocalizations.of(context).genderLabel,
                                       style: GoogleFonts.raleway(
-                                        color: Colors.white.withOpacity(0.5),
+                                        color: Colors.white.withValues(
+                                          alpha: 0.5,
+                                        ),
                                         fontWeight: FontWeight.w600,
                                       ),
                                     ),
@@ -385,7 +389,7 @@ class _CreateManagerScreenState extends State<CreateManagerScreen> {
                                 AppLocalizations.of(context).createManagerDesc,
                                 style: GoogleFonts.raleway(
                                   fontSize: 14,
-                                  color: Colors.white.withOpacity(0.5),
+                                  color: Colors.white.withValues(alpha: 0.5),
                                   fontStyle: FontStyle.italic,
                                 ),
                               ),
@@ -407,12 +411,12 @@ class _CreateManagerScreenState extends State<CreateManagerScreen> {
                                 border: Border.all(
                                   color: const Color(
                                     0xFF00C853,
-                                  ).withOpacity(0.3),
+                                  ).withValues(alpha: 0.3),
                                   width: 1,
                                 ),
                                 boxShadow: [
                                   BoxShadow(
-                                    color: Colors.black.withOpacity(0.3),
+                                    color: Colors.black.withValues(alpha: 0.3),
                                     blurRadius: 8,
                                     offset: const Offset(0, 4),
                                   ),
@@ -495,7 +499,7 @@ class _CreateManagerScreenState extends State<CreateManagerScreen> {
             )
           : null,
       labelStyle: GoogleFonts.raleway(
-        color: Colors.white.withOpacity(0.7),
+        color: Colors.white.withValues(alpha: 0.7),
         fontWeight: FontWeight.w500,
       ),
       floatingLabelStyle: GoogleFonts.raleway(
@@ -512,7 +516,7 @@ class _CreateManagerScreenState extends State<CreateManagerScreen> {
       ),
       enabledBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(12),
-        borderSide: BorderSide(color: Colors.white.withOpacity(0.1)),
+        borderSide: BorderSide(color: Colors.white.withValues(alpha: 0.1)),
       ),
       focusedBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(12),
@@ -545,12 +549,14 @@ class _CreateManagerScreenState extends State<CreateManagerScreen> {
               ),
               borderRadius: BorderRadius.circular(12),
               color: isSelected
-                  ? Theme.of(context).colorScheme.secondary.withOpacity(0.1)
+                  ? Theme.of(
+                      context,
+                    ).colorScheme.secondary.withValues(alpha: 0.1)
                   : null,
               border: Border.all(
                 color: isSelected
                     ? Theme.of(context).colorScheme.secondary
-                    : Colors.white.withOpacity(0.1),
+                    : Colors.white.withValues(alpha: 0.1),
                 width: 2,
               ),
             ),
@@ -587,7 +593,10 @@ class _CreateManagerScreenState extends State<CreateManagerScreen> {
           colors: [Color(0xFF1E1E1E), Color(0xFF0A0A0A)],
         ),
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: Colors.white.withOpacity(0.1), width: 1),
+        border: Border.all(
+          color: Colors.white.withValues(alpha: 0.1),
+          width: 1,
+        ),
       ),
       clipBehavior: Clip.antiAlias,
       child: Row(
@@ -595,9 +604,9 @@ class _CreateManagerScreenState extends State<CreateManagerScreen> {
           Container(
             width: 250,
             decoration: BoxDecoration(
-              color: Colors.white.withOpacity(0.03),
+              color: Colors.white.withValues(alpha: 0.03),
               border: Border(
-                right: BorderSide(color: Colors.white.withOpacity(0.1)),
+                right: BorderSide(color: Colors.white.withValues(alpha: 0.1)),
               ),
             ),
             child: ListView.builder(
@@ -619,14 +628,14 @@ class _CreateManagerScreenState extends State<CreateManagerScreen> {
                           : FontWeight.normal,
                       color: isSelected
                           ? Theme.of(context).colorScheme.secondary
-                          : Colors.white.withOpacity(0.7),
+                          : Colors.white.withValues(alpha: 0.7),
                     ),
                   ),
                   onTap: () => setState(() => _selectedRoleIndex = index),
                   selected: isSelected,
                   selectedTileColor: Theme.of(
                     context,
-                  ).colorScheme.secondary.withOpacity(0.05),
+                  ).colorScheme.secondary.withValues(alpha: 0.05),
                 );
               },
             ),
@@ -661,7 +670,7 @@ class _CreateManagerScreenState extends State<CreateManagerScreen> {
                             Text(
                               selectedRole['desc'],
                               style: GoogleFonts.raleway(
-                                color: Colors.white.withOpacity(0.7),
+                                color: Colors.white.withValues(alpha: 0.7),
                                 fontStyle: FontStyle.italic,
                               ),
                             ),
@@ -708,8 +717,8 @@ class _CreateManagerScreenState extends State<CreateManagerScreen> {
                                           style: GoogleFonts.raleway(
                                             fontSize: 13,
                                             fontWeight: FontWeight.w500,
-                                            color: Colors.white.withOpacity(
-                                              0.9,
+                                            color: Colors.white.withValues(
+                                              alpha: 0.9,
                                             ),
                                           ),
                                         ),

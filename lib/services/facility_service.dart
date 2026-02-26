@@ -1,5 +1,6 @@
 import 'package:cloud_firestore/cloud_firestore.dart' hide Transaction;
 import '../models/core_models.dart';
+import 'notification_service.dart';
 import '../models/user_models.dart';
 
 class FacilityService {
@@ -60,6 +61,16 @@ class FacilityService {
         type: 'UPGRADE',
       );
       transaction.set(transRef, trans.toMap());
+
+      // Add "Office News" notification
+      await NotificationService().addNotification(
+        teamId: team.id,
+        title: "Facility Upgraded",
+        message:
+            "${facility.name} has been upgraded to level ${updatedFacility.level}.",
+        type: 'SUCCESS',
+        actionRoute: '/hq',
+      );
     });
   }
 

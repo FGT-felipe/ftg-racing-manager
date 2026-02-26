@@ -4,6 +4,7 @@ import '../../models/core_models.dart';
 import '../../services/driver_assignment_service.dart';
 import '../../services/universe_service.dart';
 import '../../services/season_service.dart';
+import '../../services/notification_service.dart';
 import 'widgets/driver_card.dart';
 import '../../l10n/app_localizations.dart';
 
@@ -122,6 +123,14 @@ class _DriversScreenState extends State<DriversScreen> {
                     ),
                   ),
                 );
+                NotificationService().addNotification(
+                  teamId: widget.teamId,
+                  title: "Contract Renewed",
+                  message:
+                      "The contract for ${driver.name} has been renewed successfully.",
+                  type: 'SUCCESS',
+                  actionRoute: '/drivers',
+                );
               },
               onFire: () {
                 ScaffoldMessenger.of(context).showSnackBar(
@@ -132,6 +141,13 @@ class _DriversScreenState extends State<DriversScreen> {
                       ).firingDriverSimulated(driver.name),
                     ),
                   ),
+                );
+                NotificationService().addNotification(
+                  teamId: widget.teamId,
+                  title: "Driver Fired",
+                  message: "${driver.name} has been fired from the team.",
+                  type: 'ALERT',
+                  actionRoute: '/drivers',
                 );
               },
             );

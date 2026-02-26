@@ -7,6 +7,7 @@ import '../../models/user_models.dart';
 import '../../models/simulation_models.dart';
 import '../../services/driver_assignment_service.dart';
 import '../../services/race_service.dart';
+import '../../services/notification_service.dart';
 import '../../services/season_service.dart';
 import '../../services/driver_development_service.dart';
 import '../../services/circuit_service.dart';
@@ -1286,6 +1287,18 @@ class _GarageScreenState extends State<GarageScreen>
           ),
         );
       }
+
+      // Add "Office News" notification
+      final driverName = _drivers
+          .firstWhere((d) => d.id == _selectedDriverId)
+          .name;
+      NotificationService().addNotification(
+        teamId: widget.teamId,
+        title: "Setup Submitted",
+        message: "Race setup for $driverName has been submitted and locked.",
+        type: 'SUCCESS',
+        actionRoute: '/race_week/garage',
+      );
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
