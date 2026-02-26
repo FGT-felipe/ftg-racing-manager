@@ -136,6 +136,7 @@
   "fastest": "EL MÁS RÁPIDO",
   "garagePracticeClosedRace": "PRÁCTICA CERRADA: La configuración de carrera ha sido enviada.",
   "garagePracticeClosedQualy": "PRÁCTICA CERRADA: La sesión de clasificación ha comenzado.",
+  "garageQualyClosedRace": "CLASIFICACIÓN CERRADA: La configuración de carrera ha sido enviada.",
   "garageQualyIntro": "Configura tu monoplaza para clasificación y realiza intentos para marcar el mejor tiempo. Intentos máx: {total}",
   "garageRaceStrategyStintTips": "Optimiza la carga de combustible, los neumáticos y la agresividad para cada stint.",
   "setupTyreCompound": "Compuesto de Neumático",

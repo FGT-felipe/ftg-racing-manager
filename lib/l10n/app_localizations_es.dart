@@ -471,6 +471,10 @@ class AppLocalizationsEs extends AppLocalizations {
       'PRÁCTICA CERRADA: La sesión de clasificación ha comenzado.';
 
   @override
+  String get garageQualyClosedRace =>
+      'CLASIFICACIÓN CERRADA: La configuración de carrera ha sido enviada.';
+
+  @override
   String garageQualyIntro(int total) {
     return 'Configura tu monoplaza para clasificación y realiza intentos para marcar el mejor tiempo. Intentos máx: $total';
   }

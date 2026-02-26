@@ -17,7 +17,7 @@ import 'screens/admin_screen.dart';
 
 import 'config/game_config.dart';
 import 'services/database_seeder.dart';
-import 'services/academy_migration.dart';
+// import 'services/academy_migration.dart';
 
 void main() async {
   if (kReleaseMode) {
@@ -30,11 +30,15 @@ void main() async {
   await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
 
   // Run one-time migration for academy sync
+  // MIGRATION COMPLETED: Commented out to prevent permission errors on hot reload
+  // and unnecessary database calls on startup.
+  /*
   try {
     await syncAcademyLevels();
   } catch (e) {
     debugPrint("Failed to sync academies: $e");
   }
+  */
 
   // Check for automatic database reset via configuration
   if (GameConfig.shouldReset) {
