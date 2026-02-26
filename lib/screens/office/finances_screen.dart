@@ -311,26 +311,26 @@ class _TransferBudgetCardState extends State<_TransferBudgetCard> {
     final availableTransfers = (widget.totalBudget * (_currentValue / 100))
         .round();
 
-    return Container(
-      padding: const EdgeInsets.all(20),
-      decoration: BoxDecoration(
-        color: const Color(0xFF15151A),
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(
-          color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.2),
+    return NewBadgeWidget(
+      createdAt: DateTime.now(),
+      forceShow: true,
+      badgeAlignment: Alignment.bottomRight,
+      child: Container(
+        padding: const EdgeInsets.all(20),
+        decoration: BoxDecoration(
+          color: const Color(0xFF15151A),
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(
+            color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.2),
+          ),
         ),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              NewBadgeWidget(
-                createdAt: DateTime.now(),
-                forceShow: true,
-                badgeAlignment: Alignment.topLeft,
-                child: Text(
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Text(
                   "Transfer Market Budget",
                   style: TextStyle(
                     color: Theme.of(context).colorScheme.secondary,
@@ -338,51 +338,51 @@ class _TransferBudgetCardState extends State<_TransferBudgetCard> {
                     letterSpacing: 1.1,
                   ),
                 ),
-              ),
-              FilledButton.tonal(
-                onPressed: _currentValue.toInt() == widget.initialPercentage
-                    ? null
-                    : _onSave,
-                style: FilledButton.styleFrom(
-                  visualDensity: VisualDensity.compact,
+                FilledButton.tonal(
+                  onPressed: _currentValue.toInt() == widget.initialPercentage
+                      ? null
+                      : _onSave,
+                  style: FilledButton.styleFrom(
+                    visualDensity: VisualDensity.compact,
+                  ),
+                  child: const Text("Save"),
                 ),
-                child: const Text("Save"),
-              ),
-            ],
-          ),
-          const SizedBox(height: 16),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Text("Allocated: ${_currentValue.toInt()}%"),
-              Text(
-                FinanceService().formatCurrency(
-                  math.max(0, availableTransfers),
+              ],
+            ),
+            const SizedBox(height: 16),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Text("Allocated: ${_currentValue.toInt()}%"),
+                Text(
+                  FinanceService().formatCurrency(
+                    math.max(0, availableTransfers),
+                  ),
+                  style: const TextStyle(
+                    fontWeight: FontWeight.bold,
+                    color: Colors.greenAccent,
+                  ),
                 ),
-                style: const TextStyle(
-                  fontWeight: FontWeight.bold,
-                  color: Colors.greenAccent,
-                ),
-              ),
-            ],
-          ),
-          Slider(
-            value: _currentValue,
-            min: 10,
-            max: 90,
-            divisions: 80,
-            activeColor: Theme.of(context).colorScheme.primary,
-            onChanged: (val) {
-              setState(() {
-                _currentValue = val;
-              });
-            },
-          ),
-          const Text(
-            "Set the maximum percentage of your total balance available for placing bids. (10% - 90%)",
-            style: TextStyle(fontSize: 10, color: Colors.grey),
-          ),
-        ],
+              ],
+            ),
+            Slider(
+              value: _currentValue,
+              min: 10,
+              max: 90,
+              divisions: 80,
+              activeColor: Theme.of(context).colorScheme.primary,
+              onChanged: (val) {
+                setState(() {
+                  _currentValue = val;
+                });
+              },
+            ),
+            const Text(
+              "Set the maximum percentage of your total balance available for placing bids. (10% - 90%)",
+              style: TextStyle(fontSize: 10, color: Colors.grey),
+            ),
+          ],
+        ),
       ),
     );
   }
