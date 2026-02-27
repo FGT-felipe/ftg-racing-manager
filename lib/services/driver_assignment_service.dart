@@ -167,7 +167,17 @@ class DriverAssignmentService {
     final league = universe.getLeagueById(leagueId);
     if (league == null) return [];
 
-    return league.drivers;
+    final driverIds = league.drivers.map((d) => d.id).toList();
+    if (driverIds.isEmpty) return [];
+
+    final snapshot = await _db
+        .collection('drivers')
+        .where(FieldPath.documentId, whereIn: driverIds)
+        .get();
+
+    return snapshot.docs
+        .map((doc) => Driver.fromMap({...doc.data(), 'id': doc.id}))
+        .toList();
   }
 
   /// Elimina todos los pilotos (útil para testing/debugging)

@@ -1739,13 +1739,13 @@ abstract class AppLocalizations {
   /// No description provided for @eventHeader.
   ///
   /// In en, this message translates to:
-  /// **'Event Header'**
+  /// **'EVENT'**
   String get eventHeader;
 
   /// No description provided for @qHeader.
   ///
   /// In en, this message translates to:
-  /// **'Q Header'**
+  /// **'Q'**
   String get qHeader;
 
   /// No description provided for @rHeader.
@@ -1769,19 +1769,19 @@ abstract class AppLocalizations {
   /// No description provided for @yearHeader.
   ///
   /// In en, this message translates to:
-  /// **'Year Header'**
+  /// **'YEAR'**
   String get yearHeader;
 
   /// No description provided for @teamHeader.
   ///
   /// In en, this message translates to:
-  /// **'Team Header'**
+  /// **'TEAM'**
   String get teamHeader;
 
   /// No description provided for @seriesHeader.
   ///
   /// In en, this message translates to:
-  /// **'Series Header'**
+  /// **'SERIES'**
   String get seriesHeader;
 
   /// No description provided for @wHeader.
@@ -1799,7 +1799,7 @@ abstract class AppLocalizations {
   /// No description provided for @noDataAvailableYet.
   ///
   /// In en, this message translates to:
-  /// **'No Data Available Yet'**
+  /// **'No data yet'**
   String get noDataAvailableYet;
 
   /// No description provided for @historyLowerDivision.

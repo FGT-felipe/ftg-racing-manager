@@ -6,8 +6,6 @@ class DriverPortraitService {
   factory DriverPortraitService() => _instance;
   DriverPortraitService._internal();
 
-  final Random _random = Random();
-
   /// List of male driver image names (a-l)
   static const List<String> _maleImages = [
     'male_driver_a.png',
@@ -48,12 +46,14 @@ class DriverPortraitService {
     int? age,
   }) {
     final isFemale = gender.toLowerCase().startsWith('f');
+    final seed = driverId.hashCode;
+    final random = Random(seed);
 
     if (isFemale) {
-      final imageName = _femaleImages[_random.nextInt(_femaleImages.length)];
+      final imageName = _femaleImages[random.nextInt(_femaleImages.length)];
       return 'drivers/female/$imageName';
     } else {
-      final imageName = _maleImages[_random.nextInt(_maleImages.length)];
+      final imageName = _maleImages[random.nextInt(_maleImages.length)];
       return 'drivers/male/$imageName';
     }
   }

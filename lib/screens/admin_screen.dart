@@ -365,7 +365,7 @@ class _AdminScreenState extends State<AdminScreen> {
                           try {
                             await TransferMarketService()
                                 .generateAdminMarketDrivers(50);
-                            if (mounted) {
+                            if (context.mounted) {
                               ScaffoldMessenger.of(context).showSnackBar(
                                 const SnackBar(
                                   content: Text("50 Drivers added to market!"),
@@ -373,10 +373,11 @@ class _AdminScreenState extends State<AdminScreen> {
                               );
                             }
                           } catch (e) {
-                            if (mounted)
+                            if (context.mounted) {
                               ScaffoldMessenger.of(context).showSnackBar(
                                 SnackBar(content: Text("Error: $e")),
                               );
+                            }
                           } finally {
                             if (mounted) setState(() => _isProcessing = false);
                           }
@@ -433,7 +434,7 @@ class _AdminScreenState extends State<AdminScreen> {
                           try {
                             await TransferMarketService()
                                 .clearAdminMarketDrivers();
-                            if (mounted) {
+                            if (context.mounted) {
                               ScaffoldMessenger.of(context).showSnackBar(
                                 const SnackBar(
                                   content: Text("Admin drivers cleared!"),
@@ -441,10 +442,11 @@ class _AdminScreenState extends State<AdminScreen> {
                               );
                             }
                           } catch (e) {
-                            if (mounted)
+                            if (context.mounted) {
                               ScaffoldMessenger.of(context).showSnackBar(
                                 SnackBar(content: Text("Error: $e")),
                               );
+                            }
                           } finally {
                             if (mounted) setState(() => _isProcessing = false);
                           }
@@ -517,7 +519,7 @@ class _AdminScreenState extends State<AdminScreen> {
                           setState(() => _isProcessing = true);
                           try {
                             await FinanceService().applyGreatRebalanceTax();
-                            if (mounted) {
+                            if (context.mounted) {
                               ScaffoldMessenger.of(context).showSnackBar(
                                 const SnackBar(
                                   content: Text("Economic Rebalance Applied!"),
@@ -526,7 +528,7 @@ class _AdminScreenState extends State<AdminScreen> {
                               );
                             }
                           } catch (e) {
-                            if (mounted) {
+                            if (context.mounted) {
                               ScaffoldMessenger.of(context).showSnackBar(
                                 SnackBar(
                                   content: Text("Error: $e"),

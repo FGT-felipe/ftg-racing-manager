@@ -1,12 +1,13 @@
+import 'dart:math' as math;
 import 'package:flutter/material.dart';
+import 'package:google_fonts/google_fonts.dart';
 import '../../../models/core_models.dart';
-import '../../../widgets/common/driver_stars.dart';
 import '../../../services/driver_portrait_service.dart';
 import '../../../services/driver_status_service.dart';
 import '../../../l10n/app_localizations.dart';
 import '../../../utils/currency_formatter.dart';
 
-class DriverCard extends StatelessWidget {
+class DriverCard extends StatefulWidget {
   final Driver driver;
   final VoidCallback? onRenew;
   final VoidCallback? onTransferMarket;
@@ -35,49 +36,115 @@ class DriverCard extends StatelessWidget {
   });
 
   @override
+  State<DriverCard> createState() => _DriverCardState();
+}
+
+class _DriverCardState extends State<DriverCard>
+    with SingleTickerProviderStateMixin {
+  late AnimationController _flipController;
+  late Animation<double> _flipAnimation;
+
+  bool _isHoveringTransfer = false;
+  bool _isHoveringRenew = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _flipController = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 600),
+    );
+    _flipAnimation = Tween<double>(begin: 0, end: 1).animate(
+      CurvedAnimation(parent: _flipController, curve: Curves.easeInOut),
+    );
+  }
+
+  @override
+  void dispose() {
+    _flipController.dispose();
+    super.dispose();
+  }
+
+  void _toggleFlip() {
+    if (_flipController.isCompleted) {
+      _flipController.reverse();
+    } else {
+      _flipController.forward();
+    }
+  }
+
+  @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
     final isDesktop = MediaQuery.of(context).size.width > 900;
 
+    return AnimatedBuilder(
+      animation: _flipAnimation,
+      builder: (context, child) {
+        final angle = _flipAnimation.value * math.pi;
+        final isBack = angle > math.pi / 2;
+
+        return Transform(
+          transform: Matrix4.identity()
+            ..setEntry(3, 2, 0.001) // perspective
+            ..rotateY(angle),
+          alignment: Alignment.center,
+          child: isBack
+              ? Transform(
+                  transform: Matrix4.identity()..rotateY(math.pi),
+                  alignment: Alignment.center,
+                  child: _buildBackView(context, isDesktop),
+                )
+              : _buildFrontView(context, isDesktop),
+        );
+      },
+    );
+  }
+
+  Widget _buildFrontView(BuildContext context, bool isDesktop) {
     return Container(
       margin: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
       decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(12),
+        color: const Color(0xFF121216), // Deep Charcoal
+        borderRadius: BorderRadius.circular(16),
         border: Border.all(
-          color: Colors.white.withValues(alpha: 0.1),
+          color: Colors.white.withValues(alpha: 0.05),
           width: 1,
-        ),
-        gradient: const LinearGradient(
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-          colors: [Color(0xFF1E1E1E), Color(0xFF0A0A0A)],
         ),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withValues(alpha: 0.45),
-            blurRadius: 16,
-            offset: const Offset(0, 8),
+            color: Colors.black.withValues(alpha: 0.5),
+            blurRadius: 20,
+            offset: const Offset(0, 10),
           ),
         ],
       ),
       child: Stack(
         children: [
+          // Background Grid
+          Positioned.fill(
+            child: ClipRRect(
+              borderRadius: BorderRadius.circular(16),
+              child: CustomPaint(painter: GridPainter()),
+            ),
+          ),
           // Left Accent Border
           Positioned(
             left: 0,
-            top: 20,
-            bottom: 20,
+            top: 24,
+            bottom: 24,
             child: Container(
-              width: 3,
+              width: 4,
               decoration: BoxDecoration(
-                color: theme.colorScheme.secondary,
+                color: const Color(
+                  0xFF00E676,
+                ), // Use a more vibrant green or secondary
                 borderRadius: const BorderRadius.horizontal(
-                  right: Radius.circular(3),
+                  right: Radius.circular(4),
                 ),
                 boxShadow: [
                   BoxShadow(
-                    color: theme.colorScheme.secondary.withValues(alpha: 0.3),
-                    blurRadius: 8,
+                    color: const Color(0xFF00E676).withValues(alpha: 0.3),
+                    blurRadius: 12,
                     spreadRadius: 1,
                   ),
                 ],
@@ -87,10 +154,20 @@ class DriverCard extends StatelessWidget {
           Padding(
             padding: const EdgeInsets.all(16.0),
             child: isDesktop
-                ? _buildDesktopLayout(context)
+                ? SizedBox(
+                    height: 640, // Increased height to prevent overflows
+                    child: _buildDesktopLayout(context),
+                  )
                 : _buildMobileLayout(context),
           ),
-          if (driver.isTransferListed)
+          // Front Flip Badge - Positioned TOP CENTER
+          Positioned(
+            top: 12,
+            left: 0,
+            right: 0,
+            child: Center(child: _buildFlipBadge()),
+          ),
+          if (widget.driver.isTransferListed)
             Positioned(
               top: 12,
               left: -30,
@@ -127,39 +204,129 @@ class DriverCard extends StatelessWidget {
     );
   }
 
+  Widget _buildBackView(BuildContext context, bool isDesktop) {
+    return Container(
+      margin: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
+      decoration: BoxDecoration(
+        color: const Color(0xFF121216), // Deep Charcoal
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(
+          color: Colors.white.withValues(alpha: 0.05),
+          width: 1,
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.5),
+            blurRadius: 20,
+            offset: const Offset(0, 10),
+          ),
+        ],
+      ),
+      child: Stack(
+        children: [
+          // Background Grid
+          Positioned.fill(
+            child: ClipRRect(
+              borderRadius: BorderRadius.circular(16),
+              child: CustomPaint(painter: GridPainter()),
+            ),
+          ),
+          Padding(
+            padding: const EdgeInsets.all(16.0),
+            child: isDesktop
+                ? SizedBox(
+                    height: 640,
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [_buildCareerStatsSummary(context)],
+                    ),
+                  )
+                : Padding(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 48.0,
+                      vertical: 32.0,
+                    ),
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [_buildCareerStatsSummary(context)],
+                    ),
+                  ),
+          ),
+          // Back Flip Badge - Positioned TOP CENTER
+          Positioned(
+            top: 12,
+            left: 0,
+            right: 0,
+            child: Center(child: _buildFlipBadge()),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildFlipBadge() {
+    return GestureDetector(
+      onTap: _toggleFlip,
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+        decoration: BoxDecoration(
+          color: const Color(
+            0xFFFF00FF,
+          ).withValues(alpha: 0.1), // Neon Pink with low alpha
+          borderRadius: BorderRadius.circular(4),
+          border: Border.all(
+            color: const Color(0xFFFF00FF).withValues(alpha: 0.5),
+          ),
+          boxShadow: [
+            BoxShadow(
+              color: const Color(0xFFFF00FF).withValues(alpha: 0.2),
+              blurRadius: 8,
+              spreadRadius: 1,
+            ),
+          ],
+        ),
+        child: Text(
+          "FLIP",
+          style: GoogleFonts.montserrat(
+            color: const Color(0xFFFF00FF),
+            fontWeight: FontWeight.w900,
+            fontSize: 10,
+            letterSpacing: 1.5,
+          ),
+        ),
+      ),
+    );
+  }
+
   Widget _buildDesktopLayout(BuildContext context) {
     return Row(
-      crossAxisAlignment: CrossAxisAlignment.start,
+      crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        // Column A: Profile & Contract
-        Expanded(flex: 2, child: _buildColumnA(context)),
-        const SizedBox(width: 48),
-        // Combined Grid for B and C
+        // Column 1: Identity & Contract
         Expanded(
-          flex: 7,
+          flex: 3,
+          child: SingleChildScrollView(child: _buildColumnA(context)),
+        ),
+        const SizedBox(width: 24),
+        // Column 2: Interaction, Radar & Skills
+        Expanded(
+          flex: 3,
           child: Column(
             children: [
-              // Row 1: Skills & Form
-              Row(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Expanded(flex: 3, child: _buildSkillsSection(context)),
-                  const SizedBox(width: 48),
-                  Expanded(flex: 4, child: _buildChampionshipForm(context)),
-                ],
-              ),
-              const SizedBox(height: 24),
-              // Row 2: Career Details (Symmetrically aligned)
-              IntrinsicHeight(
-                child: Row(
-                  crossAxisAlignment: CrossAxisAlignment.stretch,
-                  children: [
-                    Expanded(flex: 3, child: _buildCareerStatsSummary(context)),
-                    const SizedBox(width: 48),
-                    Expanded(flex: 4, child: _buildCareerHistory(context)),
-                  ],
-                ),
-              ),
+              const SizedBox(height: 32), // Space for FLIP badge
+              _buildSkillsSection(context),
+            ],
+          ),
+        ),
+        const SizedBox(width: 24),
+        // Column 3: Form & History
+        Expanded(
+          flex: 4,
+          child: Column(
+            children: [
+              Expanded(child: _buildChampionshipForm(context, fillSpace: true)),
+              const SizedBox(height: 20),
+              Expanded(child: _buildCareerHistory(context, fillSpace: true)),
             ],
           ),
         ),
@@ -173,9 +340,11 @@ class DriverCard extends StatelessWidget {
       children: [
         _buildColumnA(context),
         const Divider(height: 32),
-        _buildColumnB(context),
+        _buildSkillsSection(context),
         const Divider(height: 32),
-        _buildColumnC(context),
+        _buildChampionshipForm(context),
+        const Divider(height: 32),
+        _buildCareerHistory(context),
       ],
     );
   }
@@ -183,108 +352,183 @@ class DriverCard extends StatelessWidget {
   Widget _buildColumnA(BuildContext context) {
     final theme = Theme.of(context);
     final portraitUrl =
-        driver.portraitUrl ??
+        widget.driver.portraitUrl ??
         DriverPortraitService().getEffectivePortraitUrl(
-          driverId: driver.id,
-          countryCode: driver.countryCode,
-          gender: driver.gender,
-          age: driver.age,
+          driverId: widget.driver.id,
+          countryCode: widget.driver.countryCode,
+          gender: widget.driver.gender,
+          age: widget.driver.age,
         );
+
+    // Level Badge Logic from Transfer Market
+    String levelText;
+    Color levelColor;
+    if (widget.driver.currentStars >= 5) {
+      levelText = "ÉLITE";
+      levelColor = const Color(0xFF00E676);
+    } else if (widget.driver.currentStars >= 4) {
+      levelText = "PRO";
+      levelColor = const Color(0xFFFFEE58);
+    } else {
+      levelText = "AMATEUR";
+      levelColor = const Color(0xFFA0AEC0);
+    }
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        // Avatar
-        Center(
-          child: Container(
-            width: 100,
-            height: 100,
-            decoration: BoxDecoration(
-              color: theme.colorScheme.primaryContainer,
-              shape: BoxShape.circle,
-              border: Border.all(
-                color: theme.colorScheme.primary.withValues(alpha: 0.5),
-                width: 3,
-              ),
-              image: DecorationImage(
-                image: portraitUrl.startsWith('http')
-                    ? NetworkImage(portraitUrl) as ImageProvider
-                    : AssetImage(portraitUrl),
-                fit: BoxFit.cover,
-                onError: (exception, stackTrace) {
-                  debugPrint('Error loading avatar: $exception');
-                },
-              ),
-            ),
-          ),
-        ),
-        const SizedBox(height: 8),
-        Center(
-          child: Text(
-            AppLocalizations.of(context).ageLabel(driver.age),
-            style: theme.textTheme.bodySmall?.copyWith(
-              color: theme.colorScheme.onSurface.withValues(alpha: 0.7),
-            ),
-          ),
-        ),
-        const SizedBox(height: 12),
-        // Name & Flag
         Row(
-          mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Text(
-              _getFlagEmoji(driver.countryCode),
-              style: const TextStyle(fontSize: 20),
-            ),
-            const SizedBox(width: 8),
-            Flexible(
-              child: Text(
-                driver.name,
-                style: theme.textTheme.titleLarge?.copyWith(
-                  fontWeight: FontWeight.bold,
+            // Portrait with Glow
+            Container(
+              width: 80,
+              height: 80,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                border: Border.all(
+                  color: levelColor.withValues(alpha: 0.5),
+                  width: 3,
                 ),
-                overflow: TextOverflow.ellipsis,
+                boxShadow: [
+                  BoxShadow(
+                    color: levelColor.withValues(alpha: 0.2),
+                    blurRadius: 20,
+                    spreadRadius: 2,
+                  ),
+                ],
+                image: DecorationImage(
+                  image: portraitUrl.startsWith('http')
+                      ? NetworkImage(portraitUrl) as ImageProvider
+                      : AssetImage(portraitUrl),
+                  fit: BoxFit.cover,
+                ),
+              ),
+            ),
+            const SizedBox(width: 24),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      Text(
+                        _getFlagEmoji(widget.driver.countryCode),
+                        style: const TextStyle(fontSize: 24),
+                      ),
+                      const SizedBox(width: 12),
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 10,
+                          vertical: 4,
+                        ),
+                        decoration: BoxDecoration(
+                          color: levelColor.withValues(alpha: 0.15),
+                          borderRadius: BorderRadius.circular(6),
+                          border: Border.all(
+                            color: levelColor.withValues(alpha: 0.5),
+                            width: 1,
+                          ),
+                        ),
+                        child: Text(
+                          levelText,
+                          style: GoogleFonts.montserrat(
+                            color: levelColor,
+                            fontWeight: FontWeight.w900,
+                            fontSize: 11,
+                            letterSpacing: 1.5,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 12),
+                  Text(
+                    widget.driver.name.toUpperCase(),
+                    style: GoogleFonts.montserrat(
+                      color: Colors.white,
+                      fontWeight: FontWeight.w900,
+                      fontSize: 22,
+                      letterSpacing: -0.5,
+                    ),
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    "Age ${widget.driver.age}",
+                    style: GoogleFonts.montserrat(
+                      color: const Color(0xFFFFC107),
+                      fontWeight: FontWeight.w600,
+                      fontSize: 14,
+                    ),
+                  ),
+                ],
               ),
             ),
           ],
         ),
-        const SizedBox(height: 8),
+        const SizedBox(height: 16),
         // Potential Stars
-        Center(
-          child: DriverStars(
-            currentStars: driver.currentStars,
-            maxStars: driver.potential,
-            size: 20,
-          ),
-        ),
+        _buildPotentialStars(),
         const SizedBox(height: 24),
-        // Contract Details
-        Text(
-          AppLocalizations.of(context).contractDetailsTitle,
-          style: theme.textTheme.labelMedium?.copyWith(
-            fontWeight: FontWeight.bold,
-            letterSpacing: 1.2,
-            color: theme.colorScheme.secondary,
+        Container(
+          padding: const EdgeInsets.all(16),
+          decoration: BoxDecoration(
+            color: Colors.white.withValues(alpha: 0.02),
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(color: Colors.white.withValues(alpha: 0.05)),
           ),
-        ),
-        const SizedBox(height: 12),
-        _buildContractRow(
-          AppLocalizations.of(context).contractStatusLabel,
-          _getLocalizedRole(context, driver.role),
-        ),
-        _buildContractRow(
-          AppLocalizations.of(context).salaryPerRaceLabel,
-          '\$${(driver.salary / 24000).toStringAsFixed(1)}k',
-        ),
-        _buildContractRow(
-          AppLocalizations.of(context).terminationLabel,
-          '\$${(driver.salary / 1000).toStringAsFixed(0)}k',
-        ),
-        _buildContractRow(
-          AppLocalizations.of(context).remainingLabel,
-          AppLocalizations.of(
-            context,
-          ).seasonsRemaining(driver.contractYearsRemaining.toString()),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                AppLocalizations.of(context).contractDetailsTitle.toUpperCase(),
+                style: GoogleFonts.montserrat(
+                  color: const Color(0xFFA0AEC0),
+                  fontWeight: FontWeight.bold,
+                  fontSize: 11,
+                  letterSpacing: 1.2,
+                ),
+              ),
+              const SizedBox(height: 12),
+              _buildContractRow(
+                AppLocalizations.of(context).contractStatusLabel,
+                _getLocalizedRole(context, widget.driver.role),
+              ),
+              _buildContractRow(
+                AppLocalizations.of(context).salaryPerRaceLabel,
+                CurrencyFormatter.format(widget.driver.salary),
+                valueColor: Colors.white,
+              ),
+              _buildContractRow(
+                AppLocalizations.of(context).terminationLabel,
+                CurrencyFormatter.format(widget.driver.salary * 5),
+              ),
+              _buildContractRow(
+                AppLocalizations.of(context).remainingLabel,
+                AppLocalizations.of(context).seasonsRemaining(
+                  widget.driver.contractYearsRemaining.toString(),
+                ),
+              ),
+              const Divider(height: 24, color: Colors.white10),
+              Text(
+                AppLocalizations.of(context).marketValueLabel.toUpperCase(),
+                style: GoogleFonts.montserrat(
+                  color: const Color(0xFFA0AEC0),
+                  fontWeight: FontWeight.bold,
+                  fontSize: 10,
+                  letterSpacing: 0.5,
+                ),
+              ),
+              const SizedBox(height: 4),
+              Text(
+                CurrencyFormatter.format(widget.driver.marketValue),
+                style: GoogleFonts.robotoMono(
+                  color: Colors.white,
+                  fontWeight: FontWeight.w900,
+                  fontSize: 20,
+                ),
+              ),
+            ],
+          ),
         ),
         const SizedBox(height: 16),
         Divider(
@@ -294,17 +538,18 @@ class DriverCard extends StatelessWidget {
         const SizedBox(height: 16),
         _buildContractRow(
           AppLocalizations.of(context).moraleLabel,
-          '${(driver.stats[DriverStats.morale] ?? 0) ~/ 5}/20',
+          '${(widget.driver.stats[DriverStats.morale] ?? 0) ~/ 5}/20',
         ),
         _buildContractRow(
           AppLocalizations.of(context).marketabilityLabel,
-          '${(driver.stats[DriverStats.marketability] ?? 0) ~/ 5}/20',
+          '${(widget.driver.stats[DriverStats.marketability] ?? 0) ~/ 5}/20',
         ),
         _buildContractRow(
           AppLocalizations.of(context).marketValueLabel,
-          CurrencyFormatter.format(driver.marketValue),
+          CurrencyFormatter.format(widget.driver.marketValue),
         ),
-        if (driver.isTransferListed && driver.currentHighestBid > 0) ...[
+        if (widget.driver.isTransferListed &&
+            widget.driver.currentHighestBid > 0) ...[
           const SizedBox(height: 8),
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
@@ -328,7 +573,7 @@ class DriverCard extends StatelessWidget {
                       ),
                     ),
                     Text(
-                      CurrencyFormatter.format(driver.currentHighestBid),
+                      CurrencyFormatter.format(widget.driver.currentHighestBid),
                       style: const TextStyle(
                         fontSize: 11,
                         color: Colors.white,
@@ -337,17 +582,17 @@ class DriverCard extends StatelessWidget {
                     ),
                   ],
                 ),
-                if (driver.highestBidderTeamName != null)
+                if (widget.driver.highestBidderTeamName != null)
                   Text(
-                    "(${driver.highestBidderTeamName})",
+                    "(${widget.driver.highestBidderTeamName})",
                     style: TextStyle(
                       fontSize: 10,
                       color: Colors.white.withValues(alpha: 0.7),
                       fontStyle: FontStyle.italic,
                     ),
                   ),
-                if (currentTeamId != null &&
-                    driver.highestBidderTeamId == currentTeamId)
+                if (widget.currentTeamId != null &&
+                    widget.driver.highestBidderTeamId == widget.currentTeamId)
                   Padding(
                     padding: const EdgeInsets.only(top: 8.0),
                     child: Row(
@@ -362,7 +607,9 @@ class DriverCard extends StatelessWidget {
                           ),
                         ),
                         InkWell(
-                          onTap: isCancellingBid ? null : onCancelBid,
+                          onTap: widget.isCancellingBid
+                              ? null
+                              : widget.onCancelBid,
                           child: Container(
                             padding: const EdgeInsets.symmetric(
                               horizontal: 6,
@@ -375,7 +622,7 @@ class DriverCard extends StatelessWidget {
                                 color: Colors.red.withValues(alpha: 0.5),
                               ),
                             ),
-                            child: isCancellingBid
+                            child: widget.isCancellingBid
                                 ? const SizedBox(
                                     width: 10,
                                     height: 10,
@@ -408,18 +655,21 @@ class DriverCard extends StatelessWidget {
         ),
         const SizedBox(height: 24),
         Row(
-          children: driver.isTransferListed
+          children: widget.driver.isTransferListed
               ? [
-                  if (currentTeamId == driver.teamId)
+                  if (widget.currentTeamId == widget.driver.teamId)
                     Expanded(
                       child: OutlinedButton(
-                        onPressed: onCancelTransfer,
+                        onPressed: widget.onCancelTransfer,
                         style: OutlinedButton.styleFrom(
-                          foregroundColor: theme.colorScheme.error,
-                          side: BorderSide(color: theme.colorScheme.error),
-                          padding: const EdgeInsets.symmetric(horizontal: 4),
-                          textStyle: const TextStyle(
-                            fontSize: 10,
+                          foregroundColor: const Color(0xFFFF5252),
+                          side: const BorderSide(color: Color(0xFFFF5252)),
+                          padding: const EdgeInsets.symmetric(vertical: 16),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(100),
+                          ),
+                          textStyle: GoogleFonts.montserrat(
+                            fontSize: 12,
                             fontWeight: FontWeight.bold,
                           ),
                         ),
@@ -432,14 +682,15 @@ class DriverCard extends StatelessWidget {
                   else ...[
                     Expanded(
                       child: FilledButton(
-                        onPressed: onBid,
+                        onPressed: widget.onBid,
                         style: FilledButton.styleFrom(
-                          backgroundColor: Colors.amber,
+                          backgroundColor: const Color(0xFFFFC107),
                           foregroundColor: Colors.black,
-                          padding: const EdgeInsets.symmetric(horizontal: 4),
-                          textStyle: const TextStyle(
-                            fontSize: 10,
-                            fontWeight: FontWeight.bold,
+                          padding: const EdgeInsets.symmetric(vertical: 16),
+                          textStyle: GoogleFonts.montserrat(
+                            fontSize: 12,
+                            fontWeight: FontWeight.w900,
+                            letterSpacing: 1.0,
                           ),
                           shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(100),
@@ -450,8 +701,8 @@ class DriverCard extends StatelessWidget {
                           child: Row(
                             mainAxisAlignment: MainAxisAlignment.center,
                             children: [
-                              Icon(Icons.gavel, size: 14),
-                              SizedBox(width: 4),
+                              Icon(Icons.gavel, size: 16),
+                              SizedBox(width: 8),
                               Text("PLACE BID"),
                             ],
                           ),
@@ -462,50 +713,95 @@ class DriverCard extends StatelessWidget {
                 ]
               : [
                   Expanded(
-                    child: FilledButton(
-                      onPressed: onTransferMarket,
-                      style: FilledButton.styleFrom(
-                        backgroundColor: const Color(0xFF00C853),
-                        foregroundColor: Colors.yellow,
-                        padding: const EdgeInsets.symmetric(horizontal: 4),
-                        textStyle: const TextStyle(
-                          fontSize: 10,
-                          fontWeight: FontWeight.bold,
-                        ),
-                        shape: RoundedRectangleBorder(
+                    child: MouseRegion(
+                      onEnter: (_) =>
+                          setState(() => _isHoveringTransfer = true),
+                      onExit: (_) =>
+                          setState(() => _isHoveringTransfer = false),
+                      child: AnimatedContainer(
+                        duration: const Duration(milliseconds: 200),
+                        decoration: BoxDecoration(
                           borderRadius: BorderRadius.circular(100),
+                          boxShadow: _isHoveringTransfer
+                              ? [
+                                  const BoxShadow(
+                                    color: Color(0xFF00C853),
+                                    blurRadius: 12,
+                                    spreadRadius: 0,
+                                  ),
+                                ]
+                              : [],
                         ),
-                      ),
-                      child: const FittedBox(
-                        fit: BoxFit.scaleDown,
-                        child: Row(
-                          children: [
-                            Icon(Icons.shopping_cart, size: 14),
-                            SizedBox(width: 4),
-                            Text("Transfer Market"),
-                          ],
+                        child: FilledButton(
+                          onPressed: widget.onTransferMarket,
+                          style: FilledButton.styleFrom(
+                            backgroundColor: const Color(0xFF00C853),
+                            foregroundColor: Colors.white,
+                            padding: const EdgeInsets.symmetric(vertical: 16),
+                            textStyle: GoogleFonts.montserrat(
+                              fontSize: 11,
+                              fontWeight: FontWeight.bold,
+                            ),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(100),
+                            ),
+                          ),
+                          child: const FittedBox(
+                            fit: BoxFit.scaleDown,
+                            child: Row(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                Icon(Icons.shopping_cart, size: 14),
+                                SizedBox(width: 6),
+                                Text("Transfer Market"),
+                              ],
+                            ),
+                          ),
                         ),
                       ),
                     ),
                   ),
-                  const SizedBox(width: 4),
+                  const SizedBox(width: 12),
                   Expanded(
-                    child: FilledButton(
-                      onPressed: onRenew,
-                      style: FilledButton.styleFrom(
-                        padding: const EdgeInsets.symmetric(horizontal: 4),
-                        textStyle: const TextStyle(
-                          fontSize: 10,
-                          fontWeight: FontWeight.bold,
-                        ),
-                        shape: RoundedRectangleBorder(
+                    child: MouseRegion(
+                      onEnter: (_) => setState(() => _isHoveringRenew = true),
+                      onExit: (_) => setState(() => _isHoveringRenew = false),
+                      child: AnimatedContainer(
+                        duration: const Duration(milliseconds: 200),
+                        decoration: BoxDecoration(
                           borderRadius: BorderRadius.circular(100),
+                          boxShadow: _isHoveringRenew
+                              ? [
+                                  BoxShadow(
+                                    color: theme.colorScheme.primary.withValues(
+                                      alpha: 0.5,
+                                    ),
+                                    blurRadius: 12,
+                                    spreadRadius: 0,
+                                  ),
+                                ]
+                              : [],
                         ),
-                      ),
-                      child: FittedBox(
-                        fit: BoxFit.scaleDown,
-                        child: Text(
-                          AppLocalizations.of(context).renewContractBtn,
+                        child: FilledButton(
+                          onPressed: widget.onRenew,
+                          style: FilledButton.styleFrom(
+                            padding: const EdgeInsets.symmetric(vertical: 16),
+                            textStyle: GoogleFonts.montserrat(
+                              fontSize: 11,
+                              fontWeight: FontWeight.bold,
+                            ),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(100),
+                            ),
+                          ),
+                          child: FittedBox(
+                            fit: BoxFit.scaleDown,
+                            child: Text(
+                              AppLocalizations.of(
+                                context,
+                              ).renewContractBtn.toUpperCase(),
+                            ),
+                          ),
                         ),
                       ),
                     ),
@@ -516,20 +812,9 @@ class DriverCard extends StatelessWidget {
     );
   }
 
-  Widget _buildColumnB(BuildContext context) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        _buildSkillsSection(context),
-        const SizedBox(height: 32),
-        _buildCareerStatsSummary(context),
-      ],
-    );
-  }
-
   Widget _buildSkillsSection(BuildContext context) {
     final theme = Theme.of(context);
-    final allStats = driver.stats.entries
+    final allStats = widget.driver.stats.entries
         .where(
           (e) =>
               e.key != DriverStats.morale && e.key != DriverStats.marketability,
@@ -540,52 +825,141 @@ class DriverCard extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
-          AppLocalizations.of(context).driverStatsSectionTitle,
-          style: theme.textTheme.labelMedium?.copyWith(
+          AppLocalizations.of(context).driverStatsSectionTitle.toUpperCase(),
+          style: GoogleFonts.montserrat(
             fontWeight: FontWeight.bold,
             letterSpacing: 1.2,
             color: theme.colorScheme.secondary,
+            fontSize: 12,
           ),
         ),
-        const SizedBox(height: 16),
-        LayoutBuilder(
-          builder: (context, constraints) {
-            final double itemWidth = (constraints.maxWidth - 32) / 3;
-            // Ensure proper calculation even if width implies small layout
-            final effectiveWidth = itemWidth < 50 ? 50.0 : itemWidth;
-            return Wrap(
-              spacing: 16,
-              runSpacing: 20,
-              children: allStats.map((entry) {
-                return SizedBox(
-                  width: effectiveWidth,
-                  child: _buildStatBar(context, entry.key, entry.value),
-                );
-              }).toList(),
-            );
+        const SizedBox(height: 24),
+        Center(
+          child: SizedBox(
+            width: 200,
+            height: 200,
+            child: CustomPaint(
+              painter: RadarChartPainter(
+                allStats.map((e) => e.value / 100.0).toList(),
+                allStats.map((e) => _formatSkillName(context, e.key)).toList(),
+                const Color(0xFF00E676),
+                allStats.any((e) => e.value >= 75),
+              ),
+            ),
+          ),
+        ),
+        const SizedBox(height: 32),
+        GridView.builder(
+          shrinkWrap: true,
+          physics: const NeverScrollableScrollPhysics(),
+          gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+            crossAxisCount: 2,
+            childAspectRatio: 5.0, // Tighter ratio
+            crossAxisSpacing: 12, // Reduced from 24
+            mainAxisSpacing: 12,
+          ),
+          itemCount: allStats.length,
+          itemBuilder: (context, index) {
+            final entry = allStats[index];
+            return _buildStatIndicator(context, entry.key, entry.value);
           },
         ),
       ],
     );
   }
 
+  Widget _buildStatIndicator(BuildContext context, String key, int value) {
+    final displayValue = (value / 5).round();
+    Color color = const Color(0xFFFF5252); // Low
+    if (displayValue >= 15) {
+      color = const Color(0xFF00E676); // High
+    } else if (displayValue >= 10) {
+      color = const Color(0xFFFFEE58); // Medium
+    }
+
+    final bool hasGlow = displayValue >= 15;
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            Text(
+              _formatSkillName(context, key).toUpperCase(),
+              style: GoogleFonts.montserrat(
+                color: const Color(0xFFA0AEC0),
+                fontSize: 8, // Reduced from 9
+                fontWeight: FontWeight.bold,
+                letterSpacing: 0.2,
+              ),
+            ),
+            Text(
+              displayValue.toString(),
+              style: GoogleFonts.robotoMono(
+                color: color,
+                fontSize: 13,
+                fontWeight: FontWeight.w900,
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 6),
+        Stack(
+          children: [
+            Container(
+              height: 4,
+              width: double.infinity,
+              decoration: BoxDecoration(
+                color: Colors.white.withValues(alpha: 0.05),
+                borderRadius: BorderRadius.circular(2),
+              ),
+            ),
+            FractionallySizedBox(
+              widthFactor: (value / 100.0).clamp(0.01, 1.0),
+              child: Container(
+                height: 4,
+                decoration: BoxDecoration(
+                  color: color,
+                  borderRadius: BorderRadius.circular(2),
+                  boxShadow: hasGlow
+                      ? [
+                          BoxShadow(
+                            color: color.withValues(alpha: 0.5),
+                            blurRadius: 6,
+                            spreadRadius: 1,
+                          ),
+                        ]
+                      : null,
+                ),
+              ),
+            ),
+          ],
+        ),
+      ],
+    );
+  }
+
   Widget _buildCareerStatsSummary(BuildContext context) {
-    final theme = Theme.of(context);
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: theme.colorScheme.surfaceContainerHighest.withValues(alpha: 0.3),
+        color: Colors.white.withValues(alpha: 0.02),
         borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: Colors.white.withValues(alpha: 0.05)),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
           Text(
-            AppLocalizations.of(context).careerStatsTitle,
-            style: theme.textTheme.labelMedium?.copyWith(
+            AppLocalizations.of(context).careerStatsTitle.toUpperCase(),
+            style: GoogleFonts.montserrat(
               fontWeight: FontWeight.bold,
-              color: theme.colorScheme.secondary,
+              color: const Color(0xFFA0AEC0),
+              fontSize: 11,
+              letterSpacing: 1.2,
             ),
           ),
           const SizedBox(height: 12),
@@ -595,25 +969,25 @@ class DriverCard extends StatelessWidget {
               _buildCareerStatCircle(
                 context,
                 AppLocalizations.of(context).titlesStat,
-                '${driver.championships}',
+                '${widget.driver.championships}',
                 Icons.emoji_events_rounded,
               ),
               _buildCareerStatCircle(
                 context,
                 AppLocalizations.of(context).winsStat,
-                '${driver.wins}',
+                '${widget.driver.wins}',
                 Icons.military_tech_rounded,
               ),
               _buildCareerStatCircle(
                 context,
                 AppLocalizations.of(context).podiumsStat,
-                '${driver.podiums}',
+                '${widget.driver.podiums}',
                 Icons.star_rounded,
               ),
               _buildCareerStatCircle(
                 context,
                 AppLocalizations.of(context).racesStat,
-                '${driver.races}',
+                '${widget.driver.races}',
                 Icons.flag_rounded,
               ),
             ],
@@ -624,41 +998,46 @@ class DriverCard extends StatelessWidget {
             child: Tooltip(
               message: DriverStatusService.getLocalizedDescription(
                 context,
-                driver.statusTitle,
+                widget.driver.statusTitle,
               ),
               triggerMode: TooltipTriggerMode.tap,
               child: Container(
                 padding: const EdgeInsets.symmetric(
-                  horizontal: 12,
-                  vertical: 6,
+                  horizontal: 16,
+                  vertical: 10,
                 ),
                 decoration: BoxDecoration(
-                  color: theme.colorScheme.secondary.withValues(alpha: 0.15),
-                  borderRadius: BorderRadius.circular(12),
+                  gradient: LinearGradient(
+                    colors: [
+                      const Color(0xFF00E676).withValues(alpha: 0.15),
+                      const Color(0xFF00E676).withValues(alpha: 0.05),
+                    ],
+                  ),
+                  borderRadius: BorderRadius.circular(8),
                   border: Border.all(
-                    color: theme.colorScheme.secondary.withValues(alpha: 0.3),
-                    width: 0.5,
+                    color: const Color(0xFF00E676).withValues(alpha: 0.3),
                   ),
                 ),
                 child: Row(
                   mainAxisSize: MainAxisSize.min,
                   children: [
+                    const Icon(
+                      Icons.shield_rounded,
+                      color: Color(0xFF00E676),
+                      size: 16,
+                    ),
+                    const SizedBox(width: 8),
                     Text(
                       DriverStatusService.getLocalizedTitle(
                         context,
-                        driver.statusTitle,
+                        widget.driver.statusTitle,
                       ).toUpperCase(),
-                      style: theme.textTheme.labelSmall?.copyWith(
-                        color: theme.colorScheme.secondary,
-                        fontWeight: FontWeight.bold,
-                        letterSpacing: 1.1,
+                      style: GoogleFonts.montserrat(
+                        color: const Color(0xFF00E676),
+                        fontWeight: FontWeight.w900,
+                        fontSize: 12,
+                        letterSpacing: 1.5,
                       ),
-                    ),
-                    const SizedBox(width: 6),
-                    Icon(
-                      Icons.help_outline_rounded,
-                      size: 12,
-                      color: theme.colorScheme.secondary.withValues(alpha: 0.7),
                     ),
                   ],
                 ),
@@ -722,352 +1101,263 @@ class DriverCard extends StatelessWidget {
     );
   }
 
-  Widget _buildColumnC(BuildContext context) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        _buildChampionshipForm(context),
-        const SizedBox(height: 24),
-        _buildCareerHistory(context),
+  Widget _buildChampionshipForm(
+    BuildContext context, {
+    bool fillSpace = false,
+  }) {
+    return _buildTinyTable(
+      context,
+      title: AppLocalizations.of(context).championshipFormTitle.toUpperCase(),
+      headers: ['EVENT', 'Q', 'R', 'P'],
+      flexValues: [3, 1, 1, 1],
+      alignments: [
+        TextAlign.left,
+        TextAlign.center,
+        TextAlign.center,
+        TextAlign.center,
       ],
+      rows: [], // Will be populated when history service is implemented
+      maxRows: 5,
+      fillSpace: fillSpace,
     );
   }
 
-  Widget _buildChampionshipForm(BuildContext context) {
-    final theme = Theme.of(context);
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: theme.colorScheme.surfaceContainerHighest.withValues(alpha: 0.3),
-        borderRadius: BorderRadius.circular(12),
+  Widget _buildCareerHistory(BuildContext context, {bool fillSpace = false}) {
+    return _buildTinyTable(
+      context,
+      title: AppLocalizations.of(context).careerHistoryTitle.toUpperCase(),
+      headers: [
+        AppLocalizations.of(context).yearHeader,
+        AppLocalizations.of(context).teamHeader,
+        AppLocalizations.of(context).seriesHeader,
+        AppLocalizations.of(context).rHeader,
+        AppLocalizations.of(context).pHeader,
+        AppLocalizations.of(context).wHeader,
+      ],
+      flexValues: [1, 2, 2, 1, 1, 1],
+      alignments: [
+        TextAlign.center,
+        TextAlign.center,
+        TextAlign.center,
+        TextAlign.center,
+        TextAlign.center,
+        TextAlign.center,
+      ],
+      badgeColumns: [1, 2],
+      rows: _generateStableHistory(
+        context,
+        widget.driver,
+        widget.teamName ?? AppLocalizations.of(context).historyIndividual,
+        widget.leagueName ?? '--',
       ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Flexible(
-                child: Text(
-                  AppLocalizations.of(context).championshipFormTitle,
-                  style: theme.textTheme.labelMedium?.copyWith(
-                    fontWeight: FontWeight.bold,
-                    color: theme.colorScheme.secondary,
-                  ),
-                  overflow: TextOverflow.ellipsis,
-                ),
-              ),
-              TextButton(
-                onPressed: () {
-                  // Navigate to standings (already in main layout usually)
-                },
-                child: Text(AppLocalizations.of(context).standingsBtn),
-              ),
-            ],
-          ),
-          const SizedBox(height: 8),
-          Row(
-            children: [
-              Text(
-                AppLocalizations.of(context).posLabel,
-                style: theme.textTheme.titleMedium,
-              ),
-              Text(
-                '#--', // Fetching real position would require async in the card or passing it
-                style: theme.textTheme.titleLarge?.copyWith(
-                  fontWeight: FontWeight.w900,
-                  color: theme.colorScheme.secondary,
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 16),
-          _buildTinyTable(
-            context,
-            headers: [
-              AppLocalizations.of(context).eventHeader,
-              AppLocalizations.of(context).qHeader,
-              AppLocalizations.of(context).rHeader,
-              AppLocalizations.of(context).pHeader,
-            ],
-            flexValues: [3, 1, 1, 1],
-            alignments: [
-              TextAlign.left,
-              TextAlign.center,
-              TextAlign.center,
-              TextAlign.center,
-            ],
-            rows: [], // Will be populated when history service is implemented
-          ),
-        ],
-      ),
+      maxRows: 5,
+      fillSpace: fillSpace,
     );
   }
 
-  Widget _buildCareerHistory(BuildContext context) {
-    final theme = Theme.of(context);
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: theme.colorScheme.surfaceContainerHighest.withValues(alpha: 0.3),
-        borderRadius: BorderRadius.circular(12),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            AppLocalizations.of(context).careerHistoryTitle,
-            style: theme.textTheme.labelMedium?.copyWith(
-              fontWeight: FontWeight.bold,
-              color: theme.colorScheme.secondary,
+  Widget _buildPotentialStars() {
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.start,
+      children: List.generate(5, (index) {
+        final starIndex = index + 1;
+        bool isCurrent = starIndex <= widget.driver.currentStars;
+        bool isPotential = starIndex <= widget.driver.potential;
+
+        Color starColor = Colors.white10;
+        List<BoxShadow> shadows = [];
+
+        if (isCurrent) {
+          starColor = const Color(0xFF00B0FF); // Neon Electric Blue
+          shadows = [
+            const BoxShadow(
+              color: Color(0xFF00B0FF),
+              blurRadius: 8,
+              spreadRadius: 1,
+            ),
+          ];
+        } else if (isPotential) {
+          starColor = const Color(0xFFFFD700); // Golden Yellow
+          shadows = [
+            BoxShadow(
+              color: const Color(0xFFFFD700).withValues(alpha: 0.4),
+              blurRadius: 4,
+            ),
+          ];
+        }
+
+        return Padding(
+          padding: const EdgeInsets.only(right: 6.0),
+          child: Container(
+            decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              boxShadow: shadows,
+            ),
+            child: Icon(
+              index < widget.driver.potential
+                  ? Icons.star_rounded
+                  : Icons.star_outline_rounded,
+              color: starColor,
+              size: 24,
             ),
           ),
-          const SizedBox(height: 16),
-          _buildTinyTable(
-            context,
-            headers: [
-              AppLocalizations.of(context).yearHeader,
-              AppLocalizations.of(context).teamHeader,
-              AppLocalizations.of(context).seriesHeader,
-              AppLocalizations.of(context).rHeader,
-              AppLocalizations.of(context).pHeader,
-              AppLocalizations.of(context).wHeader,
-            ],
-            flexValues: [1, 2, 2, 1, 1, 1],
-            alignments: [
-              TextAlign.center,
-              TextAlign.center,
-              TextAlign.center,
-              TextAlign.center,
-              TextAlign.center,
-              TextAlign.center,
-            ],
-            badgeColumns: [1, 2],
-            rows: _generateStableHistory(
-              context,
-              driver,
-              teamName ?? AppLocalizations.of(context).historyIndividual,
-              leagueName ?? '--',
-            ),
-          ),
-        ],
-      ),
+        );
+      }),
     );
   }
 
-  Widget _buildContractRow(String label, String value) {
+  Widget _buildContractRow(String label, String value, {Color? valueColor}) {
+    const labelStyle = TextStyle(color: Color(0xFFA0AEC0), fontSize: 13);
+    final valueStyle = TextStyle(
+      color: valueColor ?? Colors.white,
+      fontSize: 13,
+      fontFamily: GoogleFonts.robotoMono().fontFamily,
+      fontWeight: FontWeight.bold,
+    );
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 4),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          Expanded(
-            child: Text(
-              label,
-              style: const TextStyle(fontSize: 12, color: Colors.grey),
-              overflow: TextOverflow.ellipsis,
-            ),
-          ),
-          const SizedBox(width: 8),
-          Flexible(
-            child: Text(
-              value,
-              style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold),
-              textAlign: TextAlign.right,
-              overflow: TextOverflow.ellipsis,
-            ),
-          ),
+          Text(label, style: labelStyle),
+          Text(value, style: valueStyle),
         ],
       ),
     );
   }
 
-  Widget _buildStatBar(BuildContext context, String label, int value) {
+  Widget _buildTinyTable(
+    BuildContext context, {
+    String? title,
+    required List<String> headers,
+    List<int>? flexValues,
+    List<TextAlign>? alignments,
+    List<int>? badgeColumns,
+    required List<List<String>> rows,
+    int? maxRows,
+    bool fillSpace = false,
+  }) {
     final theme = Theme.of(context);
-    final displayValue = (value / 5).round();
-    final progress = (value / 100.0).clamp(
-      0.005,
-      1.0,
-    ); // Minimum width for color visibility
+    final effectiveFlexValues = flexValues ?? List.filled(headers.length, 1);
+    final effectiveAlignments =
+        alignments ?? List.filled(headers.length, TextAlign.center);
 
-    final Color statColor = _getStatColor(displayValue);
+    Widget dataContent;
+    if (rows.isEmpty) {
+      dataContent = Center(
+        child: Text(
+          AppLocalizations.of(context).noDataAvailableYet,
+          style: theme.textTheme.bodySmall?.copyWith(
+            color: theme.colorScheme.secondary.withValues(alpha: 0.5),
+            fontStyle: FontStyle.italic,
+          ),
+        ),
+      );
+    } else {
+      dataContent = ListView.builder(
+        shrinkWrap: !fillSpace,
+        physics: fillSpace ? null : const NeverScrollableScrollPhysics(),
+        itemCount: maxRows != null
+            ? math.min(rows.length, maxRows)
+            : rows.length,
+        itemBuilder: (context, rowIndex) {
+          final row = rows[rowIndex];
+          return Container(
+            padding: const EdgeInsets.symmetric(vertical: 10),
+            decoration: BoxDecoration(
+              color: rowIndex % 2 != 0
+                  ? Colors.white.withValues(alpha: 0.05)
+                  : null,
+            ),
+            child: Row(
+              children: List.generate(row.length, (index) {
+                final isBadge = badgeColumns?.contains(index) ?? false;
+                return Expanded(
+                  flex: effectiveFlexValues[index],
+                  child: isBadge
+                      ? Center(
+                          child: _buildTeamBadgeOverlay(context, row[index]),
+                        )
+                      : Text(
+                          row[index],
+                          textAlign: effectiveAlignments[index],
+                          style: GoogleFonts.robotoMono(
+                            fontSize: 11,
+                            color: Colors.white,
+                            fontWeight: index == 0
+                                ? FontWeight.bold
+                                : FontWeight.normal,
+                          ),
+                        ),
+                );
+              }),
+            ),
+          );
+        },
+      );
+    }
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(
-          _formatSkillName(context, label),
-          style: theme.textTheme.labelSmall?.copyWith(fontSize: 10),
-          overflow: TextOverflow.ellipsis,
-        ),
-        const SizedBox(height: 4),
-        Stack(
-          alignment: Alignment.center,
-          children: [
-            Container(
-              height: 18,
-              decoration: BoxDecoration(
-                color: theme.colorScheme.surfaceContainerHighest,
-                borderRadius: BorderRadius.circular(100),
+        if (title != null) ...[
+          Text(
+            title,
+            style: GoogleFonts.montserrat(
+              fontSize: 11,
+              fontWeight: FontWeight.bold,
+              color: const Color(0xFFA0AEC0),
+              letterSpacing: 1.2,
+            ),
+          ),
+          const SizedBox(height: 12),
+        ],
+        Container(
+          padding: const EdgeInsets.symmetric(vertical: 8),
+          decoration: BoxDecoration(
+            border: Border(
+              bottom: BorderSide(
+                color: Colors.white.withValues(alpha: 0.1),
+                width: 1,
               ),
             ),
-            Align(
-              alignment: Alignment.centerLeft,
-              child: FractionallySizedBox(
-                widthFactor: progress,
-                child: Container(
-                  height: 18,
-                  decoration: BoxDecoration(
-                    color: statColor,
-                    borderRadius: BorderRadius.circular(100),
-                    boxShadow: [
-                      BoxShadow(
-                        color: statColor.withValues(alpha: 0.3),
-                        blurRadius: 4,
-                        offset: const Offset(0, 1),
-                      ),
-                    ],
+          ),
+          child: Row(
+            children: List.generate(headers.length, (index) {
+              return Expanded(
+                flex: effectiveFlexValues[index],
+                child: Text(
+                  headers[index].toUpperCase(),
+                  textAlign: effectiveAlignments[index],
+                  style: theme.textTheme.labelSmall?.copyWith(
+                    color: theme.colorScheme.secondary.withValues(alpha: 0.7),
+                    fontWeight: FontWeight.bold,
+                    fontSize: 9,
                   ),
                 ),
-              ),
-            ),
-            Text(
-              '$displayValue',
-              style: const TextStyle(
-                fontSize: 10,
-                fontWeight: FontWeight.w900,
-                color: Colors.white,
-                shadows: [
-                  Shadow(
-                    color: Colors.black26,
-                    offset: Offset(0, 1),
-                    blurRadius: 2,
-                  ),
-                ],
-              ),
-            ),
-          ],
+              );
+            }),
+          ),
         ),
+        if (fillSpace) Expanded(child: dataContent) else dataContent,
       ],
     );
   }
 
-  Color _getStatColor(int value) {
-    if (value == 0) return const Color(0xFFEF5350); // Red
-    if (value >= 18) return const Color(0xFF2E7D32); // Dark Green
-    if (value >= 14) return const Color(0xFF66BB6A); // Light Green
-    if (value >= 10) return const Color(0xFF26C6DA); // Cyan
-    if (value >= 6) return const Color(0xFFFFD54F); // Yellow
-    return const Color(0xFFFF7043); // Orange
-  }
-
-  Widget _buildTinyTable(
-    BuildContext context, {
-    required List<String> headers,
-    required List<List<String>> rows,
-    double maxHeight = 120,
-    List<int>? flexValues,
-    List<int>? badgeColumns,
-    List<TextAlign>? alignments,
-  }) {
-    final theme = Theme.of(context);
-    return Column(
-      children: [
-        Row(
-          children: List.generate(headers.length, (i) {
-            final alignment = alignments != null
-                ? alignments[i]
-                : TextAlign.left;
-            return Expanded(
-              flex: flexValues != null ? flexValues[i] : 1,
-              child: Text(
-                headers[i],
-                textAlign: alignment,
-                style: theme.textTheme.labelSmall?.copyWith(
-                  fontWeight: FontWeight.bold,
-                  fontSize: 10,
-                  color: Colors.grey,
-                ),
-              ),
-            );
-          }),
-        ),
-        const Divider(height: 12),
-        SizedBox(
-          height: maxHeight,
-          child: rows.isEmpty
-              ? Center(
-                  child: Text(
-                    AppLocalizations.of(context).noDataAvailableYet,
-                    style: theme.textTheme.bodySmall?.copyWith(
-                      color: Colors.grey,
-                      fontStyle: FontStyle.italic,
-                    ),
-                  ),
-                )
-              : SingleChildScrollView(
-                  child: Column(
-                    children: rows.map((row) {
-                      return Padding(
-                        padding: const EdgeInsets.symmetric(vertical: 4),
-                        child: Row(
-                          children: List.generate(row.length, (i) {
-                            final isBadge = badgeColumns?.contains(i) ?? false;
-                            final alignment = alignments != null
-                                ? alignments[i]
-                                : TextAlign.left;
-                            return Expanded(
-                              flex: flexValues != null ? flexValues[i] : 1,
-                              child: isBadge
-                                  ? _buildBadge(context, row[i], alignment)
-                                  : Text(
-                                      row[i],
-                                      textAlign: alignment,
-                                      style: const TextStyle(fontSize: 11),
-                                      overflow: TextOverflow.ellipsis,
-                                    ),
-                            );
-                          }),
-                        ),
-                      );
-                    }).toList(),
-                  ),
-                ),
-        ),
-      ],
-    );
-  }
-
-  Widget _buildBadge(BuildContext context, String text, TextAlign alignment) {
-    final theme = Theme.of(context);
-
-    final alignmentMap = {
-      TextAlign.left: Alignment.centerLeft,
-      TextAlign.center: Alignment.center,
-      TextAlign.right: Alignment.centerRight,
-    };
-
-    return Align(
-      alignment: alignmentMap[alignment] ?? Alignment.centerLeft,
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
-        decoration: BoxDecoration(
-          color: theme.colorScheme.secondary.withValues(alpha: 0.15),
-          borderRadius: BorderRadius.circular(12),
-          border: Border.all(
-            color: theme.colorScheme.secondary.withValues(alpha: 0.3),
-            width: 0.5,
-          ),
-        ),
-        child: Text(
-          text,
-          style: theme.textTheme.labelSmall?.copyWith(
-            color: theme.colorScheme.secondary,
-            fontSize: 9,
-            fontWeight: FontWeight.bold,
-          ),
-          maxLines: 1,
-          overflow: TextOverflow.ellipsis,
+  Widget _buildTeamBadgeOverlay(BuildContext context, String teamName) {
+    if (teamName.isEmpty || teamName == '--') return const SizedBox.shrink();
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+      decoration: BoxDecoration(
+        color: Colors.white.withValues(alpha: 0.05),
+        borderRadius: BorderRadius.circular(4),
+        border: Border.all(color: Colors.white.withValues(alpha: 0.1)),
+      ),
+      child: Text(
+        teamName,
+        style: GoogleFonts.montserrat(
+          fontSize: 8,
+          fontWeight: FontWeight.bold,
+          color: const Color(0xFFA0AEC0),
         ),
       ),
     );
@@ -1082,7 +1372,7 @@ class DriverCard extends StatelessWidget {
     final l10n = AppLocalizations.of(context);
     List<List<String>> rows = [];
     int startYear = 2024;
-    int currentYearValue = currentYear ?? startYear;
+    int currentYearValue = widget.currentYear ?? startYear;
 
     int totalRaces = driver.races;
     int totalPodiums = driver.podiums;
@@ -1194,4 +1484,121 @@ class DriverCard extends StatelessWidget {
         return role;
     }
   }
+}
+
+class RadarChartPainter extends CustomPainter {
+  final List<double> values;
+  final List<String> labels;
+  final Color color;
+  final bool showGlow;
+
+  RadarChartPainter(this.values, this.labels, this.color, this.showGlow);
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final center = Offset(size.width / 2, size.height / 2);
+    final radius = math.min(size.width, size.height) / 2 * 0.8;
+    final angleStep = (2 * math.pi) / values.length;
+
+    final gridPaint = Paint()
+      ..color = Colors.white.withValues(alpha: 0.1)
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 1;
+
+    // Draw grid rings
+    for (int i = 1; i <= 5; i++) {
+      final r = radius * (i / 5);
+      final path = Path();
+      for (int j = 0; j < values.length; j++) {
+        final angle = j * angleStep - math.pi / 2;
+        final x = center.dx + r * math.cos(angle);
+        final y = center.dy + r * math.sin(angle);
+        if (j == 0) {
+          path.moveTo(x, y);
+        } else {
+          path.lineTo(x, y);
+        }
+      }
+      path.close();
+      canvas.drawPath(path, gridPaint);
+    }
+
+    // Draw axis lines
+    for (int j = 0; j < values.length; j++) {
+      final angle = j * angleStep - math.pi / 2;
+      canvas.drawLine(
+        center,
+        Offset(
+          center.dx + radius * math.cos(angle),
+          center.dy + radius * math.sin(angle),
+        ),
+        gridPaint,
+      );
+    }
+
+    // Draw data path
+    final dataPaint = Paint()
+      ..color = color.withValues(alpha: 0.4)
+      ..style = PaintingStyle.fill;
+
+    final borderPaint = Paint()
+      ..color = color
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 2;
+
+    if (showGlow) {
+      borderPaint.maskFilter = const MaskFilter.blur(BlurStyle.outer, 4);
+    }
+
+    final dataPath = Path();
+    for (int j = 0; j < values.length; j++) {
+      final angle = j * angleStep - math.pi / 2;
+      final val = values[j].clamp(0.05, 1.0);
+      final x = center.dx + radius * val * math.cos(angle);
+      final y = center.dy + radius * val * math.sin(angle);
+      if (j == 0) {
+        dataPath.moveTo(x, y);
+      } else {
+        dataPath.lineTo(x, y);
+      }
+    }
+    dataPath.close();
+
+    canvas.drawPath(dataPath, dataPaint);
+    canvas.drawPath(dataPath, borderPaint);
+
+    // Draw labels markers
+    for (int j = 0; j < values.length; j++) {
+      final angle = j * angleStep - math.pi / 2;
+      final val = values[j].clamp(0.05, 1.0);
+      final x = center.dx + radius * val * math.cos(angle);
+      final y = center.dy + radius * val * math.sin(angle);
+      canvas.drawCircle(Offset(x, y), 3, Paint()..color = color);
+    }
+  }
+
+  @override
+  bool shouldRepaint(covariant RadarChartPainter oldDelegate) => true;
+}
+
+class GridPainter extends CustomPainter {
+  @override
+  void paint(Canvas canvas, Size size) {
+    final paint = Paint()
+      ..color = Colors.white.withValues(alpha: 0.03)
+      ..strokeWidth = 0.5;
+
+    const double step = 30.0;
+
+    for (double x = 0; x <= size.width; x += step) {
+      canvas.drawLine(Offset(x, 0), Offset(x, size.height), paint);
+    }
+
+    for (double y = 0; y <= size.height; y += step) {
+      canvas.drawLine(Offset(0, y), Offset(size.width, y), paint);
+    }
+  }
+
+  @override
+  bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
 }

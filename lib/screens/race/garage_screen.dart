@@ -2292,7 +2292,7 @@ class _GarageScreenState extends State<GarageScreen>
                   child: Text(
                     l10n.garageTyre.toUpperCase(),
                     style: _qualyHeaderStyle,
-                    textAlign: TextAlign.center,
+                    textAlign: TextAlign.left,
                   ),
                 ),
                 Expanded(
@@ -2308,7 +2308,7 @@ class _GarageScreenState extends State<GarageScreen>
                   child: Text(
                     l10n.garageLaps.toUpperCase(),
                     style: _qualyHeaderStyle,
-                    textAlign: TextAlign.center,
+                    textAlign: TextAlign.left,
                   ),
                 ),
               ],
@@ -2389,9 +2389,11 @@ class _GarageScreenState extends State<GarageScreen>
               style: TextStyle(
                 fontSize: 12,
                 fontWeight: FontWeight.w900,
-                color: pos <= 3 && hasTime
-                    ? const Color(0xFFFFB800)
-                    : Colors.white.withValues(alpha: 0.5),
+                color: hasTime
+                    ? (pos <= 3
+                          ? const Color(0xFFFFB800)
+                          : Colors.white.withValues(alpha: 0.9))
+                    : Colors.white.withValues(alpha: 0.4),
               ),
             ),
           ),
@@ -2404,7 +2406,9 @@ class _GarageScreenState extends State<GarageScreen>
                 fontWeight: isPlayerTeam ? FontWeight.bold : FontWeight.normal,
                 color: isPlayerTeam
                     ? theme.colorScheme.secondary
-                    : Colors.white.withValues(alpha: 0.5),
+                    : (hasTime
+                          ? Colors.white.withValues(alpha: 0.9)
+                          : Colors.white.withValues(alpha: 0.4)),
               ),
               overflow: TextOverflow.ellipsis,
             ),
@@ -2415,7 +2419,9 @@ class _GarageScreenState extends State<GarageScreen>
               row['teamName'] ?? '',
               style: TextStyle(
                 fontSize: 10,
-                color: Colors.white.withValues(alpha: 0.5),
+                color: hasTime
+                    ? Colors.white.withValues(alpha: 0.7)
+                    : Colors.white.withValues(alpha: 0.4),
               ),
               overflow: TextOverflow.ellipsis,
             ),
@@ -2431,20 +2437,27 @@ class _GarageScreenState extends State<GarageScreen>
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.end,
               children: [
-                Text(
-                  hasTime ? _formatLapTime(bestTime) : '00:00.000',
-                  style: TextStyle(
-                    fontSize: 11,
-                    fontWeight: FontWeight.bold,
-                    fontFamily: 'monospace',
-                    color: hasTime
-                        ? (index == 0
-                              ? const Color(0xFFFFB800)
-                              : Colors.white.withValues(alpha: 0.5))
-                        : Colors.white.withValues(alpha: 0.5),
+                if (hasTime)
+                  Text(
+                    _formatLapTime(bestTime),
+                    style: const TextStyle(
+                      fontSize: 11,
+                      fontWeight: FontWeight.bold,
+                      fontFamily: 'monospace',
+                      color: Colors.white,
+                    ),
+                    textAlign: TextAlign.right,
+                  )
+                else
+                  Text(
+                    '--:--.---',
+                    style: TextStyle(
+                      fontSize: 11,
+                      fontFamily: 'monospace',
+                      color: Colors.white.withValues(alpha: 0.3),
+                    ),
+                    textAlign: TextAlign.right,
                   ),
-                  textAlign: TextAlign.right,
-                ),
                 if (gapText.isNotEmpty)
                   Text(
                     gapText,
