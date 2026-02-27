@@ -8,12 +8,17 @@ Esta guía establece las reglas y el lenguaje que debe usar el Product Manager p
 
 Para que el desarrollo sea "orgánico", debes referirte a las partes de la app por sus nombres técnicos establecidos:
 
-### Módulos Principales:
-*   **`Core`**: Todo lo relacionado con inicio de sesión, ajustes del perfil y colores básicos.
-*   **`Racing`**: Simulación, setups, telemetría y resultados de carrera.
-*   **`Team`**: Finanzas, cuartel general (HQ), staff e instalaciones.
-*   **`Market`**: Fichaje de pilotos, agentes y patrocinadores.
-*   **`Season`**: Calendario, ligas y clasificaciones generales.
+### Main Modules & Components:
+*   **`CoreModule`**: Shared logic, basic types, network utilities, and authentication.
+    *   *Components:* `AuthService`, `UserModel`, `AppTheme`.
+*   **`RacingModule`**: Session simulation, results, and telemetry.
+    *   *Components:* `RaceService`, `RaceEvent`, `CarSetup`.
+*   **`TeamManagementModule`**: Personnel management, finances, and facilities (HQ).
+    *   *Components:* `TeamService`, `Facility`, `FinanceService`.
+*   **`MarketModule`**: Driver signings and sponsor auctions.
+    *   *Components:* `TransferMarketService`, `SponsorService`, `Driver`.
+*   **`SeasonModule`**: Calendar, standings, and league management.
+    *   *Components:* `SeasonService`, `League`, `Standings`.
 
 ---
 
@@ -23,7 +28,7 @@ Cada vez que lances un prompt a la IA, sigue esta estructura para evitar errores
 
 ### REGLA 1: Especificar el "Contexto de Módulo"
 Siempre empieza indicando en qué módulo quieres trabajar.
-> *Ejemplo:* "En el módulo de `Market`, añade un filtro de edad a la lista de pilotos."
+> *Ejemplo:* "En el `MarketModule`, añade un filtro de edad a la lista de pilotos."
 
 ### REGLA 2: Usar el "Lego de Componentes"
 Si quieres cambiar la UI, nombra el componente de diseño.
@@ -31,20 +36,20 @@ Si quieres cambiar la UI, nombra el componente de diseño.
 
 ### REGLA 3: Prohibir el "Efecto Cascada"
 Pide explícitamente que no se modifiquen otros módulos.
-> *Ejemplo:* "Implementa este cambio en el `RacingModule` asegurándote de no afectar al performance del `TeamModule`."
+> *Ejemplo:* "Implementa este cambio en el `RacingModule` asegurándote de no afectar al performance del `TeamManagementModule`."
 
 ---
 
 ## 3. Plantillas de Prompt Recomendadas
 
 ### Para un Nuevo Módulo / Funcionalidad:
-> "Actúa como desarrollador senior. Crea un nuevo submódulo llamado `Scouting` dentro del módulo `Team`. Usa el patrón de Repositorio para la data y asegúrate de que use el componente `OnyxTable` para mostrar los resultados."
+> "Actúa como desarrollador senior. Crea un nuevo submódulo llamado `Scouting` dentro del `TeamManagementModule`. Usa el patrón de Repositorio para la data y asegúrate de que use el componente `OnyxTable` para mostrar los resultados."
 
 ### Para Mejorar uno Existente:
-> "En el módulo `Season`, optimiza el flujo de información de la pantalla de clasificaciones. Evita reconstrucciones innecesarias (rebuilds) y usa el sistema de colores definido en `Core`."
+> "En el `SeasonModule`, optimiza el flujo de información de la pantalla de clasificaciones. Evita reconstrucciones innecesarias (rebuilds) y usa el sistema de colores definido en `CoreModule`."
 
 ### Para Arreglar un Bug:
-> "Hay un bug en el `RacingService` cuando se calcula el desgaste de neumáticos. Arréglalo sin modificar la lógica de XP de los pilotos."
+> "Hay un bug en el `RaceService` cuando se calcula el desgaste de neumáticos. Arréglalo sin modificar la lógica de XP de los pilotos."
 
 ---
 
