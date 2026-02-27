@@ -87,9 +87,9 @@ class _OnyxTableState extends State<OnyxTable> {
                 flex: widget.flexValues[i],
                 child: Text(
                   widget.columns[i].toUpperCase(),
-                  textAlign: TextAlign.center,
+                  textAlign: TextAlign.left,
                   style: GoogleFonts.poppins(
-                    fontWeight: FontWeight.w900,
+                    fontWeight: FontWeight.w700,
                     fontSize: 10,
                     letterSpacing: 1.1,
                     color: Colors.white.withValues(alpha: 0.4),
@@ -195,7 +195,7 @@ class _OnyxTableState extends State<OnyxTable> {
           final isHighlighted = widget.highlightIndices.contains(index);
 
           final textStyle = (isPoints || isPos)
-              ? GoogleFonts.jetBrainsMono(
+              ? GoogleFonts.inter(
                   fontSize: 12,
                   color: isHighlighted
                       ? const Color(0xFF00C853)
@@ -203,7 +203,7 @@ class _OnyxTableState extends State<OnyxTable> {
                             ? Colors.white.withValues(alpha: 0.5)
                             : Colors.white.withValues(alpha: 0.9)),
                   fontWeight: isHighlighted || isPoints
-                      ? FontWeight.w900
+                      ? FontWeight.w700
                       : FontWeight.w500,
                 )
               : GoogleFonts.inter(

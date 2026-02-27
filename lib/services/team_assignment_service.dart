@@ -92,7 +92,17 @@ class TeamAssignmentService {
     final league = universe.getLeagueById(leagueId);
     if (league == null) return [];
 
-    return league.teams;
+    final teamIds = league.teams.map((t) => t.id).toList();
+    if (teamIds.isEmpty) return [];
+
+    final snapshot = await _db
+        .collection('teams')
+        .where(FieldPath.documentId, whereIn: teamIds)
+        .get();
+
+    return snapshot.docs
+        .map((doc) => Team.fromMap({...doc.data(), 'id': doc.id}))
+        .toList();
   }
 
   /// Elimina todos los equipos (útil para testing/debugging)

@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import '../../models/core_models.dart';
@@ -7,7 +8,7 @@ import '../../utils/currency_formatter.dart';
 import '../../widgets/common/onyx_table.dart';
 import '../../widgets/common/driver_stars.dart';
 import '../../widgets/common/onyx_skeleton.dart';
-import '../drivers/widgets/driver_card.dart';
+import 'widgets/transfer_market_driver_card.dart';
 
 class TransferMarketScreen extends StatefulWidget {
   final String teamId;
@@ -399,66 +400,42 @@ class _TransferMarketScreenState extends State<TransferMarketScreen> {
       context: context,
       builder: (ctx) => Dialog(
         backgroundColor: Colors.transparent,
-        insetPadding: const EdgeInsets.all(16),
-        child: SingleChildScrollView(
-          child: Center(
-            child: SizedBox(
-              width: screenWidth * 0.7,
-              child: Stack(
-                clipBehavior: Clip.none,
-                children: [
-                  StreamBuilder<DocumentSnapshot>(
-                    stream: FirebaseFirestore.instance
-                        .collection('drivers')
-                        .doc(driver.id)
-                        .snapshots(),
-                    builder: (context, snapshot) {
-                      if (!snapshot.hasData) {
-                        return DriverCard(
-                          driver: driver,
-                          currentTeamId: widget.teamId,
-                          isCancellingBid: _cancellingBidDriverIds.contains(
-                            driver.id,
-                          ),
-                        );
-                      }
-                      final updatedDriver = Driver.fromMap(
-                        snapshot.data!.data() as Map<String, dynamic>,
-                      );
-                      return DriverCard(
-                        driver: updatedDriver,
-                        currentTeamId: widget.teamId,
-                        onBid: () => _showBidModal(updatedDriver),
-                        onCancelTransfer: () =>
-                            _handleCancelTransfer(updatedDriver),
-                        onCancelBid: () => _handleCancelBid(updatedDriver),
-                        isCancellingBid: _cancellingBidDriverIds.contains(
-                          updatedDriver.id,
-                        ),
-                      );
-                    },
-                  ),
-                  Positioned(
-                    top: 12,
-                    right: 12,
-                    child: Material(
-                      color: Colors.black26,
-                      shape: const CircleBorder(),
-                      child: IconButton(
-                        icon: const Icon(
-                          Icons.close,
-                          color: Colors.white,
-                          size: 20,
-                        ),
-                        onPressed: () => Navigator.pop(ctx),
-                        constraints: const BoxConstraints(),
-                        padding: const EdgeInsets.all(8),
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-            ),
+        elevation: 0,
+        insetPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 24),
+        child: SizedBox(
+          width: math.min(screenWidth * 0.85, 1200),
+          child: StreamBuilder<DocumentSnapshot>(
+            stream: FirebaseFirestore.instance
+                .collection('drivers')
+                .doc(driver.id)
+                .snapshots(),
+            builder: (context, snapshot) {
+              if (!snapshot.hasData ||
+                  snapshot.data == null ||
+                  snapshot.data!.data() == null) {
+                return TransferMarketDriverCard(
+                  driver: driver,
+                  currentTeamId: widget.teamId,
+                  isCancellingBid: _cancellingBidDriverIds.contains(driver.id),
+                  onClose: () => Navigator.pop(ctx),
+                );
+              }
+
+              final data = snapshot.data!.data() as Map<String, dynamic>;
+              final updatedDriver = Driver.fromMap(data);
+
+              return TransferMarketDriverCard(
+                driver: updatedDriver,
+                currentTeamId: widget.teamId,
+                onBid: () => _showBidModal(updatedDriver),
+                onCancelTransfer: () => _handleCancelTransfer(updatedDriver),
+                onCancelBid: () => _handleCancelBid(updatedDriver),
+                isCancellingBid: _cancellingBidDriverIds.contains(
+                  updatedDriver.id,
+                ),
+                onClose: () => Navigator.pop(ctx),
+              );
+            },
           ),
         ),
       ),

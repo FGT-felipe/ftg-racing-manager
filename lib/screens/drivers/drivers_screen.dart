@@ -142,48 +142,46 @@ class _DriversScreenState extends State<DriversScreen> {
                     cursor: SystemMouseCursors.click,
                     child: GestureDetector(
                       onTap: () => _showDriverDetail(context, driver),
-                      child: Center(
-                        child: Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            if (driver.portraitUrl != null &&
-                                driver.portraitUrl!.isNotEmpty)
-                              Padding(
-                                padding: const EdgeInsets.only(right: 8.0),
-                                child: CircleAvatar(
-                                  radius: 12,
-                                  backgroundImage: NetworkImage(
-                                    driver.portraitUrl!,
-                                  ),
-                                  backgroundColor: Colors.white10,
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          if (driver.portraitUrl != null &&
+                              driver.portraitUrl!.isNotEmpty)
+                            Padding(
+                              padding: const EdgeInsets.only(right: 8.0),
+                              child: CircleAvatar(
+                                radius: 12,
+                                backgroundImage: NetworkImage(
+                                  driver.portraitUrl!,
                                 ),
-                              )
-                            else
-                              const Padding(
-                                padding: EdgeInsets.only(right: 8.0),
-                                child: CircleAvatar(
-                                  radius: 12,
-                                  backgroundColor: Colors.white10,
-                                  child: Icon(
-                                    Icons.person,
-                                    size: 14,
-                                    color: Colors.white30,
-                                  ),
-                                ),
+                                backgroundColor: Colors.white10,
                               ),
-                            Flexible(
-                              child: Text(
-                                driver.name,
-                                style: const TextStyle(
-                                  fontWeight: FontWeight.bold,
-                                  decoration: TextDecoration.underline,
-                                  decorationColor: Colors.white24,
+                            )
+                          else
+                            const Padding(
+                              padding: EdgeInsets.only(right: 8.0),
+                              child: CircleAvatar(
+                                radius: 12,
+                                backgroundColor: Colors.white10,
+                                child: Icon(
+                                  Icons.person,
+                                  size: 14,
+                                  color: Colors.white30,
                                 ),
-                                overflow: TextOverflow.ellipsis,
                               ),
                             ),
-                          ],
-                        ),
+                          Flexible(
+                            child: Text(
+                              driver.name,
+                              style: const TextStyle(
+                                fontWeight: FontWeight.bold,
+                                decoration: TextDecoration.underline,
+                                decorationColor: Colors.white24,
+                              ),
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                          ),
+                        ],
                       ),
                     ),
                   ),
@@ -191,12 +189,16 @@ class _DriversScreenState extends State<DriversScreen> {
                 // Team Status
                 Expanded(
                   flex: 2,
-                  child: Center(child: _buildTeamStatusBadge(driver)),
+                  child: Align(
+                    alignment: Alignment.centerLeft,
+                    child: _buildTeamStatusBadge(driver),
+                  ),
                 ),
                 // Potential
                 Expanded(
                   flex: 3,
-                  child: Center(
+                  child: Align(
+                    alignment: Alignment.centerLeft,
                     child: DriverStars(
                       currentStars: driver.currentStars,
                       maxStars: driver.potential,
@@ -206,45 +208,35 @@ class _DriversScreenState extends State<DriversScreen> {
                 // Morale
                 Expanded(
                   flex: 2,
-                  child: Center(
-                    child: _buildStatValue(driver.getStat(DriverStats.morale)),
-                  ),
+                  child: _buildStatValue(driver.getStat(DriverStats.morale)),
                 ),
                 // Fitness
                 Expanded(
                   flex: 2,
-                  child: Center(
-                    child: _buildStatValue(driver.getStat(DriverStats.fitness)),
-                  ),
+                  child: _buildStatValue(driver.getStat(DriverStats.fitness)),
                 ),
                 // Races
                 Expanded(
                   flex: 1,
-                  child: Center(
-                    child: Text(
-                      driver.races.toString(),
-                      style: const TextStyle(fontSize: 12),
-                    ),
+                  child: Text(
+                    driver.races.toString(),
+                    style: const TextStyle(fontSize: 12),
                   ),
                 ),
                 // Podiums
                 Expanded(
                   flex: 1,
-                  child: Center(
-                    child: Text(
-                      driver.podiums.toString(),
-                      style: const TextStyle(fontSize: 12),
-                    ),
+                  child: Text(
+                    driver.podiums.toString(),
+                    style: const TextStyle(fontSize: 12),
                   ),
                 ),
                 // Wins
                 Expanded(
                   flex: 1,
-                  child: Center(
-                    child: Text(
-                      driver.wins.toString(),
-                      style: const TextStyle(fontSize: 12),
-                    ),
+                  child: Text(
+                    driver.wins.toString(),
+                    style: const TextStyle(fontSize: 12),
                   ),
                 ),
               ],
@@ -410,7 +402,7 @@ class _DriversScreenState extends State<DriversScreen> {
                           ).showSnackBar(SnackBar(content: Text("Error: $e")));
                         }
                       }
-                      Navigator.pop(ctx);
+                      if (ctx.mounted) Navigator.pop(ctx);
                     },
                   ),
                   Positioned(

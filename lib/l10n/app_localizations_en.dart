@@ -929,10 +929,10 @@ class AppLocalizationsEn extends AppLocalizations {
   String get posLabel => 'Pos';
 
   @override
-  String get eventHeader => 'Event Header';
+  String get eventHeader => 'EVENT';
 
   @override
-  String get qHeader => 'Q Header';
+  String get qHeader => 'Q';
 
   @override
   String get rHeader => 'R';
@@ -944,13 +944,13 @@ class AppLocalizationsEn extends AppLocalizations {
   String get careerHistoryTitle => 'Career History';
 
   @override
-  String get yearHeader => 'Year Header';
+  String get yearHeader => 'YEAR';
 
   @override
-  String get teamHeader => 'Team Header';
+  String get teamHeader => 'TEAM';
 
   @override
-  String get seriesHeader => 'Series Header';
+  String get seriesHeader => 'SERIES';
 
   @override
   String get wHeader => 'W';
@@ -959,7 +959,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get historyIndividual => 'Individual';
 
   @override
-  String get noDataAvailableYet => 'No Data Available Yet';
+  String get noDataAvailableYet => 'No data yet';
 
   @override
   String get historyLowerDivision => 'Lower Division';
