@@ -7,6 +7,7 @@ import '../models/domain/domain_models.dart';
 import 'notification_service.dart';
 import 'driver_name_service.dart';
 import 'driver_portrait_service.dart';
+import '../utils/currency_formatter.dart';
 
 class TransferMarketService {
   final FirebaseFirestore _db = FirebaseFirestore.instance;
@@ -338,6 +339,110 @@ class TransferMarketService {
 
       // We could also delete the TransferBid record, but keeping it as a "failed/cancelled" log might be better.
       // For now, let's just clear the driver state.
+    });
+  }
+
+  // 4c. Resolve Transfer
+  // Resolves an expired transfer listing.
+  // If bids exist, transfers driver to winner.
+  // If no bids, deletes driver.
+  Future<void> resolveTransfer(String driverId) async {
+    final driverRef = _db.collection('drivers').doc(driverId);
+
+    await _db.runTransaction((txn) async {
+      final driverSnap = await txn.get(driverRef);
+
+      if (!driverSnap.exists) {
+        return; // Already resolved or deleted
+      }
+
+      final d = Driver.fromMap(driverSnap.data() as Map<String, dynamic>);
+
+      if (!d.isTransferListed) {
+        return; // Already resolved
+      }
+
+      // Check expiration
+      final listedAt = d.transferListedAt ?? DateTime.now();
+      final expiresAt = listedAt.add(const Duration(hours: 24));
+      if (DateTime.now().isBefore(expiresAt)) {
+        return; // Not expired yet
+      }
+
+      final highestBid = d.currentHighestBid;
+      final highestBidderId = d.highestBidderTeamId;
+      final sellerTeamId = d.teamId;
+
+      if (highestBid > 0 && highestBidderId != null) {
+        // Driver Sold
+        txn.update(driverRef, {
+          'isTransferListed': false,
+          'transferListedAt': FieldValue.delete(),
+          'currentHighestBid': FieldValue.delete(),
+          'highestBidderTeamId': FieldValue.delete(),
+          'highestBidderTeamName': FieldValue.delete(),
+          'teamId': highestBidderId,
+          'salary': d.salary > 100000 ? d.salary : 100000,
+          'contractYearsRemaining': 1,
+        });
+
+        // Give money to seller if it was a team-owned driver
+        if (sellerTeamId != null) {
+          final sellerRef = _db.collection('teams').doc(sellerTeamId);
+          final sellerSnap = await txn.get(sellerRef);
+          if (sellerSnap.exists) {
+            final seller = Team.fromMap(
+              sellerSnap.data() as Map<String, dynamic>,
+            );
+            txn.update(sellerRef, {'budget': seller.budget + highestBid});
+
+            // Record seller transaction
+            final transRef = sellerRef.collection('transactions').doc();
+            txn.set(
+              transRef,
+              Transaction(
+                id: transRef.id,
+                description: 'Driver Sold: ${d.name}',
+                amount: highestBid,
+                date: DateTime.now(),
+                type: 'TRANSFER_SALE',
+              ).toMap(),
+            );
+
+            // Notify Seller
+            _notificationService.addNotification(
+              teamId: sellerTeamId,
+              title: "Driver Sold",
+              message:
+                  "${d.name} was successfully sold in the transfer market for ${CurrencyFormatter.format(highestBid)}.",
+              type: "SUCCESS",
+            );
+          }
+        }
+
+        // Notify Buyer
+        _notificationService.addNotification(
+          teamId: highestBidderId,
+          title: "Transfer Bid Won",
+          message:
+              "You won the bid for ${d.name} for ${CurrencyFormatter.format(highestBid)}! They have joined your team.",
+          type: "SUCCESS",
+        );
+      } else {
+        // Driver Unsold - Delete as requested
+        txn.delete(driverRef);
+
+        if (sellerTeamId != null) {
+          // Notify Seller that driver is gone (since they disappear from database)
+          _notificationService.addNotification(
+            teamId: sellerTeamId,
+            title: "Driver Unsold & Released",
+            message:
+                "Nobody bid on ${d.name}. As per market rules, the driver has been released and is no longer in your team.",
+            type: "WARNING",
+          );
+        }
+      }
     });
   }
 
