@@ -1378,28 +1378,9 @@ exports.resolveTransferMarket = onSchedule({
           type: "TRANSFER_WON",
         });
       } else {
-        // Driver Unsold
-        currentBatch.update(doc.ref, {
-          isTransferListed: false,
-          transferListedAt: admin.firestore.FieldValue.delete(),
-          currentHighestBid: admin.firestore.FieldValue.delete(),
-          highestBidderTeamId: admin.firestore.FieldValue.delete(),
-        });
+        // Driver Unsold - Delete as requested by product rules
+        currentBatch.delete(doc.ref);
         opCount++;
-
-        if (originalTeamId) {
-          // Notify Seller
-          await addOfficeNews(originalTeamId, {
-            title: "Driver Unsold",
-            message: `Nobody bid on ${driver.name} in the transfer market. They remain in your team.`,
-            type: "TRANSFER_UNSOLD",
-          });
-        } else {
-          // If it was generated and no one bought him, he just hangs in the pool or we delete?
-          // Deleting keeps the pool clean from unsold admin generated drivers
-          currentBatch.delete(doc.ref);
-          opCount++;
-        }
       }
 
       if (opCount >= 400) {

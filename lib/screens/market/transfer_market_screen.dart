@@ -174,13 +174,13 @@ class _TransferMarketScreenState extends State<TransferMarketScreen> {
       ],
       itemCount: drivers.length,
       itemBuilder: (context, index) {
-        return _buildRow(drivers[index]);
+        return _buildRow(drivers[index], drivers);
       },
       highlightIndices: const [],
     );
   }
 
-  Widget _buildRow(Driver driver) {
+  Widget _buildRow(Driver driver, List<Driver> currentList) {
     final listedAt = driver.transferListedAt ?? DateTime.now();
     final expiresAt = listedAt.add(const Duration(hours: 24));
     final diff = expiresAt.difference(DateTime.now());
@@ -239,7 +239,16 @@ class _TransferMarketScreenState extends State<TransferMarketScreen> {
           color: isMyBid ? Colors.green : Colors.amber,
         ),
       ),
-      _MarketCountdown(expiresAt: expiresAt),
+      _MarketCountdown(
+        driverId: driver.id,
+        expiresAt: expiresAt,
+        onResolved: () {
+          // Check if driver is still in the list to avoid redundant fetches
+          if (currentList.any((d) => d.id == driver.id)) {
+            _fetchPage(_currentPage);
+          }
+        },
+      ),
       driver.teamId == widget.teamId
           ? const Text(
               "Your Driver",
@@ -517,9 +526,15 @@ class _TransferMarketScreenState extends State<TransferMarketScreen> {
 }
 
 class _MarketCountdown extends StatefulWidget {
+  final String driverId;
   final DateTime expiresAt;
+  final VoidCallback? onResolved;
 
-  const _MarketCountdown({required this.expiresAt});
+  const _MarketCountdown({
+    required this.driverId,
+    required this.expiresAt,
+    this.onResolved,
+  });
 
   @override
   State<_MarketCountdown> createState() => _MarketCountdownState();
@@ -528,6 +543,7 @@ class _MarketCountdown extends StatefulWidget {
 class _MarketCountdownState extends State<_MarketCountdown> {
   Timer? _timer;
   late Duration _diff;
+  bool _isResolving = false;
 
   @override
   void initState() {
@@ -535,11 +551,32 @@ class _MarketCountdownState extends State<_MarketCountdown> {
     _diff = widget.expiresAt.difference(DateTime.now());
     _timer = Timer.periodic(const Duration(seconds: 1), (timer) {
       if (mounted) {
+        final newDiff = widget.expiresAt.difference(DateTime.now());
         setState(() {
-          _diff = widget.expiresAt.difference(DateTime.now());
+          _diff = newDiff;
         });
+
+        if (newDiff.isNegative && !_isResolving) {
+          _isResolving = true;
+          _resolveTransfer();
+        }
       }
     });
+  }
+
+  Future<void> _resolveTransfer() async {
+    try {
+      await TransferMarketService().resolveTransfer(widget.driverId);
+      if (mounted) {
+        widget.onResolved?.call();
+      }
+    } catch (e) {
+      debugPrint("Error resolving transfer for ${widget.driverId}: $e");
+      // If resolution fails, we'll try again on the next timer tick if still listed
+      if (mounted) {
+        setState(() => _isResolving = false);
+      }
+    }
   }
 
   @override
