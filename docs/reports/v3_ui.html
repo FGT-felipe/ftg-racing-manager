@@ -2628,6 +2628,361 @@
                 </div>
             </div>
         </div>
+        </div>
+    </section>
+
+    <!-- ===========================
+     22. GARAGE SETUP COMPONENTS
+     =========================== -->
+    <section class="audit-section">
+        <h2 class="section-title">22. Garage Setup Components</h2>
+        <span class="source-ref">lib/screens/race/garage_screen.dart</span>
+
+        <!-- Driver Selector Card (SELECTED) -->
+        <div class="component-label" style="margin-bottom:8px;">Garage Driver Selector — Card (Selected State)</div>
+        <div
+            style="width:220px;height:110px;margin-bottom:24px;border-radius:12px;border:2px solid #3A40B1;background:linear-gradient(to bottom right, #2A2A2A, #121212);box-shadow:0 4px 10px rgba(58,64,177,0.3);overflow:hidden;display:flex;">
+            <!-- Left Portrait Area -->
+            <div
+                style="flex:35;background:linear-gradient(to right, rgba(0,0,0,0.8), transparent), url('https://placehold.co/100x150/1e1e1e/333333?text=Driver') center/cover;">
+            </div>
+            <!-- Right Info Area -->
+            <div style="flex:65;padding:10px 12px;display:flex;flex-direction:column;justify-content:center;">
+                <div style="display:flex;justify-content:space-between;align-items:center;">
+                    <span
+                        style="font-size:12px;font-weight:900;letter-spacing:0.5px;color:white;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">L.
+                        HAMILTON</span>
+                    <span style="color:#00C853;font-size:14px;">✔</span>
+                </div>
+                <!-- Fitness Bar Placeholder -->
+                <div
+                    style="height:6px;background:rgba(255,255,255,0.1);border-radius:3px;margin:8px 0;position:relative;overflow:hidden;">
+                    <div
+                        style="position:absolute;left:0;top:0;height:100%;width:90%;background:#00C853;border-radius:3px;">
+                    </div>
+                </div>
+                <!-- Laps Info -->
+                <div style="display:flex;align-items:center;gap:4px;">
+                    <span style="font-size:10px;color:rgba(255,255,255,0.38);">⏱</span>
+                    <span style="font-size:9px;font-weight:900;letter-spacing:0.5px;color:rgba(255,255,255,0.38);">0 / 5
+                        LAPS</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Driver Selector Card (DNF OVERLAY) -->
+        <div class="component-label" style="margin-bottom:8px;">Garage Driver Selector — DNF Overlay</div>
+        <div
+            style="position:relative;width:220px;height:110px;margin-bottom:24px;border-radius:12px;border:1px solid rgba(255,255,255,0.1);background:linear-gradient(to bottom right, #1E1E1E, #0A0A0A);box-shadow:0 2px 4px rgba(0,0,0,0.4);overflow:hidden;">
+            <div style="display:flex;height:100%;">
+                <div
+                    style="flex:35;background:linear-gradient(to right, rgba(0,0,0,0.8), transparent), url('https://placehold.co/100x150/1e1e1e/333333?text=Driver') center/cover;">
+                </div>
+                <div style="flex:65;padding:10px 12px;display:flex;flex-direction:column;justify-content:center;">
+                    <span style="font-size:12px;font-weight:900;letter-spacing:0.5px;color:rgba(255,255,255,0.5);">C.
+                        LECLERC</span>
+                    <div style="height:6px;background:rgba(255,255,255,0.1);border-radius:3px;margin:8px 0;"></div>
+                    <div style="display:flex;align-items:center;gap:4px;">
+                        <span style="font-size:10px;color:orange;">⏱</span>
+                        <span style="font-size:9px;font-weight:900;letter-spacing:0.5px;color:orange;">5 / 5 LAPS</span>
+                    </div>
+                </div>
+            </div>
+            <!-- Overlay -->
+            <div
+                style="position:absolute;inset:0;background:rgba(244,67,54,0.55);border-radius:10px;display:flex;align-items:center;justify-content:center;">
+                <span
+                    style="color:white;font-size:28px;font-weight:900;letter-spacing:4.0px;text-shadow:0 0 10px black;">DNF</span>
+            </div>
+        </div>
+
+        <!-- Driver Feedback Card -->
+        <div class="component-label" style="margin-bottom:8px;">Garage Driver Feedback Card</div>
+        <div
+            style="max-width:500px;background:#0A0A0A;border-radius:12px;border:1px solid rgba(255,255,255,0.1);display:flex;flex-direction:column;">
+            <!-- Header -->
+            <div
+                style="padding:12px 16px;background:rgba(255,255,255,0.05);border-radius:12px 12px 0 0;display:flex;align-items:center;gap:8px;">
+                <span style="color:rgba(255,255,255,0.5);font-size:16px;">💬</span>
+                <span style="font-size:11px;font-weight:900;letter-spacing:1.5px;color:rgba(255,255,255,0.5);">DRIVER
+                    FEEDBACK</span>
+            </div>
+            <!-- Session Content -->
+            <div style="padding:12px;">
+                <div
+                    style="padding:12px;background:rgba(255,255,255,0.05);border-radius:12px;border:1px solid rgba(255,255,255,0.1);">
+                    <!-- Session Header -->
+                    <div style="display:flex;align-items:center;gap:8px;">
+                        <div
+                            style="width:20px;height:20px;border-radius:50%;background:#00B0FF;display:flex;align-items:center;justify-content:center;color:white;font-size:9px;font-weight:bold;">
+                            L</div>
+                        <span
+                            style="font-size:11px;font-weight:900;color:rgba(255,255,255,0.7);letter-spacing:1.0px;">L.
+                            HAMILTON</span>
+                        <div style="flex:1;"></div>
+                        <span
+                            style="font-size:10px;font-weight:900;color:rgba(58,64,177,0.8);font-family:monospace;">BEST:
+                            1:23.456</span>
+                    </div>
+                    <!-- Divider -->
+                    <div style="height:1px;background:rgba(255,255,255,0.1);margin:8px 0;"></div>
+                    <!-- Messages -->
+                    <div style="display:flex;align-items:flex-start;gap:4px;padding:3px 0;">
+                        <span style="color:rgba(100,221,23,0.8);font-size:14px;">›</span>
+                        <span style="font-size:12px;font-weight:500;color:rgba(100,221,23,0.8);">The rear feels planted,
+                            grip is solid!</span> <!-- 0.90 confidence -->
+                    </div>
+                    <div style="display:flex;align-items:flex-start;gap:4px;padding:3px 0;">
+                        <span style="color:rgba(255,184,0,0.8);font-size:14px;">›</span>
+                        <span style="font-size:12px;font-weight:500;color:rgba(255,184,0,0.8);">Engine braking could be
+                            better, we are losing time on entry.</span> <!-- 0.85 confidence -->
+                    </div>
+                </div>
+            </div>
+        </div>
+        </div>
+    </section>
+
+    <!-- ===========================
+     23. FINANCES & SPONSORS
+     =========================== -->
+    <section class="audit-section">
+        <h2 class="section-title">23. Finances & Sponsors Components</h2>
+        <span class="source-ref">lib/screens/office/finances_screen.dart & sponsorship_screen.dart</span>
+
+        <!-- Balance Header -->
+        <div class="component-label" style="margin-bottom:8px;">Finances Balance Header</div>
+        <div
+            style="max-width:500px;margin:20px 0;padding:32px;background:linear-gradient(to bottom right, #1E1E1E, #0A0A0A);border-radius:12px;border:1px solid rgba(255,255,255,0.1);box-shadow:0 6px 12px rgba(0,0,0,0.4);text-align:center;">
+            <div style="color:grey;font-size:12px;font-weight:bold;letter-spacing:1.5px;margin-bottom:8px;">CURRENT
+                BALANCE</div>
+            <div style="color:white;font-size:42px;font-weight:900;">$ 4,500,000</div>
+        </div>
+
+        <!-- Transaction Tile -->
+        <div class="component-label" style="margin-bottom:8px;">Transaction Tile (Sponsor Payment)</div>
+        <div
+            style="max-width:500px;margin-bottom:12px;background:#121212;border-radius:12px;border:1px solid rgba(255,255,255,0.05);display:flex;align-items:center;padding:12px 16px;">
+            <div style="background:rgba(58,64,177,0.1);padding:10px;border-radius:12px;margin-right:16px;">
+                <span style="color:#3A40B1;font-size:24px;">🤝</span>
+            </div>
+            <div style="flex:1;">
+                <div style="color:white;font-weight:bold;font-size:16px;">Motorsport Daily Sponsorship</div>
+                <div style="color:grey;font-size:12px;margin-top:2px;">Mon, 9:00 AM</div>
+            </div>
+            <div style="color:green;font-weight:bold;font-size:16px;">+$ 150,000</div>
+        </div>
+
+        <!-- Transfer Budget Card -->
+        <div class="component-label" style="margin-bottom:8px;margin-top:24px;">Transfer Market Budget Slider</div>
+        <div
+            style="max-width:500px;background:#15151A;border-radius:12px;border:1px solid rgba(58,64,177,0.2);padding:20px;position:relative;">
+            <!-- New Badge Simulation -->
+            <div
+                style="position:absolute;bottom:-10px;right:-10px;background:#FFC107;color:black;padding:4px 8px;border-radius:12px;font-size:10px;font-weight:bold;">
+                ⭐ NEW</div>
+
+            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;">
+                <span style="color:#3A40B1;font-weight:bold;letter-spacing:1.1px;font-size:14px;">Transfer Market
+                    Budget</span>
+                <button
+                    style="background:rgba(58,64,177,0.2);color:#3A40B1;border:none;padding:6px 16px;border-radius:20px;font-weight:bold;cursor:pointer;">Save</button>
+            </div>
+            <div style="display:flex;justify-content:space-between;align-items:center;color:white;margin-bottom:8px;">
+                <span>Allocated: 20%</span>
+                <span style="color:#64FFDA;font-weight:bold;">$ 900,000</span>
+            </div>
+            <!-- Slider Visual Simulation -->
+            <div style="height:4px;background:rgba(255,255,255,0.1);border-radius:2px;margin:16px 0;position:relative;">
+                <div style="position:absolute;left:0;top:0;height:4px;width:20%;background:#3A40B1;border-radius:2px;">
+                </div>
+                <div
+                    style="position:absolute;left:20%;top:-6px;width:16px;height:16px;background:#3A40B1;border-radius:50%;box-shadow:0 0 4px rgba(0,0,0,0.5);">
+                </div>
+            </div>
+            <div style="font-size:10px;color:grey;">Set the maximum percentage of your total balance available for
+                placing bids. (10% - 90%)</div>
+        </div>
+
+        <!-- Sponsor Offer Card (Desktop Horizontal) -->
+        <div class="component-label" style="margin-bottom:8px;margin-top:32px;">Sponsor Offer Card (Desktop Horizontal
+            Layout)</div>
+        <div
+            style="max-width:800px;margin:4px 0;padding:16px;background:linear-gradient(to bottom right, #1E1E1E, #0A0A0A);border-radius:12px;border:1px solid rgba(255,255,255,0.1);box-shadow:0 6px 12px rgba(0,0,0,0.4);display:flex;">
+            <!-- Left Info Section -->
+            <div style="flex:4;">
+                <div style="display:flex;align-items:center;">
+                    <span
+                        style="color:white;font-size:16px;font-weight:900;letter-spacing:1.2px;font-family:'Poppins',sans-serif;">NEXUS
+                        RACING</span>
+                    <div
+                        style="margin-left:12px;background:rgba(76,175,80,0.2);padding:2px 6px;border-radius:8px;color:#4CAF50;font-size:9px;font-weight:bold;">
+                        +15%</div>
+                </div>
+                <div style="display:flex;gap:16px;margin-top:8px;flex-wrap:wrap;">
+                    <div style="display:flex;align-items:center;gap:4px;">
+                        <span style="color:rgba(255,255,255,0.2);font-size:14px;">💰</span>
+                        <span style="color:#4CAF50;font-size:11px;font-weight:bold;">$ 500,000</span>
+                    </div>
+                    <div style="display:flex;align-items:center;gap:4px;">
+                        <span style="color:rgba(255,255,255,0.2);font-size:14px;">📅</span>
+                        <span style="color:rgba(255,255,255,0.7);font-size:11px;font-weight:bold;">$ 35,000</span>
+                    </div>
+                    <div style="display:flex;align-items:center;gap:4px;">
+                        <span style="color:rgba(255,255,255,0.2);font-size:14px;">⏱</span>
+                        <span style="color:#2196F3;font-size:11px;font-weight:bold;">12 RACES</span>
+                    </div>
+                    <div style="display:flex;align-items:center;gap:4px;">
+                        <span style="color:rgba(255,255,255,0.2);font-size:14px;">🏆</span>
+                        <span style="color:#FFD740;font-size:11px;font-weight:bold;">Finish Top 3</span>
+                    </div>
+                </div>
+            </div>
+            <!-- Right Action Section -->
+            <div style="flex:3;padding-left:24px;border-left:1px solid rgba(255,255,255,0.05);">
+                <div style="display:flex;flex-direction:column;align-items:center;">
+                    <div
+                        style="color:rgba(255,255,255,0.4);font-size:9px;font-weight:900;letter-spacing:1.0px;margin-bottom:8px;">
+                        CHOOSE TACTIC (1 ATTEMPT LEFT)</div>
+                    <div style="display:flex;gap:8px;width:100%;">
+                        <button
+                            style="flex:1;background:rgba(255,255,255,0.05);color:rgba(255,255,255,0.4);border:none;border-radius:50px;padding:14px 0;font-size:9px;font-weight:900;letter-spacing:1.2px;font-family:'Poppins',sans-serif;cursor:pointer;">PERSUASIVE</button>
+                        <button
+                            style="flex:1;background:rgba(255,255,255,0.05);color:rgba(255,255,255,0.4);border:none;border-radius:50px;padding:14px 0;font-size:9px;font-weight:900;letter-spacing:1.2px;font-family:'Poppins',sans-serif;cursor:pointer;">NEGOTIATOR</button>
+                        <button
+                            style="flex:1;background:rgba(255,255,255,0.05);color:rgba(255,255,255,0.4);border:none;border-radius:50px;padding:14px 0;font-size:9px;font-weight:900;letter-spacing:1.2px;font-family:'Poppins',sans-serif;cursor:pointer;">COLLAB</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+    </section>
+
+    <!-- ===========================
+     24. FINAL REVIEW COMPONENTS
+     =========================== -->
+    <section class="audit-section">
+        <h2 class="section-title">24. Off-track & Onboarding Components</h2>
+        <span class="source-ref">Multiple files (team_selection_screen, calendar_screen, transfer_market,
+            academy)</span>
+
+        <!-- Team Selection Card -->
+        <div class="component-label" style="margin-bottom:8px;">Team Selection Card (Occupied State - Hover/Lock
+            simulation)</div>
+        <div style="position:relative;width:280px;border-radius:12px;overflow:hidden;margin-bottom:24px;">
+            <div
+                style="background:linear-gradient(to bottom right, #1A1A16, #121210);border:1px solid rgba(255,193,7,0.3);border-radius:12px;padding:16px;">
+                <div style="opacity:0.7;">
+                    <div style="color:white;font-size:18px;font-weight:bold;margin-bottom:12px;">NEXUS RACING</div>
+                    <div style="display:flex;margin-bottom:4px;font-size:12px;">
+                        <span style="color:rgba(255,255,255,0.7);">MAIN: </span>
+                        <span style="margin:0 4px;">🇬🇧</span>
+                        <span style="color:white;font-weight:bold;">L. HAMILTON</span>
+                    </div>
+                    <div style="display:flex;margin-bottom:4px;font-size:12px;">
+                        <span style="color:rgba(255,255,255,0.7);">2ND: </span>
+                        <span style="margin:0 4px;">🇲🇨</span>
+                        <span style="color:white;font-weight:bold;">C. LECLERC</span>
+                    </div>
+                    <div style="height:1px;background:rgba(255,255,255,0.1);margin:8px 0;"></div>
+                    <div style="display:flex;align-items:center;margin-bottom:8px;">
+                        <span style="color:#FFC107;font-size:14px;margin-right:6px;">👤</span>
+                        <span style="color:#FFC107;font-size:12px;font-weight:bold;">John Doe</span>
+                    </div>
+                    <div style="display:flex;align-items:center;color:grey;font-size:13px;">
+                        <span style="margin-right:4px;">💰</span> $85M
+                    </div>
+                </div>
+            </div>
+            <!-- Ribbon -->
+            <div
+                style="position:absolute;top:12px;right:-30px;transform:rotate(45deg);background:rgba(255,193,7,0.9);width:120px;padding:4px 0;text-align:center;">
+                <span style="color:black;font-size:9px;font-weight:900;letter-spacing:1.0px;">SELECTED</span>
+            </div>
+        </div>
+
+        <!-- Calendar Event -->
+        <div class="component-label" style="margin-bottom:8px;">Calendar Event Item (Current Round)</div>
+        <div
+            style="max-width:500px;background:rgba(58,64,177,0.1);border:2px solid #3A40B1;border-radius:12px;padding:12px 20px;display:flex;align-items:center;margin-bottom:24px;">
+            <div style="width:40px;text-align:center;margin-right:16px;">
+                <div style="color:#3A40B1;font-size:12px;font-weight:bold;">R1</div>
+                <div style="font-size:20px;margin-top:2px;">🇧🇭</div>
+            </div>
+            <div style="flex:1;">
+                <div style="font-weight:900;letter-spacing:0.5px;color:white;font-size:16px;">BAHRAIN GRAND PRIX</div>
+                <div style="display:flex;align-items:center;gap:12px;margin-top:4px;">
+                    <div style="display:flex;align-items:center;gap:4px;color:grey;font-size:12px;">
+                        <span>📅</span> Mar 03, 2026
+                    </div>
+                    <div style="display:flex;align-items:center;gap:4px;color:grey;font-size:12px;">
+                        <span>🔄</span> 57 LAPS
+                    </div>
+                </div>
+            </div>
+            <div
+                style="background:#3A40B1;padding:4px 8px;border-radius:4px;color:black;font-size:10px;font-weight:bold;">
+                SCHEDULED
+            </div>
+        </div>
+
+        <!-- Bid Modal Concept -->
+        <div class="component-label" style="margin-bottom:8px;">Transfer Market Bid Dialog (Inline concept)</div>
+        <div
+            style="max-width:350px;background:#1A1A1A;border-radius:12px;padding:24px;border:1px solid rgba(255,255,255,0.1);margin-bottom:24px;">
+            <div style="font-size:20px;color:white;margin-bottom:16px;">Place Transfer Bid</div>
+            <div style="color:rgba(255,255,255,0.7);font-size:14px;margin-bottom:16px;">Bidding for Max Verstappen</div>
+            <div style="color:rgba(255,255,255,0.5);font-size:14px;margin-bottom:24px;">Current Highest Bid: $ 8,500,000
+            </div>
+            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:32px;">
+                <button
+                    style="background:transparent;border:none;color:#F44336;font-size:24px;cursor:pointer;">➖</button>
+                <div style="font-size:24px;font-weight:bold;color:white;">$ 8,600,000</div>
+                <button
+                    style="background:transparent;border:none;color:#4CAF50;font-size:24px;cursor:pointer;">➕</button>
+            </div>
+            <div style="display:flex;justify-content:flex-end;gap:16px;">
+                <button
+                    style="background:transparent;border:none;color:grey;font-size:14px;cursor:pointer;">Cancel</button>
+                <button
+                    style="background:rgba(58,64,177,0.2);color:#3A40B1;border:none;padding:8px 16px;border-radius:24px;font-weight:bold;cursor:pointer;">Place
+                    Bid</button>
+            </div>
+        </div>
+
+        <!-- Academy Candidate -->
+        <div class="component-label" style="margin-bottom:8px;">Youth Academy Candidate Card</div>
+        <div
+            style="max-width:400px;background:#121212;border-radius:12px;padding:16px;border:1px solid rgba(255,255,255,0.05);">
+            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;">
+                <div style="font-size:12px;font-weight:bold;color:rgba(255,255,255,0.5);">CANDIDATE #9481</div>
+                <button
+                    style="background:rgba(58,64,177,0.2);color:#3A40B1;border:none;padding:4px 12px;border-radius:20px;font-size:11px;font-weight:bold;cursor:pointer;">ENROLL</button>
+            </div>
+            <div style="display:flex;gap:8px;margin-bottom:16px;">
+                <div
+                    style="background:rgba(255,255,255,0.1);padding:4px 8px;border-radius:6px;font-size:10px;font-weight:bold;color:white;">
+                    Age 18</div>
+                <div
+                    style="background:rgba(156,39,176,0.2);padding:4px 8px;border-radius:6px;font-size:10px;font-weight:bold;color:#E040FB;">
+                    HIGH POTENTIAL</div>
+            </div>
+            <!-- Stat Range Bar (Simulated) -->
+            <div style="margin-bottom:12px;">
+                <div
+                    style="display:flex;justify-content:space-between;font-size:10px;color:grey;margin-bottom:4px;font-weight:bold;">
+                    <span>OVERALL</span>
+                    <span>45 - 65</span>
+                </div>
+                <!-- Gray background -->
+                <div style="height:6px;background:rgba(255,255,255,0.1);border-radius:3px;position:relative;">
+                    <!-- Range bar (showing potential gap) -->
+                    <div
+                        style="position:absolute;left:45%;width:20%;height:6px;background:rgba(156,39,176,0.5);border-radius:3px;border-left:2px solid #E040FB;border-right:2px solid #E040FB;">
+                    </div>
+                </div>
+            </div>
+        </div>
     </section>
 
     <footer

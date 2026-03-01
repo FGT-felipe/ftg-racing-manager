@@ -1957,6 +1957,259 @@ Dos versiones de colores de compuestos existen en el código:
 
 ### Stats:
 - **Valores calculados:** `(stat / 20 * 100).toStringAsFixed(1)` (levels 1-20 → %)
-- **Stats:** Aero (cornering), Powertrain (power), Chassis (handling), Reliability
+---
+
+## 50. Garage Driver Selector (`lib/screens/race/garage_screen.dart::_buildDriverSelector`)
+
+**Tipo:** Selector horizontal de pilotos en formato tarjeta interactiva con imagen y estadística. 200 líneas.
+
+### Container (SizedBox + ListView):
+- **Height:** 110px
+- **Item Width:** 220px
+- **Margin:** right 12
+
+### AnimatedContainer (Card):
+- **Duration:** 250ms
+- **Border Radius:** 12
+- **Border:** 
+  - Selected: `theme.primaryColor`, width 2
+  - Unselected: white alpha 0.1, width 1
+- **Gradient Background:**
+  - Selected: `[#2A2A2A, #121212]` (topLeft to bottomRight)
+  - Unselected: `[#1E1E1E, #0A0A0A]`
+- **BoxShadow:**
+  - Selected: `primaryColor` alpha 0.3, blur 10, offset `(0, 4)`
+  - Unselected: black alpha 0.4, blur 4, offset `(0, 2)`
+
+### Layout (Row):
+- **Left (35%):** Portrait Area. `BoxFit.cover`. Gradient overlay de `black alpha 0.8` (centerRight) a `transparent` (centerLeft).
+- **Right (65%):** Info Area. Padding h12 v10.
+
+### Text & Icons:
+- **Name:** uppercase, 12px, `w900`, letterSpacing 0.5. Color white (selected) o white alpha 0.5 (unselected).
+- **Check icon (Sent):** `Icons.check_circle`, color `Colors.green`, size 14.
+- **Fitness Bar:** `_buildFitnessBar` (ver detales en su propio método).
+- **Laps info:** `Icons.speed` (size 10) + text 9px `w900` letterSpacing 0.5. Color `Colors.orange` (si completó el máx) o `Colors.white38`.
+
+### DNF Overlay:
+- **Fondo:** `Colors.red` alpha 0.55
+- **Radius:** 10
+- **Texto:** "DNF" uppercase, white, 28px, `w900`, letterSpacing 4.0, sombra negra blur 10.
+
+---
+
+## 51. Garage Driver Feedback Card (`lib/screens/race/garage_screen.dart::_buildFeedbackCard`)
+
+**Tipo:** Tarjeta de chat para feedback del piloto tras las vueltas de simulación. 160 líneas.
+
+### Card Container:
+- **Margin:** `LTRB(0, 4, 12, 12)`
+- **Background:** `#0A0A0A`
+- **Radius:** 12
+- **Border:** white alpha 0.1
+
+### Header:
+- **Background:** white alpha 0.05
+- **Radius:** top 12
+- **Padding:** h16 v12
+- **Icon:** `Icons.chat_bubble_outline`, 16px, white alpha 0.5
+- **Text:** uppercase, 11px, `w900`, letterSpacing 1.5, white alpha 0.5
+
+### Session Group Container (List Item):
+- **Background:** white alpha 0.05
+- **Border:** white alpha 0.1
+- **Radius:** 12
+- **Padding & Margin:** 12
+
+### Session Header:
+- **Avatar:** CircleAvatar 10px rad, color dinámico por piloto (`_driverColor`). Letra inicial blanca 9px bold.
+- **Name:** uppercase, 11px, `w900`, white70, letterSpacing 1.0.
+- **Best Lap Time:** 10px, `w900`, `theme.primaryColor` alpha 0.8, monospace.
+- **Divider:** height 1, thickness 0.5, white alpha 0.1, padding vertical 8.
+
+### Message Row:
+- **Padding:** vertical 3
+- **Chevron:** `Icons.keyboard_arrow_right`, 14px, color de confianza alpha 0.8 (ej: verde, amarillo, naranja).
+- **Message:** 12px, `w500`, color de confianza alpha 0.8.
+
+### Lap Setup Dialog (`_showLapSetupDialog`):
+- **Background:** `surface`
+- **Lap Time Title:** 16px, bold
+- **DetailsRows:** (Aero, Power, etc.) label 14px, valor monospace 14px bold.
+- **Confidence:** "#%", bold, color métrico.
+- **Feedback String:** italic, 13px, onSurface alpha 0.6, centrado.
+- **Botones:** CERRAR / RESTAURAR CONFIGURACIÓN, uppercase. 
+
+### Confidence Colors (`_getConfidenceColor`):
+- `>= 0.98`: `#00C853` (Green)
+- `> 0.90`: `#64DD17`
+- `> 0.70`: `#FFB800`
+---
+
+## 52. Finances Balance Header (`lib/screens/office/finances_screen.dart::FinancesScreen.build`)
+
+**Tipo:** Tarjeta de cabecera con el saldo actual del equipo. 45 líneas.
+
+### Container:
+- **Margin:** 20px
+- **Padding:** 32px
+- **Width:** `double.infinity`
+- **Border Radius:** 12
+- **Gradient Background:** `[#1E1E1E, #0A0A0A]` (topLeft to bottomRight)
+- **Border:** white alpha 0.1, width 1
+- **BoxShadow:** black alpha 0.4, blur 12, offset `(0, 6)`
+
+### Typography:
+- **Título ("CURRENT BALANCE"):** grey, 12px, bold, letterSpacing 1.5
+- **Monto:** 42px, `w900`, `Colors.redAccent` (si es negativo) u `onSurface` (si es positivo/0). Utiliza `FinanceService.formatCurrency`.
+
+---
+
+## 53. Transaction Tile (`lib/screens/office/finances_screen.dart::_buildTransactionTile`)
+
+**Tipo:** Elemento de lista (ListTile) para mostrar movimientos financieros. 70 líneas.
+
+### Container:
+- **Margin:** bottom 12
+- **Background:** `#121212`
+- **Border Radius:** 12
+- **Border:** white alpha 0.05, width 1
+
+### ListTile Component:
+- **Content Padding:** horizontal 16, vertical 4
+- **Leading (Icon):**
+  - **Container:** padding 10, background iconColor alpha 0.1, radius 12
+  - **Iconos/Colores:** SPONSOR (handshake, secondary color), SALARY (person, orange), UPGRADE (build_circle, blue), REWARD (emoji_events, amber), PRACTICE (directions_car, blueGrey). Default: monetization_on.
+- **Title:** description, `onSurface`, bold
+- **Subtitle:** date formato `E, h:mm a`, grey, 12px
+- **Trailing:** monto formatado, fontWeight bold, 16px, color `Colors.green` o `Colors.red`.
+
+---
+
+## 54. Transfer Market Budget Card (`lib/screens/office/finances_screen.dart::_TransferBudgetCard`)
+
+**Tipo:** Tarjeta interactiva con un Slider para setear el presupuesto del mercado de transferencias. 120 líneas.
+
+### Container:
+- Está envuelto en un **`NewBadgeWidget`** (badge Alignment bottomRight).
+- **Padding:** 20px
+- **Background:** `#15151A`
+- **Border Radius:** 12
+- **Border:** `primaryColor` alpha 0.2
+
+### Estructura:
+- **Row 1:** Título ("Transfer Market Budget", secondary color, bold, letterSpacing 1.1) + Botón `FilledButton.tonal` "Save" (compact).
+- **Row 2:** Texto asignado ("Allocated: XX%") + Monto máximo en `Colors.greenAccent`, bold.
+- **Slider:** values 10 a 90, divisions 80, `activeColor: primaryColor`.
+- **Text inferior:** Disclaimer pequeño, 10px, grey.
+
+---
+
+## 55. Sponsor Offer Card (`lib/screens/office/sponsorship_screen.dart::_SponsorOfferCard`)
+
+**Tipo:** Tarjeta de oferta de patrocinador para negociar tácticas. Diseño se adapta (Vertical para Mobile, Horizontal para Desktop). 500 líneas.
+
+### Container:
+- **Margin:** vertical 4
+- **Padding:** 16px
+- **Background Gradient:** `[#1E1E1E, #0A0A0A]` (topLeft to bottomRight)
+- **Border Radius:** 12
+- **Border:** white alpha 0.1
+- **BoxShadow:** black alpha 0.4, blur 12, offset `(0, 6)`
+
+### Title & Bonuses:
+- **Title Name:** uppercase, white, 16px, `w900`, `Poppins`, letterSpacing 1.2.
+- **Admin Bonus (+15%):** Container verde alpha 0.2, radius 12, padding h8 v4. Texto verde 10px bold.
+
+### Data Layout (Mobile/Vertical):
+- Usa `_infoRow` para mostrar datos: `Icon` (color dividerColor, size 16) + Label (`onSurface` alpha 0.38, 12px) + Value (`fontWeight` bold, 13px, colores específicos: green, white0.7, blue, orangeAccent).
+
+### Data Layout (Desktop/Horizontal):
+- Utiliza `_infoChip` envueltos en un `Wrap` (spacing 16).
+- **Chip:** Row con ícono (white alpha 0.2, size 14) + Texto (color respectivo, 11px, bold).
+
+### Negotiation Buttons (`_tacticBtn`):
+- Son `ElevatedButton`. Forma `StadiumBorder()`. Padding vertical 14.
+- **Estilo "Mute" Hover:**
+  - Background (default): white alpha 0.05
+  - Background (hovered): Revela un color distintivo (Rojo `#xFFFF5733`, Amarillo `#FFF1C40F`, Naranja `#FFE9967A`).
+  - Foreground (default): white alpha 0.4
+  - Foreground (hovered): Crema claro `#FFFEF9E7`
+- **Tácticas texto:** uppercase, 9px, `w900`, `Poppins`, letterSpacing 1.2.
+
+---
+
+## 56. Active Sponsor Contract Widget (`lib/screens/office/sponsorship_screen.dart::_buildDesktopRightPanel`)
+
+**Tipo:** Visualización del contrato cuando la parte seleccionada (alerón, casco, etc) ya tiene patrocinio activo en Desktop.
+
+### Container:
+- Título: `ACTIVE CONTRACT: [SLOT]`, color secondary, bold, letterSpacing 1.5, 12px.
+- **Inner Padding:** 32px
+- **Background:** `secondary` alpha 0.05
+- **Border Radius:** 12
+
+### Estructura Intena:
+- Ícono central `verified` grande (64px, color secondary).
+- Título Patrocinador: `onSurface`, 32px, bold.
+- **Data (`_DetailItem`):** Label small (secondary, 12px) + Value big (`onSurface`, 18px, bold). Distribuidos con `MainAxisAlignment.spaceAround`.
+
+---
+
+## 57. Team Selection Card (`lib/screens/onboarding/team_selection_screen.dart::_TeamSelectionCard`)
+
+**Tipo:** Tarjeta interactiva para la selección de equipo al crear cuenta.
+
+### Container:
+- **Background:** Gradient Linear desde `#1A1A1A` a `#121212`.
+- **Border:** `BorderSide(width: 1)` dinámico: `amber` alpha 0.3 si está ocupado, `white10` bloqueado, `white24` normal.
+- **Image Background:** Opacity 0.15 de `'blueprints/blueprintcars.png'` escalada en modo `cover`.
+- **Border Radius:** 12
+
+### Visuals:
+- **Badge superior ("SELECTED"):** Si equipo está ocupado. Transformación de giro 45º, amber transparente con texto negro 9px w900.
+- **Datos Listados:** Nombre de equipo (`white` 18px), Pilotos con Flags e iconos. Presupuesto abajo en gris. Button primario tipo "SELECT TEAM" si está libre.
+
+---
+
+## 58. Calendar Event Item (`lib/screens/calendar/calendar_screen.dart::_buildCalendarItem`)
+
+**Tipo:** Un `ListTile` estilizado para simular las rondas del calendario de la F1.
+
+### Container:
+- **Background:** `primaryColor` alpha 0.1 si es actual, de lo contrario color defecto tipo `cardTheme`.
+- **Border:** `primaryColor` width 2 si es actual, de lo contrario `divider` transparente alpha 0.1.
+
+### Text & Icons:
+- **Leading:** Columna con "RN" (Round 1,2..). Amarillo/primario y un emoji del país enorme (20px).
+- **Title:** `trackName.toUpperCase()`, w900, espaciado corto.
+- **Subtitle:** Rows con iconos grises (calendar, loop), fechas y vueltas.
+- **Trailing:** Ícono de confirmación (`check_circle` verde) o chapa "SCHEDULED" según estado del evento.
+
+---
+
+## 59. Transfer Market Bid Modal (`lib/screens/market/transfer_market_screen.dart::_showBidModal`)
+
+**Tipo:** `AlertDialog` con layout básico para subastar en el mercado de pilotos.
+
+### Content:
+- **Títulos:** Texto explicativo del "Current Highest Bid" (`SizedBox` separadores).
+- **Bid Input (Row):**
+  - **Decrementar:** `IconButton(Icons.remove_circle, Colors.red)`.
+  - **Monto Central:** Currency formated text, fontWeight `bold`, size 20.
+  - **Incrementar:** `IconButton(Icons.add_circle, Colors.green)`.
+- **Acciones:** `TextButton` para cancelar y `FilledButton.tonal` para confirmar enviando el BidAmount actual.
+
+---
+
+## 60. Youth Academy Candidate Card (`lib/screens/hq/youth_academy_screen.dart::_CandidateCard`)
+
+**Tipo:** Tarjeta de visualización para ver atributos tempranos y un rango de potencial.
+
+### Content:
+- **Layout General:** Container redondeado y oscuro usado para enmarcar.
+- **Title:** "Candidate ID" y Botón "Enroll".
+- **InfoTags (`_infoTag`):** Fichas tipo Chip informativas generadas estáticamente (ej, fondo azulado). Tienen `BorderRadius.circular(6)`.
+- **StatRangeBar (`_buildStatRangeBar`):** Barra doble para simular incertidumbre. Stack con un contenedor base gris, y otro contenedor que representa la brecha entre el Stat Min y Max del joven. Posicionado usando Alignment o offsets/width para dar un efecto visual de progreso condicional ("Entre X y Y de potencial histórico").
 
 ---
