@@ -11,10 +11,14 @@
         href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;700;900&family=Montserrat:wght@600;900&family=Poppins:wght@700;900&family=Raleway:wght@400;700;900&family=Roboto+Mono:wght@700;900&family=Playfair+Display:wght@700&family=Oswald:wght@600;700&family=Merriweather:wght@900&family=PT+Serif:wght@400;700&display=swap"
         rel="stylesheet">
     <style>
-        /* ============================
-           TOKENS (from app_theme.dart)
-           ============================ */
+        /* =====================================================
+           FTG RACING MANAGER — V3 UI AUDIT CSS TOKENS
+           Source: Literal extraction from Dart codebase
+           ===================================================== */
+
+        /* ── 1. DESIGN TOKENS ── */
         :root {
+            /* 1.1 Core Palette (app_theme.dart) */
             --app-bg: #15151E;
             --text-normal: #FFFFFF;
             --accent-highlight: #C1C4F4;
@@ -22,7 +26,8 @@
             --secondary-button: #292A33;
             --button-hover: #424686;
             --error: #EF5350;
-            /* Hardcoded colors found in widgets */
+
+            /* 1.2 Extended Palette (hardcoded across widgets) */
             --deep-charcoal: #121216;
             --deep-black: #121212;
             --card-grad-start: #1E1E1E;
@@ -32,13 +37,45 @@
             --gold: #FFD700;
             --amber: #FFC107;
             --soft-red: #FF5252;
-            --newspaper-paper: #F4F1EA;
             --qualifying-yellow: #FFB800;
             --strategy-orange: #FF6D00;
             --warning-amber: #FFAB00;
             --post-race-grey: #9E9E9E;
+            --newspaper-paper: #F4F1EA;
+            --neon-pink: #FF00FF;
+            --stat-blue-grey: #A0AEC0;
+            --yellow-star: #FFEE58;
+            --red-danger: #FF3D3D;
+            --blue-defensive: #42A5F5;
+            --orange-attack: #FF9800;
+            --electric-blue: #00B0FF;
+            --fastest-lap-purple: #E040FB;
+            --commentary-cyan: #00BCD4;
+            --commentary-gold: #FFD54F;
+            --timing-green: #00FF88;
+            --timing-dark: #1A1A1A;
+            --crt-bg: #080810;
+
+            /* 1.3 Border Radius Scale */
+            --radius-sm: 4px;
+            --radius-md: 6px;
+            --radius-lg: 8px;
+            --radius-xl: 12px;
+            --radius-2xl: 16px;
+            --radius-pill: 20px;
+            --radius-stadium: 100px;
+
+            /* 1.4 Spacing Scale */
+            --space-xs: 4px;
+            --space-sm: 8px;
+            --space-md: 12px;
+            --space-lg: 16px;
+            --space-xl: 20px;
+            --space-2xl: 24px;
+            --space-3xl: 32px;
         }
 
+        /* ── 2. RESET & BASE ── */
         * {
             box-sizing: border-box;
             margin: 0;
@@ -53,6 +90,7 @@
             line-height: 1.6;
         }
 
+        /* ── 3. GALLERY LAYOUT ── */
         header {
             border-bottom: 1px solid rgba(255, 255, 255, 0.1);
             padding-bottom: 20px;
@@ -74,9 +112,9 @@
 
         .audit-section {
             margin-bottom: 60px;
-            padding: 32px;
+            padding: var(--space-3xl);
             background: rgba(255, 255, 255, 0.02);
-            border-radius: 16px;
+            border-radius: var(--radius-2xl);
             border: 1px solid rgba(255, 255, 255, 0.05);
         }
 
@@ -86,8 +124,8 @@
             font-size: 1rem;
             color: var(--accent-highlight);
             border-left: 4px solid var(--accent-highlight);
-            padding-left: 12px;
-            margin-bottom: 24px;
+            padding-left: var(--space-md);
+            margin-bottom: var(--space-2xl);
             letter-spacing: 1.5px;
             text-transform: uppercase;
         }
@@ -96,14 +134,14 @@
             font-size: 10px;
             color: rgba(255, 255, 255, 0.3);
             font-family: 'Roboto Mono', monospace;
-            margin-bottom: 16px;
+            margin-bottom: var(--space-lg);
             display: block;
         }
 
         .component-row {
             display: flex;
             flex-wrap: wrap;
-            gap: 24px;
+            gap: var(--space-2xl);
             align-items: flex-start;
         }
 
@@ -114,9 +152,10 @@
             letter-spacing: 1.2px;
             color: rgba(255, 255, 255, 0.4);
             text-transform: uppercase;
-            margin-bottom: 8px;
+            margin-bottom: var(--space-sm);
         }
 
+        /* ── 4. ANIMATIONS ── */
         @keyframes blink-dot {
 
             0%,
@@ -152,16 +191,23 @@
                 opacity: 0.12;
             }
         }
+
+        @keyframes spin {
+            to {
+                transform: rotate(360deg);
+            }
+        }
     </style>
 </head>
 
 <body>
 
     <header>
-        <h1>UI COMPONENT GALLERY — V3 AUDIT</h1>
-        <p>Cada componente abajo es una réplica 1:1 de los estilos extraídos del código Dart. Fuente indicada en cada
-            sección.</p>
+        <h1>🏎️ V3 UI AUDIT — COMPONENT GALLERY</h1>
+        <p>Réplica 1:1 de los estilos extraídos del código Dart. Fuente indicada en cada sección.</p>
     </header>
+
+
 
     <!-- ===========================
      1. THEME TOKENS & PALETTE
@@ -254,6 +300,82 @@
                     </div>
                     <div style="font-size:8px;color:rgba(255,255,255,0.3);margin-top:2px;">Paper</div>
                 </div>
+                <!-- Colors below added from design_system.md — verified via grep in lib/ -->
+                <div>
+                    <div style="width:40px;height:40px;background:#00E676;border-radius:6px;"
+                        title="Neon Green — driver_card.dart, garage_screen.dart"></div>
+                    <div style="font-size:8px;color:rgba(255,255,255,0.3);margin-top:2px;">NeonGreen</div>
+                </div>
+                <div>
+                    <div style="width:40px;height:40px;background:#FF00FF;border-radius:6px;"
+                        title="Neon Pink — driver_card.dart flip badge"></div>
+                    <div style="font-size:8px;color:rgba(255,255,255,0.3);margin-top:2px;">NeonPink</div>
+                </div>
+                <div>
+                    <div style="width:40px;height:40px;background:#A0AEC0;border-radius:6px;"
+                        title="Stat Blue Grey — driver_card.dart labels"></div>
+                    <div style="font-size:8px;color:rgba(255,255,255,0.3);margin-top:2px;">StatGrey</div>
+                </div>
+                <div>
+                    <div style="width:40px;height:40px;background:#FFEE58;border-radius:6px;"
+                        title="Yellow Star — driver_card.dart PRO level"></div>
+                    <div style="font-size:8px;color:rgba(255,255,255,0.3);margin-top:2px;">YellowStar</div>
+                </div>
+                <div>
+                    <div style="width:40px;height:40px;background:#FF3D3D;border-radius:6px;"
+                        title="Red Danger — driver_card.dart Most Risky style"></div>
+                    <div style="font-size:8px;color:rgba(255,255,255,0.3);margin-top:2px;">RedDanger</div>
+                </div>
+                <div>
+                    <div style="width:40px;height:40px;background:#42A5F5;border-radius:6px;"
+                        title="Blue Defensive — driver_card.dart Defensive style"></div>
+                    <div style="font-size:8px;color:rgba(255,255,255,0.3);margin-top:2px;">Defensive</div>
+                </div>
+                <div>
+                    <div style="width:40px;height:40px;background:#FF9800;border-radius:6px;"
+                        title="Orange Attack — driver_card.dart Offensive style"></div>
+                    <div style="font-size:8px;color:rgba(255,255,255,0.3);margin-top:2px;">Attack</div>
+                </div>
+                <div>
+                    <div style="width:40px;height:40px;background:#00B0FF;border-radius:6px;"
+                        title="Electric Blue — driver_card.dart _buildPotentialStars current"></div>
+                    <div style="font-size:8px;color:rgba(255,255,255,0.3);margin-top:2px;">ElecBlue</div>
+                </div>
+                <div>
+                    <div style="width:40px;height:40px;background:#E040FB;border-radius:6px;"
+                        title="Fastest Lap Purple — race_day_screen.dart"></div>
+                    <div style="font-size:8px;color:rgba(255,255,255,0.3);margin-top:2px;">FastLap</div>
+                </div>
+                <div>
+                    <div style="width:40px;height:40px;background:#00BCD4;border-radius:6px;"
+                        title="Commentary Cyan — race_day_screen.dart _buildCommentaryFeed"></div>
+                    <div style="font-size:8px;color:rgba(255,255,255,0.3);margin-top:2px;">Comment</div>
+                </div>
+                <div>
+                    <div style="width:40px;height:40px;background:#FFD54F;border-radius:6px;"
+                        title="Commentary Gold — race_day_screen.dart player highlight"></div>
+                    <div style="font-size:8px;color:rgba(255,255,255,0.3);margin-top:2px;">ComGold</div>
+                </div>
+                <div>
+                    <div style="width:40px;height:40px;background:#00FF88;border-radius:6px;"
+                        title="Timing Green — internal_timing_card.dart"></div>
+                    <div style="font-size:8px;color:rgba(255,255,255,0.3);margin-top:2px;">Timing</div>
+                </div>
+                <div>
+                    <div style="width:40px;height:40px;background:#080810;border-radius:6px;border:1px solid rgba(255,255,255,0.1);"
+                        title="CRT Background — race_day_screen.dart _buildCommentaryFeed"></div>
+                    <div style="font-size:8px;color:rgba(255,255,255,0.3);margin-top:2px;">CRT bg</div>
+                </div>
+                <div>
+                    <div style="width:40px;height:40px;background:#1E1E1E;border-radius:6px;border:1px solid rgba(255,255,255,0.1);"
+                        title="Gradient Start — dashboard_widgets.dart, garage_screen.dart, etc."></div>
+                    <div style="font-size:8px;color:rgba(255,255,255,0.3);margin-top:2px;">GradStart</div>
+                </div>
+                <div>
+                    <div style="width:40px;height:40px;background:#0A0A0A;border-radius:6px;border:1px solid rgba(255,255,255,0.1);"
+                        title="Gradient End — dashboard_widgets.dart, garage_screen.dart, etc."></div>
+                    <div style="font-size:8px;color:rgba(255,255,255,0.3);margin-top:2px;">GradEnd</div>
+                </div>
             </div>
         </div>
     </section>
@@ -333,31 +455,45 @@
                     style="background:#292A33;color:white;border:1px solid rgba(255,255,255,0.1);border-radius:50px;padding:12px 24px;font-family:'Raleway';font-weight:bold;cursor:pointer;font-size:13px;">GO
                     BACK</button>
             </div>
-            <!-- Onyx CTA (RaceStatusHero) -->
+            <!-- RaceStatusHero action button (dashboard_widgets.dart L735-782) -->
             <div>
-                <div class="component-label">Onyx CTA button</div>
+                <div class="component-label">RaceStatusHero — ElevatedButton.icon (action)</div>
                 <button
                     style="background:linear-gradient(135deg,#2A2A2A,#000);color:#00C853;border:1px solid rgba(0,200,83,0.3);border-radius:100px;padding:16px 24px;font-family:'Raleway';font-weight:900;cursor:pointer;font-size:13px;letter-spacing:1.2px;box-shadow:0 4px 8px rgba(0,0,0,0.3);">🏁
-                    GO TO RACE</button>
+                    [buttonLabel — localized]</button>
             </div>
         </div>
         <div class="component-row" style="margin-top:16px;">
-            <!-- Status badges from RaceStatusHero -->
+            <!-- RaceStatusHero statusText Container (dashboard_widgets.dart L559-577) -->
             <div>
-                <div class="component-label">Status badge — Practice</div>
+                <div class="component-label">RaceStatusHero — statusText (practice: 0xFF00C853)</div>
                 <span
-                    style="padding:6px 12px;background:rgba(0,200,83,0.1);border:1px solid #00C853;border-radius:12px;color:#00C853;font-weight:900;letter-spacing:1.5px;font-size:12px;">PADDOCK
-                    OPEN</span>
+                    style="padding:6px 12px;background:rgba(0,200,83,0.1);border:1px solid #00C853;border-radius:12px;color:#00C853;font-weight:bold;letter-spacing:1.5px;font-size:12px;">[paddockOpen
+                    — localized]</span>
             </div>
             <div>
-                <div class="component-label">Status badge — Qualifying</div>
+                <div class="component-label">RaceStatusHero — statusText (qualifying: 0xFFFFB800)</div>
                 <span
-                    style="padding:6px 12px;background:rgba(255,184,0,0.1);border:1px solid #FFB800;border-radius:12px;color:#FFB800;font-weight:900;letter-spacing:1.5px;font-size:12px;">QUALIFYING</span>
+                    style="padding:6px 12px;background:rgba(255,184,0,0.1);border:1px solid #FFB800;border-radius:12px;color:#FFB800;font-weight:bold;letter-spacing:1.5px;font-size:12px;">[qualifyingStatus
+                    — localized]</span>
             </div>
             <div>
-                <div class="component-label">Status badge — Race</div>
+                <div class="component-label">RaceStatusHero — statusText (race: 0xFFFF5252)</div>
                 <span
-                    style="padding:6px 12px;background:rgba(255,82,82,0.1);border:1px solid #FF5252;border-radius:12px;color:#FF5252;font-weight:900;letter-spacing:1.5px;font-size:12px;">RACE</span>
+                    style="padding:6px 12px;background:rgba(255,82,82,0.1);border:1px solid #FF5252;border-radius:12px;color:#FF5252;font-weight:bold;letter-spacing:1.5px;font-size:12px;">[raceWeekendStatus
+                    — localized]</span>
+            </div>
+            <div>
+                <div class="component-label">RaceStatusHero — statusText (raceStrategy: 0xFFFF6D00)</div>
+                <span
+                    style="padding:6px 12px;background:rgba(255,109,0,0.1);border:1px solid #FF6D00;border-radius:12px;color:#FF6D00;font-weight:bold;letter-spacing:1.5px;font-size:12px;">[raceStrategyStatus
+                    — localized]</span>
+            </div>
+            <div>
+                <div class="component-label">RaceStatusHero — statusText (postRace: 0xFF9E9E9E)</div>
+                <span
+                    style="padding:6px 12px;background:rgba(158,158,158,0.1);border:1px solid #9E9E9E;border-radius:12px;color:#9E9E9E;font-weight:bold;letter-spacing:1.5px;font-size:12px;">[raceFinishedStatus
+                    — localized]</span>
             </div>
         </div>
     </section>
@@ -484,7 +620,7 @@
                     style="position:relative;border-radius:12px;border:1px solid rgba(255,255,255,0.1);background:linear-gradient(to bottom right,#1E1E1E,#0A0A0A);box-shadow:0 6px 12px rgba(0,0,0,0.4);padding:16px;text-align:center;overflow:hidden;">
                     <div style="font-size:34px;color:rgba(128,128,128,0.5);">🏋️</div>
                     <div
-                        style="font-family:'Poppins';font-weight:900;font-size:14px;letter-spacing:0.5px;margin-top:12px;text-transform:uppercase;color:grey;">
+                        style="font-family:'Poppins';font-weight:900;font-size:14px;letter-spacing:0.5px;margin-top:12px;text-transform:uppercase;color:#9E9E9E;">
                         FITNESS TRAINER</div>
                     <!-- COMING SOON ribbon: top:10, right:-25, rotate 0.785rad (45deg), width:100, redAccent alpha 0.8 -->
                     <div
@@ -505,15 +641,15 @@
         <div style="display:flex;flex-direction:column;gap:12px;">
             <!-- ALERT type -->
             <div
-                style="background:#292A33;border-radius:12px;border:1px solid rgba(255,165,0,0.2);box-shadow:0 4px 8px rgba(0,0,0,0.4);padding:16px;display:flex;gap:16px;">
+                style="background:#292A33;border-radius:12px;border:1px solid rgba(255,171,64,0.2);box-shadow:0 4px 8px rgba(0,0,0,0.4);padding:16px;display:flex;gap:16px;">
                 <div
-                    style="padding:8px;background:rgba(255,165,0,0.1);border-radius:50%;display:flex;align-items:center;justify-content:center;">
+                    style="padding:8px;background:rgba(255,171,64,0.1);border-radius:50%;display:flex;align-items:center;justify-content:center;">
                     <span style="font-size:18px;">⚠️</span>
                 </div>
                 <div style="flex:1;">
                     <div style="display:flex;justify-content:space-between;">
                         <span
-                            style="font-family:'Poppins';font-size:10px;font-weight:bold;color:orange;letter-spacing:1.2px;">ALERT</span>
+                            style="font-family:'Poppins';font-size:10px;font-weight:bold;color:#FFAB40;letter-spacing:1.2px;">ALERT</span>
                         <span style="font-size:10px;color:rgba(255,255,255,0.4);">2h ago</span>
                     </div>
                     <div style="font-family:'Poppins';font-size:14px;font-weight:bold;margin-top:4px;">Contract Expiring
@@ -799,7 +935,7 @@
                 <span class="source-ref">fuel_input.dart</span>
                 <div
                     style="width:65px;height:28px;background:rgba(255,255,255,0.05);border-radius:12px;border:1px solid rgba(255,255,255,0.1);display:flex;align-items:center;padding:0 6px;">
-                    <span style="flex:1;text-align:center;font-size:11px;font-weight:bold;color:orange;">42.5</span>
+                    <span style="flex:1;text-align:center;font-size:11px;font-weight:bold;color:#FF9800;">42.5</span>
                     <span style="font-size:8px;color:rgba(255,255,255,0.24);font-weight:bold;">L</span>
                 </div>
             </div>
@@ -841,20 +977,20 @@
             <div style="margin-bottom:8px;">
                 <div style="display:flex;justify-content:space-between;margin-bottom:4px;">
                     <span style="font-size:10px;color:rgba(255,255,255,0.6);font-weight:500;">POWER</span>
-                    <span style="font-size:11px;font-weight:bold;color:orange;">+75.0%</span>
+                    <span style="font-size:11px;font-weight:bold;color:#FFAB40;">+75.0%</span>
                 </div>
                 <div style="width:100%;height:2px;background:rgba(255,255,255,0.05);border-radius:2px;">
-                    <div style="width:75%;height:100%;background:rgba(255,165,0,0.8);border-radius:2px;"></div>
+                    <div style="width:75%;height:100%;background:rgba(255,171,64,0.8);border-radius:2px;"></div>
                 </div>
             </div>
             <!-- Aero -->
             <div style="margin-bottom:8px;">
                 <div style="display:flex;justify-content:space-between;margin-bottom:4px;">
                     <span style="font-size:10px;color:rgba(255,255,255,0.6);font-weight:500;">AERO</span>
-                    <span style="font-size:11px;font-weight:bold;color:cyan;">+60.0%</span>
+                    <span style="font-size:11px;font-weight:bold;color:#18FFFF;">+60.0%</span>
                 </div>
                 <div style="width:100%;height:2px;background:rgba(255,255,255,0.05);border-radius:2px;">
-                    <div style="width:60%;height:100%;background:rgba(0,255,255,0.8);border-radius:2px;"></div>
+                    <div style="width:60%;height:100%;background:rgba(24,255,255,0.8);border-radius:2px;"></div>
                 </div>
             </div>
             <!-- Handling -->
@@ -1364,7 +1500,7 @@
                 <div style="flex:1;padding:10px 12px;display:flex;flex-direction:column;justify-content:center;">
                     <div style="display:flex;justify-content:space-between;"><span
                             style="font-size:12px;font-weight:900;color:white;letter-spacing:0.5px;">L.
-                            HAMILTON</span><span style="color:green;font-size:14px;">✓</span></div>
+                            HAMILTON</span><span style="color:#4CAF50;font-size:14px;">✓</span></div>
                     <!-- Fitness bar -->
                     <div style="margin-top:8px;">
                         <div style="width:110px;height:4px;background:rgba(255,255,255,0.1);border-radius:2px;">
@@ -1379,8 +1515,8 @@
                     </div>
                     <!-- Laps -->
                     <div style="display:flex;align-items:center;gap:4px;margin-top:8px;"><span
-                            style="font-size:10px;color:orange;">🏎️</span><span
-                            style="font-size:9px;font-weight:900;letter-spacing:0.5px;color:orange;">15/15 LAPS</span>
+                            style="font-size:10px;color:#FF9800;">🏎️</span><span
+                            style="font-size:9px;font-weight:900;letter-spacing:0.5px;color:#FF9800;">15/15 LAPS</span>
                     </div>
                 </div>
             </div>
@@ -1599,8 +1735,8 @@
                         <span style="flex:4;font-size:11px;color:rgba(255,255,255,0.9);">M. Verstappen</span>
                         <span style="flex:3;font-size:10px;color:rgba(255,255,255,0.7);">Red Bull Racing</span>
                         <span style="width:30px;display:flex;justify-content:center;"><span
-                                style="width:14px;height:14px;border-radius:50%;border:2px solid red;display:flex;align-items:center;justify-content:center;"><span
-                                    style="font-size:7px;font-weight:bold;color:red;">S</span></span></span>
+                                style="width:14px;height:14px;border-radius:50%;border:2px solid #F44336;display:flex;align-items:center;justify-content:center;"><span
+                                    style="font-size:7px;font-weight:bold;color:#F44336;">S</span></span></span>
                         <span
                             style="flex:2;text-align:right;font-family:monospace;font-weight:bold;font-size:11px;color:white;">1:30.456</span>
                         <span
@@ -1613,8 +1749,8 @@
                         <span style="flex:4;font-size:11px;font-weight:bold;color:#3A40B1;">L. Hamilton</span>
                         <span style="flex:3;font-size:10px;color:rgba(255,255,255,0.7);">My Team</span>
                         <span style="width:30px;display:flex;justify-content:center;"><span
-                                style="width:14px;height:14px;border-radius:50%;border:2px solid red;display:flex;align-items:center;justify-content:center;"><span
-                                    style="font-size:7px;font-weight:bold;color:red;">S</span></span></span>
+                                style="width:14px;height:14px;border-radius:50%;border:2px solid #F44336;display:flex;align-items:center;justify-content:center;"><span
+                                    style="font-size:7px;font-weight:bold;color:#F44336;">S</span></span></span>
                         <span style="flex:2;text-align:right;">
                             <div style="font-family:monospace;font-weight:bold;font-size:11px;color:white;">1:30.798
                             </div>
@@ -2268,720 +2404,156 @@
     </section>
 
     <!-- ===========================
-     16. INTERNAL TIMING CARD
+     25. REPEATED GRADIENT CONTAINER (design_system.md §8)
      =========================== -->
     <section class="audit-section">
-        <h2 class="section-title">16. Internal Timing Card (Practice)</h2>
-        <span class="source-ref">lib/screens/race/widgets/internal_timing_card.dart</span>
+        <h2 class="section-title">25. Repeated Gradient Container (22 instances in code)</h2>
+        <span class="source-ref">dashboard_widgets.dart · finances_screen.dart · standings_screen.dart ·
+            garage_screen.dart · sponsorship_screen.dart · etc.</span>
 
-        <div class="component-label" style="margin-bottom:8px;">InternalTimingCard — Practice Best Laps</div>
-        <div style="max-width:500px;background:#F5F5F5;border-radius:16px;padding:20px;margin-bottom:24px;">
-            <!-- Title -->
-            <div style="display:flex;align-items:center;gap:8px;margin-bottom:16px;">
-                <span style="font-size:20px;color:#00FF88;">⏱️</span>
-                <span style="font-weight:bold;letter-spacing:1.2px;color:#1A1A1A;">INTERNAL TIMING</span>
-            </div>
-            <!-- Header -->
-            <div
-                style="padding:8px 12px;background:rgba(0,255,136,0.1);border-radius:12px;display:flex;margin-bottom:8px;">
-                <span
-                    style="width:40px;font-family:'Roboto Mono',monospace;font-weight:bold;font-size:12px;color:#1A1A1A;">POS</span>
-                <span
-                    style="flex:2;font-family:'Roboto Mono',monospace;font-weight:bold;font-size:12px;color:#1A1A1A;">DRIVER</span>
-                <span
-                    style="flex:2;text-align:right;font-family:'Roboto Mono',monospace;font-weight:bold;font-size:12px;color:#1A1A1A;">BEST
-                    LAP</span>
-                <span
-                    style="flex:1;text-align:right;font-family:'Roboto Mono',monospace;font-weight:bold;font-size:12px;color:#1A1A1A;margin-left:12px;">GAP</span>
-            </div>
-            <!-- Fastest row -->
-            <div
-                style="padding:10px 12px;background:rgba(0,255,136,0.15);border-radius:6px;display:flex;margin-bottom:4px;">
-                <span
-                    style="width:40px;font-family:'Roboto Mono',monospace;font-weight:bold;font-size:16px;color:#00FF88;">1</span>
-                <span
-                    style="flex:2;font-family:'Roboto Mono',monospace;font-size:14px;font-weight:bold;color:#1A1A1A;">L.
-                    Hamilton</span>
-                <span
-                    style="flex:2;text-align:right;font-family:'Roboto Mono',monospace;font-size:14px;font-weight:bold;color:#00FF88;">1:23.456</span>
-                <span
-                    style="flex:1;text-align:right;font-family:'Roboto Mono',monospace;font-size:12px;color:#666;margin-left:12px;">—</span>
-            </div>
-            <!-- Normal row -->
-            <div style="padding:10px 12px;display:flex;margin-bottom:4px;">
-                <span
-                    style="width:40px;font-family:'Roboto Mono',monospace;font-weight:bold;font-size:16px;color:#1A1A1A;">2</span>
-                <span style="flex:2;font-family:'Roboto Mono',monospace;font-size:14px;color:#1A1A1A;">G. Russell</span>
-                <span
-                    style="flex:2;text-align:right;font-family:'Roboto Mono',monospace;font-size:14px;color:#1A1A1A;">1:24.012</span>
-                <span
-                    style="flex:1;text-align:right;font-family:'Roboto Mono',monospace;font-size:12px;color:#666;margin-left:12px;">+0.556</span>
-            </div>
+        <div class="component-label">BoxDecoration — LinearGradient #1E1E1E → #0A0A0A + border + boxShadow</div>
+        <div style="font-size:9px;color:rgba(255,255,255,0.3);margin-bottom:12px;">
+            Patrón repetido inline. No es un widget nombrado. BoxDecoration idéntica en 22 lugares del código.
         </div>
-    </section>
 
-    <!-- ===========================
-     17. ONYX SKELETON
-     =========================== -->
-    <section class="audit-section">
-        <h2 class="section-title">17. OnyxSkeleton (Shimmer Loading)</h2>
-        <span class="source-ref">lib/widgets/common/onyx_skeleton.dart</span>
-
-        <div class="component-label" style="margin-bottom:8px;">OnyxSkeleton — Animated shimmer placeholders</div>
-        <div style="display:flex;flex-direction:column;gap:12px;max-width:400px;margin-bottom:24px;">
-            <!-- Full width skeleton -->
-            <div
-                style="width:100%;height:16px;background:rgba(255,255,255,0.08);border-radius:8px;animation:shimmer 1.5s ease-in-out infinite alternate;">
-            </div>
-            <div style="display:flex;gap:12px;">
+        <div class="component-row" style="gap:24px;">
+            <!-- Example 1: FinanceCard (dashboard_widgets.dart L155-171) -->
+            <div>
+                <div class="component-label">FinanceCard (dashboard_widgets.dart L155-171)</div>
                 <div
-                    style="width:60px;height:60px;background:rgba(255,255,255,0.06);border-radius:8px;animation:shimmer 1.5s ease-in-out infinite alternate;">
-                </div>
-                <div style="flex:1;display:flex;flex-direction:column;gap:8px;">
-                    <div
-                        style="width:80%;height:12px;background:rgba(255,255,255,0.08);border-radius:8px;animation:shimmer 1.5s ease-in-out infinite alternate;">
-                    </div>
-                    <div
-                        style="width:50%;height:12px;background:rgba(255,255,255,0.06);border-radius:8px;animation:shimmer 1.5s ease-in-out infinite alternate;">
-                    </div>
-                </div>
-            </div>
-            <div
-                style="width:70%;height:12px;background:rgba(255,255,255,0.07);border-radius:8px;animation:shimmer 1.5s ease-in-out infinite alternate;">
-            </div>
-        </div>
-        <style>
-            @keyframes shimmer {
-                from {
-                    opacity: 0.4;
-                }
-
-                to {
-                    opacity: 1;
-                }
-            }
-        </style>
-        <div style="font-size:10px;color:rgba(255,255,255,0.3);font-style:italic;margin-bottom:8px;">
-            Animation: white alpha 0.05 → 0.12, 1500ms, easeInOut, repeat(reverse)
-        </div>
-    </section>
-
-    <!-- ===========================
-     18. ONYX TABLE
-     =========================== -->
-    <section class="audit-section">
-        <h2 class="section-title">18. OnyxTable (Reusable Data Table)</h2>
-        <span class="source-ref">lib/widgets/common/onyx_table.dart</span>
-
-        <div class="component-label" style="margin-bottom:8px;">OnyxTable — Header + Rows with hover & highlight</div>
-        <div style="max-width:700px;margin-bottom:24px;">
-            <!-- Header -->
-            <div
-                style="padding:12px 20px;background:rgba(255,255,255,0.03);border-bottom:1px solid rgba(255,255,255,0.05);display:flex;">
-                <span
-                    style="flex:1;font-family:'Poppins',sans-serif;font-weight:700;font-size:10px;letter-spacing:1.1px;color:rgba(255,255,255,0.4);">POS</span>
-                <span
-                    style="flex:4;font-family:'Poppins',sans-serif;font-weight:700;font-size:10px;letter-spacing:1.1px;color:rgba(255,255,255,0.4);">DRIVER</span>
-                <span
-                    style="flex:4;font-family:'Poppins',sans-serif;font-weight:700;font-size:10px;letter-spacing:1.1px;color:rgba(255,255,255,0.4);">TEAM</span>
-                <span
-                    style="flex:2;font-family:'Poppins',sans-serif;font-weight:700;font-size:10px;letter-spacing:1.1px;color:rgba(255,255,255,0.4);">POINTS</span>
-            </div>
-            <!-- Highlighted row (player team) -->
-            <div
-                style="padding:14px 20px;background:rgba(0,200,83,0.1);border-left:4px solid #00C853;border-bottom:1px solid rgba(255,255,255,0.05);display:flex;">
-                <span
-                    style="flex:1;font-family:'Inter',sans-serif;font-size:12px;color:#00C853;font-weight:500;">#1</span>
-                <span style="flex:4;font-family:'Inter',sans-serif;font-size:12px;color:#00C853;font-weight:900;">L.
-                    Hamilton</span>
-                <span style="flex:4;font-family:'Inter',sans-serif;font-size:12px;color:#00C853;font-weight:900;">My
-                    Team Racing</span>
-                <span
-                    style="flex:2;font-family:'Inter',sans-serif;font-size:12px;color:#00C853;font-weight:700;">187</span>
-            </div>
-            <!-- Hovered row -->
-            <div
-                style="padding:14px 20px;background:rgba(0,200,83,0.05);border-bottom:1px solid rgba(255,255,255,0.05);display:flex;">
-                <span
-                    style="flex:1;font-family:'Inter',sans-serif;font-size:12px;color:rgba(255,255,255,0.5);font-weight:500;">#2</span>
-                <span
-                    style="flex:4;font-family:'Inter',sans-serif;font-size:12px;color:rgba(255,255,255,0.9);font-weight:500;">M.
-                    Verstappen</span>
-                <span
-                    style="flex:4;font-family:'Inter',sans-serif;font-size:12px;color:rgba(255,255,255,0.9);font-weight:500;">Red
-                    Bull Racing</span>
-                <span
-                    style="flex:2;font-family:'Inter',sans-serif;font-size:12px;color:rgba(255,255,255,0.9);font-weight:700;">156</span>
-            </div>
-            <!-- Normal even row -->
-            <div style="padding:14px 20px;border-bottom:1px solid rgba(255,255,255,0.05);display:flex;">
-                <span
-                    style="flex:1;font-family:'Inter',sans-serif;font-size:12px;color:rgba(255,255,255,0.5);font-weight:500;">#3</span>
-                <span
-                    style="flex:4;font-family:'Inter',sans-serif;font-size:12px;color:rgba(255,255,255,0.9);font-weight:500;">C.
-                    Leclerc</span>
-                <span
-                    style="flex:4;font-family:'Inter',sans-serif;font-size:12px;color:rgba(255,255,255,0.9);font-weight:500;">Ferrari</span>
-                <span
-                    style="flex:2;font-family:'Inter',sans-serif;font-size:12px;color:rgba(255,255,255,0.9);font-weight:700;">134</span>
-            </div>
-            <!-- Odd row -->
-            <div
-                style="padding:14px 20px;background:rgba(255,255,255,0.01);border-bottom:1px solid rgba(255,255,255,0.05);display:flex;">
-                <span
-                    style="flex:1;font-family:'Inter',sans-serif;font-size:12px;color:rgba(255,255,255,0.5);font-weight:500;">#4</span>
-                <span
-                    style="flex:4;font-family:'Inter',sans-serif;font-size:12px;color:rgba(255,255,255,0.9);font-weight:500;">L.
-                    Norris</span>
-                <span
-                    style="flex:4;font-family:'Inter',sans-serif;font-size:12px;color:rgba(255,255,255,0.9);font-weight:500;">McLaren</span>
-                <span
-                    style="flex:2;font-family:'Inter',sans-serif;font-size:12px;color:rgba(255,255,255,0.9);font-weight:700;">98</span>
-            </div>
-        </div>
-    </section>
-
-    <!-- ===========================
-     19. STANDINGS SCREEN
-     =========================== -->
-    <section class="audit-section">
-        <h2 class="section-title">19. Standings Screen (TabBar + OnyxTable)</h2>
-        <span class="source-ref">lib/screens/standings_screen.dart</span>
-
-        <div class="component-label" style="margin-bottom:8px;">Standings Container — Gradient + TabBar</div>
-        <div
-            style="max-width:700px;border-radius:16px;background:linear-gradient(to bottom right,#1E1E1E,#0A0A0A);border:1px solid rgba(255,255,255,0.08);box-shadow:0 12px 24px rgba(0,0,0,0.4);overflow:hidden;margin-bottom:24px;">
-            <!-- TabBar -->
-            <div style="display:flex;border-bottom:1px solid rgba(255,255,255,0.05);">
-                <div
-                    style="flex:1;text-align:center;padding:12px;border-bottom:2px solid #00C853;font-family:'Poppins',sans-serif;font-size:13px;font-weight:bold;letter-spacing:1.2px;color:#00C853;">
-                    DRIVERS</div>
-                <div
-                    style="flex:1;text-align:center;padding:12px;font-family:'Poppins',sans-serif;font-size:13px;font-weight:bold;letter-spacing:1.2px;color:rgba(255,255,255,0.3);">
-                    CONSTRUCTORS</div>
-                <div
-                    style="flex:1;text-align:center;padding:12px;font-family:'Poppins',sans-serif;font-size:13px;font-weight:bold;letter-spacing:1.2px;color:rgba(255,255,255,0.3);">
-                    RACE RESULTS</div>
-            </div>
-            <!-- DriverStars example in table -->
-            <div
-                style="padding:14px 20px;background:rgba(0,200,83,0.1);border-left:4px solid #00C853;display:flex;align-items:center;">
-                <span style="flex:1;font-size:12px;color:#00C853;">#1</span>
-                <span style="flex:4;font-size:12px;color:#00C853;font-weight:900;">L. Hamilton</span>
-                <span style="flex:3;display:flex;gap:1px;">
-                    <span style="color:#448AFF;font-size:14px;">★★★</span>
-                    <span style="color:rgba(255,193,7,0.5);font-size:14px;">★</span>
-                    <span style="color:rgba(255,255,255,0.2);font-size:14px;">☆</span>
-                </span>
-                <span style="flex:4;font-size:12px;color:#00C853;">My Team</span>
-                <span style="flex:2;font-size:12px;color:#00C853;font-weight:700;">187</span>
-            </div>
-        </div>
-    </section>
-
-    <!-- ===========================
-     20. COMMON WIDGETS
-     =========================== -->
-    <section class="audit-section">
-        <h2 class="section-title">20. Common Widgets Gallery</h2>
-        <span class="source-ref">lib/widgets/common/ + lib/widgets/</span>
-
-        <!-- NewBadge -->
-        <div class="component-label" style="margin-bottom:8px;">NewBadgeWidget — Pulsing amber badge (7 days)</div>
-        <div
-            style="display:inline-block;position:relative;padding:16px 24px;background:rgba(255,255,255,0.05);border-radius:12px;margin-bottom:24px;">
-            <span style="color:rgba(255,255,255,0.7);font-size:13px;">Transfer Market Budget</span>
-            <div
-                style="position:absolute;top:-4px;right:-4px;background:#FFC107;padding:2px 6px;border-radius:12px;box-shadow:0 2px 4px rgba(255,193,7,0.4);display:flex;align-items:center;gap:2px;">
-                <span style="color:white;font-size:10px;">⭐</span>
-                <span style="color:white;font-size:8px;font-weight:bold;letter-spacing:0.5px;">NEW</span>
-            </div>
-        </div>
-
-        <!-- DynamicLoadingIndicator -->
-        <div class="component-label" style="margin-bottom:8px;">DynamicLoadingIndicator — Spinner + rotating phrases
-        </div>
-        <div style="display:flex;flex-direction:column;align-items:center;gap:24px;padding:32px;margin-bottom:24px;">
-            <div
-                style="width:32px;height:32px;border:3px solid rgba(255,255,255,0.1);border-top-color:#00C853;border-radius:50%;animation:spin 1s linear infinite;">
-            </div>
-            <span
-                style="font-family:'Raleway',sans-serif;font-size:14px;color:rgba(255,255,255,0.7);letter-spacing:1px;">Analyzing
-                telemetry data...</span>
-        </div>
-        <style>
-            @keyframes spin {
-                to {
-                    transform: rotate(360deg);
-                }
-            }
-        </style>
-
-        <!-- Breadcrumbs -->
-        <div class="component-label" style="margin-bottom:8px;">Breadcrumbs — Raleway navigation</div>
-        <div style="display:flex;align-items:center;gap:8px;margin-bottom:24px;">
-            <span
-                style="font-family:'Raleway',sans-serif;font-size:11px;font-weight:500;color:rgba(255,255,255,0.5);letter-spacing:1px;cursor:pointer;">HQ</span>
-            <span style="font-family:'Raleway',sans-serif;font-size:12px;color:rgba(255,255,255,0.2);">/</span>
-            <span
-                style="font-family:'Raleway',sans-serif;font-size:11px;font-weight:500;color:rgba(255,255,255,0.5);letter-spacing:1px;cursor:pointer;">DRIVERS</span>
-            <span style="font-family:'Raleway',sans-serif;font-size:12px;color:rgba(255,255,255,0.2);">/</span>
-            <span
-                style="font-family:'Raleway',sans-serif;font-size:11px;font-weight:bold;color:white;letter-spacing:1px;">L.
-                HAMILTON</span>
-        </div>
-
-        <!-- InstructionCard -->
-        <div class="component-label" style="margin-bottom:8px;">InstructionCard — Onboarding gradient card</div>
-        <div
-            style="max-width:500px;padding:24px;background:linear-gradient(to bottom right,rgba(58,64,177,0.1),#0A0A0A);border:1px solid rgba(58,64,177,0.3);border-radius:12px;box-shadow:0 8px 15px rgba(0,0,0,0.4);margin-bottom:24px;">
-            <div style="display:flex;align-items:center;gap:12px;margin-bottom:16px;">
-                <span style="font-size:32px;color:#3A40B1;">🏁</span>
-                <span
-                    style="font-family:'Poppins',sans-serif;font-size:20px;font-weight:900;letter-spacing:1.5px;color:rgba(58,64,177,0.9);">WELCOME
-                    TO FTG</span>
-            </div>
-            <div style="font-size:14px;color:rgba(255,255,255,0.8);line-height:1.5;">Choose your team, hire drivers, and
-                manage your way to the championship.</div>
-        </div>
-
-        <!-- FuelInput -->
-        <div class="component-label" style="margin-bottom:8px;">FuelInput — Compact fuel entry</div>
-        <div
-            style="display:inline-flex;align-items:center;width:65px;height:28px;background:rgba(255,255,255,0.05);border-radius:12px;border:1px solid rgba(255,255,255,0.1);overflow:hidden;margin-bottom:24px;">
-            <span style="flex:1;text-align:center;font-size:11px;font-weight:bold;color:orange;">45.0</span>
-            <span style="font-size:8px;color:rgba(255,255,255,0.24);font-weight:bold;padding-right:6px;">L</span>
-        </div>
-    </section>
-
-    <!-- ===========================
-     21. NOTIFICATION & NEWS CARDS
-     =========================== -->
-    <section class="audit-section">
-        <h2 class="section-title">21. Notification & Press News Cards</h2>
-        <span class="source-ref">lib/widgets/notification_card.dart + press_news_card.dart</span>
-
-        <!-- NotificationCard variants -->
-        <div class="component-label" style="margin-bottom:8px;">NotificationCard — Type variants</div>
-        <div style="max-width:500px;display:flex;flex-direction:column;gap:12px;margin-bottom:24px;">
-            <!-- SUCCESS -->
-            <div
-                style="padding:16px;background:rgba(255,255,255,0.05);border-radius:12px;border:1px solid rgba(0,200,83,0.2);box-shadow:0 4px 8px rgba(0,0,0,0.4);display:flex;gap:16px;">
-                <div
-                    style="width:36px;height:36px;background:rgba(0,200,83,0.1);border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:20px;color:#00C853;">
-                    ✓</div>
-                <div style="flex:1;">
-                    <div
-                        style="font-family:'Poppins',sans-serif;font-size:10px;font-weight:bold;color:#00C853;letter-spacing:1.2px;">
-                        SUCCESS</div>
-                    <div
-                        style="font-family:'Poppins',sans-serif;font-size:14px;font-weight:bold;color:rgba(255,255,255,0.9);margin-top:4px;">
-                        Contract Renewed</div>
-                    <div style="font-size:13px;color:rgba(255,255,255,0.7);line-height:1.4;margin-top:4px;">L. Hamilton
-                        renewed for 3 seasons.</div>
-                </div>
-                <span style="font-size:10px;color:rgba(255,255,255,0.4);">5 mins ago</span>
-            </div>
-            <!-- OFFICE (RACE_RESULT) -->
-            <div
-                style="padding:16px;background:rgba(255,255,255,0.05);border-radius:12px;border:1px solid rgba(255,215,0,0.2);box-shadow:0 4px 8px rgba(0,0,0,0.4);display:flex;gap:16px;">
-                <div
-                    style="width:36px;height:36px;background:rgba(255,215,0,0.1);border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:20px;color:#FFD700;">
-                    🏆</div>
-                <div style="flex:1;">
-                    <div
-                        style="font-family:'Poppins',sans-serif;font-size:10px;font-weight:bold;color:#FFD700;letter-spacing:1.2px;">
-                        OFFICE</div>
-                    <div
-                        style="font-family:'Poppins',sans-serif;font-size:14px;font-weight:bold;color:rgba(255,255,255,0.9);margin-top:4px;">
-                        Race Result: P1</div>
-                    <div style="font-size:13px;color:rgba(255,255,255,0.7);line-height:1.4;margin-top:4px;">Victory at
-                        Interlagos! +25 points.</div>
-                </div>
-                <span style="font-size:10px;color:rgba(255,255,255,0.4);">2 hours ago</span>
-            </div>
-        </div>
-
-        <!-- PressNewsCard -->
-        <div class="component-label" style="margin-bottom:8px;">PressNewsCard — Newspaper theme (light bg #F4F1EA)</div>
-        <div
-            style="max-width:320px;background:#F4F1EA;border-radius:4px;border:1px solid rgba(0,0,0,0.2);box-shadow:2px 2px 4px rgba(0,0,0,0.1);padding:12px;margin-bottom:24px;">
-            <div
-                style="text-align:center;font-family:'Playfair Display',serif;font-size:10px;font-weight:bold;letter-spacing:1.5px;color:rgba(0,0,0,0.87);">
-                MOTORSPORT DAILY</div>
-            <div style="border-top:1px solid rgba(0,0,0,0.3);margin:4px 0 8px;"></div>
-            <div style="display:flex;justify-content:space-between;margin-bottom:8px;">
-                <span
-                    style="font-family:'Oswald',sans-serif;font-size:9px;font-weight:600;color:rgba(0,0,0,0.54);letter-spacing:0.5px;">MANAGER
-                    JOIN</span>
-                <span style="font-size:9px;color:rgba(0,0,0,0.54);font-family:'Courier New',monospace;">Feb 28,
-                    2026</span>
-            </div>
-            <div
-                style="font-family:'Merriweather',serif;font-size:14px;font-weight:900;color:rgba(0,0,0,0.87);line-height:1.2;margin-bottom:12px;">
-                New Manager Takes Helm at Racing Team in Championship League</div>
-            <div style="display:flex;justify-content:flex-end;">
-                <div style="padding:4px 8px;border:1px solid rgba(0,0,0,0.87);border-radius:2px;">
-                    <span
-                        style="font-family:'Oswald',sans-serif;font-size:10px;font-weight:bold;color:rgba(0,0,0,0.87);">READ
-                        FULL ARTICLE</span>
-                </div>
-            </div>
-        </div>
-        </div>
-    </section>
-
-    <!-- ===========================
-     22. GARAGE SETUP COMPONENTS
-     =========================== -->
-    <section class="audit-section">
-        <h2 class="section-title">22. Garage Setup Components</h2>
-        <span class="source-ref">lib/screens/race/garage_screen.dart</span>
-
-        <!-- Driver Selector Card (SELECTED) -->
-        <div class="component-label" style="margin-bottom:8px;">Garage Driver Selector — Card (Selected State)</div>
-        <div
-            style="width:220px;height:110px;margin-bottom:24px;border-radius:12px;border:2px solid #3A40B1;background:linear-gradient(to bottom right, #2A2A2A, #121212);box-shadow:0 4px 10px rgba(58,64,177,0.3);overflow:hidden;display:flex;">
-            <!-- Left Portrait Area -->
-            <div
-                style="flex:35;background:linear-gradient(to right, rgba(0,0,0,0.8), transparent), url('https://placehold.co/100x150/1e1e1e/333333?text=Driver') center/cover;">
-            </div>
-            <!-- Right Info Area -->
-            <div style="flex:65;padding:10px 12px;display:flex;flex-direction:column;justify-content:center;">
-                <div style="display:flex;justify-content:space-between;align-items:center;">
-                    <span
-                        style="font-size:12px;font-weight:900;letter-spacing:0.5px;color:white;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">L.
-                        HAMILTON</span>
-                    <span style="color:#00C853;font-size:14px;">✔</span>
-                </div>
-                <!-- Fitness Bar Placeholder -->
-                <div
-                    style="height:6px;background:rgba(255,255,255,0.1);border-radius:3px;margin:8px 0;position:relative;overflow:hidden;">
-                    <div
-                        style="position:absolute;left:0;top:0;height:100%;width:90%;background:#00C853;border-radius:3px;">
-                    </div>
-                </div>
-                <!-- Laps Info -->
-                <div style="display:flex;align-items:center;gap:4px;">
-                    <span style="font-size:10px;color:rgba(255,255,255,0.38);">⏱</span>
-                    <span style="font-size:9px;font-weight:900;letter-spacing:0.5px;color:rgba(255,255,255,0.38);">0 / 5
-                        LAPS</span>
-                </div>
-            </div>
-        </div>
-
-        <!-- Driver Selector Card (DNF OVERLAY) -->
-        <div class="component-label" style="margin-bottom:8px;">Garage Driver Selector — DNF Overlay</div>
-        <div
-            style="position:relative;width:220px;height:110px;margin-bottom:24px;border-radius:12px;border:1px solid rgba(255,255,255,0.1);background:linear-gradient(to bottom right, #1E1E1E, #0A0A0A);box-shadow:0 2px 4px rgba(0,0,0,0.4);overflow:hidden;">
-            <div style="display:flex;height:100%;">
-                <div
-                    style="flex:35;background:linear-gradient(to right, rgba(0,0,0,0.8), transparent), url('https://placehold.co/100x150/1e1e1e/333333?text=Driver') center/cover;">
-                </div>
-                <div style="flex:65;padding:10px 12px;display:flex;flex-direction:column;justify-content:center;">
-                    <span style="font-size:12px;font-weight:900;letter-spacing:0.5px;color:rgba(255,255,255,0.5);">C.
-                        LECLERC</span>
-                    <div style="height:6px;background:rgba(255,255,255,0.1);border-radius:3px;margin:8px 0;"></div>
-                    <div style="display:flex;align-items:center;gap:4px;">
-                        <span style="font-size:10px;color:orange;">⏱</span>
-                        <span style="font-size:9px;font-weight:900;letter-spacing:0.5px;color:orange;">5 / 5 LAPS</span>
-                    </div>
-                </div>
-            </div>
-            <!-- Overlay -->
-            <div
-                style="position:absolute;inset:0;background:rgba(244,67,54,0.55);border-radius:10px;display:flex;align-items:center;justify-content:center;">
-                <span
-                    style="color:white;font-size:28px;font-weight:900;letter-spacing:4.0px;text-shadow:0 0 10px black;">DNF</span>
-            </div>
-        </div>
-
-        <!-- Driver Feedback Card -->
-        <div class="component-label" style="margin-bottom:8px;">Garage Driver Feedback Card</div>
-        <div
-            style="max-width:500px;background:#0A0A0A;border-radius:12px;border:1px solid rgba(255,255,255,0.1);display:flex;flex-direction:column;">
-            <!-- Header -->
-            <div
-                style="padding:12px 16px;background:rgba(255,255,255,0.05);border-radius:12px 12px 0 0;display:flex;align-items:center;gap:8px;">
-                <span style="color:rgba(255,255,255,0.5);font-size:16px;">💬</span>
-                <span style="font-size:11px;font-weight:900;letter-spacing:1.5px;color:rgba(255,255,255,0.5);">DRIVER
-                    FEEDBACK</span>
-            </div>
-            <!-- Session Content -->
-            <div style="padding:12px;">
-                <div
-                    style="padding:12px;background:rgba(255,255,255,0.05);border-radius:12px;border:1px solid rgba(255,255,255,0.1);">
-                    <!-- Session Header -->
-                    <div style="display:flex;align-items:center;gap:8px;">
+                    style="width:280px;padding:20px;border-radius:12px;background:linear-gradient(to bottom right,#1E1E1E,#0A0A0A);border:1px solid rgba(255,255,255,0.1);box-shadow:0 8px 15px rgba(0,0,0,0.3);">
+                    <div style="display:flex;align-items:center;gap:12px;">
                         <div
-                            style="width:20px;height:20px;border-radius:50%;background:#00B0FF;display:flex;align-items:center;justify-content:center;color:white;font-size:9px;font-weight:bold;">
-                            L</div>
-                        <span
-                            style="font-size:11px;font-weight:900;color:rgba(255,255,255,0.7);letter-spacing:1.0px;">L.
-                            HAMILTON</span>
-                        <div style="flex:1;"></div>
-                        <span
-                            style="font-size:10px;font-weight:900;color:rgba(58,64,177,0.8);font-family:monospace;">BEST:
-                            1:23.456</span>
+                            style="padding:12px;background:rgba(255,215,0,0.1);border-radius:12px;display:flex;align-items:center;justify-content:center;">
+                            <span style="font-size:18px;">💰</span>
+                        </div>
+                        <div>
+                            <div
+                                style="font-size:9px;font-weight:bold;letter-spacing:1.5px;color:rgba(255,255,255,0.4);">
+                                [teamBudget — localized]</div>
+                            <div
+                                style="font-family:'Roboto Mono',monospace;font-weight:900;font-size:20px;color:#FFD700;letter-spacing:-0.5px;">
+                                $4,500,000</div>
+                        </div>
                     </div>
-                    <!-- Divider -->
-                    <div style="height:1px;background:rgba(255,255,255,0.1);margin:8px 0;"></div>
-                    <!-- Messages -->
-                    <div style="display:flex;align-items:flex-start;gap:4px;padding:3px 0;">
-                        <span style="color:rgba(100,221,23,0.8);font-size:14px;">›</span>
-                        <span style="font-size:12px;font-weight:500;color:rgba(100,221,23,0.8);">The rear feels planted,
-                            grip is solid!</span> <!-- 0.90 confidence -->
+                </div>
+            </div>
+            <!-- Example 2: PreparationChecklist (dashboard_widgets.dart L1079-1098) -->
+            <div>
+                <div class="component-label">PreparationChecklist (dashboard_widgets.dart L1079-1098)</div>
+                <div
+                    style="width:280px;padding:20px;border-radius:12px;background:linear-gradient(to bottom right,#1E1E1E,#0A0A0A);border:1px solid rgba(255,255,255,0.1);box-shadow:0 8px 15px rgba(0,0,0,0.3);">
+                    <div
+                        style="font-size:9px;font-weight:bold;letter-spacing:1.5px;color:rgba(255,255,255,0.4);margin-bottom:16px;">
+                        [preRaceChecklist — localized]</div>
+                    <div style="display:flex;flex-direction:column;gap:10px;">
+                        <div style="display:flex;align-items:center;gap:8px;">
+                            <span style="font-size:14px;">✅</span>
+                            <span style="font-size:12px;color:rgba(255,255,255,0.7);">[practiceProgram —
+                                localized]</span>
+                        </div>
+                        <div style="display:flex;align-items:center;gap:8px;">
+                            <span style="font-size:14px;">⬜</span>
+                            <span style="font-size:12px;color:rgba(255,255,255,0.7);">[qualifyingSetup —
+                                localized]</span>
+                        </div>
                     </div>
-                    <div style="display:flex;align-items:flex-start;gap:4px;padding:3px 0;">
-                        <span style="color:rgba(255,184,0,0.8);font-size:14px;">›</span>
-                        <span style="font-size:12px;font-weight:500;color:rgba(255,184,0,0.8);">Engine braking could be
-                            better, we are losing time on entry.</span> <!-- 0.85 confidence -->
+                </div>
+            </div>
+            <!-- Example 3: StandingsScreen (standings_screen.dart L187) -->
+            <div>
+                <div class="component-label">StandingsScreen (standings_screen.dart L187)</div>
+                <div
+                    style="width:280px;padding:20px;border-radius:12px;background:linear-gradient(to bottom right,#1E1E1E,#0A0A0A);border:1px solid rgba(255,255,255,0.1);box-shadow:0 8px 15px rgba(0,0,0,0.3);">
+                    <div
+                        style="font-size:9px;font-weight:bold;letter-spacing:1.5px;color:rgba(255,255,255,0.4);margin-bottom:12px;">
+                        STANDINGS CONTAINER</div>
+                    <div style="font-size:11px;color:rgba(255,255,255,0.5);">
+                        [TabBar + OnyxTable inside]
                     </div>
                 </div>
             </div>
         </div>
+
+        <!-- Dart code snippet -->
+        <div style="margin-top:20px;">
+            <div class="component-label">Dart code (copy from dashboard_widgets.dart L155-171)</div>
+            <pre
+                style="background:#0A0A0A;border:1px solid rgba(255,255,255,0.08);border-radius:8px;padding:16px;font-family:'Roboto Mono',monospace;font-size:11px;color:rgba(255,255,255,0.7);overflow-x:auto;line-height:1.5;">decoration: BoxDecoration(
+  gradient: const LinearGradient(
+    begin: Alignment.topLeft,
+    end: Alignment.bottomRight,
+    colors: [Color(0xFF1E1E1E), Color(0xFF0A0A0A)],
+  ),
+  border: Border.all(color: Colors.white.withValues(alpha: 0.1)),
+  borderRadius: BorderRadius.circular(12),
+  boxShadow: [
+    BoxShadow(
+      color: Colors.black.withValues(alpha: 0.3),
+      blurRadius: 15,
+      offset: const Offset(0, 8),
+    ),
+  ],
+)</pre>
         </div>
     </section>
 
     <!-- ===========================
-     23. FINANCES & SPONSORS
+     26. REPEATED LABEL TEXTSTYLE (design_system.md §10)
      =========================== -->
     <section class="audit-section">
-        <h2 class="section-title">23. Finances & Sponsors Components</h2>
-        <span class="source-ref">lib/screens/office/finances_screen.dart & sponsorship_screen.dart</span>
+        <h2 class="section-title">26. Repeated Label TextStyle (6+ instances in code)</h2>
+        <span class="source-ref">dashboard_widgets.dart · garage_screen.dart · race_day_screen.dart ·
+            sponsorship_screen.dart</span>
 
-        <!-- Balance Header -->
-        <div class="component-label" style="margin-bottom:8px;">Finances Balance Header</div>
-        <div
-            style="max-width:500px;margin:20px 0;padding:32px;background:linear-gradient(to bottom right, #1E1E1E, #0A0A0A);border-radius:12px;border:1px solid rgba(255,255,255,0.1);box-shadow:0 6px 12px rgba(0,0,0,0.4);text-align:center;">
-            <div style="color:grey;font-size:12px;font-weight:bold;letter-spacing:1.5px;margin-bottom:8px;">CURRENT
-                BALANCE</div>
-            <div style="color:white;font-size:42px;font-weight:900;">$ 4,500,000</div>
+        <div class="component-label">TextStyle — 9px, FontWeight.bold, letterSpacing 1.5, white alpha 0.4</div>
+        <div style="font-size:9px;color:rgba(255,255,255,0.3);margin-bottom:16px;">
+            Patrón repetido inline. No es un TextTheme entry. TextStyle idéntico como label header en 6+ widgets.
         </div>
 
-        <!-- Transaction Tile -->
-        <div class="component-label" style="margin-bottom:8px;">Transaction Tile (Sponsor Payment)</div>
-        <div
-            style="max-width:500px;margin-bottom:12px;background:#121212;border-radius:12px;border:1px solid rgba(255,255,255,0.05);display:flex;align-items:center;padding:12px 16px;">
-            <div style="background:rgba(58,64,177,0.1);padding:10px;border-radius:12px;margin-right:16px;">
-                <span style="color:#3A40B1;font-size:24px;">🤝</span>
+        <div class="component-row" style="gap:32px;">
+            <!-- Example labels from different widgets -->
+            <div>
+                <div class="component-label">FinanceCard label (dashboard_widgets.dart)</div>
+                <span
+                    style="font-size:9px;font-weight:bold;letter-spacing:1.5px;color:rgba(255,255,255,0.4);">[teamBudget
+                    — localized]</span>
             </div>
-            <div style="flex:1;">
-                <div style="color:white;font-weight:bold;font-size:16px;">Motorsport Daily Sponsorship</div>
-                <div style="color:grey;font-size:12px;margin-top:2px;">Mon, 9:00 AM</div>
+            <div>
+                <div class="component-label">PreparationChecklist label (dashboard_widgets.dart L1104)</div>
+                <span
+                    style="font-size:9px;font-weight:bold;letter-spacing:1.5px;color:rgba(255,255,255,0.4);">[preRaceChecklist
+                    — localized]</span>
             </div>
-            <div style="color:green;font-weight:bold;font-size:16px;">+$ 150,000</div>
-        </div>
-
-        <!-- Transfer Budget Card -->
-        <div class="component-label" style="margin-bottom:8px;margin-top:24px;">Transfer Market Budget Slider</div>
-        <div
-            style="max-width:500px;background:#15151A;border-radius:12px;border:1px solid rgba(58,64,177,0.2);padding:20px;position:relative;">
-            <!-- New Badge Simulation -->
-            <div
-                style="position:absolute;bottom:-10px;right:-10px;background:#FFC107;color:black;padding:4px 8px;border-radius:12px;font-size:10px;font-weight:bold;">
-                ⭐ NEW</div>
-
-            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;">
-                <span style="color:#3A40B1;font-weight:bold;letter-spacing:1.1px;font-size:14px;">Transfer Market
-                    Budget</span>
-                <button
-                    style="background:rgba(58,64,177,0.2);color:#3A40B1;border:none;padding:6px 16px;border-radius:20px;font-weight:bold;cursor:pointer;">Save</button>
+            <div>
+                <div class="component-label">_buildPitBoardField label (race_day_screen.dart)</div>
+                <span
+                    style="font-size:9px;font-weight:bold;letter-spacing:1.5px;color:rgba(255,255,255,0.4);">[fieldLabel
+                    — localized]</span>
             </div>
-            <div style="display:flex;justify-content:space-between;align-items:center;color:white;margin-bottom:8px;">
-                <span>Allocated: 20%</span>
-                <span style="color:#64FFDA;font-weight:bold;">$ 900,000</span>
+            <div>
+                <div class="component-label">_buildCircuitIntel label (race_day_screen.dart)</div>
+                <span style="font-size:9px;font-weight:bold;letter-spacing:1.5px;color:rgba(255,255,255,0.4);">CIRCUIT
+                    INTEL</span>
             </div>
-            <!-- Slider Visual Simulation -->
-            <div style="height:4px;background:rgba(255,255,255,0.1);border-radius:2px;margin:16px 0;position:relative;">
-                <div style="position:absolute;left:0;top:0;height:4px;width:20%;background:#3A40B1;border-radius:2px;">
-                </div>
-                <div
-                    style="position:absolute;left:20%;top:-6px;width:16px;height:16px;background:#3A40B1;border-radius:50%;box-shadow:0 0 4px rgba(0,0,0,0.5);">
-                </div>
-            </div>
-            <div style="font-size:10px;color:grey;">Set the maximum percentage of your total balance available for
-                placing bids. (10% - 90%)</div>
-        </div>
-
-        <!-- Sponsor Offer Card (Desktop Horizontal) -->
-        <div class="component-label" style="margin-bottom:8px;margin-top:32px;">Sponsor Offer Card (Desktop Horizontal
-            Layout)</div>
-        <div
-            style="max-width:800px;margin:4px 0;padding:16px;background:linear-gradient(to bottom right, #1E1E1E, #0A0A0A);border-radius:12px;border:1px solid rgba(255,255,255,0.1);box-shadow:0 6px 12px rgba(0,0,0,0.4);display:flex;">
-            <!-- Left Info Section -->
-            <div style="flex:4;">
-                <div style="display:flex;align-items:center;">
-                    <span
-                        style="color:white;font-size:16px;font-weight:900;letter-spacing:1.2px;font-family:'Poppins',sans-serif;">NEXUS
-                        RACING</span>
-                    <div
-                        style="margin-left:12px;background:rgba(76,175,80,0.2);padding:2px 6px;border-radius:8px;color:#4CAF50;font-size:9px;font-weight:bold;">
-                        +15%</div>
-                </div>
-                <div style="display:flex;gap:16px;margin-top:8px;flex-wrap:wrap;">
-                    <div style="display:flex;align-items:center;gap:4px;">
-                        <span style="color:rgba(255,255,255,0.2);font-size:14px;">💰</span>
-                        <span style="color:#4CAF50;font-size:11px;font-weight:bold;">$ 500,000</span>
-                    </div>
-                    <div style="display:flex;align-items:center;gap:4px;">
-                        <span style="color:rgba(255,255,255,0.2);font-size:14px;">📅</span>
-                        <span style="color:rgba(255,255,255,0.7);font-size:11px;font-weight:bold;">$ 35,000</span>
-                    </div>
-                    <div style="display:flex;align-items:center;gap:4px;">
-                        <span style="color:rgba(255,255,255,0.2);font-size:14px;">⏱</span>
-                        <span style="color:#2196F3;font-size:11px;font-weight:bold;">12 RACES</span>
-                    </div>
-                    <div style="display:flex;align-items:center;gap:4px;">
-                        <span style="color:rgba(255,255,255,0.2);font-size:14px;">🏆</span>
-                        <span style="color:#FFD740;font-size:11px;font-weight:bold;">Finish Top 3</span>
-                    </div>
-                </div>
-            </div>
-            <!-- Right Action Section -->
-            <div style="flex:3;padding-left:24px;border-left:1px solid rgba(255,255,255,0.05);">
-                <div style="display:flex;flex-direction:column;align-items:center;">
-                    <div
-                        style="color:rgba(255,255,255,0.4);font-size:9px;font-weight:900;letter-spacing:1.0px;margin-bottom:8px;">
-                        CHOOSE TACTIC (1 ATTEMPT LEFT)</div>
-                    <div style="display:flex;gap:8px;width:100%;">
-                        <button
-                            style="flex:1;background:rgba(255,255,255,0.05);color:rgba(255,255,255,0.4);border:none;border-radius:50px;padding:14px 0;font-size:9px;font-weight:900;letter-spacing:1.2px;font-family:'Poppins',sans-serif;cursor:pointer;">PERSUASIVE</button>
-                        <button
-                            style="flex:1;background:rgba(255,255,255,0.05);color:rgba(255,255,255,0.4);border:none;border-radius:50px;padding:14px 0;font-size:9px;font-weight:900;letter-spacing:1.2px;font-family:'Poppins',sans-serif;cursor:pointer;">NEGOTIATOR</button>
-                        <button
-                            style="flex:1;background:rgba(255,255,255,0.05);color:rgba(255,255,255,0.4);border:none;border-radius:50px;padding:14px 0;font-size:9px;font-weight:900;letter-spacing:1.2px;font-family:'Poppins',sans-serif;cursor:pointer;">COLLAB</button>
-                    </div>
-                </div>
+            <div>
+                <div class="component-label">SponsorOfferCard header (sponsorship_screen.dart)</div>
+                <span
+                    style="font-size:9px;font-weight:bold;letter-spacing:1.5px;color:rgba(255,255,255,0.4);">[sponsorName
+                    — localized]</span>
             </div>
         </div>
 
-    </section>
-
-    <!-- ===========================
-     24. FINAL REVIEW COMPONENTS
-     =========================== -->
-    <section class="audit-section">
-        <h2 class="section-title">24. Off-track & Onboarding Components</h2>
-        <span class="source-ref">Multiple files (team_selection_screen, calendar_screen, transfer_market,
-            academy)</span>
-
-        <!-- Team Selection Card -->
-        <div class="component-label" style="margin-bottom:8px;">Team Selection Card (Occupied State - Hover/Lock
-            simulation)</div>
-        <div style="position:relative;width:280px;border-radius:12px;overflow:hidden;margin-bottom:24px;">
-            <div
-                style="background:linear-gradient(to bottom right, #1A1A16, #121210);border:1px solid rgba(255,193,7,0.3);border-radius:12px;padding:16px;">
-                <div style="opacity:0.7;">
-                    <div style="color:white;font-size:18px;font-weight:bold;margin-bottom:12px;">NEXUS RACING</div>
-                    <div style="display:flex;margin-bottom:4px;font-size:12px;">
-                        <span style="color:rgba(255,255,255,0.7);">MAIN: </span>
-                        <span style="margin:0 4px;">🇬🇧</span>
-                        <span style="color:white;font-weight:bold;">L. HAMILTON</span>
-                    </div>
-                    <div style="display:flex;margin-bottom:4px;font-size:12px;">
-                        <span style="color:rgba(255,255,255,0.7);">2ND: </span>
-                        <span style="margin:0 4px;">🇲🇨</span>
-                        <span style="color:white;font-weight:bold;">C. LECLERC</span>
-                    </div>
-                    <div style="height:1px;background:rgba(255,255,255,0.1);margin:8px 0;"></div>
-                    <div style="display:flex;align-items:center;margin-bottom:8px;">
-                        <span style="color:#FFC107;font-size:14px;margin-right:6px;">👤</span>
-                        <span style="color:#FFC107;font-size:12px;font-weight:bold;">John Doe</span>
-                    </div>
-                    <div style="display:flex;align-items:center;color:grey;font-size:13px;">
-                        <span style="margin-right:4px;">💰</span> $85M
-                    </div>
-                </div>
-            </div>
-            <!-- Ribbon -->
-            <div
-                style="position:absolute;top:12px;right:-30px;transform:rotate(45deg);background:rgba(255,193,7,0.9);width:120px;padding:4px 0;text-align:center;">
-                <span style="color:black;font-size:9px;font-weight:900;letter-spacing:1.0px;">SELECTED</span>
-            </div>
-        </div>
-
-        <!-- Calendar Event -->
-        <div class="component-label" style="margin-bottom:8px;">Calendar Event Item (Current Round)</div>
-        <div
-            style="max-width:500px;background:rgba(58,64,177,0.1);border:2px solid #3A40B1;border-radius:12px;padding:12px 20px;display:flex;align-items:center;margin-bottom:24px;">
-            <div style="width:40px;text-align:center;margin-right:16px;">
-                <div style="color:#3A40B1;font-size:12px;font-weight:bold;">R1</div>
-                <div style="font-size:20px;margin-top:2px;">🇧🇭</div>
-            </div>
-            <div style="flex:1;">
-                <div style="font-weight:900;letter-spacing:0.5px;color:white;font-size:16px;">BAHRAIN GRAND PRIX</div>
-                <div style="display:flex;align-items:center;gap:12px;margin-top:4px;">
-                    <div style="display:flex;align-items:center;gap:4px;color:grey;font-size:12px;">
-                        <span>📅</span> Mar 03, 2026
-                    </div>
-                    <div style="display:flex;align-items:center;gap:4px;color:grey;font-size:12px;">
-                        <span>🔄</span> 57 LAPS
-                    </div>
-                </div>
-            </div>
-            <div
-                style="background:#3A40B1;padding:4px 8px;border-radius:4px;color:black;font-size:10px;font-weight:bold;">
-                SCHEDULED
-            </div>
-        </div>
-
-        <!-- Bid Modal Concept -->
-        <div class="component-label" style="margin-bottom:8px;">Transfer Market Bid Dialog (Inline concept)</div>
-        <div
-            style="max-width:350px;background:#1A1A1A;border-radius:12px;padding:24px;border:1px solid rgba(255,255,255,0.1);margin-bottom:24px;">
-            <div style="font-size:20px;color:white;margin-bottom:16px;">Place Transfer Bid</div>
-            <div style="color:rgba(255,255,255,0.7);font-size:14px;margin-bottom:16px;">Bidding for Max Verstappen</div>
-            <div style="color:rgba(255,255,255,0.5);font-size:14px;margin-bottom:24px;">Current Highest Bid: $ 8,500,000
-            </div>
-            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:32px;">
-                <button
-                    style="background:transparent;border:none;color:#F44336;font-size:24px;cursor:pointer;">➖</button>
-                <div style="font-size:24px;font-weight:bold;color:white;">$ 8,600,000</div>
-                <button
-                    style="background:transparent;border:none;color:#4CAF50;font-size:24px;cursor:pointer;">➕</button>
-            </div>
-            <div style="display:flex;justify-content:flex-end;gap:16px;">
-                <button
-                    style="background:transparent;border:none;color:grey;font-size:14px;cursor:pointer;">Cancel</button>
-                <button
-                    style="background:rgba(58,64,177,0.2);color:#3A40B1;border:none;padding:8px 16px;border-radius:24px;font-weight:bold;cursor:pointer;">Place
-                    Bid</button>
-            </div>
-        </div>
-
-        <!-- Academy Candidate -->
-        <div class="component-label" style="margin-bottom:8px;">Youth Academy Candidate Card</div>
-        <div
-            style="max-width:400px;background:#121212;border-radius:12px;padding:16px;border:1px solid rgba(255,255,255,0.05);">
-            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;">
-                <div style="font-size:12px;font-weight:bold;color:rgba(255,255,255,0.5);">CANDIDATE #9481</div>
-                <button
-                    style="background:rgba(58,64,177,0.2);color:#3A40B1;border:none;padding:4px 12px;border-radius:20px;font-size:11px;font-weight:bold;cursor:pointer;">ENROLL</button>
-            </div>
-            <div style="display:flex;gap:8px;margin-bottom:16px;">
-                <div
-                    style="background:rgba(255,255,255,0.1);padding:4px 8px;border-radius:6px;font-size:10px;font-weight:bold;color:white;">
-                    Age 18</div>
-                <div
-                    style="background:rgba(156,39,176,0.2);padding:4px 8px;border-radius:6px;font-size:10px;font-weight:bold;color:#E040FB;">
-                    HIGH POTENTIAL</div>
-            </div>
-            <!-- Stat Range Bar (Simulated) -->
-            <div style="margin-bottom:12px;">
-                <div
-                    style="display:flex;justify-content:space-between;font-size:10px;color:grey;margin-bottom:4px;font-weight:bold;">
-                    <span>OVERALL</span>
-                    <span>45 - 65</span>
-                </div>
-                <!-- Gray background -->
-                <div style="height:6px;background:rgba(255,255,255,0.1);border-radius:3px;position:relative;">
-                    <!-- Range bar (showing potential gap) -->
-                    <div
-                        style="position:absolute;left:45%;width:20%;height:6px;background:rgba(156,39,176,0.5);border-radius:3px;border-left:2px solid #E040FB;border-right:2px solid #E040FB;">
-                    </div>
-                </div>
-            </div>
+        <!-- Dart code snippet -->
+        <div style="margin-top:20px;">
+            <div class="component-label">Dart code (copy from dashboard_widgets.dart L1104-1109)</div>
+            <pre
+                style="background:#0A0A0A;border:1px solid rgba(255,255,255,0.08);border-radius:8px;padding:16px;font-family:'Roboto Mono',monospace;font-size:11px;color:rgba(255,255,255,0.7);overflow-x:auto;line-height:1.5;">TextStyle(
+  color: Colors.white.withValues(alpha: 0.4),
+  fontSize: 9,
+  fontWeight: FontWeight.bold,
+  letterSpacing: 1.5,
+)</pre>
         </div>
     </section>
 

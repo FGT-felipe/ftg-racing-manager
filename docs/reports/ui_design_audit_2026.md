@@ -434,7 +434,7 @@
 - Texto ON LIVE: 10px, `w900`, letterSpacing 1.0, `Color(0xFFFF5252)`
 - Badge bg: white alpha 0.03, border red alpha 0.2, radius 12
 
-**Action button (Onyx CTA):**
+**Action button (`ElevatedButton.icon` wrapped in `Container` — L735-782):**
 - Gradient: `#2A2A2A` → `#000000`
 - Border: `Color(0xFF00C853)` alpha 0.3
 - Shadow: black alpha 0.3, blur 8, offset (0,4)
@@ -507,7 +507,7 @@ Estos colores aparecen hardcodeados directamente en widgets, no pasan por `AppTh
 | Card Gradient Start | `0xFF1E1E1E` | Card top-left | Múltiples cards |
 | Card Gradient End | `0xFF0A0A0A` | Card bottom-right | Múltiples cards |
 | Success Green | `0xFF00C853` | Acciones positivas | `OnyxTable`, `RaceStatusHero`, `NotificationCard` |
-| Neon Green | `0xFF00E676` | Acentos élite | (theme) |
+| Neon Green | `0xFF00E676` | Acentos élite, level badge | `driver_card.dart`, `transfer_market_driver_card.dart`, `garage_screen.dart` |
 | Gold | `0xFFFFD700` | Valores monetarios, race result | `FinanceCard`, `NotificationCard` |
 | Amber | `0xFFFFC107` | NewBadge, star potential | `NewBadgeWidget`, `DriverStars` |
 | Soft Red | `0xFFFF5252` | Live indicator, race status | `RaceStatusHero`, blinking dot |
@@ -516,6 +516,18 @@ Estos colores aparecen hardcodeados directamente en widgets, no pasan por `AppTh
 | Warning Amber | `0xFFFFAB00` | Pending checklist | `PreparationChecklist` |
 | Newspaper Paper | `0xFFF4F1EA` | PressNewsCard bg | `PressNewsCard` |
 | Grey Post-Race | `0xFF9E9E9E` | Post-race status | `RaceStatusHero` |
+| Neon Pink | `0xFFFF00FF` | Flip badge glow | `driver_card.dart` |
+| Stat Blue Grey | `0xFFA0AEC0` | Labels, contract text | `driver_card.dart`, `transfer_market_driver_card.dart` |
+| Yellow Star | `0xFFFFEE58` | PRO level badge | `driver_card.dart` |
+| Red Danger | `0xFFFF3D3D` | Most Risky driving style | `driver_card.dart` |
+| Blue Defensive | `0xFF42A5F5` | Defensive driving style | `driver_card.dart` |
+| Orange Attack | `0xFFFF9800` | Offensive driving style | `driver_card.dart` |
+| Electric Blue | `0xFF00B0FF` | Current stars (potential) | `driver_card.dart` `_buildPotentialStars` |
+| Fastest Lap Purple | `0xFFE040FB` | Fastest lap highlights | `race_day_screen.dart`, `race_live_screen.dart`, `garage_screen.dart` |
+| Commentary Cyan | `0xFF00BCD4` | Commentary feed | `race_day_screen.dart` `_buildCommentaryFeed` |
+| Commentary Gold | `0xFFFFD54F` | Player highlights | `race_day_screen.dart` `_buildCommentaryFeed` |
+| Timing Green | `0xFF00FF88` | Internal timing card | `internal_timing_card.dart` |
+| CRT Background | `0xFF080810` | Commentary CRT effect | `race_day_screen.dart` `_buildCommentaryFeed` |
 
 ---
 

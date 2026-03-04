@@ -1,318 +1,832 @@
-# Fire Tower Games Design System (FTG-DS)
-
-Este documento centraliza las directrices visuales, colores, tipografía y componentes principales de **FTG Racing Manager**. El objetivo es mantener la consistencia visual y elevar la calidad percibida de la aplicación (Efecto "Premium").
-
----
-
-## 1. Fundamentos de Color
-
-El sistema utiliza una paleta oscura moderna basada en un color de fondo profundo y acentos vibrantes para jerarquía y retroalimentación.
-
-### Colores de Marca (Core)
-| Elemento | Hexadecimal | Uso |
-| :--- | :--- | :--- |
-| **App Background** | `#15151E` | Fondo principal de todas las pantallas. |
-| **Surface/Card** | `#292A33` | Color de fondo de tarjetas e inputs. |
-| **Primary** | `#3A40B1` | Botones principales y acciones destacadas. |
-| **Secondary/Accent** | `#C1C4F4` | Íconos, estados seleccionados, insignias y resaltados. |
-| **Button Hover** | `#424686` | Feedback interactivo para botones primarios. |
-| **Text Primary** | `#FFFFFF` | Títulos y lectura principal. |
-| **Text Muted** | `rgba(255,255,255,0.7)` | Subtítulos y metadatos. |
-
-### Colores de Estado (Feedback)
-| Estado | Hexadecimal | Significado |
-| :--- | :--- | :--- |
-| **Error/Critical** | `#EF5350` | Fallos, DNFs, presupuestos negativos o alertas. |
-| **Success** | `#00C853` | Sesiones abiertas, programas completados, finanzas positivas. |
-| **Qualifying** | `#FFB800` | Sesión de clasificación, avisos o advertencias. |
-| **Race/Strategy** | `#FF5252` | Día de carrera, criticidad alta. |
-| **Neutral/Grey** | `#9E9E9E` | Deshabilitado, estados concluidos. |
-| **Onyx Background** | `#121212` | Fondo de paneles de telemetría y Pit Boards. |
-| **Onyx Gradient (Start)**| `#1E1E1E` | Inicio del degradado premium. |
-| **Onyx Gradient (End)** | `#0A0A0A` | Fin del degradado premium. |
-| **Telemetry Value** | `#FFD700` | Color dorado para tiempos y datos competitivos. |
-| **Driver Stats Scale** | *Ver abajo* | Representación visual del nivel de habilidad (0-20). |
-
-### Escala de Color para Driver Stats (0-20)
-Esta escala proporciona feedback inmediato sobre la calidad de una estadística específica de un piloto.
-
-| Rango | Color | Hexadecimal | Significado |
-| :--- | :--- | :--- | :--- |
-| **Crítico** | Rojo | `#EF5350` | Valor 0 (Inexistente/Grave) |
-| **Bajo** | Naranja | `#FF7043` | Valores 1-5 (Nivel muy bajo) |
-| **Medio-Bajo** | Amarillo | `#FFD54F` | Valores 6-9 (Nivel mejorable) |
-| **Competente** | Cyan | `#26C6DA` | Valores 10-13 (Nivel profesional estándar) |
-| **Alto/Elite** | Verde Claro | `#66BB6A` | Valores 14-17 (Potencial de podio) |
-| **Maestro** | Verde Oscuro | `#2E7D32` | Valores 18-20 (Nivel campeón mundial) |
+# FTG Racing Manager — Consolidated Design System V3
+**Fecha:** 2026-03-01  
+**Fuente:** Extracción literal del código Dart (`lib/`)  
+**Regla:** Solo tokens y valores existentes en el código. Ningún diseño inventado.
 
 ---
 
-## 2. Tipografía
+## 1. Design Tokens
 
-El sistema tipográfico utiliza una combinación de dos fuentes para separar la estructura de la narrativa.
+### 1.1 Color Palette — Core (from `app_theme.dart`)
 
-### Estilos Principales
-- **Poppins Black (Google Fonts)**: Utilizada para **Headlines**, títulos de gran impacto y **Navegación de Primer Nivel**.
-  - Carácter: Moderno, agresivo, audaz.
-  - Peso: `Black` (900).
-- **Raleway (Google Fonts)**: Utilizada para **Body text**, botones, datos y **Navegación de Nivel 2+**.
-  - Carácter: Elegante, alta legibilidad.
-  - Peso: `Regular` (400) para lectura, `Bold` (700) para énfasis/botones, `Black` (900) para sub-elementos jerárquicos.
+| Token | Hex | CSS Variable | Uso |
+|:---|:---|:---|:---|
+| `appBackground` | `#15151E` | `--app-bg` | `scaffoldBackgroundColor`, fondo global |
+| `textNormal` | `#FFFFFF` | `--text-normal` | `onSurface`, texto principal |
+| `accentHighlight` | `#C1C4F4` | `--accent-highlight` | Íconos, badges, highlights, `secondary` |
+| `primaryButton` | `#3A40B1` | `--primary-button` | `primary` color scheme, botones, sliders |
+| `secondaryButton` | `#292A33` | `--secondary-button` | Card bg, outlined buttons, nav bg |
+| `buttonHover` | `#424686` | `--button-hover` | Hover state botones |
+| `error` | `#EF5350` | `--error` | Error states |
 
-### Escala de Texto (Provisional)
-- **H1 (AppBar/Title)**: 20px, Poppins Black (Uppercase, Letter Spacing 1.5).
-- **H2 (Section Header)**: 18px, Poppins Black.
-- **Nav Level 1**: 14px, Poppins Black (Uppercase, Letter Spacing 1.2).
-- **Nav Level 2**: 12px, Raleway Bold (Uppercase).
-- **Body Large**: 16px, Raleway Regular.
+### 1.2 Color Palette — Extended (Hardcoded across widgets)
 
----
+| Token | Hex | CSS Variable | Ubicaciones |
+|:---|:---|:---|:---|
+| Deep Charcoal | `#121216` | `--deep-charcoal` | `DriverCard`, `TransferMarketDriverCard` bg |
+| Deep Black / Onyx | `#121212` | `--deep-black` | `FinanceCard`, `SetupCard`, `DriverStyleCard`, `Checklist`, `GarageScreen` |
+| Card Gradient Start | `#1E1E1E` | `--card-grad-start` | Múltiples cards (topLeft) |
+| Card Gradient End | `#0A0A0A` | `--card-grad-end` | Múltiples cards (bottomRight) |
+| Success Green | `#00C853` | `--success-green` | `OnyxTable` highlight, `RaceStatusHero`, `NotificationCard`, `FitnessBar`, `LoadingIndicator` |
+| Neon Green | `#00E676` | `--neon-green` | `DriverCard` accent, `RadarChart`, level badge ÉLITE, qualifying session |
+| Gold | `#FFD700` | `--gold` | Valores monetarios, `FinanceCard`, `PitBoardField`, `LapCounter`, office notification |
+| Amber | `#FFC107` | `--amber` | `NewBadge`, `TransferMarket` badge, `PlaceBid` button, star potential |
+| Soft Red | `#FF5252` | `--soft-red` | Live indicator, race status, LIVE badge, progress bar, `CancelTransfer` |
+| Qualifying Yellow | `#FFB800` | `--qualifying-yellow` | Qualifying status, `CircuitIntel`, `EventFeed` header, `QualyResults` gold positions |
+| Strategy Orange | `#FF6D00` | `--strategy-orange` | Race strategy status |
+| Warning Amber | `#FFAB00` | `--warning-amber` | Pending checklist |
+| Post-Race Grey | `#9E9E9E` | `--post-race-grey` | Post-race status |
+| Newspaper Paper | `#F4F1EA` | `--newspaper-paper` | `PressNewsCard` bg |
+| Neon Pink | `#FF00FF` | `--neon-pink` | `DriverCard` flip badge |
+| Stat Blue Grey | `#A0AEC0` | `--stat-blue-grey` | `DriverCard` contract labels, stat names |
+| Yellow Star / Pro | `#FFEE58` | `--yellow-star` | Pro level badge, medium stat indicator |
+| Red Danger | `#FF3D3D` | `--red-danger` | Most Risky driving style |
+| Blue Defensive | `#42A5F5` | `--blue-defensive` | Defensive driving style |
+| Orange Attack | `#FF9800` | `--orange-attack` | Offensive driving style |
+| Electric Blue | `#00B0FF` | `--electric-blue` | `_buildPotentialStars` current stars (DriverCard) |
+| Fastest Lap Purple | `#E040FB` | `--fastest-lap-purple` | Fastest lap holder in Race Day, Internal Timing |
+| Commentary Cyan | `#00BCD4` | `--commentary-cyan` | Commentary feed border/header/text |
+| Commentary Gold | `#FFD54F` | `--commentary-gold` | Player team commentary highlights |
+| Internal Timing Green | `#00FF88` | `--timing-green` | Internal Timing Card accent |
+| Internal Timing Dark | `#1A1A1A` | `--timing-dark` | Internal Timing Card text (light-surface widget) |
+| CRT Background | `#080810` | `--crt-bg` | Commentary feed container |
 
-## 3. Elementos de UI y Componentes
+### 1.3 Semantic Color Scales
 
-### Tarjetas y Contenedores
-- **Border Radius**: 12px (Estándar global para tarjetas, inputs y contenedores premium).
-- **Botones**: 100% (Estándar "Stadium" exclusivo para botones e indicadores de progreso).
-- **Elevación**: Sutil (Elevation 4), utilizando sombras con opacidad `0.3` sobre el fondo `#15151E`.
-- **Zebra Tables**: Las tablas de standings utilizan un fondo nulo para filas normales y un fondo `#secondary` con opacidad `0.15` para filas resaltadas.
-- **Highlighters**: Las filas seleccionadas o del jugador incluyen una **borde izquierdo de 4px** con el color `#secondary`.
+#### Race Status Colors
+| Estado | Color | Hex |
+|:---|:---|:---|
+| Practice (Paddock Open) | Success Green | `#00C853` |
+| Qualifying | Qualifying Yellow | `#FFB800` |
+| Race Strategy | Strategy Orange | `#FF6D00` |
+| Race (Live) | Soft Red | `#FF5252` |
+| Post-Race | Post-Race Grey | `#9E9E9E` |
 
-### Componentes Premium (Nuevos)
-#### 1. Tarjetas de Instrucciones/Reglas (Instruction Cards)
-Utilizadas para guiar al usuario en secciones complejas (Garage, Sponsors).
-- **Fondo**: Gradiente lineal de `TopLeft` (Primary con 15% opacidad) a `BottomRight` (Surface).
-- **Borde**: Borde completo de 1px en color `Primary` con 20% de opacidad.
-- **Layout**: 
-  - Fila superior con ícono (32px) y título en `Poppins Black` (Primary 90% opacidad).
-  - Cuerpo de texto descriptivo con altura de línea `1.5`.
-- **Ubicación**: Siempre en la parte superior de la vista, ocupando el 100% del ancho disponible.
+#### Driver Stat Indicator (displayValue /20)
+| Rango | Umbral | Color | Hex |
+|:---|:---|:---|:---|
+| High | ≥15 | Neon Green | `#00E676` |
+| Medium | ≥10 | Yellow Star | `#FFEE58` |
+| Low | <10 | Soft Red | `#FF5252` |
 
-#### 2. Tarjetas de Categoría (Category Cards)
-Utilizadas en hubs de gestión (ej. Personal Screen).
-- **Interactividad**: Efecto `InkWell` para navegación.
-- **Estado Bloqueado**: Opacidad del 50% en el color de fondo e íconos en gris.
-- **Badge "Soon"**: Cintilla diagonal roja (`RedAccent`) en la esquina superior derecha rotada 45 grados para funcionalidades en desarrollo.
+#### Driver Level Badges
+| Stars | Label | Color | Hex |
+|:---|:---|:---|:---|
+| ≥5 | ÉLITE | Neon Green | `#00E676` |
+| ≥4 | PRO | Yellow Star | `#FFEE58` |
+| <4 | AMATEUR | Stat Blue Grey | `#A0AEC0` |
 
-#### 3. Tarjetas de Instalaciones (Facility Cards)
-Diseñadas para mostrar progresión y costos operativos.
-- **Relación de Aspecto**: 1.85 (Compacta, optimizada para reducir espacio vacío).
-- **Estructura Interna**:
-  - **Nivel (Solo si está comprada)**: Texto "LEVEL X" en la parte superior (`Raleway Bold`, 9px, letter-spacing 1.2) seguido de un divisor tenue.
-  - **Parte Superior**: Ícono centrado (34-40px) y Título (`Poppins Black`, 14-16px).
-  - **Divisor Central**: Línea tenue (`White10` o opacidad 0.1) que separa la cabecera de los detalles técnicos.
-  - **Sección de Detalles**: Texto alineado a la izquierda (`Raleway`, 11-12px) con etiquetas:
-    - *Purchase/Upgrade Level*: Costo de inversión.
-    - *Maintenance Cost*: Costo operativo semanal (Color sutil/muted).
-    - *Bonus*: Beneficio otorgado por el nivel actual.
-- **Interactividad**: Botón de acción (`ElevatedButton`) alineado a la derecha en la sección inferior.
-- **Estados**: 
-  - *Bloqueado/Soon*: Opacidad 50%, íconos grises, cinta "COMING SOON". Texto de descripción con opacidad adicional (30%) para indicar estado inactivo.
-  - *Activo*: Colores vibrantes, detalles visibles.
+#### Fitness Bar Colors
+| Fitness | Umbral | Color | Hex |
+|:---|:---|:---|:---|
+| High | ≥75 | Success Green | `#00C853` |
+| Medium | 40-74 | Qualifying Yellow | `#FFB800` |
+| Low | <40 | Soft Red | `#FF5252` |
 
-#### 4. Migas de Pan (Breadcrumbs)
-Elemento de guía jerárquica para pantallas profundas.
-- **Tipografía**: `Raleway` (11-12px), color `Text Muted`.
-- **Separador**: Carácter `/` con opacidad reducida.
-- **Interactividad**: Los niveles superiores son interactivos (Hover: Highlight blanco).
-- **Estilo**: Siempre en Mayúsculas con letter-spacing 1.0 para un look moderno y racing.
+#### Driving Style Colors
+| Style | Color | Hex |
+|:---|:---|:---|
+| Most Risky | Red Danger | `#FF3D3D` |
+| Offensive | Orange Attack | `#FF9800` |
+| Normal | Success Green | `#00C853` |
+| Defensive | Blue Defensive | `#42A5F5` |
 
-#### 5. Controlador de Sidebar (Sidebar Toggle)
-Botón minimalista posicionado en el borde derecho del sidebar.
-- **Forma**: Circular (24x24px).
-- **Color**: Fondo `#secondary` (Accent), Icono Negro.
-- **Comportamiento**: Flota en el borde para permitir el colapsado total (ancho 0px). Incluye una rotación animada de la flecha indicadora.
+#### Tyre Compound Colors
+| Compound | Garage (pure) | Strategy (accent) |
+|:---|:---|:---|
+| Soft | `Colors.red` | `Colors.redAccent` |
+| Medium | `Colors.yellow` | `Colors.yellowAccent` |
+| Hard | `Colors.white` | `Colors.white70` |
+| Wet | `Colors.blue` | `Colors.blueAccent` |
 
-### Interactividad (Buttons & Selectors)
-- **Elevated Buttons**: Altura generosa (12-16px padding vertical), 100% (Stadium) border radius. Look moderno de "Flat neumorphism".
-- **Selection Outline**: Relación de 1px con el color `#secondary` para indicar foco activo.
-- **Sliders**: Tracks de color `#secondary` con fondos de carril muy sutiles (`alpha: 0.1`).
+> **⚠️ Inconsistencia:** `garage_screen.dart` usa colores puros, `race_strategy_screen.dart` y `race_day_screen.dart` usan variantes Accent.
 
-#### 6. Paneles de Telemetría 'Onyx' (Pit Board & Results)
-Diseñados para representar datos críticos de carrera con un look de alta tecnología.
-- **Estética "Onyx Deep"**: Contenedores con degradado lineal (`TopLeft` a `BottomRight`) y bordes refinados de 1px con 10% de opacidad.
-- **Estandarización de Altura**: Uso mandatorio de `IntrinsicHeight` en filas de datos para asegurar que todos los "cajones" de telemetría tengan la misma altura visual.
-- **Pit Board Fields (Cajones de Datos)**:
-  - **Etiqueta**: Mayúsculas, 9px, `letterSpacing: 0.8`, opacidad 40%.
-  - **Valor**: `fontFamily: 'monospace'`, 15px+, `fontWeight: 900`, color `#FFD700` (Gold).
-  - **Padding**: Estándar de `8px vertical, 10px horizontal`.
-- **Tablas de Resultados y Práctica**:
-  - **Cabeceras**: Fondo sutil de `white.withOpacity(0.03)` y bordes inferiores de 1px.
-  - **Iconografía**: Uso de iconos específicos por sesión (Copa para Qualifying, Reloj para Practice).
-  - **Filas de Datos**: Altura optimizada para visualización densa, con `InkWell` para mostrar detalles del setup.
-  - **Resaltado (PB)**: Uso de colores de acento (Verde para PB, Purpura para Global Best) tanto en texto como en fondo de fila (opacidad 8%).
+#### Confidence Colors (Feedback)
+| Threshold | Color | Hex |
+|:---|:---|:---|
+| ≥ 0.98 | Green | `#00C853` |
+| > 0.90 | Light Green | `#64DD17` |
+| > 0.70 | Yellow | `#FFB800` |
 
-#### 7. Tarjetas de Piloto 'Onyx' (Weekend Setup)
-Componente híbrido que combina identidad visual con telemetría de preparación.
-- **Estructura 35/65**: 
-  - **35% Izquierda**: Avatar a sangre (Portrait) con un degradado de transición hacia la zona de datos.
-  - **65% Derecha**: Contenedor de información con padding de 12px.
-- **Formato de Nombre**: Regla de visualización `[Inicial]. [Apellido]` (ej. "F. ALONSO").
-  - Estilo: Mayúsculas, `fontSize: 12-13px`, `fontWeight: 900`.
-- **Indicadores de Progreso**: Integración de la barra de fitness y contador de vueltas con iconos de telemetría.
-- **Interactividad**: Elevación y sombra dinámica en estado seleccionado, con un borde de 2px en el color primario del equipo.
+#### Leaderboard Position Colors
+| Position | Color |
+|:---|:---|
+| P1-P3 (con tiempo) | `#FFB800` (Gold) |
+| P4+ (con tiempo) | white alpha 0.9 |
+| DNF | `#FF5252` |
 
-#### 8. Intel de Circuito 'Onyx' (Dynamic Weather)
-Visualización adaptativa que utiliza el clima actual como lenguaje visual.
-- **Estructura 35/65**:
-  - **35% Izquierda**: Fondo con un icono de clima centrado (120px) con opacidad del 15% y un matiz sutil del color de acento.
-  - **65% Derecha**: Información técnica (chips de características y enfoque de rendimiento).
-- **Lógica de Colores Dinámica**:
-  | Clima | Color de Acento | Tono Onyx (Gradient) | Ícono |
-  | :--- | :--- | :--- | :--- |
-  | **Soleado** | Naranja (`Amber`) | Cálido (Marrón Cálido `#453018` / Negro) | `wb_sunny` |
-  | **Lluvioso** | Gris (`Grey`) | Neutro (Gris/Negro) | `umbrella` |
-  | **Nublado/Sol** | Azul (`Blue`) | Frío (Azul/Negro) | `wb_cloudy` |
-  | **Nublado** | Gris Azulado (`BlueGrey`) | Mate (Acero/Negro) | `cloud` |
-- **Jerarquía**: El título "CIRCUIT INTEL" y el icono de info adoptan el color de acento para reforzar la temática climática.
-- **Optimización en Race Tab**: Para maximizar el espacio útil, el componente se posiciona en paralelo al selector de pilotos utilizando una distribución de `flex: 60/40`, permitiendo configurar la estrategia con todo el contexto visual en una sola fila.
+#### Weather Gradients (Circuit Intel)
+| Weather | Gradient Start | Gradient End |
+|:---|:---|:---|
+| Rain/Storm | `#222222` | `#0A0A0A` |
+| Partly Cloudy | `#121E2A` | `#05080A` |
+| Cloudy/Overcast | `#1E222A` | `#0A0B0F` |
+| Sunny (default) | `#453018` | `#0F0B08` |
 
----
+#### Circuit Chip Priority Colors
+| Priority | Background | Text Color |
+|:---|:---|:---|
+| Critical/High | `#FF5252` alpha 0.1 | `#FF5252` |
+| Medium/Default | `#FFB800` alpha 0.1 | `#FFB800` |
+| Low | `#00C853` alpha 0.1 | `#00C853` |
+| Weather | weatherColor alpha 0.1 | weatherColor |
 
-#### 9. Tarjeta de Estrategia de Carrera 'Onyx'
-Diseñada para la configuración crítica pre-carrera, enfocada en la legibilidad y el orden de ejecución.
-- **Visuales**: Fondo Onyx Deep (`#121212`) con gradiente superior izquierdo a transparente y sombras pesadas (`blurRadius: 20`).
-- **Distribución 60/40**:
-  - **60% Izquierda**: Configuración del Coche (Alerones, Suspensión, etc.).
-  - **40% Derecha**: Estrategia de Paradas y Combustible.
-- **Aparciencia de Tabla**:
-  - Las filas de estrategia (Race Start, Stop 1, Stop 2) utilizan un fondo alternado para facilitar la lectura horizontal.
-  - **Fila Impar**: `Colors.white.withValues(alpha: 0.03)`
-  - **Fila Par**: `Colors.transparent`
-- **Inputs Aliniados a la Izquierda**: Todos los selectores de neumáticos y campos de combustible se alinean a la izquierda para mantener una columna visual limpia.
-- **Unidad de Combustible**: Estándar en **Litros (L)** con precisión de un decimal (ej. "50.0 L").
+#### Event Feed Type Colors
+| Type | Color | Hex |
+|:---|:---|:---|
+| OVERTAKE | Success Green | `#00C853` |
+| PIT | Qualifying Yellow | `#FFB800` |
+| DNF | Soft Red | `#FF5252` |
+| INFO | Blue Accent | `Colors.blueAccent` |
+| Default | White Muted | `Colors.white54` |
 
-#### 10. Intel de Circuito Cualitativo
-Evolución del sistema de información para aumentar el desafío estratégico.
-- **Categorización**: Sustitución de valores numéricos por etiquetas cualitativas:
-  - `Very Low`, `Low`, `Normal`, `High`, `Very High`.
-- **Organización en 3 Filas**:
-  - **Fila 1**: Vueltas Totales y Clima.
-  - **Fila 2**: Enfoque Técnico (Aero/Power) y Velocidad Punta (Top Speed).
-  - **Fila 3**: Desgaste de Neumáticos (Tyre Wear) y Consumo (Fuel).
+#### Notification Type Colors
+| Type | Color |
+|:---|:---|
+| ALERT | `Colors.orangeAccent` |
+| SUCCESS | `#00C853` |
+| TEAM | `theme.colorScheme.secondary` |
+| OFFICE (RACE_RESULT) | `#FFD700` |
+| OFFICE (QUALY_RESULT) | `Colors.tealAccent` |
+| OFFICE (other) | `Colors.blueGrey` |
+| NEWS / default | `Colors.blueAccent` |
 
----
-
-#### 11. Botones 'Onyx' (Action Buttons)
-Utilizado para acciones de alta importancia donde se requiere un look industrial y tecnológico.
-- **Estilo**: Contenedor con gradiente lineal (`TopLeft` a `BottomRight`) de `#2A2A2A` a `#000000` y **100% (Stadium) border radius**.
-- **Borde**: 1px sólido con el color de acento (`#00C853`) con opacidad del 30%.
-- **Sombra**: `blurRadius: 8`, `offset: (0, 4)` con 30% de opacidad negra.
-- **Contenido**: 
-  - Ícono y Texto en el color de acento (`#00C853`).
-  - Tipografía: `Raleway ExtraBold` o `Poppins Black`, `fontSize: 13px`, `letterSpacing: 1.2`.
-- **Interactividad**: Efecto de elevación suave y feedback táctil estándar.
-
-#### 12. Tarjetas de Resumen 'Onyx' (Dashboard Cards)
-Versión compacta de los paneles de telemetría para el dashboard principal.
-- **Dimensiones**: Altura fija u optimizada para grids de 2 columnas.
-- **Estilo**: Fondo Onyx Deep con borde blanco al 10% de opacidad.
-- **Jerarquía de Datos**:
-  - **Etiqueta (Header)**: Mayúsculas, `fontSize: 9px`, `color: white.withOpacity(0.4)`, `letterSpacing: 1.5`.
-  - **Valor Principal**: `fontFamily: 'monospace'`, `fontSize: 18px`, `fontWeight: 900`, color `#FFD700` (Gold).
-  - **Metadato/Estado**: Alineado a la derecha o inferior, utilizando colores de éxito (`#00C853`) o advertencia (`#FFAB00`).
-
-#### 13. Layout de Dashboard (Quick View)
-Patrón de organización para pantallas de inicio.
-- **Sección Quick View**: Posicionada inmediatamente debajo del Hero principal.
-- **Organización**:
-  - **Desktop/Tablet**: Row con `flex: 1` para cada tarjeta (Finanzas y Checklist).
-  - **Mobile**: Columna simple con espaciado de `16px`.
-- **Consistencia**: Todas las tarjetas en esta sección deben compartir el mismo lenguaje visual 'Onyx' para coherencia estética.
-
-#### 14. Botones de Cuenta y Sesión (AppBar Actions)
-Componentes de navegación persistentes en la barra superior para gestión de identidad.
-- **Botón Account**:
-  - **Tipo**: `TextButton.icon`.
-  - **Icono**: `account_circle_outlined`.
-  - **Texto**: "ACCOUNT", `Poppins Bold`, 12px.
-  - **Color (Normal)**: Blanco (`#FFFFFF`).
-  - **Color (Activo/Abierto)**: Secondary/Accent (`#C1C4F4`).
-- **Botón Log out**:
-  - **Tipo**: `TextButton.icon`.
-  - **Icono**: `logout`.
-  - **Texto**: "LOG OUT", `Poppins Bold`, 12px.
-  - **Color (Normal)**: Blanco Muted (`rgba(255, 255, 255, 0.7)`).
-- **Estados de Interacción (:hover)**:
-  - **Account**: Fondo highlight sutil (`white.withOpacity(0.05)`) con el border-radius de 12px.
-  - **Log out**: El texto e icono cambian a rojo sólido (`#EF5350`) y se aplica un `overlayColor` rojo tenue (10% opacidad).
-  - **Transformación**: Elevación visual mediante un cambio de opacidad del icono al 100%.
-  - **Transición**: 200ms para suavidad.
+#### Car Schematic Stat Colors
+| Stat | Color |
+|:---|:---|
+| Power | `Colors.orangeAccent` |
+| Aero | `Colors.cyanAccent` |
+| Handling | `Colors.purpleAccent` |
+| Reliability | `Colors.greenAccent` |
 
 ---
 
-## 4. Navegación Jerárquica
+## 2. Typography System
 
-El sistema utiliza una arquitectura de información sin íconos (Icon-less), centrada en la tipografía y el contraste.
+### 2.1 Font Stack
 
-### Niveles de Jerarquía
-1. **Nivel 1 (Global)**: Dashboard, HQ, Racing, Management, Season. Estilo `Poppins Black`.
-2. **Nivel 2 (Secciones)**: Ej. HQ -> Garage. Siempre visibles en Desktop si el padre está expandido. Estilo `Raleway Bold`.
-3. **Nivel 3 (Detalle)**: Ej. Personal -> Drivers. Colapsables mediante chevrons laterales.
+| Fuente | Paquete | Uso Principal |
+|:---|:---|:---|
+| **Poppins** | Google Fonts | Títulos, headings, labels, AppBar, badges, nav tabs (`w900` dominante) |
+| **Raleway** | Google Fonts | Body text, buttons, breadcrumbs, loading phrases |
+| **Montserrat** | Google Fonts | Logo "FTG", DriverCard (nombre, badges, contract), brand typography (`w900`, `w600`) |
+| **Inter** | Google Fonts | OnyxTable data cells, CleanTable data rows |
+| **Roboto Mono** | Google Fonts | Market value, stat display values, Internal Timing card data |
+| **Merriweather** | Google Fonts | PressNewsCard headlines (newspaper serif) |
+| **Playfair Display** | Google Fonts | "MOTORSPORT DAILY" header |
+| **Oswald** | Google Fonts | PressNewsCard type labels, article button |
+| **PT Serif** | Google Fonts | PressNewsCard dialog body text |
+| `monospace` | System | Financial values, countdown numbers, checklist status, pit board, lap times |
+| `Courier` | System | PressNewsCard timestamps |
 
-### Comportamiento por Plataforma
-- **Desktop (Sidebar Total Collapse)**: 
-  - Sidebar desaparece completamente al colapsar (ancho 0px).
-  - Solo el **Sidebar Toggle** permanece visible en el borde izquierdo de la pantalla.
-  - Los ítems de Nivel 1 actúan como headers fijos; sus hijos de Nivel 2 son persistentes (no colapsables).
-- **Mobile (Navbar Hub)**: 
-  - Nivel 1 en `BottomNavigationBar` (Solo Texto Uppercase).
-  - Nivel 2 en un `SubNavbar` horizontal scrollable justo debajo del AppBar.
-  - Navegación automática: Al tocar "Management", el sistema redirige al usuario directamente a "Personal" (primer hijo).
+### 2.2 Type Scale (Theme-level)
 
----
+| Style | Font | Weight | Size | Extra |
+|:---|:---|:---|:---|:---|
+| `headlineMedium` | Poppins | `w900` | — | Títulos principales |
+| `headlineSmall` | Poppins | `w900` | — | Subtítulos |
+| `titleLarge` | Poppins | `w900` | — | Títulos de sección |
+| `bodyLarge` | Raleway | normal | 16px | Cuerpo principal |
+| `bodyMedium` | Raleway | normal | 14px | alpha 0.8 |
+| `labelLarge` | Raleway | bold | — | Labels |
 
-## 5. Patrones de Feedback y Badges
+### 2.3 Component-Specific Typography
 
-- **Diagonal Ribbon ("SOON")**: Indica características planificadas. Color: Rojo vibrante, texto blanco.
-- **Status Indicator ("CURRENT")**: Fondo sólido `Primary`, texto negro.
-- **Checkmark Completion**: Ícono `check_circle` en color `Success`.
-- **Driver Style Badges**:
-  - **Defensive**: Azul (`shield`).
-  - **Normal**: Verde (`directions_car`).
-  - **Offensive**: Naranja (`flash_on`).
-  - **Risky**: Rojo (`warning`).
-
----
-
-#### 15. Botones de Táctica 'SponsorsButtons'
-Utilizados para la negociación de contratos en la pantalla de Sponsorship.
-- **Estética**: Flat Stadium con estilo "Mute" por defecto.
-- **Comportamiento Interactividad**:
-  - **Estado Normal (Mute)**: Fondo sutil (`white.withOpacity(0.05)`) y texto atenuado (`white.withOpacity(0.4)`).
-  - **Estado Hover**: El botón revela su color de marca sólido y el texto pasa a blanco puro/crema.
-- **Variaciones de Color (en Hover)**:
-  - **Persuasive**: `#FF5733` (Naranja intenso).
-  - **Negotiator**: `#F1C40F` (Dorado/Ámbar).
-  - **Collaborative**: `#E9967A` (Melocotón/Arena).
-- **Formatos**:
-  - **Texto**: `Poppins Black`, 9px, `letterSpacing: 1.2`.
-  - **Forma**: Stadium (100% border radius).
-  - **Elevación**: 0 (Flat) siempre.
-
----
-
-## 6. Layout
-
-- **MaxWidth (Desktop Content)**: 1400px.
-- **Padding Lateral**: 20px.
-- **Spacing vertical**: Sistema de 8px (8, 16, 24, 32).
-- **Responsive Shell**: Breakpoint de `600px`.
+| Context | Font | Weight | Size | Letter-Spacing | Extra |
+|:---|:---|:---|:---|:---|:---|
+| **AppBar title** | Poppins | `w900` | 20px | 1.5 | — |
+| **OnyxTable header** | Poppins | `w700` | 10px | 1.1 | `.toUpperCase()`, white alpha 0.4 |
+| **OnyxTable data** | Inter | `w500` | 12px | — | white alpha 0.9 |
+| **DriverCard name** | Montserrat | `w900` | 22px | -0.5 | `.toUpperCase()` |
+| **DriverCard stat label** | Montserrat | bold | 8px | 0.2 | `#A0AEC0` |
+| **DriverCard stat value** | Roboto Mono | `w900` | 13px | — | Colored by range |
+| **Market value** | Roboto Mono | `w900` | 20px (card) / 24px (transfer) | — | White |
+| **Section header label** | — | `w900` | 9px | 1.5 | `.toUpperCase()`, white alpha 0.4 |
+| **Countdown number** | monospace | `w900` | 20px | — | White |
+| **Breadcrumb link** | Raleway | `w500`/bold | 11px | 1.0 | `.toUpperCase()` |
+| **Badge text** | — | `w900` | 12px | 1.5 | Colored |
+| **Logo "FTG"** | Montserrat | `w900` | `size * 0.6` | -1.0 | height 1.0 |
+| **Logo "RACING MANAGER"** | Montserrat | `w600` | `size * 0.18` | 2.5 | — |
+| **Newspaper headline** | Merriweather | `w900` | 14px | — | black87, height 1.2 |
+| **Newspaper header** | Playfair Display | bold | 10px | 1.5 | black87 |
+| **Newspaper type** | Oswald | `w600` | 9px | 0.5 | black54 |
+| **Newspaper body** | PT Serif | normal | 14px | — | black87, height 1.6 |
 
 ---
 
-## 7. Flat Tables (Onyx Table)
+## 3. Spacing & Layout
 
-El estilo **Flat Table** se utiliza en pantallas de gestión densa de datos donde se requiere máxima visibilidad sin distracciones visuales pesadas.
+### 3.1 Border Radius Scale
 
-### Características Visuales
-- **Sin Contenedor Externo**: La tabla no debe estar envuelta en tarjetas o contenedores con sombras ni bordes pesados. Flota directamente sobre el fondo `#AppBackground`.
-- **Headers Centrados**: Los títulos de las columnas utilizan `TextAlign.center` para alinearse con los datos.
-- **Transparencia**: El fondo de las filas es mayoritariamente transparente, utilizando opacidades sutiles (`white.withValues(alpha: 0.01)`) para el efecto cebra.
-- **Interactividad (Hover)**: Al pasar el ratón sobre cualquier fila, esta debe resaltarse con un fondo verde suave (`Color(0xFF00C853).withValues(alpha: 0.05)`) para mejorar la trazabilidad visual.
+| Token | Value | Usage |
+|:---|:---|:---|
+| `radius-sm` | `4px` | PressNewsCard, small badges |
+| `radius-md` | `6px` | Level badges, circuit chips, tyre chips |
+| `radius-lg` | `8px` | OnyxSkeleton, time blocks, qualifying panel |
+| `radius-xl` | `12px` | Cards, containers, badges, inputs (standard) |
+| `radius-2xl` | `16px` | DriverCard, Standings container |
+| `radius-pill` | `20px` / `100px` | Copy badges, pit stop chips |
+| `radius-stadium` | `50px` / `100%` | Buttons (StadiumBorder) |
 
-### Columnas y Datos
-- **Flex Layout**: Se utiliza un sistema de `flex` para distribuir el ancho de las columnas de forma proporcional.
-- **Alineación**: Todos los datos (incluyendo nombres) deben estar centrados dentro de su celda para mantener la jerarquía visual perfecta con el header.
-- **Badges**: Los indicadores (como Team Status) deben tener un ancho determinado por su contenido (`width: auto`) y estar centrados dentro de su columna.
-- **Cursor**: Las celdas interactivas (como el nombre del piloto) deben cambiar el cursor a `Pointer/Click` al hacer hover.
-- **Avatares**: Para mejorar la identidad visual, el nombre del piloto debe ir acompañado de su retrato (`portraitUrl`) en un `CircleAvatar` de tamaño pequeño (24x24 px) posicionado a la izquierda del texto, con un espaciado de `8px`.
+### 3.2 Standard Spacing
+
+| Token | Value | Usage |
+|:---|:---|:---|
+| `space-xs` | `4px` | Gaps between small elements |
+| `space-sm` | `8px` | Inner gaps, chips |
+| `space-md` | `12px` | Card gaps, section padding |
+| `space-lg` | `16px` | Section spacing, card padding |
+| `space-xl` | `20px` | Container padding, margin |
+| `space-2xl` | `24px` | Major section gaps, card padding |
+| `space-3xl` | `32px` | Hero sections |
+
+### 3.3 Layout Constraints
+
+| Token | Value | Usage |
+|:---|:---|:---|
+| Content max width | `1600px` | Desktop content area |
+| Dialog max width | `min(screenWidth * 0.85, 1200)` | Modal dialogs |
+| NavigationRail min width | `80px` | Desktop sidebar |
+| Desktop breakpoint | `800px` | Rail ↔ BottomNav switch |
+| Driver selector card width | `220px` | Garage horizontal scroll |
+| Driver selector height | `110px` | Garage card height |
+
+---
+
+## 4. Shadow & Elevation System
+
+| Level | Shadow | Usage |
+|:---|:---|:---|
+| **Subtle** | `0 2px 4px rgba(0,0,0,0.3-0.4)` | Unselected cards, small elements |
+| **Default** | `0 4px 8px rgba(0,0,0,0.3-0.4)` | Notification cards, CTA buttons |
+| **Elevated** | `0 6px 12px rgba(0,0,0,0.4)` | Personal cards, sponsor cards, finance header |
+| **Prominent** | `0 8px 15px rgba(0,0,0,0.3-0.4)` | FinanceCard, InstructionCard, pit boards |
+| **Hero** | `0 10px 20px rgba(0,0,0,0.5)` | RaceStatusHero, DriverCard, race header |
+| **Maximum** | `0 12px 24px rgba(0,0,0,0.4)` | Standings container |
+| **Accent Glow** | `0 0 12px color(alpha 0.3)` | DriverCard left accent, stat bars |
+
+---
+
+## 5. Animation System
+
+| Widget | Type | Duration | Curve | Detail |
+|:---|:---|:---|:---|:---|
+| `OnyxSkeleton` | Shimmer alpha | 1500ms | `easeInOut` | Alpha 0.05→0.12, loop reverse |
+| `NewBadgeWidget` | Pulse fade | 1000ms | `easeInOut` | Opacity 0.5→1.0 (star icon), loop reverse |
+| `DynamicLoadingIndicator` | Text switcher | 500ms | fade | Frases rotan cada 3s |
+| `DriverCard` | Flip 3D | 600ms | `easeInOut` | rotateY 0→π |
+| `RaceStatusHero` | Blinking dot | 1000ms | — | FadeTransition del dot rojo, loop |
+| `RaceStatusHero` | Timer tick | 1000ms | — | Countdown en tiempo real |
+| `RaceDayScreen` | Pulse (LIVE) | 1000ms | — | FadeTransition controller, loop |
+| `GarageScreen` | Blinking text | 1000ms | — | Qualifying session text, repeat(reverse) |
+| `GarageScreen` | Driver selector | 250ms | — | AnimatedContainer state change |
+| `GarageScreen` | Style buttons | 200ms | — | AnimatedContainer hover/selected |
+| `GarageScreen` | Copy badge | 150ms | — | AnimatedContainer hover |
+| `GarageScreen` | Pit board msg | 500ms | fade | AnimatedSwitcher message swap |
+| `Commentary` | Typewriter | 18ms/tick | — | 2 chars/tick, "▌" cursor |
+
+---
+
+## 6. Component Library
+
+### 6.1 Common Widgets (`lib/widgets/common/`)
+
+#### OnyxTable
+**File:** `onyx_table.dart` (240 lines)  
+**Type:** Reusable data table with fixed header and scrollable rows.
+
+| Part | Style |
+|:---|:---|
+| **Header bg** | white alpha 0.03 |
+| **Header border** | white alpha 0.05 (bottom) |
+| **Header font** | Poppins `w700`, 10px, ls 1.1, white alpha 0.4, `.toUpperCase()` |
+| **Row padding** | v14 h20 |
+| **Row border** | white alpha 0.05, width 0.5 (bottom) |
+| **Even rows** | transparent |
+| **Odd rows** | white alpha 0.01 |
+| **Hover** | `#00C853` alpha 0.05 |
+| **Highlighted** | `#00C853` alpha 0.1 + border-left 4px `#00C853` |
+| **Data font** | Inter `w500`, 12px, white alpha 0.9 |
+| **Highlighted font** | Inter `w900`, `#00C853` |
+| **Position col** | white alpha 0.5, `w500` |
+| **Last col** | white alpha 0.9, `w700` |
+
+**Used in:** `StandingsScreen`, `TransferMarketScreen`, `FinancesScreen`, `GarageScreen`
+
+#### OnyxSkeleton
+**File:** `onyx_skeleton.dart` (61 lines)  
+**Type:** Loading shimmer placeholder.
+
+- Color: white alpha 0.05 → 0.12
+- Duration: 1500ms, `easeInOut`, loop reverse
+- Border radius: configurable, default `8`
+
+#### NewBadgeWidget
+**File:** `new_badge.dart` (117 lines)  
+**Type:** Pulsing "NEW" amber badge.
+
+- Background: `Colors.amber`
+- Padding: h6 v2, radius 12
+- Shadow: amber alpha 0.4, blur 4, offset (0,2)
+- Transform: `Offset(8, -8)` from parent
+- Star icon: white, 10px, pulsing (0.5→1.0, 1s loop)
+- Text: "NEW", white, 8px, bold, ls 0.5
+- Visibility: `createdAt < 7 days` or `forceShow`
+
+#### InstructionCard
+**File:** `instruction_card.dart` (81 lines)  
+**Type:** Onboarding/info card with gradient.
+
+- Padding: 24
+- Gradient: primary alpha 0.1 → `#0A0A0A`
+- Border: primary alpha 0.3, width 1, radius 12
+- Shadow: black alpha 0.4, blur 15, offset (0,8)
+- Title: Poppins `w900`, 20px, ls 1.5, primary alpha 0.9
+- Icon: 32px, primary color
+- Description: `bodyMedium`, height 1.5, `onSurface` alpha 0.8
+
+#### DriverStars
+**File:** `driver_stars.dart` (39 lines)  
+**Type:** Inline star rating for tables.
+
+| State | Color | Icon |
+|:---|:---|:---|
+| Current | `Colors.blueAccent` | `star_rounded` |
+| Potential | `Colors.amber` alpha 0.5 | `star_rounded` |
+| Empty | white alpha 0.2 | `star_outline_rounded` |
+
+Size: 14px default.
+
+> **Note:** Different from `_buildPotentialStars` in DriverCard which uses `#00B0FF` with glow / `#FFD700` with glow at 24px.
+
+#### DynamicLoadingIndicator
+**File:** `dynamic_loading_indicator.dart` (110 lines)
+
+- Spinner: `CircularProgressIndicator`, color `#00C853`
+- Text: Raleway, 14px, white70, ls 1
+- Transition: AnimatedSwitcher, 500ms fade
+- Rotation: every 3s (configurable)
+
+#### Breadcrumbs
+**File:** `breadcrumbs.dart` (94 lines)
+
+- Separator: "/" in Raleway, 12px, white alpha 0.2
+- Link: Raleway, 11px, ls 1.0, `.toUpperCase()`
+- Active (last): white, bold
+- Inactive: white alpha 0.5, `w500`, hover → white
+- Cursor: click (if `onTap`), basic (last)
+
+#### AppLogo
+**File:** `app_logo.dart` (56 lines)
+
+- "FTG": Montserrat `w900`, `size * 0.6`, ls -1.0, height 1.0
+- "RACING MANAGER": Montserrat `w600`, `size * 0.18`, ls 2.5
+- Color: `onSurface`
+- Default size: 40
+
+### 6.2 Feature Widgets (`lib/widgets/`)
+
+#### NotificationCard
+**File:** `notification_card.dart` (178 lines)
+
+- Container: cardTheme.color, radius 12, shadow black alpha 0.4 blur 8 offset (0,4)
+- Border: transparent (read) / `iconColor` alpha 0.2 (unread)
+- Icon container: circular, `iconColor` alpha 0.1 bg
+- Type label: Poppins, 10px, bold, iconColor, ls 1.2
+- Title: Poppins, 14px, bold
+- Message: 13px, `onSurface` alpha 0.7, height 1.4
+- Timestamp: 10px, `onSurface` alpha 0.4
+
+#### PressNewsCard
+**File:** `press_news_card.dart` (333 lines)  
+**Theme:** Light (newspaper-style, unique in the app)
+
+- Card: `#F4F1EA` bg, radius **4**, border black alpha 0.2, shadow black alpha 0.1 blur 4 offset (2,2)
+- Header: Playfair Display 10px bold, ls 1.5, black87
+- Type: Oswald 9px `w600`, black54, ls 0.5
+- Date: Courier 9px, black54
+- Headline: Merriweather 14px `w900`, black87, height 1.2
+- Button: border black87 radius 2, Oswald 10px bold
+- Dialog bg: `#F4F1EA`, headline Merriweather 22px `w900`, body PT Serif 14px, height 1.6
+
+#### CarSchematicWidget
+**File:** `car_schematic_widget.dart` (120 lines)
+
+- Container: 180px width, padding 16, cardTheme.color alpha 0.5, radius 12, border white10
+- Stats: 4 bars (Power/orange, Aero/cyan, Handling/purple, Reliability/green)
+- Label: 10px, white60, `w500`
+- Value: 11px, bold, stat color
+- Progress bar: 2px height, bg white alpha 0.05, bar color alpha 0.8
+
+#### CarSelector
+**File:** `car_selector.dart`
+
+- Arrow buttons: circular 40x40, bg white alpha 0.05, border secondary alpha 0.2
+- Icon: chevron, secondary color, 24px
+- Index label: Poppins 11px `w700`, white38, ls 1.2
+
+#### FuelInput
+**File:** `fuel_input.dart` (99 lines)
+
+- Size: 65x28px
+- Background: white alpha 0.05, radius 12, border white alpha 0.1
+- Input: 11px, bold, `Colors.orange`, center-aligned
+- Suffix "L": 8px, white24, bold
+
+#### ResponsiveMainScaffold
+**File:** `responsive_shell.dart` (158 lines)
+
+**Desktop (≥800px):**
+- NavigationRail: labelType all, groupAlignment -0.9, minWidth 80
+- Divider: dividerColor alpha 0.1
+- Content: maxWidth 1600
+
+**Mobile (<800px):**
+- BottomNavigationBar + border top dividerColor alpha 0.1
+
+**Nav Items:**
+| Item | Outline Icon | Selected Icon |
+|:---|:---|:---|
+| HQ | `dashboard_rounded` | `dashboard` |
+| Office | `business_center_outlined` | `business_center` |
+| Garage | `build_circle_outlined` | `build_circle` |
+| Season | `emoji_events_outlined` | `emoji_events` |
+| Market | `groups_outlined` | `groups` |
+
+### 6.3 Dashboard Widgets (`lib/screens/home/dashboard_widgets.dart`)
+
+#### TeamHeader
+- Avatar: 60x60 circle, teamColor alpha 0.2 bg, border 2px
+- Icon: `Icons.shield`, teamColor, 30px
+- Manager: `bodyMedium` theme
+- Team name: `headlineMedium` `w900`, ls 1.0, `.toUpperCase()`
+
+#### StatusCard
+- Background: cardTheme.color, radius 12
+- Gradient: mainColor alpha 0.1 → transparent
+- Status text: mainColor, bold, ls 2.0, 12px, `.toUpperCase()`
+- Time: mainColor, 28px, `w900`
+
+#### FinanceCard
+- Container: gradient `#1E1E1E`→`#0A0A0A`, border white alpha 0.1, radius 12, shadow blur 15
+- Label: 9px, bold, ls 1.2, white alpha 0.4
+- Value: monospace, 18px, `w900`, `#FFD700`
+- Status: 9px, `w900`, ls 1.0, green/red
+
+#### RaceStatusHero
+**Complex widget with real-time countdown.**
+
+- Container: gradient `#1E1E1E`→`#0A0A0A`, border white alpha 0.1, shadow blur 20, radius 12
+- Weather bg: 200px, opacity 0.05, positioned right -20 top -20
+- Status badge: padding h12 v6, statusColor alpha 0.1 bg, statusColor border, radius 12
+- Circuit name: 24px, `w900`, white, ls 1.0
+- Time blocks: bg white alpha 0.05, radius 8, monospace 20px `w900`
+- Live dot: blinking, `#FF5252`, 12px, FadeTransition loop
+- CTA button: gradient `#2A2A2A`→`#000`, border `#00C853` alpha 0.3, radius 100 (stadium)
+
+#### PreparationChecklist
+- Container: same as FinanceCard (gradient, border, shadow)
+- Title: white alpha 0.4, 9px, bold, ls 1.5
+- Items: 11px, `w900`, white, ls 0.5, `.toUpperCase()`
+- Complete badge: `#00C853` alpha 0.1 bg, alpha 0.5 border, radius 12
+- Pending badge: `#FFAB00` alpha 0.1 bg
+
+### 6.4 Driver Cards
+
+#### DriverCard (`lib/screens/drivers/widgets/driver_card.dart`)
+**Type:** Flip 3D card with radar chart, front/back views.
+
+- Container: margin v12 h16, bg `#121216`, radius **16**, border white alpha 0.05, shadow blur 20
+- Grid pattern: white alpha 0.03, step 30px
+- Left accent: 4px `#00E676`, top 24 bottom 24, glow blur 12
+- Flip badge: `#FF00FF` alpha 0.1 bg, neon pink border/text
+- Transfer ribbon: amber bg, -45° rotation, bold 10px
+- Portrait: 80x80 circle, levelColor border 3px, glow blur 20
+- Name: Montserrat `w900`, 22px, ls -0.5, `.toUpperCase()`
+- Age: Montserrat `w600`, 14px, `#FFC107`
+- Contract section: white alpha 0.02 bg, radius 12
+- Stat indicators: 2-column grid, 4px bars with glow on high stats
+- Radar chart: 200x200, 5 rings, `#00E676` fill alpha 0.4
+
+#### TransferMarketDriverCard (`lib/screens/market/widgets/`)
+**Differences from DriverCard:**
+- No flip animation
+- Radar chart: 300x300 (vs 200x200)
+- Market value: 24px (vs 20px)
+- Stats labels: white70, 10px (vs `#A0AEC0`, 8px)
+- Uses `_buildCleanTable` (vs `_buildTinyTable`)
+- Includes Morale, Marketability, Termination cost
+
+### 6.5 Garage & Race Screens
+
+#### GarageScreen — Driver Selector
+- Card: 220x110, AnimatedContainer 250ms
+- Selected: gradient `#2A2A2A`→`#121212`, border primary 2px, shadow primary alpha 0.3
+- Unselected: gradient `#1E1E1E`→`#0A0A0A`, border white alpha 0.1 1px
+- Portrait: 35% width, gradient fade
+- Name: 12px, `w900`, ls 0.5, white (selected) / white alpha 0.5
+
+#### GarageScreen — Setup Card
+- Container: `#121212`, radius 12, border white alpha 0.08, shadow blur 20
+- Gradient overlay: white alpha 0.02 → transparent
+- Title: 13px, `w900`, ls 2.0, `.toUpperCase()`
+- Compact Slider: track 3px, thumb radius 6, secondary color
+- Tyre compound chips: padding h10 v6, radius 6
+- Pit stop chips: padding h10 v6, radius 12
+
+#### GarageScreen — Driver Style Card
+- Container: `#121212`, radius 12, border white alpha 0.08, shadow blur 16
+- Buttons: 48x48, radius 10
+- Selected: color alpha 0.18 bg, color border 1.5px, glow
+- Unselected: white alpha 0.03 bg, white alpha 0.08 border
+
+#### GarageScreen — Pit Board
+- Container: gradient `#1E1E1E`→`#0A0A0A`, border white alpha 0.1, radius 12
+- Header: primary icon + "PIT BOARD", ls 2.0
+- Message: monospace, `w900`, 14px, ls 1.5
+
+#### GarageScreen — Circuit Intel
+- Height: 80px, border white alpha 0.1, radius 12
+- Weather-themed gradient (see Weather Gradients table)
+- Background weather icon: 100px, accentColor alpha 0.12
+- Header: "CIRCUIT INTEL" white `w900` 9px ls 1.5
+- Chips: padding h8 v3, radius 6, 10px bold
+
+#### Qualifying Results Table
+- Panel: black bg, border white alpha 0.1, radius 8
+- Gold header: `#FFB800` alpha 0.1 bg, icon + "QUALIFYING RESULTS" 13px
+- Column headers: 9px `w900` ls 1.0, white38
+- Player row: secondary alpha 0.1 bg, left border 3px secondary
+
+### 6.6 Race Day (`lib/screens/race/race_day_screen.dart`)
+
+#### Race Header
+- Container: gradient `#1E1E1E`→`#0A0A0A`, border white alpha 0.1, shadow blur 20
+- LIVE badge: `#FF5252` alpha 0.15 bg, alpha 0.5 border, pulsing dot
+- FINISHED: `#00C853` alpha 0.1 bg, alpha 0.4 border
+- PRE-RACE: white alpha 0.05 bg, alpha 0.1 border
+- Lap counter: monospace 22px `w900` white / 14px bold white alpha 0.4
+- Progress bar: 6px height, `#FF5252` (live) / `#00C853` (finished)
+- Fastest lap: `#E040FB` 11px bold monospace
+
+#### Leaderboard
+- Container: `#0A0A0A`, radius 12, border white alpha 0.08
+- Header: `#FF5252` alpha 0.08 bg, "RACE POSITIONS" 11px `w900`
+- Player highlight: secondary alpha 0.08 bg, left border 3px
+- Position arrows: up `#00C853` / down `#FF5252` / same white alpha 0.3
+
+#### Event Feed
+- Container: `#0A0A0A`, radius 12, border white alpha 0.08
+- Header: `#FFB800` alpha 0.08 bg, "PIT BOARD" 11px `w900`
+- Lap badge: 36px wide, 9px `w900`, white alpha 0.4
+- Type badge: padding h6 v2, radius 8, event color alpha 0.1 bg
+
+#### Commentary Feed (CRT Style)
+- Container: `#080810` bg, radius 12, border `#00BCD4` alpha 0.15
+- Header gradient: `#00BCD4` alpha 0.12 → `#080810`
+- "ON AIR" badge: `#00BCD4` alpha 0.15 bg, alpha 0.4 border, 8px `w900`
+- Scan lines: CustomPainter, every 3px, black alpha 0.04
+- Player text: `#FFD54F` (newest alpha 1.0, older alpha 0.7)
+- Non-player text: white alpha 0.95 (newest) / alpha 0.5 (older)
+- Typewriter: 18ms/tick, 2 chars, "▌" cursor
+
+### 6.7 Office & Finance Screens
+
+#### Finances Balance Header
+- Container: gradient `#1E1E1E`→`#0A0A0A`, padding 32, radius 12
+- Label: grey, 12px, bold, ls 1.5
+- Amount: 42px, `w900`, redAccent (negative) / onSurface (positive)
+
+#### Transaction Tile
+- Container: `#121212`, radius 12, border white alpha 0.05
+- Icon container: iconColor alpha 0.1 bg, padding 10, radius 12
+- Title: bold
+- Amount: bold, 16px, green (+) / red (-)
+
+#### Transfer Budget Card
+- Container: `#15151A`, radius 12, border primaryColor alpha 0.2, padding 20
+- Wrapped in NewBadgeWidget (bottomRight)
+- Slider: 10-90%, activeColor primaryColor
+
+#### Sponsor Offer Card
+- Container: gradient `#1E1E1E`→`#0A0A0A`, radius 12, border white alpha 0.1
+- Title: Poppins `w900`, 16px, white, ls 1.2
+- Tactic buttons: stadium shape, mute default (white alpha 0.05 bg), reveal color on hover
+  - Persuasive: `#FF5733`
+  - Negotiator: `#F1C40F`
+  - Collaborative: `#E9967A`
+
+### 6.8 Onboarding & Misc
+
+#### Team Selection Card
+- Gradient: `#1A1A1A` → `#121212`
+- Border: dynamic (amber alpha 0.3 if occupied, white10 locked, white24 normal)
+- Blueprint bg: opacity 0.15
+- "SELECTED" ribbon: 45° rotation, amber bg
+
+#### Calendar Event Item
+- Current round: primaryColor alpha 0.1 bg, primaryColor 2px border
+- Normal: cardTheme default
+- Round number: yellow/primary
+- Track name: `.toUpperCase()`, `w900`
+
+#### Youth Academy Candidate Card
+- Container: `#121212`, radius 12, border white alpha 0.05
+- InfoTags: chip style, radius 6
+- StatRangeBar: stacked bars showing min-max uncertainty
+
+#### Internal Timing Card
+- **! Light surface anomaly** — uses `#1A1A1A` text on light bg (`surface`)
+- Title: "INTERNAL TIMING", `#00FF88` icon, `#1A1A1A` text
+- Header: `#00FF88` alpha 0.1 bg, Roboto Mono 12px bold
+- Fastest row: `#00FF88` alpha 0.15 bg
+- Data: Roboto Mono, `#1A1A1A`
+
+---
+
+## 7. Table Variants
+
+| Table | File | Header Font | Data Font | Zebra | Highlights |
+|:---|:---|:---|:---|:---|:---|
+| **OnyxTable** | `onyx_table.dart` | Poppins `w700` 10px | Inter `w500` 12px | white alpha 0.01 | `#00C853` bg + left border |
+| **TinyTable** | `driver_card.dart` | labelSmall, secondary alpha 0.7 | Roboto Mono 11px | white alpha 0.05 (odd) | — |
+| **CleanTable** | `transfer_market_driver_card.dart` | Montserrat white30 10px | Inter white70 11px | white alpha 0.05 (odd) | — |
+| **QualyResults** | `garage_screen.dart` | custom w900 9px white38 | mixed 11px | — | secondary alpha 0.1 + left border |
+| **Leaderboard** | `race_day_screen.dart` | w900 9px white alpha 0.3 | mixed 10-13px | — | secondary alpha 0.08 + left border |
+
+---
+
+## 8. Repeated Container: Gradient + Border (observed in 10+ widgets)
+
+> **Note:** This is NOT a named widget or class in the code. It is a repeated inline `BoxDecoration` pattern found across multiple widgets.
+
+```dart
+// Example from FinanceCard (dashboard_widgets.dart L83-95)
+decoration: BoxDecoration(
+  gradient: const LinearGradient(
+    begin: Alignment.topLeft,
+    end: Alignment.bottomRight,
+    colors: [Color(0xFF1E1E1E), Color(0xFF0A0A0A)],
+  ),
+  border: Border.all(color: Colors.white.withValues(alpha: 0.1)),
+  borderRadius: BorderRadius.circular(12),
+  boxShadow: [
+    BoxShadow(
+      color: Colors.black.withValues(alpha: 0.3),
+      blurRadius: 15,
+      offset: const Offset(0, 8),
+    ),
+  ],
+)
+```
+
+**Found in:** `FinanceCard`, `PreparationChecklist`, `RaceStatusHero`, `_buildPitBoard`, `SetupCard`, `_buildDriverSelector` (unselected), `StandingsScreen`, `SponsorOfferCard`, `_buildBalanceHeader`, `_buildCircuitIntel`.
+
+---
+
+## 9. RaceStatusHero — statusText Container (dashboard_widgets.dart L559-577)
+
+> **Note:** This is NOT a named component. It is the inline `Container` + `BoxDecoration` used inside `RaceStatusHero.build()` to display the current race week status.
+
+```dart
+// Actual code from dashboard_widgets.dart
+Container(
+  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+  decoration: BoxDecoration(
+    color: statusColor.withValues(alpha: 0.1),
+    borderRadius: BorderRadius.circular(12),
+    border: Border.all(color: statusColor),
+  ),
+  child: Text(
+    statusText, // from AppLocalizations
+    style: TextStyle(
+      color: statusColor,
+      fontWeight: FontWeight.bold,
+      letterSpacing: 1.5,
+      fontSize: 12,
+    ),
+  ),
+)
+```
+
+**statusColor values by status:**
+| Status | Color | Hex |
+|:---|:---|:---|
+| practice | statusColor | `0xFF00C853` |
+| qualifying | statusColor | `0xFFFFB800` |
+| raceStrategy | statusColor | `0xFFFF6D00` |
+| race | statusColor | `0xFFFF5252` |
+| postRace | statusColor | `0xFF9E9E9E` |
+
+---
+
+## 10. Repeated Label TextStyle (observed in 6+ widgets)
+
+> **Note:** This is NOT a named style or theme entry. It is a repeated inline `TextStyle` found across multiple widgets.
+
+```dart
+// Example from PreparationChecklist (dashboard_widgets.dart L1104-1109)
+TextStyle(
+  color: Colors.white.withValues(alpha: 0.4),
+  fontSize: 9,
+  fontWeight: FontWeight.bold,
+  letterSpacing: 1.5,
+)
+```
+
+**Found in:** `FinanceCard` ("TEAM BUDGET"), `PreparationChecklist` ("PRE-RACE CHECKLIST"), `_buildCountdownRow` (countdown labels), `_buildPitBoardField` (field labels), `_buildCircuitIntel` ("CIRCUIT INTEL"), `SponsorOfferCard` header.
+
+---
+
+## 11. Known Inconsistencies
+
+| Issue | Details | Location |
+|:---|:---|:---|
+| **Tyre colors** | Garage uses pure (`red`, `yellow`, `white`, `blue`), Strategy/RaceDay uses Accent variants | `garage_screen.dart` vs `race_strategy_screen.dart` / `race_day_screen.dart` |
+| **Star rating** | `DriverStars` uses `blueAccent`/`amber 0.5`. `_buildPotentialStars` in DriverCard uses `#00B0FF` with glow / `#FFD700` with glow at 24px | `driver_stars.dart` vs `driver_card.dart` |
+| **Internal Timing Card** | Uses `#1A1A1A` dark text on light surface — breaks the dark theme | `internal_timing_card.dart` |
+| **Card backgrounds** | Some use `cardTheme.color` (`#292A33`), others use `#121212` / `#121216` directly | Multiple files |
+| **Stat label color** | DriverCard uses `#A0AEC0`, TransferMarketDriverCard uses `Colors.white70` | Both card files |
+
+---
+
+## 12. File Inventory
+
+### `lib/widgets/common/` (8 widgets)
+| File | Widget | Category |
+|:---|:---|:---|
+| `onyx_table.dart` | OnyxTable | Data display |
+| `onyx_skeleton.dart` | OnyxSkeleton | Loading state |
+| `new_badge.dart` | NewBadgeWidget | Indicator |
+| `instruction_card.dart` | InstructionCard | Info card |
+| `driver_stars.dart` | DriverStars | Rating |
+| `dynamic_loading_indicator.dart` | DynamicLoadingIndicator | Loading |
+| `breadcrumbs.dart` | Breadcrumbs | Navigation |
+| `app_logo.dart` | AppLogo | Branding |
+
+### `lib/widgets/` (7 widgets)
+| File | Widget | Category |
+|:---|:---|:---|
+| `notification_card.dart` | NotificationCard | Notification |
+| `press_news_card.dart` | PressNewsCard | News card |
+| `car_schematic_widget.dart` | CarSchematicWidget | Stats display |
+| `car_selector.dart` | CarSelector | Livery picker |
+| `fuel_input.dart` | FuelInput | Input control |
+| `responsive_shell.dart` | ResponsiveMainScaffold | Layout |
+| `auth_wrapper.dart` | AuthWrapper | Auth gate |
+
+### `lib/screens/home/`
+| File | Widgets |
+|:---|:---|
+| `dashboard_widgets.dart` | TeamHeader, StatusCard, FinanceCard, NewsItemCard, UpcomingCircuitCard, RaceStatusHero, PreparationChecklist |
+
+### `lib/screens/drivers/widgets/`
+| File | Widgets |
+|:---|:---|
+| `driver_card.dart` | DriverCard, RadarChartPainter, GridPainter |
+
+### `lib/screens/market/`
+| File | Widgets |
+|:---|:---|
+| `transfer_market_screen.dart` | TransferMarketScreen, _MarketCountdown, Bid Modal |
+| `widgets/transfer_market_driver_card.dart` | TransferMarketDriverCard |
+
+### `lib/screens/race/`
+| File | Widgets |
+|:---|:---|
+| `garage_screen.dart` | GarageScreen (Practice/Qualifying/Race tabs), DriverSelector, CircuitIntel, PitBoard, DriverStyleCard, SetupCard, QualifyingResults |
+| `race_strategy_screen.dart` | RaceStrategyScreen, Sliders, StyleSelector, PitStops |
+| `race_day_screen.dart` | RaceDayScreen, Leaderboard, EventFeed, CommentaryFeed |
+| `race_live_screen.dart` | RaceLiveScreen |
+| `widgets/internal_timing_card.dart` | InternalTimingCard |
+
+### `lib/screens/management/`
+| File | Widgets |
+|:---|:---|
+| `personal_screen.dart` | PersonalScreen, _PersonalCard (COMING SOON ribbon) |
+
+### `lib/screens/office/`
+| File | Widgets |
+|:---|:---|
+| `finances_screen.dart` | BalanceHeader, TransactionTile, TransferBudgetCard |
+| `sponsorship_screen.dart` | SponsorOfferCard, ActiveContractPanel |
+
+### `lib/screens/standings/`
+| File | Widgets |
+|:---|:---|
+| `standings_screen.dart` | StandingsScreen (3 tabs), Drivers/Constructors/Race Results |
+
+### `lib/screens/onboarding/`
+| File | Widgets |
+|:---|:---|
+| `team_selection_screen.dart` | TeamSelectionCard |
+
+### `lib/screens/calendar/`
+| File | Widgets |
+|:---|:---|
+| `calendar_screen.dart` | CalendarEventItem |
+
+### `lib/screens/hq/`
+| File | Widgets |
+|:---|:---|
+| `youth_academy_screen.dart` | CandidateCard, StatRangeBar |
