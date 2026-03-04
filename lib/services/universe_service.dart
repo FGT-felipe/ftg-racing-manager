@@ -1,4 +1,5 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:flutter/foundation.dart';
 import '../models/domain/domain_models.dart';
 import '../models/core_models.dart';
 import 'universe_seeder.dart';
@@ -131,6 +132,9 @@ class UniverseService {
   }
 
   /// Actualiza los datos de un equipo en todo el universo (ligas y listas de equipos)
+  ///
+  /// Throws [StateError] if the universe is not initialized or the team is not
+  /// found in any league.
   Future<void> updateTeamInUniverse(
     String teamId, {
     String? newName,
@@ -138,7 +142,12 @@ class UniverseService {
     int? nameChangeCount,
   }) async {
     final universe = await getUniverse();
-    if (universe == null) return;
+    if (universe == null) {
+      debugPrint(
+        'UNIVERSE_SERVICE: Universe is null, cannot update team $teamId',
+      );
+      throw StateError('Universe not initialized — cannot update team.');
+    }
 
     bool found = false;
     final updatedLeagues = universe.leagues.map((league) {
@@ -151,13 +160,26 @@ class UniverseService {
           budget: newBudget,
           nameChangeCount: nameChangeCount,
         );
+        debugPrint(
+          'UNIVERSE_SERVICE: Updated team $teamId in league ${league.name}'
+          ' (name: $newName, budget: $newBudget)',
+        );
         return league.copyWith(teams: updatedTeams);
       }
       return league;
     }).toList();
 
-    if (found) {
-      await saveUniverse(universe.copyWith(leagues: updatedLeagues));
+    if (!found) {
+      debugPrint(
+        'UNIVERSE_SERVICE: Team $teamId NOT found in any league. '
+        'Available leagues: ${universe.leagues.map((l) => '${l.name}(${l.teams.length} teams)').join(', ')}',
+      );
+      throw StateError('Team $teamId not found in any league.');
     }
+
+    await saveUniverse(universe.copyWith(leagues: updatedLeagues));
+    debugPrint(
+      'UNIVERSE_SERVICE: Universe saved successfully after team update.',
+    );
   }
 }
