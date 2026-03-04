@@ -239,7 +239,11 @@ class _TransferMarketScreenState extends State<TransferMarketScreen> {
           color: isMyBid ? Colors.green : Colors.amber,
         ),
       ),
-      _MarketCountdown(expiresAt: expiresAt),
+      _MarketCountdown(
+        expiresAt: expiresAt,
+        driverId: driver.id,
+        onResolved: () => _fetchPage(_currentPage),
+      ),
       driver.teamId == widget.teamId
           ? const Text(
               "Your Driver",
@@ -518,8 +522,14 @@ class _TransferMarketScreenState extends State<TransferMarketScreen> {
 
 class _MarketCountdown extends StatefulWidget {
   final DateTime expiresAt;
+  final String driverId;
+  final VoidCallback? onResolved;
 
-  const _MarketCountdown({required this.expiresAt});
+  const _MarketCountdown({
+    required this.expiresAt,
+    required this.driverId,
+    this.onResolved,
+  });
 
   @override
   State<_MarketCountdown> createState() => _MarketCountdownState();
@@ -528,18 +538,39 @@ class _MarketCountdown extends StatefulWidget {
 class _MarketCountdownState extends State<_MarketCountdown> {
   Timer? _timer;
   late Duration _diff;
+  bool _isResolving = false;
 
   @override
   void initState() {
     super.initState();
     _diff = widget.expiresAt.difference(DateTime.now());
-    _timer = Timer.periodic(const Duration(seconds: 1), (timer) {
-      if (mounted) {
-        setState(() {
-          _diff = widget.expiresAt.difference(DateTime.now());
-        });
-      }
-    });
+    if (_diff.isNegative) {
+      _triggerResolution();
+    } else {
+      _timer = Timer.periodic(const Duration(seconds: 1), (timer) {
+        if (mounted) {
+          final newDiff = widget.expiresAt.difference(DateTime.now());
+          setState(() => _diff = newDiff);
+          if (newDiff.isNegative) {
+            timer.cancel();
+            _triggerResolution();
+          }
+        }
+      });
+    }
+  }
+
+  Future<void> _triggerResolution() async {
+    if (_isResolving) return;
+    _isResolving = true;
+    try {
+      await TransferMarketService().resolveTransfer(widget.driverId);
+    } catch (e) {
+      debugPrint('Error resolving transfer: $e');
+    }
+    if (mounted) {
+      widget.onResolved?.call();
+    }
   }
 
   @override
@@ -551,7 +582,7 @@ class _MarketCountdownState extends State<_MarketCountdown> {
   @override
   Widget build(BuildContext context) {
     String timeLeftStr;
-    if (_diff.isNegative) {
+    if (_diff.isNegative || _isResolving) {
       timeLeftStr = "Resolving...";
     } else {
       final hrs = _diff.inHours.toString().padLeft(2, '0');
@@ -563,7 +594,9 @@ class _MarketCountdownState extends State<_MarketCountdown> {
     return Text(
       timeLeftStr,
       style: TextStyle(
-        color: _diff.isNegative ? Colors.redAccent : Colors.white70,
+        color: (_diff.isNegative || _isResolving)
+            ? Colors.redAccent
+            : Colors.white70,
         fontSize: 13,
       ),
     );

@@ -418,7 +418,82 @@ class TransferMarketService {
     return accepted;
   }
 
-  // 6. Generate Admin Market Drivers
+  // 6. Resolve Transfer (called when countdown reaches zero)
+  Future<void> resolveTransfer(String driverId) async {
+    final driverRef = _db.collection('drivers').doc(driverId);
+
+    await _db.runTransaction((txn) async {
+      final driverSnap = await txn.get(driverRef);
+      if (!driverSnap.exists) return; // Already resolved or deleted
+
+      final driver = Driver.fromMap(driverSnap.data() as Map<String, dynamic>);
+      if (!driver.isTransferListed) return; // Not on market anymore
+
+      final winnerId = driver.highestBidderTeamId;
+
+      if (winnerId != null && driver.currentHighestBid > 0) {
+        // --- Driver sold to highest bidder ---
+        txn.update(driverRef, {
+          'teamId': winnerId,
+          'isTransferListed': false,
+          'transferListedAt': FieldValue.delete(),
+          'currentHighestBid': FieldValue.delete(),
+          'highestBidderTeamId': FieldValue.delete(),
+          'highestBidderTeamName': FieldValue.delete(),
+          'priceAtListing': FieldValue.delete(),
+        });
+
+        // Credit seller if the driver had a team
+        if (driver.teamId != null) {
+          final sellerRef = _db.collection('teams').doc(driver.teamId!);
+          final sellerSnap = await txn.get(sellerRef);
+          if (sellerSnap.exists) {
+            final seller = Team.fromMap(
+              sellerSnap.data() as Map<String, dynamic>,
+            );
+            txn.update(sellerRef, {
+              'budget': seller.budget + driver.currentHighestBid,
+            });
+
+            _notificationService.addNotification(
+              teamId: driver.teamId!,
+              title: "Driver Sold",
+              message:
+                  "${driver.name} has been sold for \$${driver.currentHighestBid}.",
+              type: "SUCCESS",
+              actionRoute: "/market",
+            );
+          }
+        }
+
+        // Notify buyer
+        _notificationService.addNotification(
+          teamId: winnerId,
+          title: "Transfer Complete",
+          message:
+              "You have successfully signed ${driver.name} for \$${driver.currentHighestBid}!",
+          type: "SUCCESS",
+          actionRoute: "/drivers",
+        );
+      } else {
+        // --- No bids: delete unsold driver ---
+        txn.delete(driverRef);
+
+        if (driver.teamId != null) {
+          _notificationService.addNotification(
+            teamId: driver.teamId!,
+            title: "Driver Unsold",
+            message:
+                "${driver.name} received no bids and has been released from the market.",
+            type: "WARNING",
+            actionRoute: "/market",
+          );
+        }
+      }
+    });
+  }
+
+  // 7. Generate Admin Market Drivers
   Future<void> generateAdminMarketDrivers(int count) async {
     final batch = _db.batch();
     int opCount = 0;

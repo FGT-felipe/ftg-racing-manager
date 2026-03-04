@@ -297,7 +297,9 @@ class _FitnessTrainerScreenState extends State<FitnessTrainerScreen> {
                         "The Fitness Trainer helps your pilots recover from fatigue.\n\n"
                         "• **Weekly Bonus**: Higher level trainers provide a larger automatic fitness recovery each week.\n"
                         "• **Train Pilot**: Use manual training once per week to give an extra boost to your assigned pilot.\n"
-                        "• **Assignment**: Ensure the trainer is assigned to a pilot to apply the recovery bonus.",
+                        "• **Assignment**: Ensure the trainer is assigned to a pilot to apply the recovery bonus.\n"
+                        "• **Training Limit**: You can only train **1 pilot per week**. Once trained, the assignment is locked until next week.\n"
+                        "• **Upgrade/Downgrade**: You may only upgrade or downgrade the trainer **once per week**.",
                   ),
                   const SizedBox(height: 24),
                   _buildTrainerCard(context, l10n),
@@ -512,11 +514,13 @@ class _FitnessTrainerScreenState extends State<FitnessTrainerScreen> {
                           color: Colors.white,
                           fontSize: 14,
                         ),
-                        onChanged: (String? newValue) {
-                          setState(() {
-                            _selectedPilotId = newValue;
-                          });
-                        },
+                        onChanged: _hasTrainedThisWeek
+                            ? null
+                            : (String? newValue) {
+                                setState(() {
+                                  _selectedPilotId = newValue;
+                                });
+                              },
                         items: _teamDrivers.map<DropdownMenuItem<String>>((
                           Driver driver,
                         ) {

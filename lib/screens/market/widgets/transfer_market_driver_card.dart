@@ -182,12 +182,14 @@ class _TransferMarketDriverCardState extends State<TransferMarketDriverCard> {
   }
 
   Widget _buildIdentityBlock(BuildContext context, AppLocalizations l10n) {
-    final portraitUrl = DriverPortraitService().getEffectivePortraitUrl(
-      driverId: widget.driver.id,
-      countryCode: widget.driver.countryCode,
-      gender: widget.driver.gender,
-      age: widget.driver.age,
-    );
+    final portraitUrl =
+        widget.driver.portraitUrl ??
+        DriverPortraitService().getEffectivePortraitUrl(
+          driverId: widget.driver.id,
+          countryCode: widget.driver.countryCode,
+          gender: widget.driver.gender,
+          age: widget.driver.age,
+        );
 
     // Level Badge Logic
     String levelText;
