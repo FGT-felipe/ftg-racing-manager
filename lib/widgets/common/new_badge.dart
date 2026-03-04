@@ -50,8 +50,8 @@ class _NewBadgeWidgetState extends State<NewBadgeWidget>
     final now = DateTime.now();
     final difference = now.difference(widget.createdAt).inDays;
 
-    // Only show if it's less than 7 days old, or if forced to show
-    if (difference >= 7 && !widget.forceShow) {
+    // Only show if it's less than 3 days old, or if forced to show
+    if (difference >= 3 && !widget.forceShow) {
       return widget.child;
     }
 
@@ -72,11 +72,11 @@ class _NewBadgeWidgetState extends State<NewBadgeWidget>
                     vertical: 2,
                   ),
                   decoration: BoxDecoration(
-                    color: Colors.amber, // Golden/Amber color
+                    color: Colors.purpleAccent, // Purple color
                     borderRadius: BorderRadius.circular(12),
                     boxShadow: [
                       BoxShadow(
-                        color: Colors.amber.withValues(alpha: 0.4),
+                        color: Colors.purpleAccent.withValues(alpha: 0.4),
                         blurRadius: 4,
                         offset: const Offset(0, 2),
                       ),

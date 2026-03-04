@@ -310,197 +310,206 @@ class FinancesScreen extends StatelessWidget {
         }
         final weeklyNet = weeklyIncome + weeklyExpenses;
 
-        return Container(
-          padding: const EdgeInsets.all(20),
-          decoration: BoxDecoration(
-            color: const Color(0xFF15151A),
-            borderRadius: BorderRadius.circular(12),
-            border: Border.all(color: accent.withValues(alpha: 0.15)),
-            boxShadow: [
-              BoxShadow(
-                color: Colors.black.withValues(alpha: 0.3),
-                blurRadius: 10,
-                offset: const Offset(0, 4),
-              ),
-            ],
-          ),
-          child: transactions.isEmpty
-              ? _buildEmptySummary(context)
-              : Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    // ── Title ──
-                    Row(
-                      children: [
-                        Icon(Icons.analytics_outlined, color: accent, size: 18),
-                        const SizedBox(width: 8),
-                        Text(
-                          l10n.financialSummaryTitle,
-                          style: TextStyle(
-                            color: accent,
-                            fontWeight: FontWeight.bold,
-                            fontSize: 14,
-                            letterSpacing: 1.2,
-                          ),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 20),
-
-                    // ── All-time totals ──
-                    _SummaryRow(
-                      label: l10n.totalIncomeLabel,
-                      value: financeService.formatCurrency(totalIncome),
-                      valueColor: Colors.greenAccent,
-                      icon: Icons.arrow_upward_rounded,
-                    ),
-                    const SizedBox(height: 10),
-                    _SummaryRow(
-                      label: l10n.totalExpensesLabel,
-                      value: financeService.formatCurrency(totalExpenses),
-                      valueColor: Colors.redAccent,
-                      icon: Icons.arrow_downward_rounded,
-                    ),
-                    const SizedBox(height: 10),
-                    Divider(
-                      color: Colors.white.withValues(alpha: 0.06),
-                      height: 24,
-                    ),
-                    _SummaryRow(
-                      label: l10n.netResultLabel,
-                      value: financeService.formatCurrency(netResult),
-                      valueColor: netResult >= 0
-                          ? Colors.greenAccent
-                          : Colors.redAccent,
-                      icon: netResult >= 0
-                          ? Icons.trending_up_rounded
-                          : Icons.trending_down_rounded,
-                      bold: true,
-                    ),
-
-                    const SizedBox(height: 24),
-
-                    // ── Category Breakdown ──
-                    _buildCategoryBreakdown(
-                      context,
-                      financeService,
-                      categoryTotals,
-                    ),
-
-                    const SizedBox(height: 16),
-
-                    // ── Weekly projection ──
-                    Container(
-                      width: double.infinity,
-                      padding: const EdgeInsets.all(16),
-                      decoration: BoxDecoration(
-                        color: Colors.white.withValues(alpha: 0.03),
-                        borderRadius: BorderRadius.circular(10),
-                        border: Border.all(
-                          color: Colors.white.withValues(alpha: 0.05),
-                        ),
-                      ),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
+        return NewBadgeWidget(
+          createdAt: DateTime(2026, 3, 3), // Released on March 3
+          badgeAlignment: Alignment.topRight,
+          child: Container(
+            padding: const EdgeInsets.all(20),
+            decoration: BoxDecoration(
+              color: const Color(0xFF15151A),
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(color: accent.withValues(alpha: 0.15)),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withValues(alpha: 0.3),
+                  blurRadius: 10,
+                  offset: const Offset(0, 4),
+                ),
+              ],
+            ),
+            child: transactions.isEmpty
+                ? _buildEmptySummary(context)
+                : Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      // ── Title ──
+                      Row(
                         children: [
-                          Row(
-                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                            children: [
-                              Row(
-                                children: [
-                                  Icon(
-                                    Icons.date_range_rounded,
-                                    color: accent,
-                                    size: 16,
-                                  ),
-                                  const SizedBox(width: 6),
-                                  Text(
-                                    l10n.weeklyProjectionTitle,
-                                    style: TextStyle(
-                                      color: accent,
-                                      fontWeight: FontWeight.bold,
-                                      fontSize: 12,
-                                      letterSpacing: 1.1,
-                                    ),
-                                  ),
-                                ],
-                              ),
-                              Builder(
-                                builder: (context) {
-                                  // Calcula el próximo domingo a las 16:00 COT
-                                  final now = TimeService().nowBogota;
-                                  int daysUntilSunday = (7 - now.weekday) % 7;
-                                  var nextUpdate = DateTime(
-                                    now.year,
-                                    now.month,
-                                    now.day,
-                                    16,
-                                    0,
-                                  ).add(Duration(days: daysUntilSunday));
-                                  // Si ya pasó la hora este domingo, pasa al siguiente
-                                  if (daysUntilSunday == 0 && now.hour >= 16) {
-                                    nextUpdate = nextUpdate.add(
-                                      const Duration(days: 7),
-                                    );
-                                  }
-                                  final dateStr = DateFormat(
-                                    'E, h:mm a',
-                                  ).format(nextUpdate);
-
-                                  return Text(
-                                    '${l10n.nextFinanceUpdate}: $dateStr COT',
-                                    style: TextStyle(
-                                      color: Colors.white.withValues(
-                                        alpha: 0.5,
-                                      ),
-                                      fontSize: 10,
-                                      fontWeight: FontWeight.bold,
-                                    ),
-                                  );
-                                },
-                              ),
-                            ],
+                          Icon(
+                            Icons.analytics_outlined,
+                            color: accent,
+                            size: 18,
                           ),
-                          const SizedBox(height: 14),
-                          _SummaryRow(
-                            label: l10n.weeklyIncomeLabel,
-                            value:
-                                '+${financeService.formatCurrency(weeklyIncome)}',
-                            valueColor: Colors.greenAccent,
-                            icon: Icons.add_circle_outline,
-                            small: true,
-                          ),
-                          const SizedBox(height: 8),
-                          _SummaryRow(
-                            label: l10n.weeklyExpensesLabel,
-                            value: financeService.formatCurrency(
-                              weeklyExpenses,
+                          const SizedBox(width: 8),
+                          Text(
+                            l10n.financialSummaryTitle,
+                            style: TextStyle(
+                              color: accent,
+                              fontWeight: FontWeight.bold,
+                              fontSize: 14,
+                              letterSpacing: 1.2,
                             ),
-                            valueColor: Colors.redAccent,
-                            icon: Icons.remove_circle_outline,
-                            small: true,
-                          ),
-                          Divider(
-                            color: Colors.white.withValues(alpha: 0.06),
-                            height: 20,
-                          ),
-                          _SummaryRow(
-                            label: l10n.weeklyNetLabel,
-                            value: financeService.formatCurrency(weeklyNet),
-                            valueColor: weeklyNet >= 0
-                                ? Colors.greenAccent
-                                : Colors.redAccent,
-                            icon: weeklyNet >= 0
-                                ? Icons.trending_up_rounded
-                                : Icons.trending_down_rounded,
-                            bold: true,
-                            small: true,
                           ),
                         ],
                       ),
-                    ),
-                  ],
-                ),
+                      const SizedBox(height: 20),
+
+                      // ── All-time totals ──
+                      _SummaryRow(
+                        label: l10n.totalIncomeLabel,
+                        value: financeService.formatCurrency(totalIncome),
+                        valueColor: Colors.greenAccent,
+                        icon: Icons.arrow_upward_rounded,
+                      ),
+                      const SizedBox(height: 10),
+                      _SummaryRow(
+                        label: l10n.totalExpensesLabel,
+                        value: financeService.formatCurrency(totalExpenses),
+                        valueColor: Colors.redAccent,
+                        icon: Icons.arrow_downward_rounded,
+                      ),
+                      const SizedBox(height: 10),
+                      Divider(
+                        color: Colors.white.withValues(alpha: 0.06),
+                        height: 24,
+                      ),
+                      _SummaryRow(
+                        label: l10n.netResultLabel,
+                        value: financeService.formatCurrency(netResult),
+                        valueColor: netResult >= 0
+                            ? Colors.greenAccent
+                            : Colors.redAccent,
+                        icon: netResult >= 0
+                            ? Icons.trending_up_rounded
+                            : Icons.trending_down_rounded,
+                        bold: true,
+                      ),
+
+                      const SizedBox(height: 24),
+
+                      // ── Category Breakdown ──
+                      _buildCategoryBreakdown(
+                        context,
+                        financeService,
+                        categoryTotals,
+                      ),
+
+                      const SizedBox(height: 16),
+
+                      // ── Weekly projection ──
+                      Container(
+                        width: double.infinity,
+                        padding: const EdgeInsets.all(16),
+                        decoration: BoxDecoration(
+                          color: Colors.white.withValues(alpha: 0.03),
+                          borderRadius: BorderRadius.circular(10),
+                          border: Border.all(
+                            color: Colors.white.withValues(alpha: 0.05),
+                          ),
+                        ),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Row(
+                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                              children: [
+                                Row(
+                                  children: [
+                                    Icon(
+                                      Icons.date_range_rounded,
+                                      color: accent,
+                                      size: 16,
+                                    ),
+                                    const SizedBox(width: 6),
+                                    Text(
+                                      l10n.weeklyProjectionTitle,
+                                      style: TextStyle(
+                                        color: accent,
+                                        fontWeight: FontWeight.bold,
+                                        fontSize: 12,
+                                        letterSpacing: 1.1,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                                Builder(
+                                  builder: (context) {
+                                    // Calcula el próximo domingo a las 16:00 COT
+                                    final now = TimeService().nowBogota;
+                                    int daysUntilSunday = (7 - now.weekday) % 7;
+                                    var nextUpdate = DateTime(
+                                      now.year,
+                                      now.month,
+                                      now.day,
+                                      16,
+                                      0,
+                                    ).add(Duration(days: daysUntilSunday));
+                                    // Si ya pasó la hora este domingo, pasa al siguiente
+                                    if (daysUntilSunday == 0 &&
+                                        now.hour >= 16) {
+                                      nextUpdate = nextUpdate.add(
+                                        const Duration(days: 7),
+                                      );
+                                    }
+                                    final dateStr = DateFormat(
+                                      'E, h:mm a',
+                                    ).format(nextUpdate);
+
+                                    return Text(
+                                      '${l10n.nextFinanceUpdate}: $dateStr COT',
+                                      style: TextStyle(
+                                        color: Colors.white.withValues(
+                                          alpha: 0.5,
+                                        ),
+                                        fontSize: 10,
+                                        fontWeight: FontWeight.bold,
+                                      ),
+                                    );
+                                  },
+                                ),
+                              ],
+                            ),
+                            const SizedBox(height: 14),
+                            _SummaryRow(
+                              label: l10n.weeklyIncomeLabel,
+                              value:
+                                  '+${financeService.formatCurrency(weeklyIncome)}',
+                              valueColor: Colors.greenAccent,
+                              icon: Icons.add_circle_outline,
+                              small: true,
+                            ),
+                            const SizedBox(height: 8),
+                            _SummaryRow(
+                              label: l10n.weeklyExpensesLabel,
+                              value: financeService.formatCurrency(
+                                weeklyExpenses,
+                              ),
+                              valueColor: Colors.redAccent,
+                              icon: Icons.remove_circle_outline,
+                              small: true,
+                            ),
+                            Divider(
+                              color: Colors.white.withValues(alpha: 0.06),
+                              height: 20,
+                            ),
+                            _SummaryRow(
+                              label: l10n.weeklyNetLabel,
+                              value: financeService.formatCurrency(weeklyNet),
+                              valueColor: weeklyNet >= 0
+                                  ? Colors.greenAccent
+                                  : Colors.redAccent,
+                              icon: weeklyNet >= 0
+                                  ? Icons.trending_up_rounded
+                                  : Icons.trending_down_rounded,
+                              bold: true,
+                              small: true,
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
+          ),
         );
       },
     );
@@ -846,8 +855,11 @@ class _TransferBudgetCardState extends State<_TransferBudgetCard> {
         .round();
 
     return NewBadgeWidget(
-      createdAt: DateTime.now(),
-      forceShow: true,
+      createdAt: DateTime(
+        2026,
+        3,
+        3,
+      ), // Let's set it to today so both badges sync
       badgeAlignment: Alignment.bottomRight,
       child: Container(
         padding: const EdgeInsets.all(20),
