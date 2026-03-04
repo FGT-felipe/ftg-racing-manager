@@ -81,7 +81,52 @@ class _DriversScreenState extends State<DriversScreen> {
       appBar: AppBar(
         title: Text(AppLocalizations.of(context).driversManagementTitle),
       ),
-      body: _buildCurrentDriversTab(),
+      body: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          _buildRuleCard(),
+          Expanded(child: _buildCurrentDriversTab()),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildRuleCard() {
+    return Container(
+      margin: const EdgeInsets.all(16),
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: const Color(0xFF1E1E2A),
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(color: Colors.white12),
+      ),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Icon(Icons.info_outline, color: Colors.blueAccent),
+          const SizedBox(width: 12),
+          const Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  "Daily Fitness Recovery",
+                  style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
+                ),
+                SizedBox(height: 4),
+                Text(
+                  "Drivers automatically recover +10% fitness every day at midnight until they reach 100%, ensuring they are well-rested between intense race weekends.",
+                  style: TextStyle(
+                    fontSize: 12,
+                    color: Colors.white70,
+                    height: 1.4,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
     );
   }
 
