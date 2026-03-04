@@ -417,6 +417,7 @@ class FinancesScreen extends StatelessWidget {
                             financeService,
                             categoryTotals,
                             staffCost,
+                            teamData,
                           ),
 
                           const SizedBox(height: 16),
@@ -554,9 +555,21 @@ class FinancesScreen extends StatelessWidget {
     FinanceService financeService,
     Map<String, int> categoryTotals,
     int staffCost,
+    Map<String, dynamic>? teamData,
   ) {
     final l10n = AppLocalizations.of(context);
     final accent = Theme.of(context).colorScheme.secondary;
+
+    // Parse facilities from teamData
+    final Map<String, Facility> facilities = {};
+    if (teamData != null && teamData.containsKey('facilities')) {
+      final facMap = teamData['facilities'] as Map<String, dynamic>? ?? {};
+      facMap.forEach((key, value) {
+        if (value is Map<String, dynamic>) {
+          facilities[key] = Facility.fromMap(value);
+        }
+      });
+    }
 
     // Define the category display order and metadata
     final categories = [
@@ -622,10 +635,14 @@ class FinancesScreen extends StatelessWidget {
       ),
     ];
 
-    // Filter to only categories that have transactions
-    final activeCategories = categories
-        .where((c) => (categoryTotals[c.type] ?? 0) != 0)
-        .toList();
+    // Filter to only categories that have transactions or facilities
+    final activeCategories = categories.where((c) {
+      if (c.type == 'MAINTENANCE' &&
+          facilities.values.any((f) => f.level > 0 && f.maintenanceCost > 0)) {
+        return true;
+      }
+      return (categoryTotals[c.type] ?? 0) != 0;
+    }).toList();
 
     if (activeCategories.isEmpty) return const SizedBox.shrink();
 
@@ -657,7 +674,61 @@ class FinancesScreen extends StatelessWidget {
           ),
           const SizedBox(height: 14),
           ...activeCategories.map((cat) {
-            final amount = categoryTotals[cat.type] ?? 0;
+            int amount = categoryTotals[cat.type] ?? 0;
+
+            // If it's maintenance and we have active facilities
+            if (cat.type == 'MAINTENANCE' && facilities.isNotEmpty) {
+              final activeFacilities = facilities.values
+                  .where((f) => f.level > 0 && f.maintenanceCost > 0)
+                  .toList();
+
+              if (activeFacilities.isNotEmpty) {
+                // If historical amount is 0, show the current projected cost
+                if (amount == 0) {
+                  amount = -activeFacilities.fold<int>(
+                    0,
+                    (acc, f) => acc + f.maintenanceCost,
+                  );
+                }
+
+                final isPositive = amount >= 0;
+
+                return Column(
+                  children: [
+                    Padding(
+                      padding: const EdgeInsets.only(bottom: 8),
+                      child: _SummaryRow(
+                        label: cat.label,
+                        value:
+                            '${isPositive ? '+' : ''}${financeService.formatCurrency(amount)}',
+                        valueColor: isPositive
+                            ? Colors.greenAccent
+                            : Colors.redAccent,
+                        icon: cat.icon,
+                        iconColor: cat.color,
+                        small: true,
+                      ),
+                    ),
+                    ...activeFacilities.map(
+                      (f) => Padding(
+                        padding: const EdgeInsets.only(bottom: 8, left: 16),
+                        child: _SummaryRow(
+                          label: f.getLocalizedName(context),
+                          value: financeService.formatCurrency(
+                            -f.maintenanceCost,
+                          ),
+                          valueColor: Colors.orange.withValues(alpha: 0.8),
+                          icon: Icons.subdirectory_arrow_right_rounded,
+                          iconColor: Colors.orange.withValues(alpha: 0.5),
+                          small: true,
+                        ),
+                      ),
+                    ),
+                  ],
+                );
+              }
+            }
+
             final isPositive = amount >= 0;
             return Padding(
               padding: const EdgeInsets.only(bottom: 8),
