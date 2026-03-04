@@ -1129,21 +1129,25 @@ exports.postRaceProcessing = onSchedule({
         }
 
         // 2. HQ Maintenance
+        let maintenanceCost = 0;
         const facilities = teamData.facilities || {};
         for (const facility of Object.values(facilities)) {
           const level = facility.level || 0;
           if (level > 0) {
-            weeklyExpense += level * 15000;
+            maintenanceCost += level * 15000;
           }
         }
+        weeklyExpense += maintenanceCost;
 
         // 3. Driver Salaries
+        let salaryCost = 0;
         const dSnap = await db.collection("drivers").where("teamId", "==", tid).get();
         dSnap.forEach((doc) => {
           const d = doc.data();
           const salary = d.salary || 100000; // default $100k
-          weeklyExpense += Math.round(salary / 52); // weekly wage
+          salaryCost += Math.round(salary / 52); // weekly wage
         });
+        weeklyExpense += salaryCost;
 
         // 4. Update Budget and Transactions
         const currentBudget = teamData.budget || 0;
@@ -1180,14 +1184,25 @@ exports.postRaceProcessing = onSchedule({
           });
         }
 
-        if (weeklyExpense > 0) {
-          const expTx = tRef.collection("transactions").doc();
-          batch.set(expTx, {
-            id: expTx.id,
-            description: "Weekly Operations & Salaries",
-            amount: -weeklyExpense,
+        if (maintenanceCost > 0) {
+          const maintTx = tRef.collection("transactions").doc();
+          batch.set(maintTx, {
+            id: maintTx.id,
+            description: "Facility Maintenance",
+            amount: -maintenanceCost,
             date: nowIso,
             type: "MAINTENANCE",
+          });
+        }
+
+        if (salaryCost > 0) {
+          const salaryTx = tRef.collection("transactions").doc();
+          batch.set(salaryTx, {
+            id: salaryTx.id,
+            description: "Driver Salaries",
+            amount: -salaryCost,
+            date: nowIso,
+            type: "SALARY",
           });
         }
 
