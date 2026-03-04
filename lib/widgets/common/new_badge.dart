@@ -60,7 +60,7 @@ class _NewBadgeWidgetState extends State<NewBadgeWidget>
       children: [
         widget.child,
         Positioned.fill(
-          child: Align(
+          child: UnconstrainedBox(
             alignment: widget.badgeAlignment,
             child: Padding(
               padding: widget.padding,

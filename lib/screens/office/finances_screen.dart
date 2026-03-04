@@ -5,7 +5,7 @@ import '../../services/finance_service.dart';
 import 'package:intl/intl.dart';
 import 'dart:math' as math;
 import '../../l10n/app_localizations.dart';
-import '../../widgets/common/new_badge.dart';
+import '../../widgets/common/new_dot.dart';
 import '../../services/time_service.dart';
 
 class FinancesScreen extends StatelessWidget {
@@ -310,8 +310,8 @@ class FinancesScreen extends StatelessWidget {
         }
         final weeklyNet = weeklyIncome + weeklyExpenses;
 
-        return NewBadgeWidget(
-          createdAt: DateTime(2026, 3, 3), // Released on March 3
+        return NewDotWidget(
+          featureId: 'finances_summary',
           badgeAlignment: Alignment.topRight,
           child: Container(
             padding: const EdgeInsets.all(20),
@@ -854,12 +854,8 @@ class _TransferBudgetCardState extends State<_TransferBudgetCard> {
     final availableTransfers = (widget.totalBudget * (_currentValue / 100))
         .round();
 
-    return NewBadgeWidget(
-      createdAt: DateTime(
-        2026,
-        3,
-        3,
-      ), // Let's set it to today so both badges sync
+    return NewDotWidget(
+      featureId: 'finances_transfer_card',
       badgeAlignment: Alignment.bottomRight,
       child: Container(
         padding: const EdgeInsets.all(20),
