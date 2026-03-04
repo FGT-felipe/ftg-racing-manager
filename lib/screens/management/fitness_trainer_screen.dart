@@ -7,6 +7,7 @@ import '../../services/driver_assignment_service.dart';
 import '../../services/driver_name_service.dart';
 import '../../utils/currency_formatter.dart';
 import '../../l10n/app_localizations.dart';
+import '../../widgets/common/instruction_card.dart';
 
 class FitnessTrainerScreen extends StatefulWidget {
   final String teamId;
@@ -285,9 +286,23 @@ class _FitnessTrainerScreenState extends State<FitnessTrainerScreen> {
       backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       body: _isLoading
           ? const Center(child: CircularProgressIndicator(color: Colors.white))
-          : Padding(
+          : SingleChildScrollView(
               padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 24),
-              child: Center(child: _buildTrainerCard(context, l10n)),
+              child: Column(
+                children: [
+                  InstructionCard(
+                    icon: Icons.fitness_center_rounded,
+                    title: "Fitness Trainer",
+                    description:
+                        "The Fitness Trainer helps your pilots recover from fatigue.\n\n"
+                        "• **Weekly Bonus**: Higher level trainers provide a larger automatic fitness recovery each week.\n"
+                        "• **Train Pilot**: Use manual training once per week to give an extra boost to your assigned pilot.\n"
+                        "• **Assignment**: Ensure the trainer is assigned to a pilot to apply the recovery bonus.",
+                  ),
+                  const SizedBox(height: 24),
+                  _buildTrainerCard(context, l10n),
+                ],
+              ),
             ),
     );
   }
@@ -309,7 +324,7 @@ class _FitnessTrainerScreenState extends State<FitnessTrainerScreen> {
     final avatarUrl = 'staff/fitness_trainer.png';
 
     return Container(
-      width: 600,
+      width: double.infinity,
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(12),
         border: Border.all(color: Colors.white.withOpacity(0.1), width: 1),

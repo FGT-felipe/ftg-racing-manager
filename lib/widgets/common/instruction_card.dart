@@ -62,18 +62,48 @@ class InstructionCard extends StatelessWidget {
             ],
           ),
           const SizedBox(height: 16),
-          Text(
-            description,
-            style: theme.textTheme.bodyMedium?.copyWith(
-              height: 1.5,
-              color: theme.colorScheme.onSurface.withValues(alpha: 0.8),
-            ),
-          ),
+          _buildFormattedText(description, theme),
           if (extraContent != null) ...[
             const SizedBox(height: 8),
             extraContent!,
           ],
         ],
+      ),
+    );
+  }
+
+  Widget _buildFormattedText(String text, ThemeData theme) {
+    final List<InlineSpan> spans = [];
+    final RegExp regExp = RegExp(r'\*\*(.*?)\*\*');
+    int lastMatchEnd = 0;
+
+    for (final Match match in regExp.allMatches(text)) {
+      if (match.start > lastMatchEnd) {
+        spans.add(TextSpan(text: text.substring(lastMatchEnd, match.start)));
+      }
+      spans.add(
+        TextSpan(
+          text: match.group(1),
+          style: const TextStyle(
+            fontWeight: FontWeight.w900,
+            color: Colors.white,
+          ),
+        ),
+      );
+      lastMatchEnd = match.end;
+    }
+
+    if (lastMatchEnd < text.length) {
+      spans.add(TextSpan(text: text.substring(lastMatchEnd)));
+    }
+
+    return RichText(
+      text: TextSpan(
+        style: theme.textTheme.bodyMedium?.copyWith(
+          height: 1.5,
+          color: theme.colorScheme.onSurface.withValues(alpha: 0.8),
+        ),
+        children: spans,
       ),
     );
   }

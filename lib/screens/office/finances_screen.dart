@@ -416,6 +416,7 @@ class FinancesScreen extends StatelessWidget {
                             context,
                             financeService,
                             categoryTotals,
+                            staffCost,
                           ),
 
                           const SizedBox(height: 16),
@@ -504,18 +505,6 @@ class FinancesScreen extends StatelessWidget {
                                   icon: Icons.add_circle_outline,
                                   small: true,
                                 ),
-                                if (staffCost > 0) ...[
-                                  const SizedBox(height: 8),
-                                  _SummaryRow(
-                                    label: "Current Staff Costs",
-                                    value: financeService.formatCurrency(
-                                      -staffCost,
-                                    ),
-                                    valueColor: Colors.deepOrangeAccent,
-                                    icon: Icons.person_outline,
-                                    small: true,
-                                  ),
-                                ],
                                 const SizedBox(height: 8),
                                 _SummaryRow(
                                   label: l10n.weeklyExpensesLabel,
@@ -564,6 +553,7 @@ class FinancesScreen extends StatelessWidget {
     BuildContext context,
     FinanceService financeService,
     Map<String, int> categoryTotals,
+    int staffCost,
   ) {
     final l10n = AppLocalizations.of(context);
     final accent = Theme.of(context).colorScheme.secondary;
@@ -682,6 +672,18 @@ class FinancesScreen extends StatelessWidget {
               ),
             );
           }),
+          if (staffCost > 0) ...[
+            Padding(
+              padding: const EdgeInsets.only(bottom: 8),
+              child: _SummaryRow(
+                label: "Current Staff Costs",
+                value: financeService.formatCurrency(-staffCost),
+                valueColor: Colors.deepOrangeAccent,
+                icon: Icons.person_outline,
+                small: true,
+              ),
+            ),
+          ],
         ],
       ),
     );
