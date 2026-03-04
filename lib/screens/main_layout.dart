@@ -1106,35 +1106,38 @@ class _SubNavbar extends StatelessWidget {
                               : const Color(0xFFFF5252).withValues(alpha: 0.7),
                         ),
                       ),
-                    (() {
-                      Widget titleText = Text(
-                        child.titleBuilder(context),
-                        style: GoogleFonts.raleway(
-                          color: isRaceDay
-                              ? (isSelected
-                                    ? const Color(0xFFFF5252)
-                                    : const Color(
-                                        0xFFFF5252,
-                                      ).withValues(alpha: 0.8))
-                              : (isSelected ? Colors.white : Colors.white54),
-                          fontWeight: isSelected || isRaceDay
-                              ? FontWeight.bold
-                              : FontWeight.normal,
-                          fontSize: 13,
-                        ),
-                      );
-
-                      if (child.showNewDot) {
-                        titleText = NewDotWidget(
-                          featureId: 'nav_dot_${child.id}',
-                          badgeAlignment: Alignment.topRight,
-                          offset: const Offset(8, -2), // extend hit box
-                          child: titleText,
+                    Flexible(
+                      child: (() {
+                        Widget titleText = Text(
+                          child.titleBuilder(context),
+                          overflow: TextOverflow.ellipsis,
+                          style: GoogleFonts.raleway(
+                            color: isRaceDay
+                                ? (isSelected
+                                      ? const Color(0xFFFF5252)
+                                      : const Color(
+                                          0xFFFF5252,
+                                        ).withValues(alpha: 0.8))
+                                : (isSelected ? Colors.white : Colors.white54),
+                            fontWeight: isSelected || isRaceDay
+                                ? FontWeight.bold
+                                : FontWeight.normal,
+                            fontSize: 13,
+                          ),
                         );
-                      }
 
-                      return titleText;
-                    })(),
+                        if (child.showNewDot) {
+                          titleText = NewDotWidget(
+                            featureId: 'nav_dot_${child.id}',
+                            badgeAlignment: Alignment.topRight,
+                            offset: const Offset(8, -2), // extend hit box
+                            child: titleText,
+                          );
+                        }
+
+                        return titleText;
+                      })(),
+                    ),
                   ],
                 ),
               ),

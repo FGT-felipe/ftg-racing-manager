@@ -461,38 +461,84 @@
 
 ---
 
-## 17. _PersonalCard con COMING SOON (`lib/screens/management/personal_screen.dart`)
+## 17. PersonalCard (Revitalizado v4.1.2) (`lib/screens/management/personal_screen.dart`)
 
-**Tipo:** Grid de tarjetas (GridView.count) para módulos de personal.
+**Tipo:** `StatefulWidget` con grid de tarjetas interactivas para módulos de personal. Estética Onyx Neon 2026 con hover states y animaciones.
 
-### PersonalCard:
-- **Gradient:** `#1E1E1E` → `#0A0A0A`
-- **Border:** white alpha 0.1, width 1
-- **Border radius:** 12
-- **Shadow:** black alpha 0.4, blur 12, offset (0,6)
-- **Ícono:** 34px, enabled → `secondary`, disabled → `Colors.grey` alpha 0.5
-- **Título font:** `GoogleFonts.poppins`, `w900`, 14px, letterSpacing 0.5, `.toUpperCase()`
-- **Título enabled:** blanco, disabled → grey
-
-### COMING SOON Ribbon (when `!isEnabled`):
-- **Posición:** `top: 10, right: -25`
-- **Rotación:** `0.785 rad` (45°)
-- **Width:** 100
-- **Background:** `Colors.redAccent` alpha 0.8
-- **Padding:** symmetric vertical 4
-- **Texto:** 7px, `w900`, blanco, letterSpacing 1.0
-- **Texto (l10n):** `comingSoonBanner`
-
-**Tarjetas disponibles:**
-| Módulo | Ícono | Habilitado |
+### Colores Constantes (hardcodeados en widget):
+| Token | Hex | Uso |
 |:---|:---|:---|
-| Drivers | `Icons.people_alt_rounded` | ✅ Sí |
-| Fitness Trainer | `Icons.fitness_center_rounded` | ❌ |
-| Chief Engineer | `Icons.engineering_rounded` | ❌ |
-| HR Manager | `Icons.badge_rounded` | ❌ |
-| Marketing Manager | `Icons.campaign_rounded` | ❌ |
+| `_neonGreen` | `0xFF00E676` | Accent bar, hover glow, hover icon, hover border/shadow |
+| `_accentPurple` | `0xFFC1C4F4` | Icon color (rest state), grid color |
+| `_disabledGrey` | `0xFF555555` | Accent bar disabled |
 
-**Usado en:** Management → Personal.
+### Card Container:
+- **Border radius:** `16`
+- **Gradient:** `0xFF1E1E1E` → `0xFF0A0A0A` (ambos estados)
+- **Border (rest):** white alpha 0.08, width 1
+- **Shadow (rest):** black alpha 0.5, blur 15, offset (0,10)
+
+### Background Grid (`_CardGridPainter`):
+- **Step:** 30px, **strokeWidth:** 0.5
+- **Color:** `_accentPurple` alpha 0.04
+
+### Side Accent Bar:
+- **Width:** 4px, `top: 20, bottom: 20`, `borderRadius.horizontal(right: 4)`
+- **Enabled:** `_neonGreen`, glow `BoxShadow` alpha 0.5, blur 15, spread 1
+- **Disabled:** `_disabledGrey`, sin glow
+
+### Iconografía Glassmorphism:
+- **Container:** Circular, padding 18
+- **Rest state:** bg white alpha 0.05, border white alpha 0.1 (width 1)
+- **Hover state:** bg `_neonGreen` alpha 0.1, border `_neonGreen` alpha 0.5, glow blur 20, spread 2
+- **Icon size:** 40px
+- **Icon color rest:** `_accentPurple` (`0xFFC1C4F4`)
+- **Icon color hover:** `_neonGreen` (`0xFF00E676`)
+- **Disabled:** grey alpha 0.4, sin glow
+
+### Tipografía:
+- **Título:** `GoogleFonts.poppins`, `w900`, 16px, letterSpacing 1.0, `.toUpperCase()`, blanco
+
+### Estados Interactivos (Hover — Solo Enabled):
+| Propiedad | Rest | Hover |
+|:---|:---|:---|
+| Card transform | `translateY(0)` | `translateY(-8)` |
+| Border color | white alpha 0.08 | `_neonGreen` alpha 0.3 |
+| Shadow color | black alpha 0.5 | `_neonGreen` alpha 0.2 |
+| Shadow blur | 15 | 40 |
+| Icon color | `_accentPurple` | `_neonGreen` |
+| Icon scale | 1.0 | 1.1 |
+| Icon container bg | white alpha 0.05 | `_neonGreen` alpha 0.1 |
+| Icon container border | white alpha 0.1 | `_neonGreen` alpha 0.5 |
+| Scanline | hidden (opacity 0) | visible (opacity 1) |
+
+- **Todas las transiciones:** `AnimatedContainer` / `AnimatedScale`, 300ms, `Curves.easeOut`
+- **Cursor:** `SystemMouseCursors.click` (enabled) / `SystemMouseCursors.forbidden` (disabled)
+
+### Scanline Animation (`_ScanlinePainter`):
+- **Tipo:** `CustomPainter` controlado por `AnimationController` (3000ms, repeat)
+- **Efecto:** Gradiente vertical `transparent → _neonGreen alpha 0.06 → transparent`
+- **Tamaño banda:** 50% del alto de la tarjeta
+- **Activo:** Solo en hover (opacity animada 0→1, 300ms)
+
+### Disabled State:
+- **Opacity global:** 0.5
+- **Hover:** desactivado (`_onHoverChanged` retorna si `!widget.isEnabled`)
+- **Accent bar:** `_disabledGrey`, sin glow
+- **Icon:** grey alpha 0.4
+
+### COMING SOON Ribbon (Disabled):
+- **Posición:** `top: 15, right: -30`
+- **Rotación:** `0.785 rad` (45°), **Width:** 120
+- **Background:** `0xFFF44336` (Material Red)
+- **Shadow:** black alpha 0.3, blur 4, offset (0,2)
+- **Texto:** 9px, `w900`, blanco, letterSpacing 1.0
+
+### GridView Container:
+- **Padding:** 20, **crossAxisCount:** 3 (>1200px) / 2
+- **Spacing:** 20, **childAspectRatio:** 1.4
+
+**Módulos:** Drivers ✅, Fitness Trainer ✅, Chief Engineer ❌, HR Manager ❌, Marketing Manager ❌
 
 ---
 
