@@ -5,11 +5,13 @@ import '../../l10n/app_localizations.dart';
 class PersonalScreen extends StatelessWidget {
   final String teamId;
   final VoidCallback onDriversTap;
+  final VoidCallback onFitnessTrainerTap;
 
   const PersonalScreen({
     super.key,
     required this.teamId,
     required this.onDriversTap,
+    required this.onFitnessTrainerTap,
   });
 
   @override
@@ -48,8 +50,8 @@ class PersonalScreen extends StatelessWidget {
           _PersonalCard(
             title: AppLocalizations.of(context).fitnessTrainerTitle,
             icon: Icons.fitness_center_rounded,
-            onTap: () {},
-            isEnabled: false,
+            onTap: onFitnessTrainerTap,
+            isEnabled: true,
           ),
           _PersonalCard(
             title: AppLocalizations.of(context).chiefEngineerTitle,

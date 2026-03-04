@@ -4,6 +4,7 @@ import '../../models/core_models.dart';
 import '../../services/finance_service.dart';
 import 'package:intl/intl.dart';
 import 'dart:math' as math;
+import '../../services/driver_assignment_service.dart';
 import '../../l10n/app_localizations.dart';
 import '../../widgets/common/new_dot.dart';
 import '../../services/time_service.dart';
@@ -61,7 +62,11 @@ class FinancesScreen extends StatelessWidget {
                   // RIGHT: Financial Summary card
                   Expanded(
                     flex: 2,
-                    child: _buildSummaryPanel(context, financeService),
+                    child: _buildSummaryPanel(
+                      context,
+                      financeService,
+                      teamData,
+                    ),
                   ),
                 ],
               );
@@ -75,7 +80,7 @@ class FinancesScreen extends StatelessWidget {
                 transferBudgetPercentage,
                 bottomWidget: Padding(
                   padding: const EdgeInsets.symmetric(horizontal: 20),
-                  child: _buildSummaryCard(context, financeService),
+                  child: _buildSummaryCard(context, financeService, teamData),
                 ),
               );
             }
@@ -253,10 +258,11 @@ class FinancesScreen extends StatelessWidget {
   Widget _buildSummaryPanel(
     BuildContext context,
     FinanceService financeService,
+    Map<String, dynamic>? teamData,
   ) {
     return SingleChildScrollView(
       padding: const EdgeInsets.only(top: 20, right: 20, bottom: 20),
-      child: _buildSummaryCard(context, financeService),
+      child: _buildSummaryCard(context, financeService, teamData),
     );
   }
 
@@ -266,6 +272,7 @@ class FinancesScreen extends StatelessWidget {
   Widget _buildSummaryCard(
     BuildContext context,
     FinanceService financeService,
+    Map<String, dynamic>? teamData,
   ) {
     final l10n = AppLocalizations.of(context);
     final accent = Theme.of(context).colorScheme.secondary;
@@ -310,206 +317,241 @@ class FinancesScreen extends StatelessWidget {
         }
         final weeklyNet = weeklyIncome + weeklyExpenses;
 
-        return NewDotWidget(
-          featureId: 'finances_summary',
-          badgeAlignment: Alignment.topRight,
-          child: Container(
-            padding: const EdgeInsets.all(20),
-            decoration: BoxDecoration(
-              color: const Color(0xFF15151A),
-              borderRadius: BorderRadius.circular(12),
-              border: Border.all(color: accent.withValues(alpha: 0.15)),
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.black.withValues(alpha: 0.3),
-                  blurRadius: 10,
-                  offset: const Offset(0, 4),
+        // Fetch drivers to calculate staff costs
+        return FutureBuilder<List<Driver>>(
+          future: DriverAssignmentService().getDriversByTeam(teamId),
+          builder: (context, driversSnapshot) {
+            int staffCost = 0;
+            if (driversSnapshot.hasData) {
+              for (final driver in driversSnapshot.data!) {
+                staffCost += driver.salary;
+              }
+            }
+            final listTrainerSalary = [0, 0, 50000, 120000, 250000, 500000];
+            final weekStatus = teamData?['weekStatus'] as Map<String, dynamic>?;
+            final trainerLvl = weekStatus?['fitnessTrainerLevel'] ?? 1;
+            if (trainerLvl >= 1 && trainerLvl <= 5) {
+              staffCost += listTrainerSalary[trainerLvl];
+            }
+
+            return NewDotWidget(
+              featureId: 'finances_summary',
+              badgeAlignment: Alignment.topRight,
+              child: Container(
+                padding: const EdgeInsets.all(20),
+                decoration: BoxDecoration(
+                  color: const Color(0xFF15151A),
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(color: accent.withValues(alpha: 0.15)),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withValues(alpha: 0.3),
+                      blurRadius: 10,
+                      offset: const Offset(0, 4),
+                    ),
+                  ],
                 ),
-              ],
-            ),
-            child: transactions.isEmpty
-                ? _buildEmptySummary(context)
-                : Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      // ── Title ──
-                      Row(
+                child: transactions.isEmpty
+                    ? _buildEmptySummary(context)
+                    : Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          Icon(
-                            Icons.analytics_outlined,
-                            color: accent,
-                            size: 18,
+                          // ── Title ──
+                          Row(
+                            children: [
+                              Icon(
+                                Icons.analytics_outlined,
+                                color: accent,
+                                size: 18,
+                              ),
+                              const SizedBox(width: 8),
+                              Text(
+                                l10n.financialSummaryTitle,
+                                style: TextStyle(
+                                  color: accent,
+                                  fontWeight: FontWeight.bold,
+                                  fontSize: 14,
+                                  letterSpacing: 1.2,
+                                ),
+                              ),
+                            ],
                           ),
-                          const SizedBox(width: 8),
-                          Text(
-                            l10n.financialSummaryTitle,
-                            style: TextStyle(
-                              color: accent,
-                              fontWeight: FontWeight.bold,
-                              fontSize: 14,
-                              letterSpacing: 1.2,
+                          const SizedBox(height: 20),
+
+                          // ── All-time totals ──
+                          _SummaryRow(
+                            label: l10n.totalIncomeLabel,
+                            value: financeService.formatCurrency(totalIncome),
+                            valueColor: Colors.greenAccent,
+                            icon: Icons.arrow_upward_rounded,
+                          ),
+                          const SizedBox(height: 10),
+                          _SummaryRow(
+                            label: l10n.totalExpensesLabel,
+                            value: financeService.formatCurrency(totalExpenses),
+                            valueColor: Colors.redAccent,
+                            icon: Icons.arrow_downward_rounded,
+                          ),
+                          const SizedBox(height: 10),
+                          Divider(
+                            color: Colors.white.withValues(alpha: 0.06),
+                            height: 24,
+                          ),
+                          _SummaryRow(
+                            label: l10n.netResultLabel,
+                            value: financeService.formatCurrency(netResult),
+                            valueColor: netResult >= 0
+                                ? Colors.greenAccent
+                                : Colors.redAccent,
+                            icon: netResult >= 0
+                                ? Icons.trending_up_rounded
+                                : Icons.trending_down_rounded,
+                            bold: true,
+                          ),
+
+                          const SizedBox(height: 24),
+
+                          // ── Category Breakdown ──
+                          _buildCategoryBreakdown(
+                            context,
+                            financeService,
+                            categoryTotals,
+                          ),
+
+                          const SizedBox(height: 16),
+
+                          // ── Weekly projection ──
+                          Container(
+                            width: double.infinity,
+                            padding: const EdgeInsets.all(16),
+                            decoration: BoxDecoration(
+                              color: Colors.white.withValues(alpha: 0.03),
+                              borderRadius: BorderRadius.circular(10),
+                              border: Border.all(
+                                color: Colors.white.withValues(alpha: 0.05),
+                              ),
+                            ),
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Row(
+                                  mainAxisAlignment:
+                                      MainAxisAlignment.spaceBetween,
+                                  children: [
+                                    Row(
+                                      children: [
+                                        Icon(
+                                          Icons.date_range_rounded,
+                                          color: accent,
+                                          size: 16,
+                                        ),
+                                        const SizedBox(width: 6),
+                                        Text(
+                                          l10n.weeklyProjectionTitle,
+                                          style: TextStyle(
+                                            color: accent,
+                                            fontWeight: FontWeight.bold,
+                                            fontSize: 12,
+                                            letterSpacing: 1.1,
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                    Builder(
+                                      builder: (context) {
+                                        // Calcula el próximo domingo a las 16:00 COT
+                                        final now = TimeService().nowBogota;
+                                        int daysUntilSunday =
+                                            (7 - now.weekday) % 7;
+                                        var nextUpdate = DateTime(
+                                          now.year,
+                                          now.month,
+                                          now.day,
+                                          16,
+                                          0,
+                                        ).add(Duration(days: daysUntilSunday));
+                                        // Si ya pasó la hora este domingo, pasa al siguiente
+                                        if (daysUntilSunday == 0 &&
+                                            now.hour >= 16) {
+                                          nextUpdate = nextUpdate.add(
+                                            const Duration(days: 7),
+                                          );
+                                        }
+                                        final dateStr = DateFormat(
+                                          'E, h:mm a',
+                                        ).format(nextUpdate);
+
+                                        return Text(
+                                          '${l10n.nextFinanceUpdate}: $dateStr COT',
+                                          style: TextStyle(
+                                            color: Colors.white.withValues(
+                                              alpha: 0.5,
+                                            ),
+                                            fontSize: 10,
+                                            fontWeight: FontWeight.bold,
+                                          ),
+                                        );
+                                      },
+                                    ),
+                                  ],
+                                ),
+                                const SizedBox(height: 14),
+                                _SummaryRow(
+                                  label: l10n.weeklyIncomeLabel,
+                                  value:
+                                      '+${financeService.formatCurrency(weeklyIncome)}',
+                                  valueColor: Colors.greenAccent,
+                                  icon: Icons.add_circle_outline,
+                                  small: true,
+                                ),
+                                if (staffCost > 0) ...[
+                                  const SizedBox(height: 8),
+                                  _SummaryRow(
+                                    label: "Current Staff Costs",
+                                    value: financeService.formatCurrency(
+                                      -staffCost,
+                                    ),
+                                    valueColor: Colors.deepOrangeAccent,
+                                    icon: Icons.person_outline,
+                                    small: true,
+                                  ),
+                                ],
+                                const SizedBox(height: 8),
+                                _SummaryRow(
+                                  label: l10n.weeklyExpensesLabel,
+                                  value: financeService.formatCurrency(
+                                    weeklyExpenses,
+                                  ),
+                                  valueColor: Colors.redAccent,
+                                  icon: Icons.remove_circle_outline,
+                                  small: true,
+                                ),
+                                Divider(
+                                  color: Colors.white.withValues(alpha: 0.06),
+                                  height: 20,
+                                ),
+                                _SummaryRow(
+                                  label: l10n.weeklyNetLabel,
+                                  value: financeService.formatCurrency(
+                                    weeklyNet,
+                                  ),
+                                  valueColor: weeklyNet >= 0
+                                      ? Colors.greenAccent
+                                      : Colors.redAccent,
+                                  icon: weeklyNet >= 0
+                                      ? Icons.trending_up_rounded
+                                      : Icons.trending_down_rounded,
+                                  bold: true,
+                                  small: true,
+                                ),
+                              ],
                             ),
                           ),
                         ],
                       ),
-                      const SizedBox(height: 20),
-
-                      // ── All-time totals ──
-                      _SummaryRow(
-                        label: l10n.totalIncomeLabel,
-                        value: financeService.formatCurrency(totalIncome),
-                        valueColor: Colors.greenAccent,
-                        icon: Icons.arrow_upward_rounded,
-                      ),
-                      const SizedBox(height: 10),
-                      _SummaryRow(
-                        label: l10n.totalExpensesLabel,
-                        value: financeService.formatCurrency(totalExpenses),
-                        valueColor: Colors.redAccent,
-                        icon: Icons.arrow_downward_rounded,
-                      ),
-                      const SizedBox(height: 10),
-                      Divider(
-                        color: Colors.white.withValues(alpha: 0.06),
-                        height: 24,
-                      ),
-                      _SummaryRow(
-                        label: l10n.netResultLabel,
-                        value: financeService.formatCurrency(netResult),
-                        valueColor: netResult >= 0
-                            ? Colors.greenAccent
-                            : Colors.redAccent,
-                        icon: netResult >= 0
-                            ? Icons.trending_up_rounded
-                            : Icons.trending_down_rounded,
-                        bold: true,
-                      ),
-
-                      const SizedBox(height: 24),
-
-                      // ── Category Breakdown ──
-                      _buildCategoryBreakdown(
-                        context,
-                        financeService,
-                        categoryTotals,
-                      ),
-
-                      const SizedBox(height: 16),
-
-                      // ── Weekly projection ──
-                      Container(
-                        width: double.infinity,
-                        padding: const EdgeInsets.all(16),
-                        decoration: BoxDecoration(
-                          color: Colors.white.withValues(alpha: 0.03),
-                          borderRadius: BorderRadius.circular(10),
-                          border: Border.all(
-                            color: Colors.white.withValues(alpha: 0.05),
-                          ),
-                        ),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Row(
-                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                              children: [
-                                Row(
-                                  children: [
-                                    Icon(
-                                      Icons.date_range_rounded,
-                                      color: accent,
-                                      size: 16,
-                                    ),
-                                    const SizedBox(width: 6),
-                                    Text(
-                                      l10n.weeklyProjectionTitle,
-                                      style: TextStyle(
-                                        color: accent,
-                                        fontWeight: FontWeight.bold,
-                                        fontSize: 12,
-                                        letterSpacing: 1.1,
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                                Builder(
-                                  builder: (context) {
-                                    // Calcula el próximo domingo a las 16:00 COT
-                                    final now = TimeService().nowBogota;
-                                    int daysUntilSunday = (7 - now.weekday) % 7;
-                                    var nextUpdate = DateTime(
-                                      now.year,
-                                      now.month,
-                                      now.day,
-                                      16,
-                                      0,
-                                    ).add(Duration(days: daysUntilSunday));
-                                    // Si ya pasó la hora este domingo, pasa al siguiente
-                                    if (daysUntilSunday == 0 &&
-                                        now.hour >= 16) {
-                                      nextUpdate = nextUpdate.add(
-                                        const Duration(days: 7),
-                                      );
-                                    }
-                                    final dateStr = DateFormat(
-                                      'E, h:mm a',
-                                    ).format(nextUpdate);
-
-                                    return Text(
-                                      '${l10n.nextFinanceUpdate}: $dateStr COT',
-                                      style: TextStyle(
-                                        color: Colors.white.withValues(
-                                          alpha: 0.5,
-                                        ),
-                                        fontSize: 10,
-                                        fontWeight: FontWeight.bold,
-                                      ),
-                                    );
-                                  },
-                                ),
-                              ],
-                            ),
-                            const SizedBox(height: 14),
-                            _SummaryRow(
-                              label: l10n.weeklyIncomeLabel,
-                              value:
-                                  '+${financeService.formatCurrency(weeklyIncome)}',
-                              valueColor: Colors.greenAccent,
-                              icon: Icons.add_circle_outline,
-                              small: true,
-                            ),
-                            const SizedBox(height: 8),
-                            _SummaryRow(
-                              label: l10n.weeklyExpensesLabel,
-                              value: financeService.formatCurrency(
-                                weeklyExpenses,
-                              ),
-                              valueColor: Colors.redAccent,
-                              icon: Icons.remove_circle_outline,
-                              small: true,
-                            ),
-                            Divider(
-                              color: Colors.white.withValues(alpha: 0.06),
-                              height: 20,
-                            ),
-                            _SummaryRow(
-                              label: l10n.weeklyNetLabel,
-                              value: financeService.formatCurrency(weeklyNet),
-                              valueColor: weeklyNet >= 0
-                                  ? Colors.greenAccent
-                                  : Colors.redAccent,
-                              icon: weeklyNet >= 0
-                                  ? Icons.trending_up_rounded
-                                  : Icons.trending_down_rounded,
-                              bold: true,
-                              small: true,
-                            ),
-                          ],
-                        ),
-                      ),
-                    ],
-                  ),
-          ),
+              ),
+            );
+          },
         );
       },
     );

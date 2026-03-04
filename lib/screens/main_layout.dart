@@ -13,6 +13,7 @@ import 'calendar/calendar_screen.dart';
 import 'race/race_day_screen.dart';
 import 'hq/youth_academy_screen.dart';
 import 'management/personal_screen.dart';
+import 'management/fitness_trainer_screen.dart';
 import '../widgets/common/new_dot.dart';
 import 'market/transfer_market_screen.dart';
 import 'hq_screen.dart';
@@ -164,6 +165,13 @@ class _MainLayoutState extends State<MainLayout> {
                 final driversNode = _findNodeById('mgmt_drivers', _navTree);
                 if (driversNode != null) _onNodeSelected(driversNode);
               },
+              onFitnessTrainerTap: () {
+                final trainerNode = _findNodeById(
+                  'mgmt_fitness_trainer',
+                  _navTree,
+                );
+                if (trainerNode != null) _onNodeSelected(trainerNode);
+              },
             ),
             children: [
               NavNode(
@@ -171,6 +179,12 @@ class _MainLayoutState extends State<MainLayout> {
                 titleBuilder: (context) =>
                     AppLocalizations.of(context).navDrivers,
                 screen: DriversScreen(teamId: widget.teamId),
+              ),
+              NavNode(
+                id: 'mgmt_fitness_trainer',
+                titleBuilder: (context) =>
+                    AppLocalizations.of(context).fitnessTrainerTitle,
+                screen: FitnessTrainerScreen(teamId: widget.teamId),
               ),
             ],
           ),
