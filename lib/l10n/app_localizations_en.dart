@@ -1924,4 +1924,67 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get objOvertake3Cars => 'Overtake 3 cars';
+
+  @override
+  String get financialSummaryTitle => 'Financial Summary';
+
+  @override
+  String get totalIncomeLabel => 'Total Income';
+
+  @override
+  String get totalExpensesLabel => 'Total Expenses';
+
+  @override
+  String get netResultLabel => 'Net Result';
+
+  @override
+  String get weeklyProjectionTitle => 'Weekly Projection';
+
+  @override
+  String get weeklyIncomeLabel => 'Weekly Income';
+
+  @override
+  String get weeklyExpensesLabel => 'Weekly Expenses';
+
+  @override
+  String get weeklyNetLabel => 'Weekly Net';
+
+  @override
+  String get noTransactionsForSummary => 'No transactions to summarize.';
+
+  @override
+  String get breakdownTitle => 'Breakdown';
+
+  @override
+  String get categorySponsor => 'Sponsors';
+
+  @override
+  String get categoryReward => 'Rewards';
+
+  @override
+  String get categorySalary => 'Salaries';
+
+  @override
+  String get categoryUpgrade => 'Garage Upgrades';
+
+  @override
+  String get categoryPractice => 'Practice Costs';
+
+  @override
+  String get categoryRepair => 'Repairs & Medical';
+
+  @override
+  String get categoryMaintenance => 'Facility Maintenance';
+
+  @override
+  String get categoryQualifying => 'Qualifying Fees';
+
+  @override
+  String get categoryTax => 'Taxes & Rebalance';
+
+  @override
+  String get categoryOther => 'Other';
+
+  @override
+  String get nextFinanceUpdate => 'Next update';
 }

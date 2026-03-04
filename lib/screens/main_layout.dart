@@ -13,6 +13,7 @@ import 'calendar/calendar_screen.dart';
 import 'race/race_day_screen.dart';
 import 'hq/youth_academy_screen.dart';
 import 'management/personal_screen.dart';
+import '../widgets/common/new_dot.dart';
 import 'market/transfer_market_screen.dart';
 import 'hq_screen.dart';
 import '../widgets/common/app_logo.dart';
@@ -36,6 +37,7 @@ class NavNode {
   final List<NavNode>? children;
   final String id;
   final bool showNewBadge;
+  final bool showNewDot;
 
   NavNode({
     required this.titleBuilder,
@@ -43,6 +45,7 @@ class NavNode {
     this.children,
     required this.id,
     this.showNewBadge = false,
+    this.showNewDot = false,
   });
 }
 
@@ -149,6 +152,7 @@ class _MainLayoutState extends State<MainLayout> {
       ),
       NavNode(
         id: 'management',
+        showNewBadge: true,
         titleBuilder: (context) => AppLocalizations.of(context).navManagement,
         children: [
           NavNode(
@@ -172,6 +176,7 @@ class _MainLayoutState extends State<MainLayout> {
           ),
           NavNode(
             id: 'mgmt_finances',
+            showNewDot: true,
             titleBuilder: (context) => AppLocalizations.of(context).navFinances,
             screen: FinancesScreen(teamId: widget.teamId),
           ),
@@ -1087,22 +1092,35 @@ class _SubNavbar extends StatelessWidget {
                               : const Color(0xFFFF5252).withValues(alpha: 0.7),
                         ),
                       ),
-                    Text(
-                      child.titleBuilder(context),
-                      style: GoogleFonts.raleway(
-                        color: isRaceDay
-                            ? (isSelected
-                                  ? const Color(0xFFFF5252)
-                                  : const Color(
-                                      0xFFFF5252,
-                                    ).withValues(alpha: 0.8))
-                            : (isSelected ? Colors.white : Colors.white54),
-                        fontWeight: isSelected || isRaceDay
-                            ? FontWeight.bold
-                            : FontWeight.normal,
-                        fontSize: 13,
-                      ),
-                    ),
+                    (() {
+                      Widget titleText = Text(
+                        child.titleBuilder(context),
+                        style: GoogleFonts.raleway(
+                          color: isRaceDay
+                              ? (isSelected
+                                    ? const Color(0xFFFF5252)
+                                    : const Color(
+                                        0xFFFF5252,
+                                      ).withValues(alpha: 0.8))
+                              : (isSelected ? Colors.white : Colors.white54),
+                          fontWeight: isSelected || isRaceDay
+                              ? FontWeight.bold
+                              : FontWeight.normal,
+                          fontSize: 13,
+                        ),
+                      );
+
+                      if (child.showNewDot) {
+                        titleText = NewDotWidget(
+                          featureId: 'nav_dot_${child.id}',
+                          badgeAlignment: Alignment.topRight,
+                          offset: const Offset(8, -2), // extend hit box
+                          child: titleText,
+                        );
+                      }
+
+                      return titleText;
+                    })(),
                   ],
                 ),
               ),

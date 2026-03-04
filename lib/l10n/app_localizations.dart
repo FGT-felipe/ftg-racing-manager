@@ -3609,6 +3609,132 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Overtake 3 cars'**
   String get objOvertake3Cars;
+
+  /// No description provided for @financialSummaryTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Financial Summary'**
+  String get financialSummaryTitle;
+
+  /// No description provided for @totalIncomeLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Total Income'**
+  String get totalIncomeLabel;
+
+  /// No description provided for @totalExpensesLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Total Expenses'**
+  String get totalExpensesLabel;
+
+  /// No description provided for @netResultLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Net Result'**
+  String get netResultLabel;
+
+  /// No description provided for @weeklyProjectionTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Weekly Projection'**
+  String get weeklyProjectionTitle;
+
+  /// No description provided for @weeklyIncomeLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Weekly Income'**
+  String get weeklyIncomeLabel;
+
+  /// No description provided for @weeklyExpensesLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Weekly Expenses'**
+  String get weeklyExpensesLabel;
+
+  /// No description provided for @weeklyNetLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Weekly Net'**
+  String get weeklyNetLabel;
+
+  /// No description provided for @noTransactionsForSummary.
+  ///
+  /// In en, this message translates to:
+  /// **'No transactions to summarize.'**
+  String get noTransactionsForSummary;
+
+  /// No description provided for @breakdownTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Breakdown'**
+  String get breakdownTitle;
+
+  /// No description provided for @categorySponsor.
+  ///
+  /// In en, this message translates to:
+  /// **'Sponsors'**
+  String get categorySponsor;
+
+  /// No description provided for @categoryReward.
+  ///
+  /// In en, this message translates to:
+  /// **'Rewards'**
+  String get categoryReward;
+
+  /// No description provided for @categorySalary.
+  ///
+  /// In en, this message translates to:
+  /// **'Salaries'**
+  String get categorySalary;
+
+  /// No description provided for @categoryUpgrade.
+  ///
+  /// In en, this message translates to:
+  /// **'Garage Upgrades'**
+  String get categoryUpgrade;
+
+  /// No description provided for @categoryPractice.
+  ///
+  /// In en, this message translates to:
+  /// **'Practice Costs'**
+  String get categoryPractice;
+
+  /// No description provided for @categoryRepair.
+  ///
+  /// In en, this message translates to:
+  /// **'Repairs & Medical'**
+  String get categoryRepair;
+
+  /// No description provided for @categoryMaintenance.
+  ///
+  /// In en, this message translates to:
+  /// **'Facility Maintenance'**
+  String get categoryMaintenance;
+
+  /// No description provided for @categoryQualifying.
+  ///
+  /// In en, this message translates to:
+  /// **'Qualifying Fees'**
+  String get categoryQualifying;
+
+  /// No description provided for @categoryTax.
+  ///
+  /// In en, this message translates to:
+  /// **'Taxes & Rebalance'**
+  String get categoryTax;
+
+  /// No description provided for @categoryOther.
+  ///
+  /// In en, this message translates to:
+  /// **'Other'**
+  String get categoryOther;
+
+  /// No description provided for @nextFinanceUpdate.
+  ///
+  /// In en, this message translates to:
+  /// **'Next update'**
+  String get nextFinanceUpdate;
 }
 
 class _AppLocalizationsDelegate
