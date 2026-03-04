@@ -8,6 +8,7 @@ import '../../services/driver_name_service.dart';
 import '../../utils/currency_formatter.dart';
 import '../../l10n/app_localizations.dart';
 import '../../widgets/common/instruction_card.dart';
+import '../../widgets/common/onyx_skeleton.dart';
 
 class FitnessTrainerScreen extends StatefulWidget {
   final String teamId;
@@ -285,7 +286,7 @@ class _FitnessTrainerScreenState extends State<FitnessTrainerScreen> {
     return Scaffold(
       backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       body: _isLoading
-          ? const Center(child: CircularProgressIndicator(color: Colors.white))
+          ? const FitnessTrainerSkeleton()
           : SingleChildScrollView(
               padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 24),
               child: Column(
@@ -297,7 +298,9 @@ class _FitnessTrainerScreenState extends State<FitnessTrainerScreen> {
                         "The Fitness Trainer helps your pilots recover from fatigue.\n\n"
                         "• **Weekly Bonus**: Higher level trainers provide a larger automatic fitness recovery each week.\n"
                         "• **Train Pilot**: Use manual training once per week to give an extra boost to your assigned pilot.\n"
-                        "• **Assignment**: Ensure the trainer is assigned to a pilot to apply the recovery bonus.",
+                        "• **Assignment**: Ensure the trainer is assigned to a pilot to apply the recovery bonus.\n"
+                        "• **Training Limit**: You can only train **1 pilot per week**. Once trained, the assignment is locked until next week.\n"
+                        "• **Upgrade/Downgrade**: You may only upgrade or downgrade the trainer **once per week**.",
                   ),
                   const SizedBox(height: 24),
                   _buildTrainerCard(context, l10n),
@@ -327,7 +330,10 @@ class _FitnessTrainerScreenState extends State<FitnessTrainerScreen> {
       width: double.infinity,
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: Colors.white.withOpacity(0.1), width: 1),
+        border: Border.all(
+          color: Colors.white.withValues(alpha: 0.1),
+          width: 1,
+        ),
         gradient: const LinearGradient(
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
@@ -335,7 +341,7 @@ class _FitnessTrainerScreenState extends State<FitnessTrainerScreen> {
         ),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.4),
+            color: Colors.black.withValues(alpha: 0.4),
             blurRadius: 15,
             offset: const Offset(0, 8),
           ),
@@ -356,12 +362,12 @@ class _FitnessTrainerScreenState extends State<FitnessTrainerScreen> {
                   decoration: BoxDecoration(
                     shape: BoxShape.circle,
                     border: Border.all(
-                      color: levelColor.withOpacity(0.5),
+                      color: levelColor.withValues(alpha: 0.5),
                       width: 3,
                     ),
                     boxShadow: [
                       BoxShadow(
-                        color: levelColor.withOpacity(0.2),
+                        color: levelColor.withValues(alpha: 0.2),
                         blurRadius: 15,
                         spreadRadius: 2,
                       ),
@@ -390,15 +396,15 @@ class _FitnessTrainerScreenState extends State<FitnessTrainerScreen> {
                               vertical: 4,
                             ),
                             decoration: BoxDecoration(
-                              color: levelColor.withOpacity(0.15),
+                              color: levelColor.withValues(alpha: 0.15),
                               borderRadius: BorderRadius.circular(6),
                               border: Border.all(
-                                color: levelColor.withOpacity(0.5),
+                                color: levelColor.withValues(alpha: 0.5),
                                 width: 1,
                               ),
                             ),
                             child: Text(
-                              "${levelText} - LVL $_trainerLevel",
+                              "$levelText - LVL $_trainerLevel",
                               style: GoogleFonts.montserrat(
                                 color: levelColor,
                                 fontWeight: FontWeight.w900,
@@ -495,9 +501,11 @@ class _FitnessTrainerScreenState extends State<FitnessTrainerScreen> {
                   child: Container(
                     padding: const EdgeInsets.symmetric(horizontal: 16),
                     decoration: BoxDecoration(
-                      color: Colors.white.withOpacity(0.05),
+                      color: Colors.white.withValues(alpha: 0.05),
                       borderRadius: BorderRadius.circular(8),
-                      border: Border.all(color: Colors.white.withOpacity(0.1)),
+                      border: Border.all(
+                        color: Colors.white.withValues(alpha: 0.1),
+                      ),
                     ),
                     child: DropdownButtonHideUnderline(
                       child: DropdownButton<String>(
@@ -512,11 +520,13 @@ class _FitnessTrainerScreenState extends State<FitnessTrainerScreen> {
                           color: Colors.white,
                           fontSize: 14,
                         ),
-                        onChanged: (String? newValue) {
-                          setState(() {
-                            _selectedPilotId = newValue;
-                          });
-                        },
+                        onChanged: _hasTrainedThisWeek
+                            ? null
+                            : (String? newValue) {
+                                setState(() {
+                                  _selectedPilotId = newValue;
+                                });
+                              },
                         items: _teamDrivers.map<DropdownMenuItem<String>>((
                           Driver driver,
                         ) {
@@ -619,6 +629,102 @@ class _FitnessTrainerScreenState extends State<FitnessTrainerScreen> {
             ),
           ],
         ),
+      ),
+    );
+  }
+}
+
+class FitnessTrainerSkeleton extends StatelessWidget {
+  const FitnessTrainerSkeleton({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return SingleChildScrollView(
+      padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 24),
+      child: Column(
+        children: [
+          // Static Instruction Card - keeps layout stable
+          const InstructionCard(
+            icon: Icons.fitness_center_rounded,
+            title: "Fitness Trainer",
+            description:
+                "The Fitness Trainer helps your pilots recover from fatigue.\n\n"
+                "• **Weekly Bonus**: Higher level trainers provide a larger automatic fitness recovery each week.\n"
+                "• **Train Pilot**: Use manual training once per week to give an extra boost to your assigned pilot.\n"
+                "• **Assignment**: Ensure the trainer is assigned to a pilot to apply the recovery bonus.\n"
+                "• **Training Limit**: You can only train **1 pilot per week**. Once trained, the assignment is locked until next week.\n"
+                "• **Upgrade/Downgrade**: You may only upgrade or downgrade the trainer **once per week**.",
+          ),
+          const SizedBox(height: 24),
+          // Trainer Card Skeleton
+          Container(
+            padding: const EdgeInsets.all(32),
+            decoration: BoxDecoration(
+              gradient: const LinearGradient(
+                colors: [Color(0xFF1E1E1E), Color(0xFF121212)],
+              ),
+              borderRadius: BorderRadius.circular(24),
+              border: Border.all(color: Colors.white.withValues(alpha: 0.1)),
+            ),
+            child: Column(
+              children: [
+                const OnyxSkeleton(
+                  width: 130,
+                  height: 130,
+                  borderRadius: 65,
+                ), // Avatar
+                const SizedBox(height: 24),
+                const OnyxSkeleton(
+                  width: 140,
+                  height: 28,
+                  borderRadius: 4,
+                ), // Name
+                const SizedBox(height: 8),
+                const OnyxSkeleton(
+                  width: 80,
+                  height: 20,
+                  borderRadius: 4,
+                ), // Level
+                const SizedBox(height: 32),
+                // Stats row
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                  children: const [
+                    OnyxSkeleton(width: 90, height: 50, borderRadius: 8),
+                    OnyxSkeleton(width: 90, height: 50, borderRadius: 8),
+                    OnyxSkeleton(width: 90, height: 50, borderRadius: 8),
+                  ],
+                ),
+                const SizedBox(height: 48),
+                // Assignment / Train section
+                const OnyxSkeleton(width: 250, height: 50, borderRadius: 12),
+                const SizedBox(height: 16),
+                const OnyxSkeleton(
+                  width: 250,
+                  height: 50,
+                  borderRadius: 25,
+                ), // Train Button
+                const SizedBox(height: 48),
+                // Upgrade / Downgrade row
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                  children: const [
+                    OnyxSkeleton(
+                      width: 130,
+                      height: 45,
+                      borderRadius: 12,
+                    ), // Downgrade
+                    OnyxSkeleton(
+                      width: 130,
+                      height: 45,
+                      borderRadius: 12,
+                    ), // Upgrade
+                  ],
+                ),
+              ],
+            ),
+          ),
+        ],
       ),
     );
   }

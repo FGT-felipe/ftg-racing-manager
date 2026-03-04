@@ -1,6 +1,61 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 
+/// A hoverable row wrapper used by OnyxTable.
+///
+/// Each row manages its own hover state independently, avoiding
+/// full-table rebuilds when hovering over individual rows.
+class _HoverableRow extends StatefulWidget {
+  final int index;
+  final bool isHighlighted;
+  final Widget child;
+
+  const _HoverableRow({
+    required this.index,
+    required this.isHighlighted,
+    required this.child,
+  });
+
+  @override
+  State<_HoverableRow> createState() => _HoverableRowState();
+}
+
+class _HoverableRowState extends State<_HoverableRow> {
+  bool _isHovered = false;
+
+  @override
+  Widget build(BuildContext context) {
+    return MouseRegion(
+      onEnter: (_) => setState(() => _isHovered = true),
+      onExit: (_) => setState(() => _isHovered = false),
+      child: Container(
+        decoration: BoxDecoration(
+          color: widget.isHighlighted
+              ? const Color(0xFF00C853).withValues(alpha: 0.1)
+              : _isHovered
+              ? const Color(0xFF00C853).withValues(alpha: 0.05)
+              : (widget.index % 2 == 0
+                    ? Colors.transparent
+                    : Colors.white.withValues(alpha: 0.01)),
+          border: Border(
+            left: widget.isHighlighted
+                ? const BorderSide(color: Color(0xFF00C853), width: 4)
+                : BorderSide.none,
+            bottom: BorderSide(
+              color: Colors.white.withValues(alpha: 0.05),
+              width: 0.5,
+            ),
+          ),
+        ),
+        child: Padding(
+          padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 20),
+          child: widget.child,
+        ),
+      ),
+    );
+  }
+}
+
 class OnyxTable extends StatefulWidget {
   final List<String> columns;
   final List<List<dynamic>>? rows;
@@ -33,7 +88,6 @@ class OnyxTable extends StatefulWidget {
 class _OnyxTableState extends State<OnyxTable> {
   final ScrollController _scrollController = ScrollController();
   bool _onEndThresholdReached = false;
-  int? _hoveredIndex;
 
   @override
   void initState() {
@@ -152,35 +206,10 @@ class _OnyxTableState extends State<OnyxTable> {
 
   Widget _buildRowWrapper(BuildContext context, int index, Widget child) {
     final isHighlighted = widget.highlightIndices.contains(index);
-    final isHovered = _hoveredIndex == index;
-
-    return MouseRegion(
-      onEnter: (_) => setState(() => _hoveredIndex = index),
-      onExit: (_) => setState(() => _hoveredIndex = null),
-      child: Container(
-        decoration: BoxDecoration(
-          color: isHighlighted
-              ? const Color(0xFF00C853).withValues(alpha: 0.1)
-              : isHovered
-              ? const Color(0xFF00C853).withValues(alpha: 0.05)
-              : (index % 2 == 0
-                    ? Colors.transparent
-                    : Colors.white.withValues(alpha: 0.01)),
-          border: Border(
-            left: isHighlighted
-                ? const BorderSide(color: Color(0xFF00C853), width: 4)
-                : BorderSide.none,
-            bottom: BorderSide(
-              color: Colors.white.withValues(alpha: 0.05),
-              width: 0.5,
-            ),
-          ),
-        ),
-        child: Padding(
-          padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 20),
-          child: child,
-        ),
-      ),
+    return _HoverableRow(
+      index: index,
+      isHighlighted: isHighlighted,
+      child: child,
     );
   }
 

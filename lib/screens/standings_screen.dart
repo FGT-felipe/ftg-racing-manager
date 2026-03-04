@@ -10,6 +10,7 @@ import '../services/season_service.dart';
 import '../services/universe_service.dart';
 import '../widgets/common/onyx_table.dart';
 import '../widgets/common/driver_stars.dart';
+import '../widgets/common/onyx_skeleton.dart';
 
 class StandingsScreen extends StatefulWidget {
   const StandingsScreen({super.key});
@@ -52,7 +53,7 @@ class _StandingsScreenState extends State<StandingsScreen> {
       stream: UniverseService().getUniverseStream(),
       builder: (context, universeSnapshot) {
         if (!universeSnapshot.hasData) {
-          return const Center(child: CircularProgressIndicator());
+          return const StandingsSkeleton();
         }
 
         final universe = universeSnapshot.data!;
@@ -65,7 +66,7 @@ class _StandingsScreenState extends State<StandingsScreen> {
               .snapshots(),
           builder: (context, teamSnapshot) {
             if (!teamSnapshot.hasData) {
-              return const Center(child: CircularProgressIndicator());
+              return const StandingsSkeleton();
             }
 
             String? userTeamId;
@@ -746,6 +747,152 @@ class _LastRaceStandingsTab extends StatelessWidget {
           },
         );
       },
+    );
+  }
+}
+
+class StandingsSkeleton extends StatelessWidget {
+  const StandingsSkeleton({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.all(16.0),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // Header
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              const OnyxSkeleton(width: 150, height: 30, borderRadius: 4),
+              const OnyxSkeleton(width: 120, height: 40, borderRadius: 12),
+            ],
+          ),
+          const SizedBox(height: 16),
+          // Main Container
+          Expanded(
+            child: Container(
+              decoration: BoxDecoration(
+                color: const Color(0xFF1E1E1E),
+                borderRadius: BorderRadius.circular(16),
+                border: Border.all(color: Colors.white.withValues(alpha: 0.08)),
+              ),
+              child: Column(
+                children: [
+                  // Tabs
+                  Padding(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 16,
+                      vertical: 12,
+                    ),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceAround,
+                      children: List.generate(
+                        3,
+                        (i) => const OnyxSkeleton(width: 80, height: 20),
+                      ),
+                    ),
+                  ),
+                  Divider(
+                    height: 1,
+                    thickness: 1,
+                    color: Colors.white.withValues(alpha: 0.05),
+                  ),
+                  // Table Header
+                  Container(
+                    padding: const EdgeInsets.symmetric(
+                      vertical: 12,
+                      horizontal: 20,
+                    ),
+                    decoration: BoxDecoration(
+                      color: Colors.white.withValues(alpha: 0.03),
+                      border: Border(
+                        bottom: BorderSide(
+                          color: Colors.white.withValues(alpha: 0.05),
+                        ),
+                      ),
+                    ),
+                    child: Row(
+                      children: [
+                        const Expanded(
+                          flex: 1,
+                          child: OnyxSkeleton(height: 12),
+                        ),
+                        const SizedBox(width: 16),
+                        const Expanded(
+                          flex: 4,
+                          child: OnyxSkeleton(height: 12),
+                        ),
+                        const SizedBox(width: 16),
+                        const Expanded(
+                          flex: 3,
+                          child: OnyxSkeleton(height: 12),
+                        ),
+                        const SizedBox(width: 16),
+                        const Expanded(
+                          flex: 2,
+                          child: OnyxSkeleton(height: 12),
+                        ),
+                      ],
+                    ),
+                  ),
+                  // List Rows
+                  Expanded(
+                    child: ListView.separated(
+                      padding: const EdgeInsets.all(0),
+                      physics: const NeverScrollableScrollPhysics(),
+                      itemCount: 10,
+                      separatorBuilder: (context, index) => Divider(
+                        height: 1,
+                        thickness: 0.5,
+                        color: Colors.white.withValues(alpha: 0.05),
+                      ),
+                      itemBuilder: (context, index) {
+                        return Padding(
+                          padding: const EdgeInsets.symmetric(
+                            vertical: 14,
+                            horizontal: 20,
+                          ),
+                          child: Row(
+                            children: [
+                              const Expanded(
+                                flex: 1,
+                                child: OnyxSkeleton(height: 14),
+                              ),
+                              const SizedBox(width: 16),
+                              Expanded(
+                                flex: 4,
+                                child: OnyxSkeleton(
+                                  height: 14,
+                                  width: index % 2 == 0 ? 120 : 80,
+                                ),
+                              ),
+                              const SizedBox(width: 16),
+                              Expanded(
+                                flex: 3,
+                                child: OnyxSkeleton(
+                                  height: 14,
+                                  width: index % 3 == 0 ? 100 : 60,
+                                ),
+                              ),
+                              const SizedBox(width: 16),
+                              const Expanded(
+                                flex: 2,
+                                child: OnyxSkeleton(height: 14),
+                              ),
+                            ],
+                          ),
+                        );
+                      },
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ],
+      ),
     );
   }
 }
