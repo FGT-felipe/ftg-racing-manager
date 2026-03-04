@@ -260,20 +260,72 @@ class _StandingsScreenState extends State<StandingsScreen> {
   }
 }
 
-class _DriversStandingsTab extends StatelessWidget {
+class _DriversStandingsTab extends StatefulWidget {
   final FtgLeague league;
   final String? highlightTeamId;
 
   const _DriversStandingsTab({required this.league, this.highlightTeamId});
 
   @override
+  State<_DriversStandingsTab> createState() => _DriversStandingsTabState();
+}
+
+class _DriversStandingsTabState extends State<_DriversStandingsTab> {
+  /// Live team names fetched from the authoritative `teams` collection.
+  /// Falls back to universe snapshot names if fetch fails.
+  Map<String, String> _liveTeamNames = {};
+
+  @override
+  void initState() {
+    super.initState();
+    _fetchLiveTeamNames();
+  }
+
+  @override
+  void didUpdateWidget(covariant _DriversStandingsTab oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    // Re-fetch if the league changed (e.g. league dropdown switch)
+    if (oldWidget.league.id != widget.league.id) {
+      _fetchLiveTeamNames();
+    }
+  }
+
+  Future<void> _fetchLiveTeamNames() async {
+    final teamIds = widget.league.teams.map((t) => t.id).toList();
+    if (teamIds.isEmpty) return;
+
+    final Map<String, String> names = {};
+    // Firestore 'whereIn' limit is 30; batch if needed
+    for (int i = 0; i < teamIds.length; i += 30) {
+      final chunk = teamIds.sublist(
+        i,
+        i + 30 > teamIds.length ? teamIds.length : i + 30,
+      );
+      final snap = await FirebaseFirestore.instance
+          .collection('teams')
+          .where(FieldPath.documentId, whereIn: chunk)
+          .get();
+      for (final doc in snap.docs) {
+        names[doc.id] = doc.data()['name'] as String? ?? '';
+      }
+    }
+
+    if (mounted) {
+      setState(() => _liveTeamNames = names);
+    }
+  }
+
+  @override
   Widget build(BuildContext context) {
-    if (league.teams.isEmpty) {
+    if (widget.league.teams.isEmpty) {
       return Center(child: Text(AppLocalizations.of(context).noTeamsAvailable));
     }
 
-    final drivers = List<Driver>.from(league.drivers);
-    final teamMap = {for (var t in league.teams) t.id: t.name};
+    final drivers = List<Driver>.from(widget.league.drivers);
+    // Build team map with live names preferred, falling back to universe snapshot
+    final teamMap = {
+      for (var t in widget.league.teams) t.id: _liveTeamNames[t.id] ?? t.name,
+    };
 
     drivers.sort((a, b) {
       if (b.seasonPoints != a.seasonPoints) {
@@ -304,7 +356,7 @@ class _DriversStandingsTab extends StatelessWidget {
       highlightIndices: drivers
           .asMap()
           .entries
-          .where((e) => e.value.teamId == highlightTeamId)
+          .where((e) => e.value.teamId == widget.highlightTeamId)
           .map((e) => e.key)
           .toList(),
       rows: drivers
@@ -339,13 +391,27 @@ class _ConstructorsStandingsTab extends StatefulWidget {
 class _ConstructorsStandingsTabState extends State<_ConstructorsStandingsTab> {
   final Map<String, ManagerProfile> _managersMap = {};
 
+  /// Live team data fetched from the authoritative `teams` collection.
+  /// Falls back to universe snapshot data if fetch fails.
+  final Map<String, Team> _liveTeamsMap = {};
+
   @override
   void initState() {
     super.initState();
-    _fetchManagers();
+    _fetchLiveData();
   }
 
-  Future<void> _fetchManagers() async {
+  @override
+  void didUpdateWidget(covariant _ConstructorsStandingsTab oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.league.id != widget.league.id) {
+      _liveTeamsMap.clear();
+      _managersMap.clear();
+      _fetchLiveData();
+    }
+  }
+
+  Future<void> _fetchLiveData() async {
     final futures = <Future<void>>[];
     for (var team in widget.league.teams) {
       futures.add(
@@ -353,6 +419,13 @@ class _ConstructorsStandingsTabState extends State<_ConstructorsStandingsTab> {
           teamDoc,
         ) {
           if (teamDoc.exists) {
+            // Capture live team data (name, season stats, etc.)
+            if (mounted) {
+              setState(() {
+                _liveTeamsMap[team.id] = Team.fromMap(teamDoc.data()!);
+              });
+            }
+
             final managerId = teamDoc.data()?['managerId'] as String?;
             if (managerId != null && managerId.isNotEmpty) {
               return FirebaseFirestore.instance
@@ -407,7 +480,10 @@ class _ConstructorsStandingsTabState extends State<_ConstructorsStandingsTab> {
       return Center(child: Text(AppLocalizations.of(context).noTeamsAvailable));
     }
 
-    final teams = List<Team>.from(widget.league.teams);
+    // Use live team data where available, falling back to universe snapshot
+    final teams = widget.league.teams.map((universeTeam) {
+      return _liveTeamsMap[universeTeam.id] ?? universeTeam;
+    }).toList();
 
     teams.sort((a, b) {
       if (b.seasonPoints != a.seasonPoints) {
