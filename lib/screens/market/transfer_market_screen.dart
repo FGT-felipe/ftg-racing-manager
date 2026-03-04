@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:cached_network_image/cached_network_image.dart';
 import '../../models/core_models.dart';
 import '../../services/transfer_market_service.dart';
 import '../../utils/currency_formatter.dart';
@@ -198,7 +199,7 @@ class _TransferMarketScreenState extends State<TransferMarketScreen> {
                 radius: 12,
                 backgroundImage: driver.portraitUrl != null
                     ? (driver.portraitUrl!.startsWith('http')
-                          ? NetworkImage(driver.portraitUrl!)
+                          ? CachedNetworkImageProvider(driver.portraitUrl!)
                           : AssetImage(driver.portraitUrl!) as ImageProvider)
                     : null,
                 child: driver.portraitUrl == null

@@ -1,6 +1,7 @@
 import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:cached_network_image/cached_network_image.dart';
 import '../../../models/core_models.dart';
 import '../../../services/driver_portrait_service.dart';
 import '../../../services/driver_status_service.dart';
@@ -41,6 +42,8 @@ class DriverCard extends StatefulWidget {
 
 class _DriverCardState extends State<DriverCard>
     with SingleTickerProviderStateMixin {
+  static const _gridPainter = GridPainter();
+
   late AnimationController _flipController;
   late Animation<double> _flipAnimation;
 
@@ -124,7 +127,7 @@ class _DriverCardState extends State<DriverCard>
           Positioned.fill(
             child: ClipRRect(
               borderRadius: BorderRadius.circular(16),
-              child: CustomPaint(painter: GridPainter()),
+              child: CustomPaint(painter: _gridPainter),
             ),
           ),
           // Left Accent Border
@@ -398,7 +401,7 @@ class _DriverCardState extends State<DriverCard>
                 ],
                 image: DecorationImage(
                   image: portraitUrl.startsWith('http')
-                      ? NetworkImage(portraitUrl) as ImageProvider
+                      ? CachedNetworkImageProvider(portraitUrl) as ImageProvider
                       : AssetImage(portraitUrl),
                   fit: BoxFit.cover,
                 ),
@@ -1578,10 +1581,21 @@ class RadarChartPainter extends CustomPainter {
   }
 
   @override
-  bool shouldRepaint(covariant RadarChartPainter oldDelegate) => true;
+  bool shouldRepaint(covariant RadarChartPainter oldDelegate) {
+    if (oldDelegate.color != color || oldDelegate.showGlow != showGlow) {
+      return true;
+    }
+    if (oldDelegate.values.length != values.length) return true;
+    for (int i = 0; i < values.length; i++) {
+      if (oldDelegate.values[i] != values[i]) return true;
+    }
+    return false;
+  }
 }
 
 class GridPainter extends CustomPainter {
+  const GridPainter();
+
   @override
   void paint(Canvas canvas, Size size) {
     final paint = Paint()

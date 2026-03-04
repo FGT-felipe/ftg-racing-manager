@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'dart:math' as math;
+import 'package:cached_network_image/cached_network_image.dart';
 import '../../../models/core_models.dart';
 import '../../../utils/currency_formatter.dart';
 import '../../../services/driver_portrait_service.dart';
@@ -229,7 +230,7 @@ class _TransferMarketDriverCardState extends State<TransferMarketDriverCard> {
                 ],
                 image: DecorationImage(
                   image: portraitUrl.startsWith('http')
-                      ? NetworkImage(portraitUrl) as ImageProvider
+                      ? CachedNetworkImageProvider(portraitUrl) as ImageProvider
                       : AssetImage(portraitUrl),
                   fit: BoxFit.cover,
                 ),

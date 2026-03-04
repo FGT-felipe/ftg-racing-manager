@@ -38,13 +38,12 @@ Map<String, dynamic> _makeDriverMap({
       'morale': 75,
       'marketability': 40,
     },
-    if (portraitUrl != null) 'portraitUrl': portraitUrl,
+    'portraitUrl': portraitUrl,
     'isTransferListed': isTransferListed,
-    if (transferListedAt != null) 'transferListedAt': transferListedAt,
+    'transferListedAt': transferListedAt,
     'currentHighestBid': currentHighestBid,
-    if (highestBidderTeamId != null) 'highestBidderTeamId': highestBidderTeamId,
-    if (highestBidderTeamName != null)
-      'highestBidderTeamName': highestBidderTeamName,
+    'highestBidderTeamId': highestBidderTeamId,
+    'highestBidderTeamName': highestBidderTeamName,
   };
 }
 

@@ -10,6 +10,7 @@ import '../services/finance_service.dart';
 import '../services/youth_academy_service.dart';
 import '../services/season_service.dart';
 import '../widgets/common/instruction_card.dart';
+import '../widgets/common/onyx_skeleton.dart';
 
 class HQScreen extends StatefulWidget {
   final String teamId;
@@ -76,7 +77,7 @@ class _HQScreenState extends State<HQScreen> {
             .snapshots(),
         builder: (context, snapshot) {
           if (!snapshot.hasData) {
-            return const Center(child: CircularProgressIndicator());
+            return const HqSkeleton();
           }
 
           final team = Team.fromMap(
@@ -176,6 +177,8 @@ class _HQScreenState extends State<HQScreen> {
 }
 
 class _FacilityCard extends StatelessWidget {
+  static final _financeService = FinanceService();
+
   final Facility facility;
   final String teamId;
   final bool canUpgrade;
@@ -241,10 +244,10 @@ class _FacilityCard extends StatelessWidget {
     final isPurchased = facility.level > 0;
     final isEnabled = !isSoon;
 
-    final nextLevelPrice = FinanceService().formatCompactCurrency(
+    final nextLevelPrice = _financeService.formatCompactCurrency(
       facility.level == 0 ? 100000 : facility.upgradePrice,
     );
-    final maintenancePrice = FinanceService().formatCompactCurrency(
+    final maintenancePrice = _financeService.formatCompactCurrency(
       facility.maintenanceCost,
     );
 
@@ -554,6 +557,136 @@ class _DetailRow extends StatelessWidget {
             ),
           ],
         ),
+      ),
+    );
+  }
+}
+
+class HqSkeleton extends StatelessWidget {
+  const HqSkeleton({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return SingleChildScrollView(
+      padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 24),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // Header Card
+          Container(
+            padding: const EdgeInsets.all(24),
+            decoration: BoxDecoration(
+              gradient: const LinearGradient(
+                colors: [Color(0xFF1E1E1E), Color(0xFF121212)],
+              ),
+              borderRadius: BorderRadius.circular(16),
+              border: Border.all(color: Colors.white.withValues(alpha: 0.1)),
+            ),
+            child: Row(
+              children: [
+                const OnyxSkeleton(width: 48, height: 48, borderRadius: 12),
+                const SizedBox(width: 16),
+                Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: const [
+                    OnyxSkeleton(width: 150, height: 24, borderRadius: 4),
+                    SizedBox(height: 8),
+                    OnyxSkeleton(width: 100, height: 16, borderRadius: 4),
+                  ],
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(height: 32),
+          // Facilities Grid
+          LayoutBuilder(
+            builder: (context, constraints) {
+              int crossAxisCount = 1;
+              if (constraints.maxWidth > 1000) {
+                crossAxisCount = 4;
+              } else if (constraints.maxWidth > 800) {
+                crossAxisCount = 3;
+              } else if (constraints.maxWidth > 500) {
+                crossAxisCount = 2;
+              }
+
+              return GridView.builder(
+                shrinkWrap: true,
+                physics: const NeverScrollableScrollPhysics(),
+                gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                  crossAxisCount: crossAxisCount,
+                  crossAxisSpacing: 16,
+                  mainAxisSpacing: 16,
+                  childAspectRatio: 0.85,
+                ),
+                itemCount: 8,
+                itemBuilder: (context, index) {
+                  return Container(
+                    padding: const EdgeInsets.all(20),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFF1A1A1A),
+                      borderRadius: BorderRadius.circular(16),
+                      border: Border.all(
+                        color: Colors.white.withValues(alpha: 0.05),
+                      ),
+                    ),
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: const [
+                            OnyxSkeleton(
+                              width: 40,
+                              height: 40,
+                              borderRadius: 8,
+                            ),
+                            OnyxSkeleton(
+                              width: 40,
+                              height: 20,
+                              borderRadius: 12,
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 16),
+                        const OnyxSkeleton(
+                          height: 20,
+                          width: 120,
+                          borderRadius: 4,
+                        ),
+                        const SizedBox(height: 8),
+                        const Expanded(
+                          child: OnyxSkeleton(
+                            height: double.infinity,
+                            width: double.infinity,
+                            borderRadius: 4,
+                          ),
+                        ),
+                        const SizedBox(height: 16),
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: const [
+                            OnyxSkeleton(
+                              width: 60,
+                              height: 16,
+                              borderRadius: 4,
+                            ),
+                            OnyxSkeleton(
+                              width: 60,
+                              height: 16,
+                              borderRadius: 4,
+                            ),
+                          ],
+                        ),
+                      ],
+                    ),
+                  );
+                },
+              );
+            },
+          ),
+        ],
       ),
     );
   }
