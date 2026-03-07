@@ -79,9 +79,9 @@ class YouthAcademyService {
         throw Exception('Insufficient budget to purchase Youth Academy');
       }
 
-      int maxSlots = 2; // 2 × level 1
+      int maxSlots = 4; // Base 4 for level 1
       if (role == ManagerRole.bureaucrat) {
-        maxSlots += 1; // +1 extra slot per level for Bureaucrat
+        maxSlots += 2; // +2 extra slots per level for Bureaucrat
       }
 
       // Create config doc
@@ -140,7 +140,25 @@ class YouthAcademyService {
     final config = await getAcademyConfig(teamId);
     if (config == null) throw Exception('Academy not purchased');
 
-    final maxSlots = config['maxSlots'] ?? 2;
+    final level = (config['academyLevel'] as num?)?.toInt() ?? 1;
+
+    // Calculate slots dynamically to support legacy configs
+    final teamDoc = await _db.collection('teams').doc(teamId).get();
+    final teamManagerId = teamDoc.data()?['managerId'];
+
+    ManagerRole? role;
+    if (teamManagerId != null) {
+      final mgrDoc = await _db.collection('managers').doc(teamManagerId).get();
+      if (mgrDoc.exists) {
+        final roleStr = mgrDoc.data()?['role'] as String?;
+        role = ManagerRole.values.where((e) => e.name == roleStr).firstOrNull;
+      }
+    }
+
+    int maxSlots = 4 + (level - 1);
+    if (role == ManagerRole.bureaucrat) {
+      maxSlots += (level * 2);
+    }
 
     // Check capacity
     final selectedSnap = await _selectedRef(teamId).get();
@@ -273,10 +291,10 @@ class YouthAcademyService {
       }
 
       final int newLevel = currentLevel + 1;
-      int maxSlots = newLevel * 2;
+      int maxSlots = 4 + (newLevel - 1);
 
       if (role == ManagerRole.bureaucrat) {
-        maxSlots += newLevel; // +1 extra slot per level
+        maxSlots += (newLevel * 2); // +2 extra slots per level
       }
 
       // Update config

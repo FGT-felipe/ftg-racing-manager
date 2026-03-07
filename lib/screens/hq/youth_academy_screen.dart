@@ -1082,7 +1082,7 @@ class _CandidateCard extends StatelessWidget {
               ),
               const SizedBox(width: 8),
               DriverStars(
-                currentStars: 0,
+                currentStars: driver.currentStars,
                 maxStars: driver.potentialStars,
                 size: 16,
               ),
@@ -1391,7 +1391,7 @@ class _SelectedDriverCard extends StatelessWidget {
                   ),
                   const SizedBox(height: 4),
                   DriverStars(
-                    currentStars: 0,
+                    currentStars: driver.currentStars,
                     maxStars: driver.potentialStars,
                     size: 14,
                   ),

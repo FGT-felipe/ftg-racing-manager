@@ -78,8 +78,12 @@ class YoungDriver {
     this.weeklyReports = const [],
   });
 
-  /// Potencial global como estrellas (1-5) para UI
-  int get potentialStars => (growthPotential / 2.4).ceil().clamp(1, 5);
+  /// Habilidad actual en estrellas (1-5) para UI
+  int get currentStars => (baseSkill / 20.0).round().clamp(1, 5);
+
+  /// Potencial máximo global en estrellas (1-5) para UI
+  int get potentialStars =>
+      ((baseSkill + growthPotential) / 20.0).round().clamp(1, 5);
 
   /// Si el candidato ya ha expirado
   bool get isExpired =>

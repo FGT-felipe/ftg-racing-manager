@@ -804,7 +804,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get newManagerJoin => 'New Manager Join';
 
   @override
-  String get versionFooter => 'V3.0.0 - Fire Tower Games Studio';
+  String get versionFooter => 'V3.5.1 - Fire Tower Games Studio';
 
   @override
   String get continueWithGoogle => 'Continue With Google';

@@ -484,6 +484,146 @@ async function fetchTeams(teamIds) {
 }
 
 // ─────────────────────────────────────────────
+// ACADEMY HELPERS
+// ─────────────────────────────────────────────
+
+/**
+ * Helper to generate a Youth Academy candidate in Node.js
+ * Mirrors the logic from YouthAcademyFactory in Flutter.
+ * @param {number} academyLevel The current level of the academy (1-5).
+ * @param {string} countryCode The country code for the candidate.
+ * @param {string} gender The gender ("M" or "F").
+ * @return {Object} The generated candidate object.
+ */
+function generateAcademyCandidate(academyLevel, countryCode, gender) {
+  const level = Math.min(Math.max(academyLevel, 1), 5);
+
+  let minCurrentStars; let maxCurrentStars; let minMaxStars; let maxMaxStars;
+  switch (level) {
+    case 1:
+      minCurrentStars = 1.0; maxCurrentStars = 3.0;
+      minMaxStars = 2.0; maxMaxStars = 3.5;
+      break;
+    case 2:
+      minCurrentStars = 1.0; maxCurrentStars = 3.5;
+      minMaxStars = 2.5; maxMaxStars = 4.0;
+      break;
+    case 3:
+      minCurrentStars = 1.5; maxCurrentStars = 3.5;
+      minMaxStars = 3.0; maxMaxStars = 4.5;
+      break;
+    case 4:
+      minCurrentStars = 2.0; maxCurrentStars = 4.0;
+      minMaxStars = 3.5; maxMaxStars = 5.0;
+      break;
+    case 5:
+    default:
+      minCurrentStars = 2.0; maxCurrentStars = 4.0;
+      minMaxStars = 4.0; maxMaxStars = 5.0;
+      break;
+  }
+
+  const currentStars = minCurrentStars + (Math.random() * (maxCurrentStars - minCurrentStars));
+  const actualMinMax = Math.max(currentStars, minMaxStars);
+  const maxStars = actualMinMax + (Math.random() * (maxMaxStars - actualMinMax));
+
+  const baseSkill = Math.min(Math.max(Math.round(currentStars * 20), 10), 80);
+  const maxSkill = Math.min(Math.max(Math.round(maxStars * 20), baseSkill), 100);
+  const growthPotential = maxSkill - baseSkill;
+
+  const statRangeMin = {};
+  const statRangeMax = {};
+  const ALL_STATS = [
+    "cornering", "braking", "consistency", "smoothness",
+    "adaptability", "overtaking", "defending", "focus", "fitness",
+  ];
+
+  for (const statKey of ALL_STATS) {
+    const variance = Math.floor(Math.random() * 4);
+    const minVal = Math.min(Math.max(baseSkill - 2 + variance, 1), 100);
+    const maxVal = Math.min(Math.max(baseSkill + growthPotential + variance, minVal), 100);
+    statRangeMin[statKey] = minVal;
+    statRangeMax[statKey] = maxVal;
+  }
+
+  // Common names for basic generation
+  const mNames = ["John", "David", "Liam", "Carlos", "Mateo", "Luis", "Oliver", "Lucas"];
+  const fNames = ["Emma", "Olivia", "Sophia", "Isabella", "Mia", "Ana", "Sofia", "Maria"];
+  const lNames = ["Smith", "Garcia", "Silva", "Mueller", "Rossi", "Wang", "Kim", "Olsen", "Santos"];
+
+  const firstPool = gender === "M" ? mNames : fNames;
+  const firstName = firstPool[Math.floor(Math.random() * firstPool.length)];
+  const lastName = lNames[Math.floor(Math.random() * lNames.length)];
+  const fullName = `${firstName} ${lastName}`;
+
+  const timestamp = Date.now();
+  const randomSuffix = Math.floor(Math.random() * 999999);
+  const id = `young_${countryCode}_${timestamp}_${randomSuffix}`;
+  const age = 16 + Math.floor(Math.random() * 4);
+  const expiresAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000);
+
+  return {
+    id,
+    name: fullName,
+    nationality: {code: countryCode, name: countryCode, flagEmoji: "🌎"},
+    age,
+    baseSkill,
+    gender,
+    growthPotential,
+    portraitUrl: `https://api.dicebear.com/7.x/notionists/png?seed=${id}&gender=${gender === "M" ? "male" : "female"}`,
+    status: "candidate",
+    expiresAt,
+    salary: 100000,
+    contractYears: 1,
+    statRangeMin,
+    statRangeMax,
+  };
+}
+
+/**
+ * Checks a team's academy candidates and generates new ones if needed.
+ * @param {string} teamId The ID of the team.
+ * @param {number} academyLevel The current level of the academy (1-5).
+ * @param {string} countryCode The country code of the team/academy.
+ * @return {Promise<void>} Resolves when the batch commit is complete.
+ */
+async function refreshAcademyCandidates(teamId, academyLevel, countryCode) {
+  const candidatesRef = db.collection("teams").doc(teamId).collection("academy").doc("config").collection("candidates");
+  const candidatesSnap = await candidatesRef.get();
+
+  let males = 0;
+  let females = 0;
+  const now = new Date();
+
+  const batch = db.batch();
+
+  candidatesSnap.docs.forEach((doc) => {
+    const data = doc.data();
+    const exp = data.expiresAt ? (data.expiresAt.toDate ? data.expiresAt.toDate() : new Date(data.expiresAt)) : null;
+
+    // Check if expired
+    if (exp && exp < now) {
+      batch.delete(doc.ref);
+    } else {
+      if (data.gender === "M") males++;
+      if (data.gender === "F") females++;
+    }
+  });
+
+  // Ensure 1 male, 1 female offering at all times
+  if (males === 0) {
+    const newM = generateAcademyCandidate(academyLevel, countryCode, "M");
+    batch.set(candidatesRef.doc(newM.id), newM);
+  }
+  if (females === 0) {
+    const newF = generateAcademyCandidate(academyLevel, countryCode, "F");
+    batch.set(candidatesRef.doc(newF.id), newF);
+  }
+
+  await batch.commit();
+}
+
+// ─────────────────────────────────────────────
 // 1. SCHEDULED QUALIFYING (Sat 3:00 PM COT)
 // ─────────────────────────────────────────────
 exports.scheduledQualifying = onSchedule({
@@ -1149,7 +1289,60 @@ exports.postRaceProcessing = onSchedule({
         });
         weeklyExpense += salaryCost;
 
-        // 4. Update Budget and Transactions
+        // 4. Academy Processing
+        let academyExpense = 0;
+        const academyConfigDoc = await db.collection("teams").doc(tid).collection("academy").doc("config").get();
+        if (academyConfigDoc.exists) {
+          const ac = academyConfigDoc.data();
+          const academyLevel = ac.academyLevel || 1;
+          const countryCode = ac.countryCode || "GB";
+
+          await refreshAcademyCandidates(tid, academyLevel, countryCode);
+
+          const selectedRef = db.collection("teams").doc(tid).collection("academy").doc("config").collection("selected");
+          const selectedSnap = await selectedRef.get();
+
+          const batchA = db.batch();
+          selectedSnap.docs.forEach((sDoc) => {
+            const yDriver = sDoc.data();
+            const salary = yDriver.salary || 100000;
+            academyExpense += Math.round(salary / 52);
+
+            // Apply XP from FTG Karting Championship weekly simulation
+            let curWeekly = yDriver.weeklyGrowth || 0;
+
+            // Random chance of extra XP based on potential (same as Practice Sessions)
+            const growthPot = yDriver.growthPotential || 5;
+            const xpGain = Math.floor(Math.random() * (growthPot * 10)) + 30;
+            curWeekly += xpGain;
+
+            let applyBaseGrowth = false;
+            if (curWeekly >= 100) {
+              curWeekly -= 100;
+              applyBaseGrowth = true;
+            }
+
+            const updates = {weeklyGrowth: curWeekly};
+            if (applyBaseGrowth) {
+              updates.baseSkill = (yDriver.baseSkill || 10) + 1;
+              updates.growthPotential = Math.max((yDriver.growthPotential || 5) - 1, 1);
+              const statsObj = yDriver.stats || {};
+              Object.keys(statsObj).forEach((k) => {
+                if (statsObj[k] < 100) statsObj[k]++;
+              });
+              if (Object.keys(statsObj).length) updates.stats = statsObj;
+            }
+
+            batchA.update(sDoc.ref, updates);
+          });
+
+          weeklyExpense += academyExpense;
+          if (selectedSnap.size > 0) {
+            await batchA.commit();
+          }
+        }
+
+        // 5. Update Budget and Transactions
         const currentBudget = teamData.budget || 0;
         const newBudget = currentBudget + weeklyIncome - weeklyExpense;
 
@@ -1203,6 +1396,17 @@ exports.postRaceProcessing = onSchedule({
             amount: -salaryCost,
             date: nowIso,
             type: "SALARY",
+          });
+        }
+
+        if (academyExpense > 0) {
+          const acadTx = tRef.collection("transactions").doc();
+          batch.set(acadTx, {
+            id: acadTx.id,
+            description: "Academy Contracts and Expenses",
+            amount: -academyExpense,
+            date: nowIso,
+            type: "ACADEMY",
           });
         }
 
