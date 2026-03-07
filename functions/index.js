@@ -619,16 +619,13 @@ async function refreshAcademyCandidates(teamId, academyLevel, countryCode) {
   });
 
   // Ensure 1 male, 1 female offering if under quota
-  let generatedCount = 0;
   if (males === 0 && scoutsUsed < maxScouts) {
     const newM = generateAcademyCandidate(academyLevel, countryCode, "M");
     batch.set(candidatesRef.doc(newM.id), newM);
-    generatedCount++;
   }
   if (females === 0 && scoutsUsed < maxScouts) {
     const newF = generateAcademyCandidate(academyLevel, countryCode, "F");
     batch.set(candidatesRef.doc(newF.id), newF);
-    generatedCount++;
   }
 
   // Always update scoutsUsedThisSeason if it changed (increase for expired)
@@ -1328,7 +1325,7 @@ exports.postRaceProcessing = onSchedule({
             curWeekly += xpGain;
 
             let applyBaseGrowth = false;
-            let statDiffs = {};
+            const statDiffs = {};
             let eventMsg = "";
 
             if (curWeekly >= 100) {
