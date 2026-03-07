@@ -594,7 +594,7 @@
   "availableLabel": "Available",
   "signContract": "Sign Contract",
   "navDashboard": "Dashboard",
-  "navHQ": "HQ",
+  "navHQ": "Facilities",
   "navTeamOffice": "Office",
   "navGarage": "Garage",
   "navYouthAcademy": "Academy",
@@ -1093,5 +1093,17 @@
   "categoryQualifying": "Qualifying Fees",
   "categoryTax": "Taxes & Rebalance",
   "categoryOther": "Other",
-  "nextFinanceUpdate": "Next update"
+  "nextFinanceUpdate": "Next update",
+  "preferencesTitle": "Preferences",
+  "darkModeLabel": "Dark Mode",
+  "lightModeLabel": "Light Mode",
+  "garageQualyInProgress": "QUALIFYING SESSION IN PROGRESS",
+  "garageQualyRunningWait": "Drivers are currently on track. Official results will be available in:\n\n{time}",
+  "@garageQualyRunningWait": {
+    "placeholders": {
+      "time": {
+        "type": "String"
+      }
+    }
+  }
 }

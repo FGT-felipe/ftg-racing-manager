@@ -1274,7 +1274,7 @@ class AppLocalizationsEs extends AppLocalizations {
   String get navDashboard => 'Panel';
 
   @override
-  String get navHQ => 'Sede';
+  String get navHQ => 'Instalaciones';
 
   @override
   String get navTeamOffice => 'Oficina';
@@ -1992,4 +1992,21 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get nextFinanceUpdate => 'Próxima actualización';
+
+  @override
+  String get preferencesTitle => 'Preferencias';
+
+  @override
+  String get darkModeLabel => 'Modo Oscuro';
+
+  @override
+  String get lightModeLabel => 'Modo Claro';
+
+  @override
+  String get garageQualyInProgress => 'SESIÓN DE CLASIFICACIÓN EN PROGRESO';
+
+  @override
+  String garageQualyRunningWait(String time) {
+    return 'Los pilotos están en la pista. Los resultados oficiales estarán disponibles en:\n\n$time';
+  }
 }

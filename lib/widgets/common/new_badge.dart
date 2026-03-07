@@ -59,53 +59,46 @@ class _NewBadgeWidgetState extends State<NewBadgeWidget>
       clipBehavior: Clip.none,
       children: [
         widget.child,
-        Positioned.fill(
-          child: UnconstrainedBox(
-            alignment: widget.badgeAlignment,
-            child: Padding(
-              padding: widget.padding,
-              child: Transform.translate(
-                offset: const Offset(8, -8), // Push it slightly outside
-                child: Container(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 6,
-                    vertical: 2,
+        Positioned(
+          top: -8,
+          right: -8,
+          child: Padding(
+            padding: widget.padding,
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+              decoration: BoxDecoration(
+                color: Colors.purpleAccent, // Purple color
+                borderRadius: BorderRadius.circular(12),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.purpleAccent.withValues(alpha: 0.4),
+                    blurRadius: 4,
+                    offset: const Offset(0, 2),
                   ),
-                  decoration: BoxDecoration(
-                    color: Colors.purpleAccent, // Purple color
-                    borderRadius: BorderRadius.circular(12),
-                    boxShadow: [
-                      BoxShadow(
-                        color: Colors.purpleAccent.withValues(alpha: 0.4),
-                        blurRadius: 4,
-                        offset: const Offset(0, 2),
-                      ),
-                    ],
+                ],
+              ),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  FadeTransition(
+                    opacity: _animation,
+                    child: const Icon(
+                      Icons.star,
+                      color: Colors.white,
+                      size: 10,
+                    ),
                   ),
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      FadeTransition(
-                        opacity: _animation,
-                        child: const Icon(
-                          Icons.star,
-                          color: Colors.white,
-                          size: 10,
-                        ),
-                      ),
-                      const SizedBox(width: 2),
-                      const Text(
-                        "NEW",
-                        style: TextStyle(
-                          color: Colors.white,
-                          fontSize: 8,
-                          fontWeight: FontWeight.bold,
-                          letterSpacing: 0.5,
-                        ),
-                      ),
-                    ],
+                  const SizedBox(width: 2),
+                  const Text(
+                    "NEW",
+                    style: TextStyle(
+                      color: Colors.white,
+                      fontSize: 8,
+                      fontWeight: FontWeight.bold,
+                      letterSpacing: 0.5,
+                    ),
                   ),
-                ),
+                ],
               ),
             ),
           ),

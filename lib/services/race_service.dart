@@ -5,6 +5,7 @@ import '../models/simulation_models.dart';
 import '../services/circuit_service.dart';
 import '../services/season_service.dart';
 import '../services/notification_service.dart';
+import '../utils/economy_constants.dart';
 
 class RaceService {
   static final RaceService _instance = RaceService._internal();
@@ -177,6 +178,49 @@ class RaceService {
         }
       }
 
+      // 8. ECONOMY: Qualifying Prize Payouts (Top 3 positions)
+      // Track prizes already awarded per team to avoid double-counting
+      final Map<String, int> teamQualyPrizes = {};
+      for (
+        int i = 0;
+        i < qualyResults.length && i < kQualyPrizesByPosition.length;
+        i++
+      ) {
+        final dId = qualyResults[i]['driverId'] as String;
+        final prize = kQualyPrizesByPosition[i];
+
+        final dDoc = await _db.collection('drivers').doc(dId).get();
+        if (dDoc.exists) {
+          final tId = dDoc.data()!['teamId'] as String?;
+          if (tId != null) {
+            teamQualyPrizes[tId] = (teamQualyPrizes[tId] ?? 0) + prize;
+          }
+        }
+      }
+
+      // Apply qualifying prizes to team budgets and log transactions
+      for (var entry in teamQualyPrizes.entries) {
+        final tId = entry.key;
+        final totalPrize = entry.value;
+        await _db.collection('teams').doc(tId).update({
+          'budget': FieldValue.increment(totalPrize),
+        });
+
+        // Log the transaction
+        final txRef = _db
+            .collection('teams')
+            .doc(tId)
+            .collection('transactions')
+            .doc();
+        await txRef.set({
+          'id': txRef.id,
+          'description': 'Qualifying Prize Money',
+          'amount': totalPrize,
+          'date': DateTime.now().toIso8601String(),
+          'type': 'QUALIFYING',
+        });
+      }
+
       // Update Player's weekStatus with qualifying best compounds (important for Strategy lockdown)
       for (var res in qualyResults) {
         final dId = res['driverId'] as String;
@@ -198,11 +242,20 @@ class RaceService {
               final pos =
                   qualyResults.indexWhere((r) => r['driverId'] == dId) + 1;
               final driverName = res['driverName'] as String;
+
+              // Build notification message with prize info
+              String qualyMsg =
+                  "$driverName qualified P$pos for the ${currentRace.trackName}!";
+              if (pos <= kQualyPrizesByPosition.length) {
+                final driverPrize = kQualyPrizesByPosition[pos - 1];
+                qualyMsg +=
+                    " Prize: \$${(driverPrize / 1000).toStringAsFixed(0)}k";
+              }
+
               await NotificationService().addNotification(
                 teamId: tId,
                 title: "Qualifying Finished",
-                message:
-                    "$driverName qualified P$pos for the ${currentRace.trackName}!",
+                message: qualyMsg,
                 type: 'NEWS',
                 actionRoute: '/race_week/garage',
               );
@@ -1223,9 +1276,7 @@ class RaceService {
       }
     }
 
-    // 6. ECONOMY: Financial Rewards
-    const int basePrize = 250000;
-    const int pointValue = 150000;
+    // 6. ECONOMY: Financial Rewards (uses economy_constants.dart)
     int playerEarnings = 0;
 
     // We need to apply prizes to ALL teams based on points earned this race
@@ -1233,7 +1284,8 @@ class RaceService {
       final teamRef = teamDoc.reference;
       final team = Team.fromMap(teamDoc.data());
       final racePoints = teamPointUpdates[teamRef] ?? 0;
-      final earnings = basePrize + (racePoints * pointValue);
+      final earnings =
+          kRaceBaseParticipation + (racePoints * kRacePrizePerPoint);
 
       batch.update(teamRef, {'budget': FieldValue.increment(earnings)});
 
@@ -1428,13 +1480,12 @@ class RaceService {
       }
     }
 
-    // 3. Update Team Stats and Budget
-    const int basePrize = 250000;
-    const int pointValue = 150000;
+    // 3. Update Team Stats and Budget (uses economy_constants.dart)
 
     for (var teamId in teamsMap.keys) {
       final earnedPoints = teamPointUpdates[teamId] ?? 0;
-      final earnings = basePrize + (earnedPoints * pointValue);
+      final earnings =
+          kRaceBaseParticipation + (earnedPoints * kRacePrizePerPoint);
       final team = teamsMap[teamId]!;
 
       final teamRef = _db.collection('teams').doc(teamId);

@@ -2381,7 +2381,7 @@ abstract class AppLocalizations {
   /// No description provided for @navHQ.
   ///
   /// In en, this message translates to:
-  /// **'HQ'**
+  /// **'Facilities'**
   String get navHQ;
 
   /// No description provided for @navTeamOffice.
@@ -3735,6 +3735,36 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Next update'**
   String get nextFinanceUpdate;
+
+  /// No description provided for @preferencesTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Preferences'**
+  String get preferencesTitle;
+
+  /// No description provided for @darkModeLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Dark Mode'**
+  String get darkModeLabel;
+
+  /// No description provided for @lightModeLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Light Mode'**
+  String get lightModeLabel;
+
+  /// No description provided for @garageQualyInProgress.
+  ///
+  /// In en, this message translates to:
+  /// **'QUALIFYING SESSION IN PROGRESS'**
+  String get garageQualyInProgress;
+
+  /// No description provided for @garageQualyRunningWait.
+  ///
+  /// In en, this message translates to:
+  /// **'Drivers are currently on track. Official results will be available in:\n\n{time}'**
+  String garageQualyRunningWait(String time);
 }
 
 class _AppLocalizationsDelegate

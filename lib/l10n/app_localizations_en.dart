@@ -1272,7 +1272,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get navDashboard => 'Dashboard';
 
   @override
-  String get navHQ => 'HQ';
+  String get navHQ => 'Facilities';
 
   @override
   String get navTeamOffice => 'Office';
@@ -1987,4 +1987,21 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get nextFinanceUpdate => 'Next update';
+
+  @override
+  String get preferencesTitle => 'Preferences';
+
+  @override
+  String get darkModeLabel => 'Dark Mode';
+
+  @override
+  String get lightModeLabel => 'Light Mode';
+
+  @override
+  String get garageQualyInProgress => 'QUALIFYING SESSION IN PROGRESS';
+
+  @override
+  String garageQualyRunningWait(String time) {
+    return 'Drivers are currently on track. Official results will be available in:\n\n$time';
+  }
 }

@@ -1145,31 +1145,6 @@ class _CandidateCard extends StatelessWidget {
           ].map((stat) => _buildStatRangeBar(stat)),
           const SizedBox(height: 16),
 
-          // Salary info
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Text(
-                'CONTRACT',
-                style: GoogleFonts.poppins(
-                  fontSize: 9,
-                  fontWeight: FontWeight.bold,
-                  color: Colors.white38,
-                  letterSpacing: 1,
-                ),
-              ),
-              Text(
-                '\$${(driver.salary / 1000).toStringAsFixed(0)}k / year',
-                style: GoogleFonts.poppins(
-                  fontSize: 12,
-                  fontWeight: FontWeight.w600,
-                  color: Colors.white70,
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 16),
-
           // Action buttons
           Row(
             children: [

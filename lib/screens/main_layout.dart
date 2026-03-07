@@ -1,36 +1,38 @@
+import 'dart:async';
 import 'package:cloud_firestore/cloud_firestore.dart' hide Transaction;
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'home/dashboard_screen.dart';
-import 'engineering_screen.dart';
-import 'team/team_screen.dart';
-import 'drivers/drivers_screen.dart';
-import 'race/paddock_screen.dart';
-import 'standings_screen.dart';
-import 'office/finances_screen.dart';
-import 'office/sponsorship_screen.dart';
-import 'calendar/calendar_screen.dart';
-import 'race/race_day_screen.dart';
-import 'hq/youth_academy_screen.dart';
-import 'management/personal_screen.dart';
-import 'management/fitness_trainer_screen.dart';
-import '../widgets/common/new_dot.dart';
-import 'market/transfer_market_screen.dart';
-import 'hq_screen.dart';
-import '../widgets/common/app_logo.dart';
-import '../widgets/common/new_badge.dart';
-import '../widgets/common/breadcrumbs.dart';
+import 'package:intl/intl.dart';
+
+import '../l10n/app_localizations.dart';
+import '../models/core_models.dart';
+import '../models/user_models.dart';
+import '../models/user_model.dart' as legacy_user; // Handling conflict
+import '../../services/auth_service.dart';
+import '../services/notification_service.dart';
 import '../services/season_service.dart';
 import '../services/time_service.dart';
-import '../services/notification_service.dart';
-import '../models/core_models.dart';
-import '../models/user_model.dart';
+import '../widgets/common/app_logo.dart';
+import '../widgets/common/breadcrumbs.dart';
+import '../widgets/common/new_badge.dart';
+import '../widgets/common/new_dot.dart';
 import '../widgets/notification_card.dart';
-import '../services/auth_service.dart';
-import 'package:firebase_auth/firebase_auth.dart';
-import 'package:intl/intl.dart';
-import 'dart:async';
-import '../l10n/app_localizations.dart';
+import 'calendar/calendar_screen.dart';
+import 'drivers/drivers_screen.dart';
+import 'engineering_screen.dart';
+import 'home/dashboard_screen.dart';
+import 'hq/youth_academy_screen.dart';
+import 'hq_screen.dart';
+import 'management/fitness_trainer_screen.dart';
+import 'management/personal_screen.dart';
+import 'market/transfer_market_screen.dart';
+import 'office/finances_screen.dart';
+import 'office/sponsorship_screen.dart';
+import 'race/paddock_screen.dart';
+import 'race/race_day_screen.dart';
+import 'standings_screen.dart';
+import 'team/team_screen.dart';
 
 class NavNode {
   final String Function(BuildContext) titleBuilder;
@@ -70,7 +72,7 @@ class _MainLayoutState extends State<MainLayout> {
   StreamSubscription<List<AppNotification>>? _notificationSubscription;
   Set<String> _knownNotificationIds = {};
   bool _firstLoad = true;
-  AppUser? _appUser;
+  legacy_user.AppUser? _appUser;
   final LayerLink _accountLayerLink = LayerLink();
   OverlayEntry? _accountOverlayEntry;
   bool _isAccountCardOpen = false;
@@ -90,66 +92,8 @@ class _MainLayoutState extends State<MainLayout> {
       NavNode(
         id: 'dashboard',
         titleBuilder: (context) => AppLocalizations.of(context).navDashboard,
-        screen: DashboardScreen(
-          teamId: widget.teamId,
-          onNavigate: (id) {
-            final node = _findNodeById(id, _navTree);
-            if (node != null) _onNodeSelected(node);
-          },
-        ),
-      ),
-      NavNode(
-        id: 'hq',
-        titleBuilder: (context) => AppLocalizations.of(context).navHQ,
-        screen: HQScreen(
-          teamId: widget.teamId,
-          onNavigate: (id) {
-            final node = _findNodeById(id, _navTree);
-            if (node != null) _onNodeSelected(node);
-          },
-        ),
-        children: [
-          NavNode(
-            id: 'hq_office',
-            titleBuilder: (context) =>
-                AppLocalizations.of(context).navTeamOffice,
-            screen: TeamScreen(teamId: widget.teamId),
-          ),
-          NavNode(
-            id: 'hq_garage',
-            titleBuilder: (context) => AppLocalizations.of(context).navGarage,
-            screen: EngineeringScreen(teamId: widget.teamId),
-          ),
-          NavNode(
-            id: 'hq_academy',
-            titleBuilder: (context) =>
-                AppLocalizations.of(context).navYouthAcademy,
-            screen: YouthAcademyScreen(teamId: widget.teamId),
-          ),
-        ],
-      ),
-      NavNode(
-        id: 'racing',
-        titleBuilder: (context) => AppLocalizations.of(context).navRacing,
-        children: [
-          NavNode(
-            id: 'racing_setup',
-            titleBuilder: (context) =>
-                AppLocalizations.of(context).navWeekendSetup,
-            screen: PaddockScreen(teamId: widget.teamId),
-          ),
-          NavNode(
-            id: 'racing_day',
-            titleBuilder: (context) => AppLocalizations.of(context).navRaceDay,
-            screen: RaceDayScreen(teamId: widget.teamId),
-          ),
-        ],
-      ),
-      NavNode(
-        id: 'market',
-        titleBuilder: (context) => "Transfer Market",
-        screen: TransferMarketScreen(teamId: widget.teamId),
-        showNewBadge: true,
+        screen:
+            const SizedBox.shrink(), // Placeholder, built in _getFlatScreens
       ),
       NavNode(
         id: 'management',
@@ -200,6 +144,58 @@ class _MainLayoutState extends State<MainLayout> {
             screen: SponsorshipScreen(teamId: widget.teamId),
           ),
         ],
+      ),
+      NavNode(
+        id: 'academy',
+        titleBuilder: (context) => AppLocalizations.of(context).navYouthAcademy,
+        screen: YouthAcademyScreen(teamId: widget.teamId),
+      ),
+      NavNode(
+        id: 'hq', // Reusing 'hq' ID but label will be translated to 'Facilities'
+        titleBuilder: (context) => AppLocalizations.of(context).navHQ,
+        screen: HQScreen(
+          teamId: widget.teamId,
+          onNavigate: (id) {
+            final node = _findNodeById(id, _navTree);
+            if (node != null) _onNodeSelected(node);
+          },
+        ),
+        children: [
+          NavNode(
+            id: 'hq_office',
+            titleBuilder: (context) =>
+                AppLocalizations.of(context).navTeamOffice,
+            screen: TeamScreen(teamId: widget.teamId),
+          ),
+          NavNode(
+            id: 'hq_garage',
+            titleBuilder: (context) => AppLocalizations.of(context).navGarage,
+            screen: EngineeringScreen(teamId: widget.teamId),
+          ),
+        ],
+      ),
+      NavNode(
+        id: 'racing',
+        titleBuilder: (context) => AppLocalizations.of(context).navRacing,
+        children: [
+          NavNode(
+            id: 'racing_setup',
+            titleBuilder: (context) =>
+                AppLocalizations.of(context).navWeekendSetup,
+            screen: PaddockScreen(teamId: widget.teamId),
+          ),
+          NavNode(
+            id: 'racing_day',
+            titleBuilder: (context) => AppLocalizations.of(context).navRaceDay,
+            screen: RaceDayScreen(teamId: widget.teamId),
+          ),
+        ],
+      ),
+      NavNode(
+        id: 'market',
+        titleBuilder: (context) => "Transfer Market",
+        screen: TransferMarketScreen(teamId: widget.teamId),
+        showNewBadge: true,
       ),
       NavNode(
         id: 'season',
@@ -345,6 +341,7 @@ class _MainLayoutState extends State<MainLayout> {
                               )
                             : AppLocalizations.of(context).notAvailable,
                       ),
+                      const SizedBox(height: 24),
                     ],
                   ),
                 ),
@@ -500,35 +497,25 @@ class _MainLayoutState extends State<MainLayout> {
     }
   }
 
-  Widget _buildEconomyStat({
-    required String label,
-    required String value,
-    required Color color,
-  }) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        if (label.isNotEmpty)
-          Text(
-            label.toUpperCase(),
-            style: GoogleFonts.raleway(
-              fontSize: 9,
-              fontWeight: FontWeight.bold,
-              color: Colors.white54,
-              letterSpacing: 0.5,
-            ),
-          ),
-        Text(
-          value,
-          style: GoogleFonts.poppins(
-            fontSize: 14,
-            fontWeight: FontWeight.w700,
-            color: color,
-          ),
-        ),
-      ],
-    );
+  List<Widget> _getFlatScreens(
+    ManagerProfile manager,
+    Team team,
+    Season? season,
+  ) {
+    return _flatLeaves.map((n) {
+      if (n.id == 'dashboard') {
+        return DashboardScreen(
+          team: team,
+          manager: manager,
+          season: season,
+          onNavigate: (id) {
+            final node = _findNodeById(id, _navTree);
+            if (node != null) _onNodeSelected(node);
+          },
+        );
+      }
+      return n.screen!;
+    }).toList();
   }
 
   void _onNodeSelected(NavNode node) {
@@ -594,6 +581,68 @@ class _MainLayoutState extends State<MainLayout> {
 
   @override
   Widget build(BuildContext context) {
+    return StreamBuilder<User?>(
+      stream: FirebaseAuth.instance.authStateChanges(),
+      builder: (context, authSnapshot) {
+        if (authSnapshot.connectionState == ConnectionState.waiting) {
+          return const Scaffold(
+            body: Center(child: CircularProgressIndicator()),
+          );
+        }
+
+        final user = authSnapshot.data;
+        if (user == null) return const Scaffold();
+
+        return StreamBuilder<DocumentSnapshot>(
+          stream: FirebaseFirestore.instance
+              .collection('managers')
+              .doc(user.uid)
+              .snapshots(),
+          builder: (context, managerSnapshot) {
+            return StreamBuilder<QuerySnapshot>(
+              stream: FirebaseFirestore.instance
+                  .collection('teams')
+                  .where('managerId', isEqualTo: user.uid)
+                  .limit(1)
+                  .snapshots(),
+              builder: (context, teamSnapshot) {
+                return StreamBuilder<Season?>(
+                  stream: SeasonService().getActiveSeasonStream(),
+                  builder: (context, seasonSnapshot) {
+                    if (!managerSnapshot.hasData ||
+                        !teamSnapshot.hasData ||
+                        teamSnapshot.data!.docs.isEmpty) {
+                      return const Scaffold(
+                        body: Center(child: CircularProgressIndicator()),
+                      );
+                    }
+
+                    final manager = ManagerProfile.fromMap(
+                      managerSnapshot.data!.data() as Map<String, dynamic>,
+                    );
+                    final team = Team.fromMap(
+                      teamSnapshot.data!.docs.first.data()
+                          as Map<String, dynamic>,
+                    );
+                    final season = seasonSnapshot.data;
+
+                    return _buildLayout(context, manager, team, season);
+                  },
+                );
+              },
+            );
+          },
+        );
+      },
+    );
+  }
+
+  Widget _buildLayout(
+    BuildContext context,
+    ManagerProfile manager,
+    Team team,
+    Season? season,
+  ) {
     final theme = Theme.of(context);
     final isMobile = MediaQuery.of(context).size.width <= 900;
 
@@ -603,41 +652,7 @@ class _MainLayoutState extends State<MainLayout> {
           children: [
             AppLogo(size: 28, isDark: theme.brightness == Brightness.light),
             const SizedBox(width: 24),
-            StreamBuilder<DocumentSnapshot>(
-              stream: FirebaseFirestore.instance
-                  .collection('teams')
-                  .doc(widget.teamId)
-                  .snapshots(),
-              builder: (context, snapshot) {
-                if (!snapshot.hasData || snapshot.data?.data() == null) {
-                  return const SizedBox.shrink();
-                }
-                final team = Team.fromMap(
-                  snapshot.data!.data() as Map<String, dynamic>,
-                );
-                final NumberFormat formatter = NumberFormat.simpleCurrency(
-                  decimalDigits: 0,
-                );
-                final transferBudget =
-                    (team.budget * team.transferBudgetPercentage / 100).round();
-
-                return Row(
-                  children: [
-                    _buildEconomyStat(
-                      label: AppLocalizations.of(context).totalBalance,
-                      value: formatter.format(team.budget),
-                      color: Colors.white,
-                    ),
-                    const SizedBox(width: 20),
-                    _buildEconomyStat(
-                      label: AppLocalizations.of(context).transferBudgetLabel,
-                      value: formatter.format(transferBudget),
-                      color: theme.colorScheme.secondary,
-                    ),
-                  ],
-                );
-              },
-            ),
+            _AppBarEconomyStats(teamId: team.id),
           ],
         ),
         backgroundColor: theme.scaffoldBackgroundColor,
@@ -802,9 +817,11 @@ class _MainLayoutState extends State<MainLayout> {
                                   index: _flatLeaves.indexWhere(
                                     (n) => n.id == _selectedId,
                                   ),
-                                  children: _flatLeaves
-                                      .map((n) => n.screen!)
-                                      .toList(),
+                                  children: _getFlatScreens(
+                                    manager,
+                                    team,
+                                    season,
+                                  ),
                                 ),
                               ),
                             ],
@@ -933,7 +950,7 @@ class _Sidebar extends StatelessWidget {
   Widget _buildNode(BuildContext context, NavNode node, int depth) {
     final bool isSelected = selectedId == node.id;
     final bool hasChildren = node.children != null && node.children!.isNotEmpty;
-    final theme = ThemeData.dark(); // Or inherit if needed, but sidebar is dark
+    final theme = Theme.of(context);
 
     // Check if any child is selected for highlighting parent
     bool isAnyChildSelected = false;
@@ -943,11 +960,12 @@ class _Sidebar extends StatelessWidget {
 
     final double paddingLeft = 16.0 + (depth * 16.0);
     final Color contentColor = (isSelected || isAnyChildSelected)
-        ? (depth == 0 ? theme.colorScheme.secondary : Colors.white)
-        : Colors.white54;
+        ? (depth == 0
+              ? theme.colorScheme.secondary
+              : theme.colorScheme.onSurface)
+        : theme.colorScheme.onSurface.withValues(alpha: 0.5);
     final FontWeight fontWeight = (isSelected || isAnyChildSelected)
-        ? FontWeight
-              .w900 // Use Poppins Black style logic for main items
+        ? FontWeight.w900
         : FontWeight.normal;
     final double fontSize = depth > 0 ? 12 : 14;
 
@@ -1155,5 +1173,85 @@ class _SubNavbar extends StatelessWidget {
       if (_isChildSelected(child, selectedId)) return true;
     }
     return false;
+  }
+}
+
+class _AppBarEconomyStats extends StatelessWidget {
+  final String teamId;
+
+  const _AppBarEconomyStats({required this.teamId});
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    return StreamBuilder<DocumentSnapshot>(
+      stream: FirebaseFirestore.instance
+          .collection('teams')
+          .doc(teamId)
+          .snapshots(),
+      builder: (context, snapshot) {
+        if (!snapshot.hasData || snapshot.data?.data() == null) {
+          return const SizedBox.shrink();
+        }
+        final team = Team.fromMap(
+          snapshot.data!.data() as Map<String, dynamic>,
+        );
+        final NumberFormat formatter = NumberFormat.simpleCurrency(
+          decimalDigits: 0,
+        );
+        final transferBudget =
+            (team.budget * team.transferBudgetPercentage / 100).round();
+
+        return Row(
+          children: [
+            _buildEconomyStat(
+              context,
+              label: AppLocalizations.of(context).totalBalance,
+              value: formatter.format(team.budget),
+              color: Colors.white,
+            ),
+            const SizedBox(width: 20),
+            _buildEconomyStat(
+              context,
+              label: AppLocalizations.of(context).transferBudgetLabel,
+              value: formatter.format(transferBudget),
+              color: theme.colorScheme.secondary,
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  Widget _buildEconomyStat(
+    BuildContext context, {
+    required String label,
+    required String value,
+    required Color color,
+  }) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        if (label.isNotEmpty)
+          Text(
+            label.toUpperCase(),
+            style: GoogleFonts.raleway(
+              fontSize: 9,
+              fontWeight: FontWeight.bold,
+              color: Colors.white54,
+              letterSpacing: 0.5,
+            ),
+          ),
+        Text(
+          value,
+          style: GoogleFonts.poppins(
+            fontSize: 14,
+            fontWeight: FontWeight.w700,
+            color: color,
+          ),
+        ),
+      ],
+    );
   }
 }

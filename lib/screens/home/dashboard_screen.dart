@@ -1,10 +1,7 @@
-import 'dart:async';
 import 'package:flutter/material.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import '../../services/season_service.dart';
 import '../../services/time_service.dart';
-import '../../services/auth_service.dart';
 import '../../models/user_models.dart';
 import '../../models/core_models.dart';
 import 'dashboard_widgets.dart';
@@ -17,7 +14,6 @@ import '../../services/circuit_service.dart';
 import '../../services/notification_service.dart';
 import '../../widgets/notification_card.dart';
 import '../../utils/app_constants.dart';
-import '../../widgets/common/dynamic_loading_indicator.dart';
 import '../../l10n/app_localizations.dart';
 
 class DashboardData {
@@ -37,136 +33,48 @@ class DashboardData {
 }
 
 class DashboardScreen extends StatefulWidget {
-  final String teamId;
+  final Team team;
+  final ManagerProfile manager;
+  final Season? season;
   final Function(String)? onNavigate;
 
-  const DashboardScreen({super.key, required this.teamId, this.onNavigate});
+  const DashboardScreen({
+    super.key,
+    required this.team,
+    required this.manager,
+    this.season,
+    this.onNavigate,
+  });
 
   @override
   State<DashboardScreen> createState() => _DashboardScreenState();
 }
 
 class _DashboardScreenState extends State<DashboardScreen> {
-  Stream<DashboardData>? _dashboardStream;
+  // No longer needed: manual stream management
 
   @override
   void initState() {
     super.initState();
-    _initStreams();
   }
 
   @override
   void didUpdateWidget(DashboardScreen oldWidget) {
     super.didUpdateWidget(oldWidget);
-    if (oldWidget.teamId != widget.teamId) {
-      _initStreams();
-    }
   }
 
-  void _initStreams() {
-    // Manual stream consolidation to eliminate the "Pyramid of Streams" and redundant Firestore calls
-    _dashboardStream = AuthService().user.asyncExpand((user) {
-      if (user == null) {
-        return Stream.value(DashboardData(user: null));
-      }
-
-      final controller = StreamController<DashboardData>();
-      ManagerProfile? currentManager;
-      Team? currentTeam;
-      Season? currentSeason;
-      List<AppNotification> currentNotifications = [];
-
-      void emit() {
-        if (!controller.isClosed) {
-          controller.add(
-            DashboardData(
-              user: user,
-              manager: currentManager,
-              team: currentTeam,
-              season: currentSeason,
-              notifications: currentNotifications,
-            ),
-          );
-        }
-      }
-
-      final subs = [
-        FirebaseFirestore.instance
-            .collection('managers')
-            .doc(user.uid)
-            .snapshots()
-            .listen((doc) {
-              currentManager = doc.exists
-                  ? ManagerProfile.fromMap(doc.data()!)
-                  : null;
-              emit();
-            }),
-        FirebaseFirestore.instance
-            .collection('teams')
-            .doc(widget.teamId)
-            .snapshots()
-            .listen((doc) {
-              currentTeam = doc.exists ? Team.fromMap(doc.data()!) : null;
-              emit();
-            }),
-        SeasonService().getActiveSeasonStream().listen((season) {
-          currentSeason = season;
-          emit();
-        }),
-        NotificationService().getTeamNotifications(widget.teamId).listen((
-          notifs,
-        ) {
-          currentNotifications = notifs;
-          emit();
-        }),
-      ];
-
-      controller.onCancel = () {
-        for (final s in subs) {
-          s.cancel();
-        }
-      };
-
-      return controller.stream;
-    });
-  }
+  // Removed manual stream consolidation logic to prevent memory leaks and redundant listeners
 
   @override
   Widget build(BuildContext context) {
-    return StreamBuilder<DashboardData>(
-      stream: _dashboardStream,
-      builder: (context, snapshot) {
-        if (snapshot.hasError) {
-          return Scaffold(
-            body: Center(
-              child: Text(
-                AppLocalizations.of(
-                  context,
-                ).authError(snapshot.error.toString()),
-              ),
-            ),
-          );
-        }
+    final manager = widget.manager;
+    final team = widget.team;
+    final season = widget.season;
 
-        if (!snapshot.hasData) {
-          return const Scaffold(body: DynamicLoadingIndicator());
-        }
-
-        final data = snapshot.data!;
-        if (data.user == null) {
-          return const Scaffold(body: DynamicLoadingIndicator());
-        }
-
-        // Wait for all critical data to be present if possible,
-        // to avoid "pop-in" effect while still being reactive
-        if (data.manager == null || data.team == null) {
-          return const Scaffold(body: DynamicLoadingIndicator());
-        }
-
-        final manager = data.manager!;
-        final team = data.team!;
-        final season = data.season;
-        final notifications = data.notifications;
+    return StreamBuilder<List<AppNotification>>(
+      stream: NotificationService().getTeamNotifications(team.id),
+      builder: (context, notificationsSnapshot) {
+        final notifications = notificationsSnapshot.data ?? [];
 
         // Business Logic (Pre-calculated once per stream emission)
         final currentRace = season != null
@@ -335,15 +243,28 @@ class _DashboardScreenState extends State<DashboardScreen> {
                           const SizedBox(height: 16),
                           if (notifications.isEmpty)
                             Container(
-                              padding: const EdgeInsets.all(24),
+                              padding: const EdgeInsets.all(20),
                               decoration: BoxDecoration(
-                                color: Theme.of(
-                                  context,
-                                ).cardTheme.color?.withValues(alpha: 0.5),
+                                gradient: const LinearGradient(
+                                  begin: Alignment.topLeft,
+                                  end: Alignment.bottomRight,
+                                  colors: [
+                                    Color(0xFF292A33),
+                                    Color(0xFF1A1B23),
+                                  ],
+                                ),
                                 borderRadius: BorderRadius.circular(12),
                                 border: Border.all(
                                   color: Colors.white.withValues(alpha: 0.05),
+                                  width: 1,
                                 ),
+                                boxShadow: [
+                                  BoxShadow(
+                                    color: Colors.black.withValues(alpha: 0.2),
+                                    blurRadius: 10,
+                                    offset: const Offset(0, 4),
+                                  ),
+                                ],
                               ),
                               child: Row(
                                 children: [
@@ -372,12 +293,9 @@ class _DashboardScreenState extends State<DashboardScreen> {
                                     (n) => NotificationCard(
                                       notification: n,
                                       onTap: () => NotificationService()
-                                          .markAsRead(widget.teamId, n.id),
+                                          .markAsRead(team.id, n.id),
                                       onDismiss: () => NotificationService()
-                                          .deleteNotification(
-                                            widget.teamId,
-                                            n.id,
-                                          ),
+                                          .deleteNotification(team.id, n.id),
                                     ),
                                   )
                                   .toList(),

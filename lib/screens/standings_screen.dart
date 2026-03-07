@@ -1,3 +1,4 @@
+import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:ftg_racing_manager/l10n/app_localizations.dart';
@@ -413,41 +414,44 @@ class _ConstructorsStandingsTabState extends State<_ConstructorsStandingsTab> {
   }
 
   Future<void> _fetchLiveData() async {
-    final futures = <Future<void>>[];
-    for (var team in widget.league.teams) {
-      futures.add(
-        FirebaseFirestore.instance.collection('teams').doc(team.id).get().then((
-          teamDoc,
-        ) {
-          if (teamDoc.exists) {
-            // Capture live team data (name, season stats, etc.)
-            if (mounted) {
-              setState(() {
-                _liveTeamsMap[team.id] = Team.fromMap(teamDoc.data()!);
-              });
-            }
+    final teamIds = widget.league.teams.map((t) => t.id).toList();
+    if (teamIds.isEmpty) return;
 
-            final managerId = teamDoc.data()?['managerId'] as String?;
-            if (managerId != null && managerId.isNotEmpty) {
-              return FirebaseFirestore.instance
-                  .collection('managers')
-                  .doc(managerId)
-                  .get()
-                  .then((managerDoc) {
-                    if (managerDoc.exists && mounted) {
-                      setState(() {
-                        _managersMap[team.id] = ManagerProfile.fromMap(
-                          managerDoc.data()!,
-                        );
-                      });
-                    }
-                  });
-            }
+    final Map<String, Team> liveTeams = {};
+    final Map<String, ManagerProfile> managers = {};
+
+    // Firestore 'whereIn' limit is 30
+    for (int i = 0; i < teamIds.length; i += 30) {
+      final chunk = teamIds.sublist(i, math.min(i + 30, teamIds.length));
+
+      final teamsSnap = await FirebaseFirestore.instance
+          .collection('teams')
+          .where(FieldPath.documentId, whereIn: chunk)
+          .get();
+
+      for (final doc in teamsSnap.docs) {
+        final team = Team.fromMap(doc.data());
+        liveTeams[doc.id] = team;
+
+        final managerId = team.managerId;
+        if (managerId != null && managerId.isNotEmpty) {
+          final managerDoc = await FirebaseFirestore.instance
+              .collection('managers')
+              .doc(managerId)
+              .get();
+          if (managerDoc.exists) {
+            managers[doc.id] = ManagerProfile.fromMap(managerDoc.data()!);
           }
-        }),
-      );
+        }
+      }
     }
-    await Future.wait(futures);
+
+    if (mounted) {
+      setState(() {
+        _liveTeamsMap.addAll(liveTeams);
+        _managersMap.addAll(managers);
+      });
+    }
   }
 
   String _getFlagEmoji(String country) {

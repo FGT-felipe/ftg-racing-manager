@@ -96,7 +96,7 @@ class _AccountScreenState extends State<AccountScreen> {
                 _managerProfile!.role.title,
               ),
               _buildInfoRow(
-                "Reputation", // reputationLabel was missed in ARB, using raw string
+                "Reputation",
                 _managerProfile!.reputation.toString(),
               ),
               _buildInfoRow(
@@ -127,6 +127,14 @@ class _AccountScreenState extends State<AccountScreen> {
                 ],
               ),
             ),
+
+          const SizedBox(height: 32),
+
+          // ── Preferences Section ──
+          _buildSectionTitle(AppLocalizations.of(context).preferencesTitle),
+          const SizedBox(height: 16),
+          _buildPreferencesCard(),
+
           const SizedBox(height: 32),
           SizedBox(
             width: double.infinity,
@@ -150,6 +158,11 @@ class _AccountScreenState extends State<AccountScreen> {
         ],
       ),
     );
+  }
+
+  // ── Preferences Section ──
+  Widget _buildPreferencesCard() {
+    return const SizedBox.shrink(); // Light mode removed
   }
 
   Widget _buildSectionTitle(String title) {

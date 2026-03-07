@@ -60,7 +60,8 @@ class FTGRacingApp extends StatelessWidget {
     return MaterialApp(
       title: 'FTG Racing Manager',
       debugShowCheckedModeBanner: false,
-      theme: AppTheme.lightTheme,
+      darkTheme: AppTheme.darkTheme,
+      themeMode: ThemeMode.dark,
       localizationsDelegates: const [
         AppLocalizations.delegate,
         GlobalMaterialLocalizations.delegate,

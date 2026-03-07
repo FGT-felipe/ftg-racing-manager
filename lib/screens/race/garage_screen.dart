@@ -1332,7 +1332,68 @@ class _GarageScreenState extends State<GarageScreen>
     }
 
     final timeService = TimeService();
-    final isPaddockOpen = timeService.currentStatus == RaceWeekStatus.practice;
+    final currentStatus = timeService.currentStatus;
+    final isPaddockOpen = currentStatus == RaceWeekStatus.practice;
+
+    if (currentStatus == RaceWeekStatus.qualifying) {
+      final qualyContent = Center(
+        child: Padding(
+          padding: const EdgeInsets.all(24.0),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(Icons.timer, size: 64, color: theme.colorScheme.secondary),
+              const SizedBox(height: 24),
+              Text(
+                l10n.garageQualyInProgress,
+                style: theme.textTheme.headlineSmall?.copyWith(
+                  fontWeight: FontWeight.bold,
+                  color: theme.colorScheme.secondary,
+                ),
+                textAlign: TextAlign.center,
+              ),
+              const SizedBox(height: 16),
+              StreamBuilder(
+                stream: Stream.periodic(const Duration(seconds: 1)),
+                builder: (context, snapshot) {
+                  final timeUntilNext = timeService.getTimeUntilNextEvent();
+                  final minStr = timeUntilNext.inMinutes.toString().padLeft(
+                    2,
+                    '0',
+                  );
+                  final secStr = (timeUntilNext.inSeconds % 60)
+                      .toString()
+                      .padLeft(2, '0');
+                  final timeFormatted = "$minStr:$secStr";
+
+                  return Text(
+                    l10n.garageQualyRunningWait(timeFormatted),
+                    style: theme.textTheme.bodyLarge?.copyWith(
+                      color: Colors.white70,
+                    ),
+                    textAlign: TextAlign.center,
+                  );
+                },
+              ),
+            ],
+          ),
+        ),
+      );
+
+      if (widget.isEmbed) return qualyContent;
+      return Scaffold(
+        backgroundColor: theme.scaffoldBackgroundColor,
+        appBar: AppBar(
+          title: Text(
+            _circuit?.name ?? l10n.paddockTitle,
+            style: theme.appBarTheme.titleTextStyle?.copyWith(fontSize: 16),
+          ),
+          backgroundColor: theme.appBarTheme.backgroundColor,
+          elevation: 0,
+        ),
+        body: qualyContent,
+      );
+    }
 
     final content = Column(
       children: [

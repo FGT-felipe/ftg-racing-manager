@@ -394,7 +394,7 @@
   "availableLabel": "Disponible",
   "signContract": "Firmar Contrato",
   "navDashboard": "Panel",
-  "navHQ": "Sede",
+  "navHQ": "Instalaciones",
   "navTeamOffice": "Oficina",
   "navGarage": "Garaje",
   "navYouthAcademy": "Filial Junior",
@@ -901,5 +901,17 @@
   "categoryQualifying": "Tasas de Clasificación",
   "categoryTax": "Impuestos y Rebalanceo",
   "categoryOther": "Otros",
-  "nextFinanceUpdate": "Próxima actualización"
+  "nextFinanceUpdate": "Próxima actualización",
+  "preferencesTitle": "Preferencias",
+  "darkModeLabel": "Modo Oscuro",
+  "lightModeLabel": "Modo Claro",
+  "garageQualyInProgress": "SESIÓN DE CLASIFICACIÓN EN PROGRESO",
+  "garageQualyRunningWait": "Los pilotos están en la pista. Los resultados oficiales estarán disponibles en:\n\n{time}",
+  "@garageQualyRunningWait": {
+    "placeholders": {
+      "time": {
+        "type": "String"
+      }
+    }
+  }
 }
