@@ -7,7 +7,6 @@ import 'dart:math' as math;
 import '../../services/driver_assignment_service.dart';
 import '../../l10n/app_localizations.dart';
 import '../../widgets/common/new_dot.dart';
-import '../../services/time_service.dart';
 import '../../services/youth_academy_service.dart';
 
 class FinancesScreen extends StatelessWidget {
@@ -283,40 +282,18 @@ class FinancesScreen extends StatelessWidget {
       builder: (context, snapshot) {
         final transactions = snapshot.data ?? [];
 
-        // Compute totals
-        int totalIncome = 0;
-        int totalExpenses = 0;
-        for (final tx in transactions) {
-          if (tx.amount >= 0) {
-            totalIncome += tx.amount;
-          } else {
-            totalExpenses += tx.amount; // negative
-          }
-        }
-        final netResult = totalIncome + totalExpenses;
+        // Compute per-category breakdown (Last 7 Days ONLY)
+        final now = DateTime.now();
+        final sevenDaysAgo = now.subtract(const Duration(days: 7));
+        final recentTransactions = transactions
+            .where((tx) => tx.date.isAfter(sevenDaysAgo))
+            .toList();
 
-        // Compute per-category breakdown
         final Map<String, int> categoryTotals = {};
-        for (final tx in transactions) {
+        for (final tx in recentTransactions) {
           final key = tx.type.isNotEmpty ? tx.type : 'OTHER';
           categoryTotals[key] = (categoryTotals[key] ?? 0) + tx.amount;
         }
-
-        // Weekly calculation: average income/expenses per week
-        int weeklyIncome = 0;
-        int weeklyExpenses = 0;
-        if (transactions.isNotEmpty) {
-          // Find the date span
-          final now = DateTime.now();
-          final oldest = transactions
-              .map((t) => t.date)
-              .reduce((a, b) => a.isBefore(b) ? a : b);
-          final daySpan = now.difference(oldest).inDays;
-          final weeks = daySpan < 7 ? 1.0 : daySpan / 7.0;
-          weeklyIncome = (totalIncome / weeks).round();
-          weeklyExpenses = (totalExpenses / weeks).round();
-        }
-        final weeklyNet = weeklyIncome + weeklyExpenses;
 
         // Fetch drivers to calculate staff costs
         return FutureBuilder<List<dynamic>>(
@@ -325,6 +302,8 @@ class FinancesScreen extends StatelessWidget {
             YouthAcademyService().streamSelectedDrivers(teamId).first,
           ]),
           builder: (context, snapshot) {
+            // --- NEW PROJECTED FINANCIALS CALCULATION ---
+            // 1. Calculate Staff & Academy Costs
             int staffCost = 0;
             int academyTraineesCount = 0;
             final List<Map<String, dynamic>> staffBreakdown = [];
@@ -356,6 +335,41 @@ class FinancesScreen extends StatelessWidget {
                 });
               }
             }
+
+            // 2. Calculate Facility Maintenance
+            final Map<String, Facility> activeFacilitiesMap = {};
+            final facilitiesData =
+                teamData?['facilities'] as Map<String, dynamic>? ?? {};
+            int projectedMaintenance = 0;
+            facilitiesData.forEach((key, value) {
+              if (value is Map<String, dynamic>) {
+                final f = Facility.fromMap(value);
+                if (f.level > 0 && f.maintenanceCost > 0) {
+                  activeFacilitiesMap[key] = f;
+                  projectedMaintenance += f.maintenanceCost;
+                }
+              }
+            });
+
+            // 3. Calculate Sponsor Income
+            final Map<String, ActiveContract> activeSponsorsMap = {};
+            final sponsorsData =
+                teamData?['sponsors'] as Map<String, dynamic>? ?? {};
+            int projectedIncome = 0;
+            sponsorsData.forEach((key, value) {
+              if (value is Map<String, dynamic>) {
+                final s = ActiveContract.fromMap(value);
+                activeSponsorsMap[key] = s;
+                projectedIncome += s.weeklyBasePayment;
+              }
+            });
+
+            // 4. Summarize Projections
+            final int projectedAcademyWages = academyTraineesCount * 10000;
+            final int projectedExpenses =
+                staffCost + projectedMaintenance + projectedAcademyWages;
+            final int projectedNet = projectedIncome - projectedExpenses;
+            final int currentBalance = teamData?['budget'] as int? ?? 0;
 
             return NewDotWidget(
               featureId: 'finances_summary',
@@ -401,19 +415,32 @@ class FinancesScreen extends StatelessWidget {
                           ),
                           const SizedBox(height: 20),
 
-                          // ── All-time totals ──
+                          // ── CFO Dashboard (Current & Projected Run-Rate) ──
                           _SummaryRow(
-                            label: l10n.totalIncomeLabel,
-                            value: financeService.formatCurrency(totalIncome),
-                            valueColor: Colors.greenAccent,
-                            icon: Icons.arrow_upward_rounded,
+                            label: 'Current Bank Balance',
+                            value: financeService.formatCurrency(
+                              currentBalance,
+                            ),
+                            valueColor: Colors.white,
+                            icon: Icons.account_balance_wallet_outlined,
+                            bold: true,
                           ),
                           const SizedBox(height: 10),
                           _SummaryRow(
-                            label: l10n.totalExpensesLabel,
-                            value: financeService.formatCurrency(totalExpenses),
+                            label: 'Projected Weekly Income',
+                            value:
+                                '+${financeService.formatCurrency(projectedIncome)}',
+                            valueColor: Colors.greenAccent,
+                            icon: Icons.add_circle_outline,
+                          ),
+                          const SizedBox(height: 10),
+                          _SummaryRow(
+                            label: 'Projected Weekly Expenses',
+                            value: financeService.formatCurrency(
+                              -projectedExpenses,
+                            ),
                             valueColor: Colors.redAccent,
-                            icon: Icons.arrow_downward_rounded,
+                            icon: Icons.remove_circle_outline,
                           ),
                           const SizedBox(height: 10),
                           Divider(
@@ -421,12 +448,12 @@ class FinancesScreen extends StatelessWidget {
                             height: 24,
                           ),
                           _SummaryRow(
-                            label: l10n.netResultLabel,
-                            value: financeService.formatCurrency(netResult),
-                            valueColor: netResult >= 0
+                            label: 'Weekly Net Run-Rate',
+                            value: financeService.formatCurrency(projectedNet),
+                            valueColor: projectedNet >= 0
                                 ? Colors.greenAccent
                                 : Colors.redAccent,
-                            icon: netResult >= 0
+                            icon: projectedNet >= 0
                                 ? Icons.trending_up_rounded
                                 : Icons.trending_down_rounded,
                             bold: true,
@@ -434,133 +461,24 @@ class FinancesScreen extends StatelessWidget {
 
                           const SizedBox(height: 24),
 
-                          // ── Category Breakdown ──
-                          _buildCategoryBreakdown(
+                          // ── Expected Run-Rate Breakdown ──
+                          _buildWeeklyProjectionBreakdown(
                             context,
                             financeService,
-                            categoryTotals,
                             staffCost,
                             staffBreakdown,
-                            academyTraineesCount,
-                            teamData,
+                            projectedAcademyWages,
+                            activeFacilitiesMap,
+                            activeSponsorsMap,
                           ),
 
                           const SizedBox(height: 16),
 
-                          // ── Weekly projection ──
-                          Container(
-                            width: double.infinity,
-                            padding: const EdgeInsets.all(16),
-                            decoration: BoxDecoration(
-                              color: Colors.white.withValues(alpha: 0.03),
-                              borderRadius: BorderRadius.circular(10),
-                              border: Border.all(
-                                color: Colors.white.withValues(alpha: 0.05),
-                              ),
-                            ),
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Row(
-                                  mainAxisAlignment:
-                                      MainAxisAlignment.spaceBetween,
-                                  children: [
-                                    Row(
-                                      children: [
-                                        Icon(
-                                          Icons.date_range_rounded,
-                                          color: accent,
-                                          size: 16,
-                                        ),
-                                        const SizedBox(width: 6),
-                                        Text(
-                                          l10n.weeklyProjectionTitle,
-                                          style: TextStyle(
-                                            color: accent,
-                                            fontWeight: FontWeight.bold,
-                                            fontSize: 12,
-                                            letterSpacing: 1.1,
-                                          ),
-                                        ),
-                                      ],
-                                    ),
-                                    Builder(
-                                      builder: (context) {
-                                        // Calcula el próximo domingo a las 16:00 COT
-                                        final now = TimeService().nowBogota;
-                                        int daysUntilSunday =
-                                            (7 - now.weekday) % 7;
-                                        var nextUpdate = DateTime(
-                                          now.year,
-                                          now.month,
-                                          now.day,
-                                          16,
-                                          0,
-                                        ).add(Duration(days: daysUntilSunday));
-                                        // Si ya pasó la hora este domingo, pasa al siguiente
-                                        if (daysUntilSunday == 0 &&
-                                            now.hour >= 16) {
-                                          nextUpdate = nextUpdate.add(
-                                            const Duration(days: 7),
-                                          );
-                                        }
-                                        final dateStr = DateFormat(
-                                          'E, h:mm a',
-                                        ).format(nextUpdate);
-
-                                        return Text(
-                                          '${l10n.nextFinanceUpdate}: $dateStr COT',
-                                          style: TextStyle(
-                                            color: Colors.white.withValues(
-                                              alpha: 0.5,
-                                            ),
-                                            fontSize: 10,
-                                            fontWeight: FontWeight.bold,
-                                          ),
-                                        );
-                                      },
-                                    ),
-                                  ],
-                                ),
-                                const SizedBox(height: 14),
-                                _SummaryRow(
-                                  label: l10n.weeklyIncomeLabel,
-                                  value:
-                                      '+${financeService.formatCurrency(weeklyIncome)}',
-                                  valueColor: Colors.greenAccent,
-                                  icon: Icons.add_circle_outline,
-                                  small: true,
-                                ),
-                                const SizedBox(height: 8),
-                                _SummaryRow(
-                                  label: l10n.weeklyExpensesLabel,
-                                  value: financeService.formatCurrency(
-                                    weeklyExpenses,
-                                  ),
-                                  valueColor: Colors.redAccent,
-                                  icon: Icons.remove_circle_outline,
-                                  small: true,
-                                ),
-                                Divider(
-                                  color: Colors.white.withValues(alpha: 0.06),
-                                  height: 20,
-                                ),
-                                _SummaryRow(
-                                  label: l10n.weeklyNetLabel,
-                                  value: financeService.formatCurrency(
-                                    weeklyNet,
-                                  ),
-                                  valueColor: weeklyNet >= 0
-                                      ? Colors.greenAccent
-                                      : Colors.redAccent,
-                                  icon: weeklyNet >= 0
-                                      ? Icons.trending_up_rounded
-                                      : Icons.trending_down_rounded,
-                                  bold: true,
-                                  small: true,
-                                ),
-                              ],
-                            ),
+                          // ── Historical Category Breakdown ──
+                          _buildHistoricalBreakdown(
+                            context,
+                            financeService,
+                            categoryTotals,
                           ),
                         ],
                       ),
@@ -573,30 +491,15 @@ class FinancesScreen extends StatelessWidget {
   }
 
   // ─────────────────────────────────────────
-  //  CATEGORY BREAKDOWN SECTION
+  //  HISTORICAL BREAKDOWN SECTION (Last 7 Days)
   // ─────────────────────────────────────────
-  Widget _buildCategoryBreakdown(
+  Widget _buildHistoricalBreakdown(
     BuildContext context,
     FinanceService financeService,
     Map<String, int> categoryTotals,
-    int staffCost,
-    List<Map<String, dynamic>> staffBreakdown,
-    int academyTraineesCount,
-    Map<String, dynamic>? teamData,
   ) {
     final l10n = AppLocalizations.of(context);
     final accent = Theme.of(context).colorScheme.secondary;
-
-    // Parse facilities from teamData
-    final Map<String, Facility> facilities = {};
-    if (teamData != null && teamData.containsKey('facilities')) {
-      final facMap = teamData['facilities'] as Map<String, dynamic>? ?? {};
-      facMap.forEach((key, value) {
-        if (value is Map<String, dynamic>) {
-          facilities[key] = Facility.fromMap(value);
-        }
-      });
-    }
 
     // Define the category display order and metadata
     final categories = [
@@ -613,22 +516,10 @@ class FinancesScreen extends StatelessWidget {
         Colors.amber,
       ),
       _CategoryMeta(
-        'MAINTENANCE',
-        l10n.categoryMaintenance,
-        Icons.apartment_outlined,
-        Colors.orange,
-      ),
-      _CategoryMeta(
         'UPGRADE',
         l10n.categoryUpgrade,
         Icons.build_circle_outlined,
         Colors.blue,
-      ),
-      _CategoryMeta(
-        'SALARY',
-        l10n.categorySalary,
-        Icons.person_outline,
-        Colors.deepOrangeAccent,
       ),
       _CategoryMeta(
         'PRACTICE',
@@ -668,17 +559,129 @@ class FinancesScreen extends StatelessWidget {
       ),
     ];
 
-    // Filter to only categories that have transactions or facilities or academy
     final activeCategories = categories.where((c) {
-      if (c.type == 'ACADEMY') return true; // Always show if academy is active
-      if (c.type == 'MAINTENANCE' &&
-          facilities.values.any((f) => f.level > 0 && f.maintenanceCost > 0)) {
-        return true;
-      }
       return (categoryTotals[c.type] ?? 0) != 0;
     }).toList();
 
-    if (activeCategories.isEmpty) return const SizedBox.shrink();
+    if (activeCategories.isEmpty) {
+      return Container(
+        width: double.infinity,
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          color: Colors.white.withValues(alpha: 0.03),
+          borderRadius: BorderRadius.circular(10),
+          border: Border.all(color: Colors.white.withValues(alpha: 0.05)),
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Icon(Icons.history_rounded, color: accent, size: 16),
+                const SizedBox(width: 6),
+                Text(
+                  "Historical Breakdown (Last 7 Days)",
+                  style: TextStyle(
+                    color: accent,
+                    fontWeight: FontWeight.bold,
+                    fontSize: 12,
+                    letterSpacing: 1.1,
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 14),
+            Text(
+              "No transactions in the last 7 days.",
+              style: TextStyle(
+                color: Colors.white.withValues(alpha: 0.5),
+                fontSize: 12,
+                fontStyle: FontStyle.italic,
+              ),
+            ),
+          ],
+        ),
+      );
+    }
+
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: Colors.white.withValues(alpha: 0.03),
+        borderRadius: BorderRadius.circular(10),
+        border: Border.all(color: Colors.white.withValues(alpha: 0.05)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Icon(Icons.history_rounded, color: accent, size: 16),
+              const SizedBox(width: 6),
+              Text(
+                "Historical Breakdown (Last 7 Days)",
+                style: TextStyle(
+                  color: accent,
+                  fontWeight: FontWeight.bold,
+                  fontSize: 12,
+                  letterSpacing: 1.1,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 14),
+          ...activeCategories.map((cat) {
+            final int amount = categoryTotals[cat.type] ?? 0;
+            final isPositive = amount >= 0;
+            return Padding(
+              padding: const EdgeInsets.only(bottom: 8),
+              child: _SummaryRow(
+                label: cat.label,
+                value:
+                    '${isPositive ? '+' : ''}${financeService.formatCurrency(amount)}',
+                valueColor: isPositive ? Colors.greenAccent : Colors.redAccent,
+                icon: cat.icon,
+                iconColor: cat.color,
+                small: true,
+              ),
+            );
+          }),
+        ],
+      ),
+    );
+  }
+
+  // ─────────────────────────────────────────
+  //  WEEKLY RUN-RATE BREAKDOWN SECTION
+  // ─────────────────────────────────────────
+  Widget _buildWeeklyProjectionBreakdown(
+    BuildContext context,
+    FinanceService financeService,
+    int staffCost,
+    List<Map<String, dynamic>> staffBreakdown,
+    int projectedAcademyWages,
+    Map<String, Facility> activeFacilitiesMap,
+    Map<String, ActiveContract> activeSponsorsMap,
+  ) {
+    final l10n = AppLocalizations.of(context);
+    final accent = Theme.of(context).colorScheme.secondary;
+
+    final int maintenanceCost = activeFacilitiesMap.values.fold<int>(
+      0,
+      (acc, f) => acc + f.maintenanceCost,
+    );
+    final int sponsorIncome = activeSponsorsMap.values.fold<int>(
+      0,
+      (acc, s) => acc + s.weeklyBasePayment,
+    );
+
+    if (maintenanceCost == 0 &&
+        projectedAcademyWages == 0 &&
+        staffCost == 0 &&
+        sponsorIncome == 0) {
+      return const SizedBox.shrink();
+    }
 
     return Container(
       width: double.infinity,
@@ -696,7 +699,7 @@ class FinancesScreen extends StatelessWidget {
               Icon(Icons.pie_chart_outline_rounded, color: accent, size: 16),
               const SizedBox(width: 6),
               Text(
-                l10n.breakdownTitle,
+                "Weekly Run-Rate Breakdown",
                 style: TextStyle(
                   color: accent,
                   fontWeight: FontWeight.bold,
@@ -707,108 +710,90 @@ class FinancesScreen extends StatelessWidget {
             ],
           ),
           const SizedBox(height: 14),
-          ...activeCategories.map((cat) {
-            int amount = categoryTotals[cat.type] ?? 0;
 
-            // If it's maintenance and we have active facilities
-            if (cat.type == 'MAINTENANCE' && facilities.isNotEmpty) {
-              final activeFacilities = facilities.values
-                  .where((f) => f.level > 0 && f.maintenanceCost > 0)
-                  .toList();
-
-              if (activeFacilities.isNotEmpty) {
-                // If historical amount is 0, show the current projected cost
-                if (amount == 0) {
-                  amount = -activeFacilities.fold<int>(
-                    0,
-                    (acc, f) => acc + f.maintenanceCost,
-                  );
-                }
-
-                final isPositive = amount >= 0;
-
-                return Column(
-                  children: [
-                    Padding(
-                      padding: const EdgeInsets.only(bottom: 8),
-                      child: _SummaryRow(
-                        label: cat.label,
-                        value:
-                            '${isPositive ? '+' : ''}${financeService.formatCurrency(amount)}',
-                        valueColor: isPositive
-                            ? Colors.greenAccent
-                            : Colors.redAccent,
-                        icon: cat.icon,
-                        iconColor: cat.color,
-                        small: true,
-                      ),
-                    ),
-                    ...activeFacilities.map(
-                      (f) => Padding(
-                        padding: const EdgeInsets.only(bottom: 8, left: 16),
-                        child: _SummaryRow(
-                          label: f.getLocalizedName(context),
-                          value: financeService.formatCurrency(
-                            -f.maintenanceCost,
-                          ),
-                          valueColor: Colors.orange.withValues(alpha: 0.8),
-                          icon: Icons.subdirectory_arrow_right_rounded,
-                          iconColor: Colors.orange.withValues(alpha: 0.5),
-                          small: true,
-                        ),
-                      ),
-                    ),
-                  ],
-                );
-              }
-            }
-
-            // ACADEMY Trainee Wages Breakdown
-            if (cat.type == 'ACADEMY') {
-              final int traineeWages = -(academyTraineesCount * 10000);
-
-              if (traineeWages != 0) {
-                final isPositive = traineeWages >= 0;
-                return Padding(
-                  padding: const EdgeInsets.only(bottom: 8),
-                  child: _SummaryRow(
-                    label: "Academy Trainee Wages",
-                    value:
-                        '${isPositive ? '+' : ''}${financeService.formatCurrency(traineeWages)}',
-                    valueColor: isPositive
-                        ? Colors.greenAccent
-                        : Colors.redAccent,
-                    icon: cat.icon,
-                    iconColor: cat.color,
-                    small: true,
-                  ),
-                );
-              }
-              return const SizedBox.shrink();
-            }
-
-            final isPositive = amount >= 0;
-            return Padding(
+          // Sponsor Income
+          if (sponsorIncome > 0) ...[
+            Padding(
               padding: const EdgeInsets.only(bottom: 8),
               child: _SummaryRow(
-                label: cat.label,
-                value:
-                    '${isPositive ? '+' : ''}${financeService.formatCurrency(amount)}',
-                valueColor: isPositive ? Colors.greenAccent : Colors.redAccent,
-                icon: cat.icon,
-                iconColor: cat.color,
+                label: 'Sponsor Base Income',
+                value: '+${financeService.formatCurrency(sponsorIncome)}',
+                valueColor: Colors.greenAccent,
+                icon: Icons.handshake_outlined,
+                iconColor: Colors.lightGreen,
                 small: true,
               ),
-            );
-          }),
+            ),
+            ...activeSponsorsMap.values.map(
+              (s) => Padding(
+                padding: const EdgeInsets.only(bottom: 8, left: 16),
+                child: _SummaryRow(
+                  label: s.sponsorName,
+                  value:
+                      '+${financeService.formatCurrency(s.weeklyBasePayment)}',
+                  valueColor: Colors.lightGreen.withValues(alpha: 0.8),
+                  icon: Icons.subdirectory_arrow_right_rounded,
+                  iconColor: Colors.lightGreen.withValues(alpha: 0.5),
+                  small: true,
+                ),
+              ),
+            ),
+            Divider(color: Colors.white.withValues(alpha: 0.05), height: 20),
+          ],
+
+          // Maintenance
+          if (maintenanceCost > 0) ...[
+            Padding(
+              padding: const EdgeInsets.only(bottom: 8),
+              child: _SummaryRow(
+                label: l10n.categoryMaintenance,
+                value: financeService.formatCurrency(-maintenanceCost),
+                valueColor: Colors.redAccent,
+                icon: Icons.apartment_outlined,
+                iconColor: Colors.orange,
+                small: true,
+              ),
+            ),
+            ...activeFacilitiesMap.values.map(
+              (f) => Padding(
+                padding: const EdgeInsets.only(bottom: 8, left: 16),
+                child: _SummaryRow(
+                  label: f.getLocalizedName(context),
+                  value: financeService.formatCurrency(-f.maintenanceCost),
+                  valueColor: Colors.orange.withValues(alpha: 0.8),
+                  icon: Icons.subdirectory_arrow_right_rounded,
+                  iconColor: Colors.orange.withValues(alpha: 0.5),
+                  small: true,
+                ),
+              ),
+            ),
+          ],
+
+          // Academy
+          if (projectedAcademyWages > 0) ...[
+            Padding(
+              padding: const EdgeInsets.only(bottom: 8),
+              child: _SummaryRow(
+                label: "Academy Trainee Wages",
+                value: financeService.formatCurrency(-projectedAcademyWages),
+                valueColor: Colors.redAccent,
+                icon: Icons.school_outlined,
+                iconColor: Colors.greenAccent,
+                small: true,
+              ),
+            ),
+          ],
+
+          // Staff
           if (staffCost > 0) ...[
             Padding(
               padding: const EdgeInsets.only(bottom: 8),
               child: _SummaryRow(
                 label: "Current Staff Costs",
                 value: financeService.formatCurrency(-staffCost),
-                valueColor: Colors.deepOrangeAccent,
+                valueColor: Colors.redAccent,
                 icon: Icons.person_outline,
+                iconColor: Colors.deepOrangeAccent,
                 small: true,
               ),
             ),

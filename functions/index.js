@@ -842,12 +842,39 @@ exports.scheduledQualifying = onSchedule({
         */
       }
 
-      // OFFICE NEWS: each team gets qualy report
+      // OFFICE NEWS & QUALY PRIZE MONEY: each team gets qualy report
       const teamGroups = {};
       qualyResults.forEach((r) => {
         if (!teamGroups[r.teamId]) teamGroups[r.teamId] = [];
         teamGroups[r.teamId].push(r);
       });
+
+      // Distribute Prize Money for Qualy (P1: 50k, P2: 30k, P3: 15k)
+      const qualyPrizes = [50000, 30000, 15000];
+      const batchQ = db.batch();
+
+      for (let i = 0; i < Math.min(3, qualyResults.length); i++) {
+        const result = qualyResults[i];
+        if (result.isCrashed) continue;
+
+        const prizeAmount = qualyPrizes[i];
+        if (!prizeAmount) continue;
+
+        const teamRefPz = db.collection("teams").doc(result.teamId);
+        batchQ.update(teamRefPz, {
+          budget: admin.firestore.FieldValue.increment(prizeAmount)
+        });
+
+        const txRefQ = teamRefPz.collection("transactions").doc();
+        batchQ.set(txRefQ, {
+          id: txRefQ.id,
+          description: `Qualifying P${i + 1} Reward (${result.driverName})`,
+          amount: prizeAmount,
+          date: new Date().toISOString(),
+          type: "REWARD"
+        });
+      }
+      await batchQ.commit();
 
       for (const [tid, drivers] of Object.entries(teamGroups)) {
         const lines = drivers.map((d) => {
@@ -1059,7 +1086,17 @@ exports.scheduledRace = onSchedule({
           result.finalPositions[b]);
 
       const teamPointsAccum = {};
+      const teamPrizeAccum = {};
       const statsBatch = db.batch();
+
+      const getRacePrize = (pos) => {
+        if (pos === 0) return 500000;
+        if (pos === 1) return 350000;
+        if (pos === 2) return 250000;
+        if (pos >= 3 && pos <= 5) return 150000;
+        if (pos >= 6 && pos <= 9) return 100000;
+        return 25000;
+      };
 
       for (let i = 0; i < sorted.length; i++) {
         const did = sorted[i];
@@ -1089,15 +1126,15 @@ exports.scheduledRace = onSchedule({
         const dData = driversMap[did];
         if (dData) {
           const tid = dData.teamId;
-          teamPointsAccum[tid] =
-            (teamPointsAccum[tid] || 0) + pts;
+          teamPointsAccum[tid] = (teamPointsAccum[tid] || 0) + pts;
+          teamPrizeAccum[tid] = (teamPrizeAccum[tid] || 0) + getRacePrize(i);
         }
       }
 
       // Team stats and prize money
       for (const tid of teamIds) {
         const ep = teamPointsAccum[tid] || 0;
-        const earnings = BASE_PRIZE + ep * POINT_VALUE;
+        const earnings = teamPrizeAccum[tid] || 0;
         const inc = admin.firestore.FieldValue.increment;
         const tRef = db.collection("teams").doc(tid);
 
@@ -1134,6 +1171,18 @@ exports.scheduledRace = onSchedule({
         }
 
         statsBatch.update(tRef, tu);
+
+        // Add transaction for race prize money
+        if (earnings > 0) {
+          const txRefR = tRef.collection("transactions").doc();
+          statsBatch.set(txRefR, {
+            id: txRefR.id,
+            description: `Race Prize Money (${rEvent.trackName})`,
+            amount: earnings,
+            date: new Date().toISOString(),
+            type: "REWARD",
+          });
+        }
       }
 
       // Update season calendar
@@ -1175,8 +1224,7 @@ exports.scheduledRace = onSchedule({
       });
 
       for (const [tid, drivers] of Object.entries(teamGrp)) {
-        const ep = teamPointsAccum[tid] || 0;
-        const earn = BASE_PRIZE + ep * POINT_VALUE;
+        const earn = teamPrizeAccum[tid] || 0;
         const lines = drivers.map(
           (d) => `${d.name}: ${d.pos} (+${d.pts} pts)`,
         ).join("\n");
