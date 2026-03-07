@@ -5,7 +5,7 @@ import '../models/core_models.dart';
 import '../services/auth_service.dart';
 import '../services/team_service.dart';
 import '../services/database_seeder.dart';
-import 'main_scaffold.dart';
+import 'main_layout.dart';
 
 class JobMarketScreen extends StatelessWidget {
   const JobMarketScreen({super.key});
@@ -37,9 +37,7 @@ class JobMarketScreen extends StatelessWidget {
         Navigator.pop(context);
         Navigator.pushReplacement(
           context,
-          MaterialPageRoute(
-            builder: (context) => MainScaffold(teamId: team.id),
-          ),
+          MaterialPageRoute(builder: (context) => MainLayout(teamId: team.id)),
         );
       }
     } catch (e) {

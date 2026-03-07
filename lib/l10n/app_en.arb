@@ -1096,5 +1096,14 @@
   "nextFinanceUpdate": "Next update",
   "preferencesTitle": "Preferences",
   "darkModeLabel": "Dark Mode",
-  "lightModeLabel": "Light Mode"
+  "lightModeLabel": "Light Mode",
+  "garageQualyInProgress": "QUALIFYING SESSION IN PROGRESS",
+  "garageQualyRunningWait": "Drivers are currently on track. Official results will be available in:\n\n{time}",
+  "@garageQualyRunningWait": {
+    "placeholders": {
+      "time": {
+        "type": "String"
+      }
+    }
+  }
 }

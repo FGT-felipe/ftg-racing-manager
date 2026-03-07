@@ -904,5 +904,14 @@
   "nextFinanceUpdate": "Próxima actualización",
   "preferencesTitle": "Preferencias",
   "darkModeLabel": "Modo Oscuro",
-  "lightModeLabel": "Modo Claro"
+  "lightModeLabel": "Modo Claro",
+  "garageQualyInProgress": "SESIÓN DE CLASIFICACIÓN EN PROGRESO",
+  "garageQualyRunningWait": "Los pilotos están en la pista. Los resultados oficiales estarán disponibles en:\n\n{time}",
+  "@garageQualyRunningWait": {
+    "placeholders": {
+      "time": {
+        "type": "String"
+      }
+    }
+  }
 }

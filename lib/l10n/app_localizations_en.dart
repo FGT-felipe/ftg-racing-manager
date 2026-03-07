@@ -1996,4 +1996,12 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get lightModeLabel => 'Light Mode';
+
+  @override
+  String get garageQualyInProgress => 'QUALIFYING SESSION IN PROGRESS';
+
+  @override
+  String garageQualyRunningWait(String time) {
+    return 'Drivers are currently on track. Official results will be available in:\n\n$time';
+  }
 }

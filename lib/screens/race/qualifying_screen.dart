@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
-import '../../services/race_service.dart';
+// Removed duplicate import
 import '../../services/circuit_service.dart';
 import '../../services/season_service.dart';
 import '../../models/core_models.dart';
+import '../../services/time_service.dart';
+import '../../l10n/app_localizations.dart';
 
 class QualifyingScreen extends StatefulWidget {
   final String seasonId;
@@ -80,28 +82,12 @@ class _QualifyingScreenState extends State<QualifyingScreen> {
     }
   }
 
-  Future<void> _runQualifying() async {
-    setState(() => _isLoading = true);
-    try {
-      final results = await RaceService().simulateQualifying(widget.seasonId);
-      setState(() {
-        _results = results;
-        _isCompleted = true;
-      });
-    } catch (e) {
-      if (mounted) {
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(SnackBar(content: Text("Error: $e")));
-      }
-    } finally {
-      if (mounted) setState(() => _isLoading = false);
-    }
-  }
-
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+
+    final l10n = AppLocalizations.of(context);
+    final timeService = TimeService();
 
     final content = _isLoading
         ? Center(
@@ -115,15 +101,49 @@ class _QualifyingScreenState extends State<QualifyingScreen> {
               children: [
                 if (!_isCompleted)
                   Center(
-                    child: ElevatedButton.icon(
-                      onPressed: _runQualifying,
-                      icon: const Icon(Icons.timer),
-                      label: const Text("START QUALIFYING SESSION"),
-                      style: ElevatedButton.styleFrom(
-                        padding: const EdgeInsets.all(24),
-                        textStyle: const TextStyle(fontSize: 20),
-                        backgroundColor: theme.primaryColor,
-                        foregroundColor: theme.colorScheme.onPrimary,
+                    child: Padding(
+                      padding: const EdgeInsets.all(24.0),
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Icon(
+                            Icons.timer,
+                            size: 64,
+                            color: theme.colorScheme.secondary,
+                          ),
+                          const SizedBox(height: 24),
+                          Text(
+                            l10n.garageQualyInProgress,
+                            style: theme.textTheme.headlineSmall?.copyWith(
+                              fontWeight: FontWeight.bold,
+                              color: theme.colorScheme.secondary,
+                            ),
+                            textAlign: TextAlign.center,
+                          ),
+                          const SizedBox(height: 16),
+                          StreamBuilder(
+                            stream: Stream.periodic(const Duration(seconds: 1)),
+                            builder: (context, snapshot) {
+                              final timeUntilNext = timeService
+                                  .getTimeUntilNextEvent();
+                              final minStr = timeUntilNext.inMinutes
+                                  .toString()
+                                  .padLeft(2, '0');
+                              final secStr = (timeUntilNext.inSeconds % 60)
+                                  .toString()
+                                  .padLeft(2, '0');
+                              final timeFormatted = "$minStr:$secStr";
+
+                              return Text(
+                                l10n.garageQualyRunningWait(timeFormatted),
+                                style: theme.textTheme.bodyLarge?.copyWith(
+                                  color: Colors.white70,
+                                ),
+                                textAlign: TextAlign.center,
+                              );
+                            },
+                          ),
+                        ],
                       ),
                     ),
                   ),

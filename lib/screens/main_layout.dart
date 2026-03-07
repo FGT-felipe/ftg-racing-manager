@@ -7,7 +7,8 @@ import 'package:intl/intl.dart';
 
 import '../l10n/app_localizations.dart';
 import '../models/core_models.dart';
-import '../models/user_model.dart';
+import '../models/user_models.dart';
+import '../models/user_model.dart' as legacy_user; // Handling conflict
 import '../../services/auth_service.dart';
 import '../services/notification_service.dart';
 import '../services/season_service.dart';
@@ -71,7 +72,7 @@ class _MainLayoutState extends State<MainLayout> {
   StreamSubscription<List<AppNotification>>? _notificationSubscription;
   Set<String> _knownNotificationIds = {};
   bool _firstLoad = true;
-  AppUser? _appUser;
+  legacy_user.AppUser? _appUser;
   final LayerLink _accountLayerLink = LayerLink();
   OverlayEntry? _accountOverlayEntry;
   bool _isAccountCardOpen = false;
@@ -91,13 +92,8 @@ class _MainLayoutState extends State<MainLayout> {
       NavNode(
         id: 'dashboard',
         titleBuilder: (context) => AppLocalizations.of(context).navDashboard,
-        screen: DashboardScreen(
-          teamId: widget.teamId,
-          onNavigate: (id) {
-            final node = _findNodeById(id, _navTree);
-            if (node != null) _onNodeSelected(node);
-          },
-        ),
+        screen:
+            const SizedBox.shrink(), // Placeholder, built in _getFlatScreens
       ),
       NavNode(
         id: 'management',
@@ -501,6 +497,27 @@ class _MainLayoutState extends State<MainLayout> {
     }
   }
 
+  List<Widget> _getFlatScreens(
+    ManagerProfile manager,
+    Team team,
+    Season? season,
+  ) {
+    return _flatLeaves.map((n) {
+      if (n.id == 'dashboard') {
+        return DashboardScreen(
+          team: team,
+          manager: manager,
+          season: season,
+          onNavigate: (id) {
+            final node = _findNodeById(id, _navTree);
+            if (node != null) _onNodeSelected(node);
+          },
+        );
+      }
+      return n.screen!;
+    }).toList();
+  }
+
   void _onNodeSelected(NavNode node) {
     setState(() {
       if (node.screen != null) {
@@ -564,6 +581,68 @@ class _MainLayoutState extends State<MainLayout> {
 
   @override
   Widget build(BuildContext context) {
+    return StreamBuilder<User?>(
+      stream: FirebaseAuth.instance.authStateChanges(),
+      builder: (context, authSnapshot) {
+        if (authSnapshot.connectionState == ConnectionState.waiting) {
+          return const Scaffold(
+            body: Center(child: CircularProgressIndicator()),
+          );
+        }
+
+        final user = authSnapshot.data;
+        if (user == null) return const Scaffold();
+
+        return StreamBuilder<DocumentSnapshot>(
+          stream: FirebaseFirestore.instance
+              .collection('managers')
+              .doc(user.uid)
+              .snapshots(),
+          builder: (context, managerSnapshot) {
+            return StreamBuilder<QuerySnapshot>(
+              stream: FirebaseFirestore.instance
+                  .collection('teams')
+                  .where('managerId', isEqualTo: user.uid)
+                  .limit(1)
+                  .snapshots(),
+              builder: (context, teamSnapshot) {
+                return StreamBuilder<Season?>(
+                  stream: SeasonService().getActiveSeasonStream(),
+                  builder: (context, seasonSnapshot) {
+                    if (!managerSnapshot.hasData ||
+                        !teamSnapshot.hasData ||
+                        teamSnapshot.data!.docs.isEmpty) {
+                      return const Scaffold(
+                        body: Center(child: CircularProgressIndicator()),
+                      );
+                    }
+
+                    final manager = ManagerProfile.fromMap(
+                      managerSnapshot.data!.data() as Map<String, dynamic>,
+                    );
+                    final team = Team.fromMap(
+                      teamSnapshot.data!.docs.first.data()
+                          as Map<String, dynamic>,
+                    );
+                    final season = seasonSnapshot.data;
+
+                    return _buildLayout(context, manager, team, season);
+                  },
+                );
+              },
+            );
+          },
+        );
+      },
+    );
+  }
+
+  Widget _buildLayout(
+    BuildContext context,
+    ManagerProfile manager,
+    Team team,
+    Season? season,
+  ) {
     final theme = Theme.of(context);
     final isMobile = MediaQuery.of(context).size.width <= 900;
 
@@ -573,7 +652,7 @@ class _MainLayoutState extends State<MainLayout> {
           children: [
             AppLogo(size: 28, isDark: theme.brightness == Brightness.light),
             const SizedBox(width: 24),
-            _AppBarEconomyStats(teamId: widget.teamId),
+            _AppBarEconomyStats(teamId: team.id),
           ],
         ),
         backgroundColor: theme.scaffoldBackgroundColor,
@@ -738,9 +817,11 @@ class _MainLayoutState extends State<MainLayout> {
                                   index: _flatLeaves.indexWhere(
                                     (n) => n.id == _selectedId,
                                   ),
-                                  children: _flatLeaves
-                                      .map((n) => n.screen!)
-                                      .toList(),
+                                  children: _getFlatScreens(
+                                    manager,
+                                    team,
+                                    season,
+                                  ),
                                 ),
                               ),
                             ],

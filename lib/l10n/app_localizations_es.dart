@@ -2001,4 +2001,12 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get lightModeLabel => 'Modo Claro';
+
+  @override
+  String get garageQualyInProgress => 'SESIÓN DE CLASIFICACIÓN EN PROGRESO';
+
+  @override
+  String garageQualyRunningWait(String time) {
+    return 'Los pilotos están en la pista. Los resultados oficiales estarán disponibles en:\n\n$time';
+  }
 }

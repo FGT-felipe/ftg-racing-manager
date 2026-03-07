@@ -93,22 +93,30 @@ class TimeService {
   }
 
   RaceWeekStatus get currentStatus {
-    // Legacy/Naive fallback
-    return getRaceWeekStatus(
-      nowBogota,
-      null,
-    ); // Will behave as Practice usually,
-    // Wait, if raceDate is null, returns Practice.
-    // But 'currentStatus' originally returned Race on Sunday.
-    // If I change it to return Practice, it might break simple tests.
-    // But for Dashboard, I will use getRaceWeekStatus(now, raceDate).
+    final now = nowBogota;
+    final weekday = now.weekday;
+    final hour = now.hour;
 
-    // I'll keep generic logic here for now but generic logic implies "Every week is race week".
-    // This IS the bug.
-    // But preventing regression in other screens?
-    // Other screens should also be context-aware.
-    // I'll leave generic logic as "Is VALID for a race week".
-    // But I won't use it in Dashboard.
+    // Monday(1) - Friday(5): Practice
+    if (weekday >= 1 && weekday <= 5) {
+      return RaceWeekStatus.practice;
+    }
+
+    // Saturday(6)
+    if (weekday == 6) {
+      if (hour < 14) return RaceWeekStatus.practice;
+      if (hour == 14) return RaceWeekStatus.qualifying;
+      return RaceWeekStatus.raceStrategy;
+    }
+
+    // Sunday(7)
+    if (weekday == 7) {
+      if (hour < 14) return RaceWeekStatus.raceStrategy;
+      if (hour >= 14 && hour < 16) return RaceWeekStatus.race;
+      return RaceWeekStatus.postRace;
+    }
+
+    return RaceWeekStatus.practice;
   }
 
   String get statusDisplayName {
