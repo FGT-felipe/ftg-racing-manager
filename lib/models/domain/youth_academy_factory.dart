@@ -55,13 +55,65 @@ class YouthAcademyFactory {
     final age = _generateAge();
     final level = academyLevel.clamp(1, 5);
 
-    // Base skill scales with academy level: 7 → 15
-    final baseSkill = 7 + ((level - 1) * 2);
+    // Determine potential stars and base skill based on Academy Level
+    // Each star represents roughly 20 points of skill (0-100 scale)
+    // Level 1: Current potential 1-3 stars (20-60). Max potential 2-3.5 stars
+    // Level 5: Current potential 2-4 stars (40-80). Max potential 4-5 stars
 
-    // Growth potential: 5-12, higher levels unlock higher range
-    final maxGrowth = 5 + (level * 1.4).floor(); // level 1 → 6, level 5 → 12
-    final growthPotential =
-        5 + _random.nextInt((maxGrowth - 5 + 1).clamp(1, 8));
+    double minCurrentStars;
+    double maxCurrentStars;
+    double minMaxStars;
+    double maxMaxStars;
+
+    switch (level) {
+      case 1:
+        minCurrentStars = 1.0;
+        maxCurrentStars = 3.0;
+        minMaxStars = 2.0;
+        maxMaxStars = 3.5;
+        break;
+      case 2:
+        minCurrentStars = 1.0;
+        maxCurrentStars = 3.5;
+        minMaxStars = 2.5;
+        maxMaxStars = 4.0;
+        break;
+      case 3:
+        minCurrentStars = 1.5;
+        maxCurrentStars = 3.5;
+        minMaxStars = 3.0;
+        maxMaxStars = 4.5;
+        break;
+      case 4:
+        minCurrentStars = 2.0;
+        maxCurrentStars = 4.0;
+        minMaxStars = 3.5;
+        maxMaxStars = 5.0;
+        break;
+      case 5:
+      default:
+        minCurrentStars = 2.0;
+        maxCurrentStars = 4.0;
+        minMaxStars = 4.0;
+        maxMaxStars = 5.0;
+        break;
+    }
+
+    // Generate actual star values
+    final currentStars =
+        minCurrentStars +
+        (_random.nextDouble() * (maxCurrentStars - minCurrentStars));
+
+    // Max stars cannot be lower than current stars
+    final actualMinMax = max(currentStars, minMaxStars);
+    final maxStars =
+        actualMinMax + (_random.nextDouble() * (maxMaxStars - actualMinMax));
+
+    // Convert stars to 0-100 skill scale (1 star = ~20 points)
+    final baseSkill = (currentStars * 20).round().clamp(10, 80);
+    final maxSkill = (maxStars * 20).round().clamp(baseSkill, 100);
+
+    final growthPotential = maxSkill - baseSkill;
 
     // Generate stat ranges based on baseSkill and growthPotential
     final statRangeMin = <String, int>{};

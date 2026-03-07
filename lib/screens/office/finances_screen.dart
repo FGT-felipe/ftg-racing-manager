@@ -628,6 +628,12 @@ class FinancesScreen extends StatelessWidget {
         Colors.grey,
       ),
       _CategoryMeta(
+        'ACADEMY',
+        'Youth Academy',
+        Icons.school_outlined,
+        Colors.greenAccent,
+      ),
+      _CategoryMeta(
         'OTHER',
         l10n.categoryOther,
         Icons.monetization_on_outlined,
@@ -635,8 +641,9 @@ class FinancesScreen extends StatelessWidget {
       ),
     ];
 
-    // Filter to only categories that have transactions or facilities
+    // Filter to only categories that have transactions or facilities or academy
     final activeCategories = categories.where((c) {
+      if (c.type == 'ACADEMY') return true; // Always show if academy is active
       if (c.type == 'MAINTENANCE' &&
           facilities.values.any((f) => f.level > 0 && f.maintenanceCost > 0)) {
         return true;
@@ -727,6 +734,32 @@ class FinancesScreen extends StatelessWidget {
                   ],
                 );
               }
+            }
+
+            // ACADEMY Trainee Wages Breakdown
+            if (cat.type == 'ACADEMY') {
+              final int traineeWages = categoryTotals['ACADEMY'] ?? 0;
+              // We assume $10,000 per trainee if historical data is not present yet
+              // but the function already records it as 'ACADEMY' type.
+
+              if (traineeWages != 0) {
+                final isPositive = traineeWages >= 0;
+                return Padding(
+                  padding: const EdgeInsets.only(bottom: 8),
+                  child: _SummaryRow(
+                    label: "Academy Trainee Wages",
+                    value:
+                        '${isPositive ? '+' : ''}${financeService.formatCurrency(traineeWages)}',
+                    valueColor: isPositive
+                        ? Colors.greenAccent
+                        : Colors.redAccent,
+                    icon: cat.icon,
+                    iconColor: cat.color,
+                    small: true,
+                  ),
+                );
+              }
+              return const SizedBox.shrink();
             }
 
             final isPositive = amount >= 0;

@@ -1,14 +1,14 @@
 /* eslint-disable max-len */
 // Deployment: 2026-02-24
-const {onSchedule} = require("firebase-functions/v2/scheduler");
-const {setGlobalOptions} = require("firebase-functions");
+const { onSchedule } = require("firebase-functions/v2/scheduler");
+const { setGlobalOptions } = require("firebase-functions");
 const admin = require("firebase-admin");
 const logger = require("firebase-functions/logger");
 
 admin.initializeApp();
 const db = admin.firestore();
 
-setGlobalOptions({maxInstances: 10});
+setGlobalOptions({ maxInstances: 10 });
 
 // ─────────────────────────────────────────────
 // CIRCUIT PROFILES (mirror of circuit_service.dart)
@@ -142,9 +142,9 @@ const SimEngine = {
    * @return {Object} {lapTime, isCrashed}
    */
   simulateLap(p) {
-    const {circuit, carStats, driverStats, setup, style} = p;
+    const { circuit, carStats, driverStats, setup, style } = p;
     const ideal = circuit.idealSetup;
-    const s = carStats || {aero: 1, powertrain: 1, chassis: 1};
+    const s = carStats || { aero: 1, powertrain: 1, chassis: 1 };
 
     // Setup penalty
     const clamp = (v, lo, hi) => Math.min(Math.max(v, lo), hi);
@@ -198,7 +198,7 @@ const SimEngine = {
     let lap = circuit.baseLapTime * carFactor * df + penalty;
     lap += (Math.random() - 0.5) * 0.8;
 
-    return {lapTime: crashed ? 999.0 : lap, isCrashed: crashed};
+    return { lapTime: crashed ? 999.0 : lap, isCrashed: crashed };
   },
 
   /**
@@ -207,7 +207,7 @@ const SimEngine = {
    * @return {Object} Full race result.
    */
   simulateRace(p) {
-    const {circuit, grid, teamsMap, driversMap, setupsMap, managerRoles} = p;
+    const { circuit, grid, teamsMap, driversMap, setupsMap, managerRoles } = p;
     const roles = managerRoles || {};
     const totalLaps = circuit.laps;
 
@@ -242,12 +242,12 @@ const SimEngine = {
         const su = setupsMap[did] || DEFAULT_SETUP;
         const idx = driver.carIndex || 0;
         const cs = (team.carStats && team.carStats[String(idx)]) ||
-          {aero: 1, powertrain: 1, chassis: 1};
+          { aero: 1, powertrain: 1, chassis: 1 };
 
         const res = this.simulateLap({
           circuit, carStats: cs,
           driverStats: driver.stats || {},
-          setup: {...su, tyreCompound: compound[did]},
+          setup: { ...su, tyreCompound: compound[did] },
           style: style[did],
           teamRole: roles[driver.teamId] || "",
         });
@@ -387,7 +387,7 @@ const SimEngine = {
 
       const pos = {};
       curOrder.forEach((id, i) => pos[id] = i + 1);
-      raceLog.push({lap, lapTimes, positions: pos, tyres: {...compound}, events: lapEvents});
+      raceLog.push({ lap, lapTimes, positions: pos, tyres: { ...compound }, events: lapEvents });
     }
 
     // Hard compound penalty (35s)
@@ -412,7 +412,7 @@ const SimEngine = {
     const finalPos = {};
     curOrder.forEach((id, i) => finalPos[id] = i + 1);
 
-    return {raceLog, finalPositions: finalPos, totalTimes: total, dnfs};
+    return { raceLog, finalPositions: finalPos, totalTimes: total, dnfs };
   },
 };
 
@@ -455,12 +455,12 @@ async function addPressNews(leagueId, data) {
  */
 async function addOfficeNews(teamId, data) {
   return db.collection("teams").doc(teamId)
-      .collection("notifications").add({
-        ...data,
-        teamId,
-        isRead: false,
-        timestamp: admin.firestore.FieldValue.serverTimestamp(),
-      });
+    .collection("notifications").add({
+      ...data,
+      teamId,
+      isRead: false,
+      timestamp: admin.firestore.FieldValue.serverTimestamp(),
+    });
 }
 
 /**
@@ -477,10 +477,161 @@ async function fetchTeams(teamIds) {
   const docs = [];
   for (const chunk of chunks) {
     const snap = await db.collection("teams")
-        .where("id", "in", chunk).get();
+      .where("id", "in", chunk).get();
     snap.docs.forEach((d) => docs.push(d));
   }
   return docs;
+}
+
+// ─────────────────────────────────────────────
+// ACADEMY HELPERS
+// ─────────────────────────────────────────────
+
+/**
+ * Helper to generate a Youth Academy candidate in Node.js
+ * Mirrors the logic from YouthAcademyFactory in Flutter.
+ * @param {number} academyLevel The current level of the academy (1-5).
+ * @param {string} countryCode The country code for the candidate.
+ * @param {string} gender The gender ("M" or "F").
+ * @return {Object} The generated candidate object.
+ */
+function generateAcademyCandidate(academyLevel, countryCode, gender) {
+  const level = Math.min(Math.max(academyLevel, 1), 5);
+
+  let minCurrentStars; let maxCurrentStars; let minMaxStars; let maxMaxStars;
+  switch (level) {
+    case 1:
+      minCurrentStars = 1.0; maxCurrentStars = 3.0;
+      minMaxStars = 2.0; maxMaxStars = 3.5;
+      break;
+    case 2:
+      minCurrentStars = 1.0; maxCurrentStars = 3.5;
+      minMaxStars = 2.5; maxMaxStars = 4.0;
+      break;
+    case 3:
+      minCurrentStars = 1.5; maxCurrentStars = 3.5;
+      minMaxStars = 3.0; maxMaxStars = 4.5;
+      break;
+    case 4:
+      minCurrentStars = 2.0; maxCurrentStars = 4.0;
+      minMaxStars = 3.5; maxMaxStars = 5.0;
+      break;
+    case 5:
+    default:
+      minCurrentStars = 2.0; maxCurrentStars = 4.0;
+      minMaxStars = 4.0; maxMaxStars = 5.0;
+      break;
+  }
+
+  const currentStars = minCurrentStars + (Math.random() * (maxCurrentStars - minCurrentStars));
+  const actualMinMax = Math.max(currentStars, minMaxStars);
+  const maxStars = actualMinMax + (Math.random() * (maxMaxStars - actualMinMax));
+
+  const baseSkill = Math.min(Math.max(Math.round(currentStars * 20), 10), 80);
+  const maxSkill = Math.min(Math.max(Math.round(maxStars * 20), baseSkill), 100);
+  const growthPotential = maxSkill - baseSkill;
+
+  const statRangeMin = {};
+  const statRangeMax = {};
+  const ALL_STATS = [
+    "cornering", "braking", "consistency", "smoothness",
+    "adaptability", "overtaking", "defending", "focus", "fitness",
+  ];
+
+  for (const statKey of ALL_STATS) {
+    const variance = Math.floor(Math.random() * 4);
+    const minVal = Math.min(Math.max(baseSkill - 2 + variance, 1), 100);
+    const maxVal = Math.min(Math.max(baseSkill + growthPotential + variance, minVal), 100);
+    statRangeMin[statKey] = minVal;
+    statRangeMax[statKey] = maxVal;
+  }
+
+  // Common names for basic generation
+  const mNames = ["John", "David", "Liam", "Carlos", "Mateo", "Luis", "Oliver", "Lucas"];
+  const fNames = ["Emma", "Olivia", "Sophia", "Isabella", "Mia", "Ana", "Sofia", "Maria"];
+  const lNames = ["Smith", "Garcia", "Silva", "Mueller", "Rossi", "Wang", "Kim", "Olsen", "Santos"];
+
+  const firstPool = gender === "M" ? mNames : fNames;
+  const firstName = firstPool[Math.floor(Math.random() * firstPool.length)];
+  const lastName = lNames[Math.floor(Math.random() * lNames.length)];
+  const fullName = `${firstName} ${lastName}`;
+
+  const timestamp = Date.now();
+  const randomSuffix = Math.floor(Math.random() * 999999);
+  const id = `young_${countryCode}_${timestamp}_${randomSuffix}`;
+  const age = 16 + Math.floor(Math.random() * 4);
+  const expiresAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000);
+
+  return {
+    id,
+    name: fullName,
+    nationality: { code: countryCode, name: countryCode, flagEmoji: "🌎" },
+    age,
+    baseSkill,
+    gender,
+    growthPotential,
+    portraitUrl: `https://api.dicebear.com/7.x/notionists/png?seed=${id}&gender=${gender === "M" ? "male" : "female"}`,
+    status: "candidate",
+    expiresAt,
+    salary: 100000,
+    contractYears: 1,
+    statRangeMin,
+    statRangeMax,
+  };
+}
+
+/**
+ * Checks a team's academy candidates and generates new ones if needed.
+ * @param {string} teamId The ID of the team.
+ * @param {number} academyLevel The current level of the academy (1-5).
+ * @param {string} countryCode The country code of the team/academy.
+ * @return {Promise<void>} Resolves when the batch commit is complete.
+ */
+async function refreshAcademyCandidates(teamId, academyLevel, countryCode) {
+  const configRef = db.collection("teams").doc(teamId).collection("academy").doc("config");
+  const configSnap = await configRef.get();
+  const config = configSnap.exists ? configSnap.data() : {};
+
+  const candidatesRef = configRef.collection("candidates");
+  const candidatesSnap = await candidatesRef.get();
+
+  let scoutsUsed = config.scoutsUsedThisSeason || 0;
+  const maxScouts = 20 + (academyLevel - 1) * 5; // Level 1: 20, Level 5: 40
+
+  let males = 0;
+  let females = 0;
+  const now = new Date();
+
+  const batch = db.batch();
+
+  candidatesSnap.docs.forEach((doc) => {
+    const data = doc.data();
+    const exp = data.expiresAt ? (data.expiresAt.toDate ? data.expiresAt.toDate() : new Date(data.expiresAt)) : null;
+
+    // Check if expired
+    if (exp && exp < now) {
+      batch.delete(doc.ref);
+      scoutsUsed++; // Increment quota for expired candidates
+    } else {
+      if (data.gender === "M") males++;
+      if (data.gender === "F") females++;
+    }
+  });
+
+  // Ensure 1 male, 1 female offering if under quota
+  if (males === 0 && scoutsUsed < maxScouts) {
+    const newM = generateAcademyCandidate(academyLevel, countryCode, "M");
+    batch.set(candidatesRef.doc(newM.id), newM);
+  }
+  if (females === 0 && scoutsUsed < maxScouts) {
+    const newF = generateAcademyCandidate(academyLevel, countryCode, "F");
+    batch.set(candidatesRef.doc(newF.id), newF);
+  }
+
+  // Always update scoutsUsedThisSeason if it changed (increase for expired)
+  batch.update(configRef, { scoutsUsedThisSeason: scoutsUsed });
+
+  await batch.commit();
 }
 
 // ─────────────────────────────────────────────
@@ -496,12 +647,12 @@ exports.scheduledQualifying = onSchedule({
 
   try {
     const uDoc = await db.collection("universe")
-        .doc("game_universe_v1").get();
+      .doc("game_universe_v1").get();
     if (!uDoc.exists) {
       logger.error("Universe not found"); return;
     }
     const leagues = Object.values(
-        uDoc.data().activeLeagues || {},
+      uDoc.data().activeLeagues || {},
     );
 
     let leagueIdx = 0;
@@ -518,7 +669,7 @@ exports.scheduledQualifying = onSchedule({
       const season = sDoc.data();
 
       const raceEvent = (season.calendar || [])
-          .find((r) => !r.isCompleted);
+        .find((r) => !r.isCompleted);
       if (!raceEvent) continue;
 
       const circuit = getCircuit(raceEvent.circuitId);
@@ -558,18 +709,18 @@ exports.scheduledQualifying = onSchedule({
       for (const tDoc of teamDocs) {
         const team = tDoc.data();
         const dSnap = await db.collection("drivers")
-            .where("teamId", "==", team.id).get();
+          .where("teamId", "==", team.id).get();
 
         for (let di = 0; di < dSnap.docs.length; di++) {
           const dDoc = dSnap.docs[di];
-          const driver = {...dDoc.data(), id: dDoc.id, carIndex: di};
+          const driver = { ...dDoc.data(), id: dDoc.id, carIndex: di };
 
           let finalLapTime = 0.0;
           let isCrashed = false;
           let tyreCompound = "medium";
           let setupSubmitted = false;
 
-          let setup = {...DEFAULT_SETUP};
+          let setup = { ...DEFAULT_SETUP };
           const ws = team.weekStatus || {};
           const ds = (ws.driverSetups || {})[driver.id];
           const sent = ds && ds.isSetupSent;
@@ -585,14 +736,14 @@ exports.scheduledQualifying = onSchedule({
             setup.qualifyingStyle = styles[Math.floor(Math.random() * styles.length)];
             setupSubmitted = true;
           } else if (sent && ds.qualifying) {
-            setup = {...DEFAULT_SETUP, ...ds.qualifying};
+            setup = { ...DEFAULT_SETUP, ...ds.qualifying };
             setupSubmitted = true;
           }
 
           if (driver.isTransferListed) {
             const ySnap = await db.collection("teams").doc(team.id)
-                .collection("academy").doc("config")
-                .collection("selected").limit(1).get();
+              .collection("academy").doc("config")
+              .collection("selected").limit(1).get();
             if (!ySnap.empty) {
               const yData = ySnap.docs[0].data();
               driver.name = yData.name + " (Academy)";
@@ -605,10 +756,10 @@ exports.scheduledQualifying = onSchedule({
               };
             } else {
               // Generic bad
-              driver.stats = {braking: 1, cornering: 1, smoothness: 1, overtaking: 1, consistency: 1, adaptability: 1, focus: 1, feedback: 1, fitness: 1};
+              driver.stats = { braking: 1, cornering: 1, smoothness: 1, overtaking: 1, consistency: 1, adaptability: 1, focus: 1, feedback: 1, fitness: 1 };
               isCrashed = true; // Can't start properly without a driver
             }
-            setup = {...DEFAULT_SETUP, frontWing: 50, rearWing: 50, suspension: 50, gearRatio: 50, qualifyingStyle: "normal"};
+            setup = { ...DEFAULT_SETUP, frontWing: 50, rearWing: 50, suspension: 50, gearRatio: 50, qualifyingStyle: "normal" };
             setupSubmitted = true;
           }
 
@@ -668,16 +819,16 @@ exports.scheduledQualifying = onSchedule({
         qualifyingResults: qualyResults,
         status: "qualifying",
         updatedAt: admin.firestore.FieldValue.serverTimestamp(),
-      }, {merge: true});
+      }, { merge: true });
 
       // Update pole stats
       const pole = qualyResults.find((r) => !r.isCrashed);
       if (pole) {
         const inc = admin.firestore.FieldValue.increment(1);
         await db.collection("drivers")
-            .doc(pole.driverId).update({poles: inc});
+          .doc(pole.driverId).update({ poles: inc });
         await db.collection("teams")
-            .doc(pole.teamId).update({poles: inc});
+          .doc(pole.teamId).update({ poles: inc });
 
         /*
         await addPressNews(lId, {
@@ -733,10 +884,10 @@ exports.scheduledRace = onSchedule({
 
   try {
     const uDoc = await db.collection("universe")
-        .doc("game_universe_v1").get();
+      .doc("game_universe_v1").get();
     if (!uDoc.exists) return;
     const leagues = Object.values(
-        uDoc.data().activeLeagues || {},
+      uDoc.data().activeLeagues || {},
     );
 
     let leagueIdx = 0;
@@ -752,13 +903,13 @@ exports.scheduledRace = onSchedule({
       const season = sDoc.data();
 
       const rIdx = (season.calendar || [])
-          .findIndex((r) => !r.isCompleted);
+        .findIndex((r) => !r.isCompleted);
       if (rIdx === -1) continue;
       const rEvent = season.calendar[rIdx];
 
       const raceDocId = `${sId}_${rEvent.id}`;
       const rSnap = await db.collection("races")
-          .doc(raceDocId).get();
+        .doc(raceDocId).get();
 
       if (!rSnap.exists || !rSnap.data().qualyGrid) {
         logger.warn(`No qualy grid: ${raceDocId}`);
@@ -785,15 +936,15 @@ exports.scheduledRace = onSchedule({
       for (let gi = 0; gi < grid.length; gi++) {
         const g = grid[gi];
         const dDoc = await db.collection("drivers")
-            .doc(g.driverId).get();
+          .doc(g.driverId).get();
         if (!dDoc.exists) continue;
-        const dData = {...dDoc.data(), id: g.driverId};
+        const dData = { ...dDoc.data(), id: g.driverId };
         dData.carIndex = gi % 2; // 0 or 1 per team
         driversMap[g.driverId] = dData;
 
         // Resolve race setup
         const team = teamsMap[g.teamId] || {};
-        let su = {...DEFAULT_SETUP};
+        let su = { ...DEFAULT_SETUP };
 
         if (team.isBot) {
           const ideal = circuit.idealSetup;
@@ -813,14 +964,14 @@ exports.scheduledRace = onSchedule({
           const ws = team.weekStatus || {};
           const ds = (ws.driverSetups || {})[g.driverId];
           if (ds && ds.isSetupSent && ds.race) {
-            su = {...DEFAULT_SETUP, ...ds.race};
+            su = { ...DEFAULT_SETUP, ...ds.race };
           }
         }
 
         if (dData.isTransferListed) {
           const ySnap = await db.collection("teams").doc(team.id)
-              .collection("academy").doc("config")
-              .collection("selected").limit(1).get();
+            .collection("academy").doc("config")
+            .collection("selected").limit(1).get();
           if (!ySnap.empty) {
             const yData = ySnap.docs[0].data();
             dData.name = yData.name + " (Academy)";
@@ -832,9 +983,9 @@ exports.scheduledRace = onSchedule({
               morale: 100, marketability: 30,
             };
           } else {
-            dData.stats = {braking: 1, cornering: 1, smoothness: 1, overtaking: 1, consistency: 1, adaptability: 1, focus: 1, feedback: 1, fitness: 1};
+            dData.stats = { braking: 1, cornering: 1, smoothness: 1, overtaking: 1, consistency: 1, adaptability: 1, focus: 1, feedback: 1, fitness: 1 };
           }
-          su = {...DEFAULT_SETUP, frontWing: 50, rearWing: 50, suspension: 50, gearRatio: 50, raceStyle: "defensive", pitStops: ["hard"], pitStopFuel: [50]};
+          su = { ...DEFAULT_SETUP, frontWing: 50, rearWing: 50, suspension: 50, gearRatio: 50, raceStyle: "defensive", pitStops: ["hard"], pitStopFuel: [50] };
         }
 
         // Override tyreCompound with qualy best
@@ -862,7 +1013,7 @@ exports.scheduledRace = onSchedule({
 
       // Calculate live duration for frontend
       const avgQualyTime = grid.reduce(
-          (s, g) => s + (g.lapTime < 900 ? g.lapTime : 0), 0,
+        (s, g) => s + (g.lapTime < 900 ? g.lapTime : 0), 0,
       ) / grid.filter((g) => g.lapTime < 900).length;
       const liveDurationSec = avgQualyTime * circuit.laps;
 
@@ -904,7 +1055,7 @@ exports.scheduledRace = onSchedule({
 
       // --- POINTS & STATS ---
       const sorted = Object.keys(result.finalPositions)
-          .sort((a, b) => result.finalPositions[a] -
+        .sort((a, b) => result.finalPositions[a] -
           result.finalPositions[b]);
 
       const teamPointsAccum = {};
@@ -920,7 +1071,7 @@ exports.scheduledRace = onSchedule({
         const inc = admin.firestore.FieldValue.increment;
 
         const dRef = db.collection("drivers").doc(did);
-        const du = {races: inc(1), seasonRaces: inc(1)};
+        const du = { races: inc(1), seasonRaces: inc(1) };
         if (pts > 0) {
           du.points = inc(pts);
           du.seasonPoints = inc(pts);
@@ -987,10 +1138,10 @@ exports.scheduledRace = onSchedule({
 
       // Update season calendar
       const updCal = [...season.calendar];
-      updCal[rIdx] = {...updCal[rIdx], isCompleted: true};
+      updCal[rIdx] = { ...updCal[rIdx], isCompleted: true };
       statsBatch.update(
-          db.collection("seasons").doc(sId),
-          {calendar: updCal},
+        db.collection("seasons").doc(sId),
+        { calendar: updCal },
       );
 
       await statsBatch.commit();
@@ -1027,7 +1178,7 @@ exports.scheduledRace = onSchedule({
         const ep = teamPointsAccum[tid] || 0;
         const earn = BASE_PRIZE + ep * POINT_VALUE;
         const lines = drivers.map(
-            (d) => `${d.name}: ${d.pos} (+${d.pts} pts)`,
+          (d) => `${d.name}: ${d.pos} (+${d.pts} pts)`,
         ).join("\n");
         await addOfficeNews(tid, {
           title: `Race Results: ${rEvent.trackName}`,
@@ -1042,7 +1193,7 @@ exports.scheduledRace = onSchedule({
       // checks this timestamp
       await raceRef.update({
         postRaceProcessingAt: new Date(
-            Date.now() + 60 * 60 * 1000,
+          Date.now() + 60 * 60 * 1000,
         ),
       });
 
@@ -1066,9 +1217,9 @@ exports.postRaceProcessing = onSchedule({
     const now = new Date();
     // Find races that need post-processing
     const racesSnap = await db.collection("races")
-        .where("isFinished", "==", true)
-        .where("postRaceProcessed", "==", null)
-        .get();
+      .where("isFinished", "==", true)
+      .where("postRaceProcessed", "==", null)
+      .get();
 
     for (const rDoc of racesSnap.docs) {
       const rd = rDoc.data();
@@ -1087,7 +1238,7 @@ exports.postRaceProcessing = onSchedule({
 
       for (const did of driverIds) {
         const dDoc = await db.collection("drivers")
-            .doc(did).get();
+          .doc(did).get();
         if (dDoc.exists) {
           teamIdsSet.add(dDoc.data().teamId);
         }
@@ -1149,7 +1300,208 @@ exports.postRaceProcessing = onSchedule({
         });
         weeklyExpense += salaryCost;
 
-        // 4. Update Budget and Transactions
+        // 4. Academy Processing
+        const academyConfigDoc = await db.collection("teams").doc(tid).collection("academy").doc("config").get();
+        if (academyConfigDoc.exists) {
+          const ac = academyConfigDoc.data();
+          const academyLevel = ac.academyLevel || 1;
+          const countryCode = ac.countryCode || "GB";
+
+          await refreshAcademyCandidates(tid, academyLevel, countryCode);
+
+          const selectedRef = db.collection("teams").doc(tid).collection("academy").doc("config").collection("selected");
+          const selectedSnap = await selectedRef.get();
+
+          const batchA = db.batch();
+          selectedSnap.docs.forEach((sDoc) => {
+            const yDriver = sDoc.data();
+            const weeklyAcademyCost = 10000; // Flat $10,000 per trainee weekly
+            weeklyExpense += weeklyAcademyCost;
+
+            // Apply XP from FTG Karting Championship weekly simulation
+            let curWeekly = yDriver.weeklyGrowth || 0;
+            const growthPot = yDriver.growthPotential || 5;
+            const xpGain = Math.floor(Math.random() * (growthPot * 10)) + 30;
+            curWeekly += xpGain;
+
+            let applyBaseGrowth = false;
+            const statDiffs = {};
+            let eventMsg = "";
+
+            if (curWeekly >= 100) {
+              curWeekly -= 100;
+              applyBaseGrowth = true;
+            }
+
+            const updates = {
+              weeklyGrowth: curWeekly,
+              weeklyStatDiffs: {},
+              weeklyEventMessage: "",
+            };
+
+            if (applyBaseGrowth) {
+              updates.baseSkill = (yDriver.baseSkill || 10) + 1;
+              updates.growthPotential = Math.max((yDriver.growthPotential || 5) - 1, 1);
+
+              const statsObj = yDriver.stats || {
+                cornering: 30, braking: 30, consistency: 30, smoothness: 30,
+                adaptability: 30, overtaking: 30, focus: 30, fitness: 30,
+              };
+
+              // Select a random stat to boost significantly or 2 stats slightly
+              const keys = Object.keys(statsObj);
+              const boostedStat = keys[Math.floor(Math.random() * keys.length)];
+              statsObj[boostedStat] += 1;
+              statDiffs[boostedStat] = 1;
+
+              // Random Narrative based on the boosted stat
+              const positiveEvents = {
+                adaptability: [`${yDriver.name} asombró a los ingenieros con su ritmo en lluvia.`, `${yDriver.name} se adaptó rápidamente a un cambio drástico en el clima.`],
+                cornering: [`${yDriver.name} pasó horas extra perfeccionando su trazada en curvas.`, `${yDriver.name} demostró un paso por curva impecable en el simulador.`],
+                smoothness: [`${yDriver.name} mostró una gran delicadeza con los neumáticos.`, `${yDriver.name} mejoró su fluidez de conducción notablemente.`],
+                braking: [`${yDriver.name} demostró una gran destreza y confianza al frenar tarde.`, `${yDriver.name} ajustó su técnica de frenado para ganar tiempo.`],
+                overtaking: [`${yDriver.name} realizó maniobras de rebase brillantes en su última carrera.`, `${yDriver.name} mostró una agresividad calculada perfecta para adelantar.`],
+                consistency: [`${yDriver.name} se mostró inquebrantable bajo presión manteniendo tiempos constantes.`, `${yDriver.name} no cometió ni un solo error en toda la semana de pruebas.`],
+                focus: [`${yDriver.name} estuvo extremadamente concentrado ignorando distracciones externas.`, `${yDriver.name} leyó perfectamente las señales del equipo durante la sesión.`],
+                fitness: [`${yDriver.name} superó todas las pruebas físicas con la mejor nota del grupo.`, `${yDriver.name} mostró una resistencia física superior en tandas largas.`],
+              };
+
+              const eventPool = positiveEvents[boostedStat] || ["Continuó su progresión constante en el programa."];
+              eventMsg = eventPool[Math.floor(Math.random() * eventPool.length)];
+
+              updates.stats = statsObj;
+            } else {
+              // Occasional small negative event if no growth happened
+              if (Math.random() < 0.15) {
+                const negativeEvents = [
+                  { msg: `${yDriver.name} estuvo distraído por asuntos personales y su enfoque bajó.`, stat: "focus", diff: -1 },
+                  { msg: `${yDriver.name} faltó a sesiones de entrenamiento físico.`, stat: "fitness", diff: -1 },
+                  { msg: `${yDriver.name} sufrió un leve incidente perdiendo confianza al frenar.`, stat: "braking", diff: -1 },
+                ];
+                const neg = negativeEvents[Math.floor(Math.random() * negativeEvents.length)];
+                eventMsg = neg.msg;
+                statDiffs[neg.stat] = neg.diff;
+
+                const statsObj = yDriver.stats || {};
+                if (statsObj[neg.stat]) statsObj[neg.stat] = Math.max(1, statsObj[neg.stat] + neg.diff);
+                updates.stats = statsObj;
+              }
+            }
+
+            // Chance for "Take Action" event (Manual Event)
+            if (!yDriver.pendingAction && Math.random() < 0.2) {
+              updates.pendingAction = true;
+              updates.pendingActionType = ["SPONSOR_SHOOT", "TECHNICAL_TEST", "MENTOR_REQUEST"][Math.floor(Math.random() * 3)];
+            }
+
+            // Specialization Trigger logic
+            if (!yDriver.specialty && yDriver.baseSkill >= 40) {
+              // If they have a very high specific stat, they might get a specialty
+              const s = yDriver.stats || {};
+              if (s.adaptability >= 55) updates.specialty = "Rainmaster";
+              else if (s.smoothness >= 55) updates.specialty = "Tyre Whisperer";
+              else if (s.braking >= 55) updates.specialty = "Late Braker";
+              else if (s.overtaking >= 55) updates.specialty = "Defensive Minister";
+            }
+
+            updates.weeklyStatDiffs = statDiffs;
+            updates.weeklyEventMessage = eventMsg;
+
+            batchA.update(sDoc.ref, updates);
+          });
+
+          // Calculate Academy Trainee Wages ($10,000 per trainee)
+          const traineeWages = selectedSnap.size * 10000;
+          if (traineeWages > 0) {
+            const wageTx = tRef.collection("transactions").doc();
+            batch.set(wageTx, {
+              id: wageTx.id,
+              description: `Academy: Weekly wages for ${selectedSnap.size} trainees`,
+              amount: -traineeWages,
+              date: nowIso,
+              type: "ACADEMY",
+            });
+          }
+
+          if (selectedSnap.size > 0) {
+            await batchA.commit();
+          }
+
+          // Season End Promotion Logic
+          const rd = rDoc.data();
+          const sId = rd.seasonId;
+          if (sId) {
+            const sDoc = await db.collection("seasons").doc(sId).get();
+            if (sDoc.exists) {
+              const season = sDoc.data();
+              const remainingRaces = (season.calendar || []).filter((r) => !r.isCompleted);
+              if (remainingRaces.length === 0) {
+                // Season Ended! Promote marked driver
+                const marked = selectedSnap.docs.find((d) => d.data().isMarkedForPromotion === true);
+                if (marked) {
+                  const yData = marked.data();
+                  const newDriverId = `driver_promoted_${yData.id}`;
+                  const newDriverRef = db.collection("drivers").doc(newDriverId);
+
+                  // Create the new driver for the main squad
+                  await newDriverRef.set({
+                    id: newDriverId,
+                    teamId: tid,
+                    name: yData.name,
+                    age: yData.age,
+                    gender: yData.gender,
+                    nationality: yData.nationality,
+                    portraitUrl: yData.portraitUrl,
+                    salary: yData.salary || 520000,
+                    contractYearsRemaining: 1,
+                    role: "Reserve", // Default to reserve
+                    specialty: yData.specialty || null,
+                    stats: yData.stats || {},
+                    potential: Math.min(5, Math.max(1, Math.round((yData.baseSkill + yData.growthPotential) / 20))),
+                    races: 0,
+                    wins: 0,
+                    podiums: 0,
+                    poles: 0,
+                    points: 0,
+                    seasonPoints: 0,
+                    seasonRaces: 0,
+                    seasonWins: 0,
+                    seasonPodiums: 0,
+                    seasonPoles: 0,
+                    traits: [],
+                  });
+
+                  await addOfficeNews(tid, {
+                    title: "Academy Promotion Successful!",
+                    message: `${yData.name} has been promoted to the reserve squad for the next season!`,
+                    type: "SUCCESS",
+                  });
+                }
+
+                // Discard all candidates and selected for the end of season
+                const academyConfigRef = db.collection("teams").doc(tid).collection("academy").doc("config");
+                const candidatesRef = academyConfigRef.collection("candidates");
+                const cSnap = await candidatesRef.get();
+                const resetBatch = db.batch();
+                cSnap.forEach((d) => resetBatch.delete(d.ref));
+                selectedSnap.forEach((d) => resetBatch.delete(d.ref));
+
+                // Reset seasonal scouting quota
+                resetBatch.update(academyConfigRef, { scoutsUsedThisSeason: 0 });
+
+                await resetBatch.commit();
+
+                await addOfficeNews(tid, {
+                  title: "Youth Academy Reset",
+                  message: "The season has ended. Your academy candidates and trainees have been reset for the new season.",
+                  type: "INFO",
+                });
+              }
+            }
+          }
+        }
+
+        // 5. Update Budget and Transactions
         const currentBudget = teamData.budget || 0;
         const newBudget = currentBudget + weeklyIncome - weeklyExpense;
 
@@ -1206,21 +1558,23 @@ exports.postRaceProcessing = onSchedule({
           });
         }
 
+        // Replaced by specific ACADEMY transaction logic in Step 4.
+
         await batch.commit();
       }
 
       // AI team upgrades (30% chance per stat)
       for (const tid of teamIdsSet) {
         const tDoc = await db.collection("teams")
-            .doc(tid).get();
+          .doc(tid).get();
         if (!tDoc.exists) continue;
         const team = tDoc.data();
         if (!team.isBot) continue;
 
-        const cs = {...(team.carStats || {})};
+        const cs = { ...(team.carStats || {}) };
         let upgraded = false;
         for (const key of ["0", "1"]) {
-          const st = {...(cs[key] || {})};
+          const st = { ...(cs[key] || {}) };
           if (Math.random() < 0.3) {
             st.aero = (st.aero || 1) + 1;
             upgraded = true;
@@ -1237,7 +1591,7 @@ exports.postRaceProcessing = onSchedule({
         }
         if (upgraded) {
           await db.collection("teams").doc(tid)
-              .update({carStats: cs});
+            .update({ carStats: cs });
         }
       }
 
@@ -1335,9 +1689,9 @@ exports.resolveTransferMarket = onSchedule({
 
     const driversRef = db.collection("drivers");
     const snapshot = await driversRef
-        .where("isTransferListed", "==", true)
-        .where("transferListedAt", "<=", yesterdayTs)
-        .get();
+      .where("isTransferListed", "==", true)
+      .where("transferListedAt", "<=", yesterdayTs)
+      .get();
 
     if (snapshot.empty) {
       logger.info("No expired transfer listings found.");

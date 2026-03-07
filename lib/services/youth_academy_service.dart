@@ -5,6 +5,7 @@ import '../models/core_models.dart';
 import '../models/user_models.dart';
 import '../models/domain/domain_models.dart';
 import 'season_service.dart';
+import 'time_service.dart';
 
 /// Servicio para gestionar la Academia de Jóvenes de un equipo.
 ///
@@ -79,9 +80,9 @@ class YouthAcademyService {
         throw Exception('Insufficient budget to purchase Youth Academy');
       }
 
-      int maxSlots = 2; // 2 × level 1
+      int maxSlots = 4; // Base 4 for level 1
       if (role == ManagerRole.bureaucrat) {
-        maxSlots += 1; // +1 extra slot per level for Bureaucrat
+        maxSlots += 2; // +2 extra slots per level for Bureaucrat
       }
 
       // Create config doc
@@ -91,6 +92,7 @@ class YouthAcademyService {
         'countryFlag': country.flagEmoji,
         'academyLevel': 1,
         'maxSlots': maxSlots,
+        'scoutsUsedThisSeason': 2, // Initial 2 candidates
         'lastUpgradeSeasonId': currentSeasonId,
       });
 
@@ -140,7 +142,25 @@ class YouthAcademyService {
     final config = await getAcademyConfig(teamId);
     if (config == null) throw Exception('Academy not purchased');
 
-    final maxSlots = config['maxSlots'] ?? 2;
+    final level = (config['academyLevel'] as num?)?.toInt() ?? 1;
+
+    // Calculate slots dynamically to support legacy configs
+    final teamDoc = await _db.collection('teams').doc(teamId).get();
+    final teamManagerId = teamDoc.data()?['managerId'];
+
+    ManagerRole? role;
+    if (teamManagerId != null) {
+      final mgrDoc = await _db.collection('managers').doc(teamManagerId).get();
+      if (mgrDoc.exists) {
+        final roleStr = mgrDoc.data()?['role'] as String?;
+        role = ManagerRole.values.where((e) => e.name == roleStr).firstOrNull;
+      }
+    }
+
+    int maxSlots = 4 + (level - 1);
+    if (role == ManagerRole.bureaucrat) {
+      maxSlots += (level * 2);
+    }
 
     // Check capacity
     final selectedSnap = await _selectedRef(teamId).get();
@@ -166,6 +186,12 @@ class YouthAcademyService {
     final batch = _db.batch();
     batch.set(_selectedRef(teamId).doc(candidateId), selectedDriver.toMap());
     batch.delete(_candidatesRef(teamId).doc(candidateId));
+
+    // Increment scoutsUsedThisSeason
+    batch.update(_configRef(teamId), {
+      'scoutsUsedThisSeason': FieldValue.increment(1),
+    });
+
     await batch.commit();
 
     // Add "Office News" notification
@@ -193,8 +219,8 @@ class YouthAcademyService {
     // Deduct budget
     await teamRef.update({'budget': FieldValue.increment(-candidate.salary)});
 
-    // Check if we need a replacement candidate
-    await _ensureTwoCandidates(teamId);
+    // No longer ensure replacement immediately here.
+    // Replacements happen weekly in the Cloud Function.
   }
 
   /// Dismiss a candidate and generate a replacement.
@@ -203,7 +229,12 @@ class YouthAcademyService {
     if (!candidateDoc.exists) return;
 
     await _candidatesRef(teamId).doc(candidateId).delete();
-    await _ensureTwoCandidates(teamId);
+
+    // Increment scoutsUsedThisSeason
+    await _configRef(
+      teamId,
+    ).update({'scoutsUsedThisSeason': FieldValue.increment(1)});
+    // No longer ensure replacement immediately here.
   }
 
   // ── Selected Drivers ────────────────────────────────────────────────────
@@ -233,6 +264,64 @@ class YouthAcademyService {
         type: 'ACADEMY',
       ).toMap(),
     );
+  }
+
+  /// Toggle the promotion status for a selected driver.
+  /// Only one driver can be marked for promotion at a time.
+  /// Restricted to once per week to prevent infinite toggling.
+  Future<void> togglePromotion(
+    String teamId,
+    String driverId,
+    bool isMarked,
+  ) async {
+    final configDoc = await _configRef(teamId).get();
+    if (!configDoc.exists) return;
+
+    final config = configDoc.data() as Map<String, dynamic>;
+    final lastMarked = config['lastPromotionMarkedAt'] as Timestamp?;
+
+    if (isMarked && lastMarked != null) {
+      final now = TimeService().nowBogota;
+      final lastDate = lastMarked.toDate();
+
+      // Determine start of current week (Monday)
+      final startOfThisWeek = DateTime(
+        now.year,
+        now.month,
+        now.day,
+      ).subtract(Duration(days: now.weekday - 1));
+      final startOfLastMarkedWeek = DateTime(
+        lastDate.year,
+        lastDate.month,
+        lastDate.day,
+      ).subtract(Duration(days: lastDate.weekday - 1));
+
+      if (startOfThisWeek.isAtSameMomentAs(startOfLastMarkedWeek)) {
+        throw Exception('Promotion target already selected for this week.');
+      }
+    }
+
+    if (isMarked) {
+      // Unmark all others first
+      final snap = await _selectedRef(
+        teamId,
+      ).where('isMarkedForPromotion', isEqualTo: true).get();
+      final batch = _db.batch();
+      for (final doc in snap.docs) {
+        batch.update(doc.reference, {'isMarkedForPromotion': false});
+      }
+
+      // Update the config timestamp
+      batch.update(_configRef(teamId), {
+        'lastPromotionMarkedAt': FieldValue.serverTimestamp(),
+      });
+
+      await batch.commit();
+    }
+
+    await _selectedRef(
+      teamId,
+    ).doc(driverId).update({'isMarkedForPromotion': isMarked});
   }
 
   // ── Academy Upgrade ─────────────────────────────────────────────────────
@@ -273,10 +362,10 @@ class YouthAcademyService {
       }
 
       final int newLevel = currentLevel + 1;
-      int maxSlots = newLevel * 2;
+      int maxSlots = 4 + (newLevel - 1);
 
       if (role == ManagerRole.bureaucrat) {
-        maxSlots += newLevel; // +1 extra slot per level
+        maxSlots += (newLevel * 2); // +2 extra slots per level
       }
 
       // Update config

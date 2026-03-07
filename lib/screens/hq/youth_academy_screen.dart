@@ -435,86 +435,82 @@ class _YouthAcademyScreenState extends State<YouthAcademyScreen> {
     final int configLevel = config['academyLevel'] ?? 1;
     final int level = hqLevel > configLevel ? hqLevel : configLevel;
 
-    // Fix maxSlots if level mismatch
-    final int configMaxSlots = config['maxSlots'] ?? 2;
-    int maxSlots = configMaxSlots;
-    if (hqLevel > configLevel) {
-      maxSlots = hqLevel * 2;
-      if (_managerRole == ManagerRole.bureaucrat) {
-        maxSlots += hqLevel;
-      }
+    // Roster Capacity Calculation
+    // Level 1: 4 slots
+    // +1 slot per level after 1
+    // Bureaucrat: +2 slots per level
+    int maxSlots = 4 + (level - 1);
+    if (_managerRole == ManagerRole.bureaucrat) {
+      maxSlots += (level * 2);
     }
 
     final countryFlag = config['countryFlag'] ?? '🏁';
     final countryName = config['countryName'] ?? 'Unknown';
     final lastUpgradeSeasonId = config['lastUpgradeSeasonId'] as String?;
 
-    return SingleChildScrollView(
-      padding: const EdgeInsets.all(24),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          // Instruction banner
-          InstructionCard(
-            icon: Icons.school_rounded,
-            title: 'YOUTH ACADEMY',
-            description:
-                'Every week, new young prospects arrive at your academy. '
-                'Follow the ones you believe in and watch them grow. '
-                'At the end of the season, promote graduates to your main team!',
-          ),
-          const SizedBox(height: 24),
+    return StreamBuilder<List<YoungDriver>>(
+      stream: _academyService.streamSelectedDrivers(widget.teamId),
+      builder: (context, snapshot) {
+        final selected = snapshot.data ?? [];
+        final currentTraineesCount = selected.length;
 
-          // Academy info bar
-          _buildAcademyInfoBar(
-            level: level,
-            maxSlots: maxSlots,
-            countryFlag: countryFlag,
-            countryName: countryName,
-            team: team,
-            lastUpgradeSeasonId: lastUpgradeSeasonId,
-          ),
-          const SizedBox(height: 32),
+        return SingleChildScrollView(
+          padding: const EdgeInsets.all(24),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // Instruction banner
+              InstructionCard(
+                icon: Icons.school_rounded,
+                title: 'YOUTH ACADEMY',
+                description:
+                    'Every week, new young prospects arrive at your academy. '
+                    'Follow the ones you believe in and watch them grow. '
+                    'At the end of the season, promote graduates to your main team!',
+              ),
+              const SizedBox(height: 24),
 
-          // Candidates section
-          Text(
-            'AVAILABLE PROSPECTS',
-            style: GoogleFonts.poppins(
-              fontSize: 12,
-              fontWeight: FontWeight.w900,
-              color: const Color(0xFF00C853),
-              letterSpacing: 1.5,
-            ),
-          ),
-          const SizedBox(height: 4),
-          Text(
-            'Choose wisely — the sooner you follow a prospect, the more training they receive.',
-            style: GoogleFonts.raleway(fontSize: 12, color: Colors.white38),
-          ),
-          const SizedBox(height: 16),
-          _buildCandidatesSection(level, maxSlots),
-          const SizedBox(height: 32),
+              // Academy info bar
+              _buildAcademyInfoBar(
+                level: level,
+                maxSlots: maxSlots,
+                countryFlag: countryFlag,
+                countryName: countryName,
+                team: team,
+                lastUpgradeSeasonId: lastUpgradeSeasonId,
+              ),
+              const SizedBox(height: 32),
 
-          // Selected drivers section
-          Text(
-            'YOUR ACADEMY ROSTER',
-            style: GoogleFonts.poppins(
-              fontSize: 12,
-              fontWeight: FontWeight.w900,
-              color: const Color(0xFF00C853),
-              letterSpacing: 1.5,
-            ),
+              _buildCandidatesSection(
+                level,
+                maxSlots,
+                currentTraineesCount,
+                config,
+              ),
+              const SizedBox(height: 32),
+
+              // Selected drivers section
+              Text(
+                'YOUR ACADEMY ROSTER',
+                style: GoogleFonts.poppins(
+                  fontSize: 12,
+                  fontWeight: FontWeight.w900,
+                  color: const Color(0xFF00C853),
+                  letterSpacing: 1.5,
+                ),
+              ),
+              const SizedBox(height: 4),
+              Text(
+                'Drivers you are actively training. Track their progress and promote them at season end.',
+                style: GoogleFonts.raleway(fontSize: 12, color: Colors.white38),
+              ),
+              const SizedBox(height: 16),
+              _buildSelectedDriversSection(maxSlots, selected),
+              const SizedBox(height: 32),
+            ],
           ),
-          const SizedBox(height: 4),
-          Text(
-            'Drivers you are actively training. Track their progress and promote them at season end.',
-            style: GoogleFonts.raleway(fontSize: 12, color: Colors.white38),
-          ),
-          const SizedBox(height: 16),
-          _buildSelectedDriversSection(maxSlots),
-          const SizedBox(height: 32),
-        ],
-      ),
+        );
+      },
     );
   }
 
@@ -695,7 +691,12 @@ class _YouthAcademyScreenState extends State<YouthAcademyScreen> {
 
   // ── Candidates Section ────────────────────────────────────────────────
 
-  Widget _buildCandidatesSection(int level, int maxSlots) {
+  Widget _buildCandidatesSection(
+    int level,
+    int maxSlots,
+    int currentTraineesCount,
+    Map<String, dynamic> config,
+  ) {
     return StreamBuilder<List<YoungDriver>>(
       stream: _academyService.streamCandidates(widget.teamId),
       builder: (context, snap) {
@@ -709,67 +710,128 @@ class _YouthAcademyScreenState extends State<YouthAcademyScreen> {
         }
 
         final candidates = snap.data ?? [];
+        final totalScouted =
+            (config['scoutsUsedThisSeason'] ?? 0) + candidates.length;
+        final quota = 20 + (level - 1) * 5;
 
-        if (candidates.isEmpty) {
-          return Container(
-            padding: const EdgeInsets.all(24),
-            decoration: BoxDecoration(
-              color: const Color(0xFF1A1A1A),
-              borderRadius: BorderRadius.circular(12),
-              border: Border.all(color: Colors.white.withValues(alpha: 0.08)),
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Text(
+                  'AVAILABLE PROSPECTS',
+                  style: GoogleFonts.poppins(
+                    fontSize: 12,
+                    fontWeight: FontWeight.w900,
+                    color: const Color(0xFF00C853),
+                    letterSpacing: 1.5,
+                  ),
+                ),
+                Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 10,
+                    vertical: 4,
+                  ),
+                  decoration: BoxDecoration(
+                    color: Colors.white.withValues(alpha: 0.05),
+                    borderRadius: BorderRadius.circular(6),
+                  ),
+                  child: Text(
+                    'SCOUTED: $totalScouted / $quota',
+                    style: GoogleFonts.poppins(
+                      fontSize: 10,
+                      fontWeight: FontWeight.bold,
+                      color: totalScouted >= quota
+                          ? Colors.orangeAccent
+                          : Colors.white54,
+                    ),
+                  ),
+                ),
+              ],
             ),
-            child: Center(
-              child: Text(
-                'No prospects available. Check back next week!',
-                style: GoogleFonts.raleway(fontSize: 14, color: Colors.white38),
+            const SizedBox(height: 4),
+            Text(
+              totalScouted >= quota
+                  ? 'Seasonal quota reached. No more candidates will appear until next season.'
+                  : 'Choose wisely — once your seasonal scouting quota is met, no new candidates will arrive until next season.',
+              style: GoogleFonts.raleway(
+                fontSize: 12,
+                color: totalScouted >= quota
+                    ? Colors.orangeAccent.withValues(alpha: 0.5)
+                    : Colors.white38,
               ),
             ),
-          );
-        }
-
-        return LayoutBuilder(
-          builder: (context, constraints) {
-            final isWide = constraints.maxWidth > 700;
-            if (isWide) {
-              return Row(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: candidates.map((d) {
-                  return Expanded(
-                    child: Padding(
-                      padding: EdgeInsets.only(
-                        right: d == candidates.first ? 12 : 0,
-                        left: d == candidates.last ? 12 : 0,
-                      ),
-                      child: _CandidateCard(
-                        driver: d,
-                        onSelect: () => _selectCandidate(d.id),
-                        onDismiss: () => _dismissCandidate(d.id),
-                        maxSlots: maxSlots,
-                        teamId: widget.teamId,
-                        academyService: _academyService,
-                      ),
+            const SizedBox(height: 16),
+            if (candidates.isEmpty)
+              Container(
+                padding: const EdgeInsets.all(24),
+                decoration: BoxDecoration(
+                  color: const Color(0xFF1A1A1A),
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(
+                    color: Colors.white.withValues(alpha: 0.08),
+                  ),
+                ),
+                child: Center(
+                  child: Text(
+                    'No prospects available. Check back next week!',
+                    style: GoogleFonts.raleway(
+                      fontSize: 14,
+                      color: Colors.white38,
                     ),
-                  );
-                }).toList(),
-              );
-            } else {
-              return Column(
-                children: candidates.map((d) {
-                  return Padding(
-                    padding: const EdgeInsets.only(bottom: 16),
-                    child: _CandidateCard(
-                      driver: d,
-                      onSelect: () => _selectCandidate(d.id),
-                      onDismiss: () => _dismissCandidate(d.id),
-                      maxSlots: maxSlots,
-                      teamId: widget.teamId,
-                      academyService: _academyService,
-                    ),
-                  );
-                }).toList(),
-              );
-            }
-          },
+                  ),
+                ),
+              )
+            else
+              LayoutBuilder(
+                builder: (context, constraints) {
+                  final isWide = constraints.maxWidth > 700;
+                  if (isWide) {
+                    return Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: candidates.map((d) {
+                        return Expanded(
+                          child: Padding(
+                            padding: EdgeInsets.only(
+                              right: d == candidates.first ? 12 : 0,
+                              left: d == candidates.last ? 12 : 0,
+                            ),
+                            child: _CandidateCard(
+                              driver: d,
+                              onSelect: () => _selectCandidate(d.id),
+                              onDismiss: () => _dismissCandidate(d.id),
+                              maxSlots: maxSlots,
+                              currentTraineesCount: currentTraineesCount,
+                              teamId: widget.teamId,
+                              academyService: _academyService,
+                            ),
+                          ),
+                        );
+                      }).toList(),
+                    );
+                  } else {
+                    return Column(
+                      children: candidates.map((d) {
+                        return Padding(
+                          padding: const EdgeInsets.only(bottom: 16),
+                          child: _CandidateCard(
+                            driver: d,
+                            onSelect: () => _selectCandidate(d.id),
+                            onDismiss: () => _dismissCandidate(d.id),
+                            maxSlots: maxSlots,
+                            currentTraineesCount: currentTraineesCount,
+                            teamId: widget.teamId,
+                            academyService: _academyService,
+                          ),
+                        );
+                      }).toList(),
+                    );
+                  }
+                },
+              ),
+          ],
         );
       },
     );
@@ -809,96 +871,78 @@ class _YouthAcademyScreenState extends State<YouthAcademyScreen> {
 
   // ── Selected Drivers Section ─────────────────────────────────────────
 
-  Widget _buildSelectedDriversSection(int maxSlots) {
-    return StreamBuilder<List<YoungDriver>>(
-      stream: _academyService.streamSelectedDrivers(widget.teamId),
-      builder: (context, snap) {
-        if (snap.connectionState == ConnectionState.waiting) {
-          return const Center(
-            child: Padding(
-              padding: EdgeInsets.all(32),
-              child: CircularProgressIndicator(),
-            ),
-          );
-        }
-
-        final selected = snap.data ?? [];
-
-        if (selected.isEmpty) {
-          return Container(
-            padding: const EdgeInsets.all(24),
-            decoration: BoxDecoration(
-              color: const Color(0xFF1A1A1A),
-              borderRadius: BorderRadius.circular(12),
-              border: Border.all(color: Colors.white.withValues(alpha: 0.08)),
-            ),
-            child: Center(
-              child: Column(
-                children: [
-                  Icon(
-                    Icons.person_search_rounded,
-                    size: 48,
-                    color: Colors.white.withValues(alpha: 0.15),
-                  ),
-                  const SizedBox(height: 12),
-                  Text(
-                    'No drivers in training yet.',
-                    style: GoogleFonts.raleway(
-                      fontSize: 14,
-                      color: Colors.white38,
-                    ),
-                  ),
-                  const SizedBox(height: 4),
-                  Text(
-                    'Follow a prospect above to start training.',
-                    style: GoogleFonts.raleway(
-                      fontSize: 12,
-                      color: Colors.white24,
-                    ),
-                  ),
-                ],
+  Widget _buildSelectedDriversSection(
+    int maxSlots,
+    List<YoungDriver> selected,
+  ) {
+    if (selected.isEmpty) {
+      return Container(
+        padding: const EdgeInsets.all(24),
+        decoration: BoxDecoration(
+          color: const Color(0xFF1A1A1A),
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(color: Colors.white.withValues(alpha: 0.08)),
+        ),
+        child: Center(
+          child: Column(
+            children: [
+              Icon(
+                Icons.person_search_rounded,
+                size: 48,
+                color: Colors.white.withValues(alpha: 0.15),
               ),
-            ),
-          );
-        }
-
-        return Column(
-          children: [
-            // Capacity indicator
-            Padding(
-              padding: const EdgeInsets.only(bottom: 12),
-              child: Row(
-                children: [
-                  Icon(
-                    Icons.people_outline_rounded,
-                    size: 16,
-                    color: Colors.white.withValues(alpha: 0.5),
-                  ),
-                  const SizedBox(width: 6),
-                  Text(
-                    '${selected.length} / $maxSlots SLOTS',
-                    style: GoogleFonts.poppins(
-                      fontSize: 11,
-                      fontWeight: FontWeight.bold,
-                      color: Colors.white54,
-                      letterSpacing: 1,
-                    ),
-                  ),
-                ],
+              const SizedBox(height: 12),
+              Text(
+                'No drivers in training yet.',
+                style: GoogleFonts.raleway(fontSize: 14, color: Colors.white38),
               ),
-            ),
-            ...selected.map((d) {
-              return Padding(
-                padding: const EdgeInsets.only(bottom: 16),
-                child: _SelectedDriverCard(
-                  driver: d,
-                  onRelease: () => _releaseDriver(d.id, d.name),
+              const SizedBox(height: 4),
+              Text(
+                'Follow a prospect above to start training.',
+                style: GoogleFonts.raleway(fontSize: 12, color: Colors.white24),
+              ),
+            ],
+          ),
+        ),
+      );
+    }
+
+    return Column(
+      children: [
+        // Capacity indicator
+        Padding(
+          padding: const EdgeInsets.only(bottom: 12),
+          child: Row(
+            children: [
+              Icon(
+                Icons.people_outline_rounded,
+                size: 16,
+                color: Colors.white.withValues(alpha: 0.5),
+              ),
+              const SizedBox(width: 6),
+              Text(
+                '${selected.length} / $maxSlots SLOTS',
+                style: GoogleFonts.poppins(
+                  fontSize: 11,
+                  fontWeight: FontWeight.bold,
+                  color: Colors.white54,
+                  letterSpacing: 1,
                 ),
-              );
-            }),
-          ],
-        );
-      },
+              ),
+            ],
+          ),
+        ),
+        ...selected.map((d) {
+          return Padding(
+            padding: const EdgeInsets.only(bottom: 16),
+            child: _SelectedDriverCard(
+              driver: d,
+              teamId: widget.teamId,
+              onRelease: () => _releaseDriver(d.id, d.name),
+            ),
+          );
+        }),
+      ],
     );
   }
 
@@ -963,6 +1007,7 @@ class _CandidateCard extends StatelessWidget {
   final VoidCallback onSelect;
   final VoidCallback onDismiss;
   final int maxSlots;
+  final int currentTraineesCount;
   final String teamId;
   final YouthAcademyService academyService;
 
@@ -971,6 +1016,7 @@ class _CandidateCard extends StatelessWidget {
     required this.onSelect,
     required this.onDismiss,
     required this.maxSlots,
+    required this.currentTraineesCount,
     required this.teamId,
     required this.academyService,
   });
@@ -1082,7 +1128,7 @@ class _CandidateCard extends StatelessWidget {
               ),
               const SizedBox(width: 8),
               DriverStars(
-                currentStars: 0,
+                currentStars: driver.currentStars,
                 maxStars: driver.potentialStars,
                 size: 16,
               ),
@@ -1152,10 +1198,15 @@ class _CandidateCard extends StatelessWidget {
               Expanded(
                 flex: 2,
                 child: ElevatedButton.icon(
-                  onPressed: onSelect,
-                  icon: const Icon(Icons.person_add_rounded, size: 16),
+                  onPressed: currentTraineesCount >= maxSlots ? null : onSelect,
+                  icon: Icon(
+                    currentTraineesCount >= maxSlots
+                        ? Icons.block_flipped
+                        : Icons.person_add_rounded,
+                    size: 16,
+                  ),
                   label: Text(
-                    'FOLLOW',
+                    currentTraineesCount >= maxSlots ? 'FULL SLOTS' : 'FOLLOW',
                     style: GoogleFonts.poppins(
                       fontSize: 11,
                       fontWeight: FontWeight.w900,
@@ -1163,8 +1214,12 @@ class _CandidateCard extends StatelessWidget {
                     ),
                   ),
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: green,
-                    foregroundColor: Colors.black,
+                    backgroundColor: currentTraineesCount >= maxSlots
+                        ? Colors.grey.withValues(alpha: 0.1)
+                        : green,
+                    foregroundColor: currentTraineesCount >= maxSlots
+                        ? Colors.white24
+                        : Colors.black,
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(100),
                     ),
@@ -1280,9 +1335,14 @@ class _CandidateCard extends StatelessWidget {
 
 class _SelectedDriverCard extends StatelessWidget {
   final YoungDriver driver;
+  final String teamId;
   final VoidCallback onRelease;
 
-  const _SelectedDriverCard({required this.driver, required this.onRelease});
+  const _SelectedDriverCard({
+    required this.driver,
+    required this.teamId,
+    required this.onRelease,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -1293,16 +1353,56 @@ class _SelectedDriverCard extends StatelessWidget {
       decoration: BoxDecoration(
         color: const Color(0xFF1A1A1A),
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: green.withValues(alpha: 0.15)),
+        border: Border.all(
+          color: driver.isMarkedForPromotion
+              ? Colors.amber.withValues(alpha: 0.5)
+              : green.withValues(alpha: 0.15),
+          width: driver.isMarkedForPromotion ? 2 : 1,
+        ),
         gradient: LinearGradient(
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
-          colors: [green.withValues(alpha: 0.05), const Color(0xFF121212)],
+          colors: [
+            driver.isMarkedForPromotion
+                ? Colors.amber.withValues(alpha: 0.1)
+                : green.withValues(alpha: 0.05),
+            const Color(0xFF121212),
+          ],
         ),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
+          // Weekly Event Banner
+          if (driver.weeklyEventMessage != null &&
+              driver.weeklyEventMessage!.isNotEmpty)
+            Container(
+              width: double.infinity,
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+              margin: const EdgeInsets.only(bottom: 16),
+              decoration: BoxDecoration(
+                color: green.withValues(alpha: 0.1),
+                borderRadius: BorderRadius.circular(8),
+                border: Border.all(color: green.withValues(alpha: 0.2)),
+              ),
+              child: Row(
+                children: [
+                  const Icon(Icons.auto_awesome, size: 14, color: green),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: Text(
+                      driver.weeklyEventMessage!,
+                      style: GoogleFonts.raleway(
+                        fontSize: 11,
+                        fontWeight: FontWeight.w600,
+                        color: Colors.white.withValues(alpha: 0.9),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+
           // Header
           Row(
             children: [
@@ -1375,6 +1475,29 @@ class _SelectedDriverCard extends StatelessWidget {
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                     ),
+                    if (driver.specialty != null)
+                      Container(
+                        margin: const EdgeInsets.only(top: 4),
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 6,
+                          vertical: 2,
+                        ),
+                        decoration: BoxDecoration(
+                          color: Colors.blueAccent.withValues(alpha: 0.2),
+                          borderRadius: BorderRadius.circular(4),
+                          border: Border.all(
+                            color: Colors.blueAccent.withValues(alpha: 0.3),
+                          ),
+                        ),
+                        child: Text(
+                          driver.specialty!.toUpperCase(),
+                          style: GoogleFonts.poppins(
+                            fontSize: 9,
+                            fontWeight: FontWeight.w900,
+                            color: Colors.blueAccent,
+                          ),
+                        ),
+                      ),
                   ],
                 ),
               ),
@@ -1391,7 +1514,7 @@ class _SelectedDriverCard extends StatelessWidget {
                   ),
                   const SizedBox(height: 4),
                   DriverStars(
-                    currentStars: 0,
+                    currentStars: driver.currentStars,
                     maxStars: driver.potentialStars,
                     size: 14,
                   ),
@@ -1419,6 +1542,54 @@ class _SelectedDriverCard extends StatelessWidget {
                 )
               else
                 const SizedBox.shrink(),
+              const SizedBox(width: 12),
+              ElevatedButton.icon(
+                onPressed: () async {
+                  try {
+                    await YouthAcademyService().togglePromotion(
+                      teamId,
+                      driver.id,
+                      !driver.isMarkedForPromotion,
+                    );
+                  } catch (e) {
+                    if (context.mounted) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(
+                          content: Text(
+                            e.toString().replaceAll('Exception: ', ''),
+                          ),
+                          backgroundColor: Colors.redAccent,
+                        ),
+                      );
+                    }
+                  }
+                },
+                icon: Icon(
+                  driver.isMarkedForPromotion
+                      ? Icons.check_circle_rounded
+                      : Icons.arrow_upward_rounded,
+                  size: 14,
+                ),
+                label: Text(
+                  driver.isMarkedForPromotion ? 'MARKED' : 'PROMOTE',
+                  style: GoogleFonts.poppins(
+                    fontSize: 10,
+                    fontWeight: FontWeight.w900,
+                    letterSpacing: 1,
+                  ),
+                ),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: driver.isMarkedForPromotion
+                      ? Colors.amber
+                      : green,
+                  foregroundColor: Colors.black,
+                  padding: const EdgeInsets.symmetric(horizontal: 12),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(100),
+                  ),
+                ),
+              ),
+              const Spacer(),
               TextButton.icon(
                 onPressed: onRelease,
                 icon: Icon(
@@ -1490,15 +1661,36 @@ class _SelectedDriverCard extends StatelessWidget {
           ),
           const SizedBox(width: 8),
           SizedBox(
-            width: 50,
-            child: Text(
-              '$currentVal / $max',
-              textAlign: TextAlign.right,
-              style: GoogleFonts.poppins(
-                fontSize: 10,
-                fontWeight: FontWeight.w600,
-                color: Colors.white54,
-              ),
+            width: 70, // Slightly reduced to make space for diff
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.end,
+              children: [
+                if (driver.weeklyStatDiffs.containsKey(statKey))
+                  Padding(
+                    padding: const EdgeInsets.only(right: 4),
+                    child: Text(
+                      driver.weeklyStatDiffs[statKey]! > 0
+                          ? '+${driver.weeklyStatDiffs[statKey]}'
+                          : '${driver.weeklyStatDiffs[statKey]}',
+                      style: GoogleFonts.poppins(
+                        fontSize: 10,
+                        fontWeight: FontWeight.w900,
+                        color: driver.weeklyStatDiffs[statKey]! > 0
+                            ? Colors.greenAccent
+                            : Colors.redAccent,
+                      ),
+                    ),
+                  ),
+                Text(
+                  '$currentVal / $max',
+                  textAlign: TextAlign.right,
+                  style: GoogleFonts.poppins(
+                    fontSize: 10,
+                    fontWeight: FontWeight.w600,
+                    color: Colors.white54,
+                  ),
+                ),
+              ],
             ),
           ),
         ],
