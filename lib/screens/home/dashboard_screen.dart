@@ -140,6 +140,9 @@ class _DashboardScreenState extends State<DashboardScreen> {
               );
             } else if (currentStatus == RaceWeekStatus.raceStrategy) {
               if (seasonId == null) return;
+              final raceDocId = currentRace != null
+                  ? SeasonService().raceDocumentId(seasonId, currentRace.event)
+                  : null;
               Navigator.push(
                 context,
                 MaterialPageRoute(
@@ -147,6 +150,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                     seasonId: seasonId,
                     teamId: team.id,
                     circuitId: circuitId,
+                    raceDocId: raceDocId,
                   ),
                 ),
               );

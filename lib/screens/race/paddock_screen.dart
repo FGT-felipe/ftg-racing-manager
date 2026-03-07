@@ -52,10 +52,14 @@ class _PaddockScreenState extends State<PaddockScreen> {
               isEmbed: true,
             );
           case RaceWeekStatus.raceStrategy:
+            final raceDocId = currentRace != null
+                ? SeasonService().raceDocumentId(season.id, currentRace.event)
+                : null;
             return RaceStrategyScreen(
               seasonId: season.id,
               teamId: widget.teamId,
               circuitId: circuitId,
+              raceDocId: raceDocId,
               isEmbed: true,
             );
           case RaceWeekStatus.race:

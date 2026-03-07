@@ -490,9 +490,10 @@ class _MainLayoutState extends State<MainLayout> {
       currentRace?.event.date,
     );
 
-    if (mounted) {
+    final isNowRace = status == RaceWeekStatus.race;
+    if (mounted && _isRaceInProgress != isNowRace) {
       setState(() {
-        _isRaceInProgress = status == RaceWeekStatus.race;
+        _isRaceInProgress = isNowRace;
       });
     }
   }

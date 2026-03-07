@@ -1,6 +1,7 @@
 /* eslint-disable max-len */
 // Deployment: 2026-02-24
 const { onSchedule } = require("firebase-functions/v2/scheduler");
+const { onCall } = require("firebase-functions/v2/https");
 const { setGlobalOptions } = require("firebase-functions");
 const admin = require("firebase-admin");
 const logger = require("firebase-functions/logger");
@@ -637,12 +638,8 @@ async function refreshAcademyCandidates(teamId, academyLevel, countryCode) {
 // ─────────────────────────────────────────────
 // 1. SCHEDULED QUALIFYING (Sat 3:00 PM COT)
 // ─────────────────────────────────────────────
-exports.scheduledQualifying = onSchedule({
-  schedule: "0 15 * * 6",
-  timeZone: "America/Bogota",
-  memory: "512MiB",
-  timeoutSeconds: 300,
-}, async () => {
+
+async function runQualifyingLogic() {
   logger.info("=== QUALIFYING START ===");
 
   try {
@@ -652,7 +649,7 @@ exports.scheduledQualifying = onSchedule({
       logger.error("Universe not found"); return;
     }
     const leagues = Object.values(
-      uDoc.data().activeLeagues || {},
+      uDoc.data().leagues || {},
     );
 
     let leagueIdx = 0;
@@ -661,16 +658,30 @@ exports.scheduledQualifying = onSchedule({
       if (leagueIdx > 0) await sleep(5 * 60 * 1000);
       leagueIdx++;
 
-      const sId = league.currentSeasonId;
-      if (!sId) continue;
+      // --- Self-healing season lookup ---
+      let sId = league.currentSeasonId;
+      let sDoc = sId ?
+        await db.collection("seasons").doc(sId).get() : null;
 
-      const sDoc = await db.collection("seasons").doc(sId).get();
-      if (!sDoc.exists) continue;
+      if (!sDoc || !sDoc.exists) {
+        logger.info(`Season ${sId || "N/A"} not found for ${league.name}, falling back to latest season...`);
+        const fallback = await db.collection("seasons")
+          .orderBy("startDate", "desc").limit(1).get();
+        if (fallback.empty) {
+          logger.info(`Skip league ${league.name}: No seasons exist at all`);
+          continue;
+        }
+        sDoc = fallback.docs[0];
+        sId = sDoc.id;
+        logger.info(`Using fallback season: ${sId}`);
+      }
       const season = sDoc.data();
 
-      const raceEvent = (season.calendar || [])
-        .find((r) => !r.isCompleted);
-      if (!raceEvent) continue;
+      const raceEvent = (season.calendar || []).find((r) => !r.isCompleted);
+      if (!raceEvent) {
+        logger.info(`Skip league ${league.name}: No pending races in calendar`);
+        continue;
+      }
 
       const circuit = getCircuit(raceEvent.circuitId);
       const raceDocId = `${sId}_${raceEvent.id}`;
@@ -684,12 +695,19 @@ exports.scheduledQualifying = onSchedule({
 
       logger.info(`Qualy: ${league.name} - ${raceEvent.trackName}`);
 
-      // Gather all team IDs from divisions
+      // Gather all team IDs from teams array (or legacy divisions)
       const teamIds = [];
-      (league.divisions || []).forEach((d) => {
-        if (d.teamIds) teamIds.push(...d.teamIds);
-      });
-      if (!teamIds.length) continue;
+      if (league.teams && league.teams.length > 0) {
+        teamIds.push(...league.teams.map((t) => t.id || t));
+      } else {
+        (league.divisions || []).forEach((d) => {
+          if (d.teamIds) teamIds.push(...d.teamIds);
+        });
+      }
+      if (!teamIds.length) {
+        logger.info(`Skip league ${league.name}: No teams found in league.teams or league.divisions`);
+        continue;
+      }
 
       const teamDocs = await fetchTeams(teamIds);
       const qualyResults = [];
@@ -888,13 +906,38 @@ exports.scheduledQualifying = onSchedule({
           message: lines,
           type: "QUALIFYING_RESULT",
           eventType: "Qualifying",
+          actionRoute: "/race_week/garage",
         });
       }
 
       logger.info(`Qualy complete: ${raceDocId}`);
     }
   } catch (err) {
-    logger.error("Error in scheduledQualifying", err);
+    logger.error("Error in runQualifyingLogic", err);
+  }
+}
+
+exports.scheduledQualifying = onSchedule({
+  schedule: "0 15 * * 6",
+  timeZone: "America/Bogota",
+  memory: "512MiB",
+  timeoutSeconds: 300,
+}, async () => {
+  await runQualifyingLogic();
+});
+
+exports.forceQualy = onCall({
+  cors: true,
+  memory: "512MiB",
+  timeoutSeconds: 300,
+}, async (request) => {
+  try {
+    if (!request.auth) throw new Error("Unauthorized");
+    await runQualifyingLogic();
+    return { success: true, message: "Qualifying forced successfully!" };
+  } catch (e) {
+    logger.error("Error forcing qualy", e);
+    return { success: false, error: e.toString() };
   }
 });
 
@@ -914,7 +957,7 @@ exports.scheduledRace = onSchedule({
       .doc("game_universe_v1").get();
     if (!uDoc.exists) return;
     const leagues = Object.values(
-      uDoc.data().activeLeagues || {},
+      uDoc.data().leagues || {},
     );
 
     let leagueIdx = 0;
@@ -922,11 +965,20 @@ exports.scheduledRace = onSchedule({
       if (leagueIdx > 0) await sleep(5 * 60 * 1000);
       leagueIdx++;
 
-      const sId = league.currentSeasonId;
-      if (!sId) continue;
+      // --- Self-healing season lookup ---
+      let sId = league.currentSeasonId;
+      let sDoc = sId ?
+        await db.collection("seasons").doc(sId).get() : null;
 
-      const sDoc = await db.collection("seasons").doc(sId).get();
-      if (!sDoc.exists) continue;
+      if (!sDoc || !sDoc.exists) {
+        logger.info(`Race: Season ${sId || "N/A"} not found, falling back...`);
+        const fallback = await db.collection("seasons")
+          .orderBy("startDate", "desc").limit(1).get();
+        if (fallback.empty) continue;
+        sDoc = fallback.docs[0];
+        sId = sDoc.id;
+        logger.info(`Race: Using fallback season: ${sId}`);
+      }
       const season = sDoc.data();
 
       const rIdx = (season.calendar || [])

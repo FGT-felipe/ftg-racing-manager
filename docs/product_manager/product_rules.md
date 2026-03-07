@@ -1,13 +1,13 @@
 # Reglas de Producto - FTG Racing Manager
 
-Este documento centraliza las reglas lógicas y de negocio para los diferentes módulos del juego.
+Este documento centraliza las reglas lógicas y de negocio para los diferentes módulos del juego. Actualizado para reflejar la estructura y funcionalidades de la versión más reciente.
 
 ## 1. Universo y Ligas
 
 ### Estructura Jerárquica
 El universo del juego se organiza en una serie de ligas jerárquicas en lugar de ligas por país:
 1. **FTG World Championship** (Nivel 1 - Élite)
-2. **FTG 2th Series** (Nivel 2 - Profesional)
+2. **FTG 2nd Series** (Nivel 2 - Profesional)
 3. **FTG Karting Championship** (Nivel 3 - Academia/Iniciación)
 
 ### Composición de Ligas
@@ -46,46 +46,27 @@ El universo del juego se organiza en una serie de ligas jerárquicas en lugar de
 - **Atributos (Stats)**: Los niveles de habilidad base dependen del Tier de la liga en la que se generan.
 - **Identidad Visual**: Los avatares se seleccionan aleatoriamente de un pool de 12 imágenes por género desde las carpetas `drivers/male` y `drivers/female`.
 
-### Academia de Jóvenes
-- La el sistema debe generar nuevos pilotos por cada academia según las reglas que se explican aquí.
-- Cada equipo tiene una academia de jóvenes asociada. 
-- Esta se consigue comprando el nivel 1 en las instalaciones. 
-La academia se puede mejorar hasta el nivel 5 pero solo 1 nivel por temporada.
-- Si no se tiene la academia, no se pueden generar pilotos jóvenes.
-- Los pilotos jóvenes se generan con un nivel base de 7 en el nivel 1 de academia y aumentan hasta base 15 en el nivel máximo de la academia.
-- Los pilotos jóvenes tienen un potencial de crecimiento de entre 5 y 12 puntos según el nivel de la academia.
-- Los pilotos jóvenes tienen un contrato de 1 año.
-- Los pilotos jóvenes tienen un salario de $100,000.
-- Los pilotos jóvenes tienen un nivel de experiencia de 0.
-- La única forma de conseguir pilotos jóvenes y con potencial, es en la academia.
-- A mayor nivel de academia, mayor número de candidatos de alto potencial aparecerán.
-- Al comprar la academia aparecen 2 candidatos jóvenes a seguir.
-- Los candidatos no seleccionados expiran cada semana luego de la actualización del fin de semana y aparecen nuevos candidatos a seleccionar. Si se selecciona 1, entonces el no seleccionado expira y aparece 1, si no se selecciona ninguno, ambos expiran y aparecen 2 más a la semana.
-- La academia siempre debe dar la opción de un piloto hombre y una mujer con sus respectivos avatares.
-- Cuando se construye el primer nivel de la academia, el manager puede elegir el país de origen de los pilotos jóvenes. Este país será el país de origen de todos los pilotos jóvenes que se generen en la academia.
-- Cada nivel de academia permite tener 2 pilotos jóvenes más.
-- El manager puede seleccionar 1 solo piloto de los candidatos para seguirlo.
-- Entre más rápido seleccione al piloto, más entrenamiento tendrá durante toda la temporada.
-- la FTG Karting Championship es el campeonato donde los pilotos jóvenes pueden debutar.
-- El campeonato de jóvenes no requiere configuraciones de setup ni neumáticos. Simplemente se hace una simulación durante la carrera de las ligas principales para darle algo de experiencia y según el resultado mejorar algunos porcentajes de sus habilidades.
-- Solo Cuando termina la temporada, los pilotos jóvenes que no fueron seleccionados se eliminan.
-- Solo Cuando termina la temporada, los pilotos jóvenes que fueron seleccionados se pueden ascender al equipo principal. Si el piloto es ascendido, se elimina de la academia de jóvenes y se convierte en un piloto del equipo principal.
-- El manager puede elegir si el piloto joven reemplaza al piloto principal o al piloto secundario.
-- Si el piloto joven reemplaza al piloto principal o al piloto secundario, el piloto reemplazado queda como agente libre en el mercado de fichajes (no implementado aún).
-- Un piloto ascendido siempre cobrará menos por que ama a su equipo, su moral será del 100% y su salario será del 50% de lo que cobraría normalmente. El índice de disminución de moral será menor que cualquier otro piloto.
-- Los stats de los pilotos no aparecen con un valor fijo, sino un rango de valor según su potencial actual y su potencial máximo. Esto hace que el manager tome una decisión a consciencia de cuál pueden ser sus stats finales al alcanzar su pico.
-- Reglas sobre la UI de la academia de jóvenes:
-    - Los stats de los pilotos no aparecen con un valor fijo, sino un rango de valor según su potencial actual y su potencial máximo. Esto hace que el manager tome una decisión a consciencia de cuál pueden ser sus stats finales al alcanzar su pico.
-    - La pantalla de la academia muestra un banner tipo rules, explicando que cada semana llegan nuevos jóvenes promesas a la academia. 
-    -  La pantalla de la academia de jóvenes le permite al manager ver los pilotos jóvenes que tiene disponibles.
-    -  La pantalla de la academia de jóvenes le permite al manager seleccionar 1 solo piloto de los candidatos para seguirlo.
-    -  La pantalla de la academia de jóvenes le permite al manager mejorar la academia de jóvenes.
-    -  La pantalla de la academia de ver el progreso (por porcentajes) que está teniendo su joven piloto.
-    -  Cada semana habrá en una sección de informes dentro de la academia, saldrá un resumen de qué tanto mejoró el piloto y el potencial que tiene.
-    - Todos los gastos de academia y el contrato del piloto joven salen del presupuesto del equipo y se deben ver reflejados en los movimientos en Finances, con la categoría "Academy".
-    - El manager puede decidir dejar de entrenar al piloto en cualquier momento, pero no podrá recuperar el dinero invertido en la academia.
-    - Si el manager elimina a alguno de los 2 candidatos (sea el seleccionado o no), trae el número de candidatos disponibles a 2 si hay hueco disponible.
-    
+### Academia de Jóvenes (Youth Academy)
+- Ahora accesible como un **ítem de nivel superior en la barra de navegación** (Top-Level Item) para mayor visibilidad.
+- Cada equipo puede adquirir una academia de jóvenes pagando la cuota inicial ($100k).
+- La academia se puede mejorar hasta el **nivel 5**, pero solo se permite **1 mejora por temporada**.
+- Al comprar la academia, el manager elige un **País de Origen** que aplicará a todos los pilotos graduados de ella.
+- **Capacidad de Roster (Slots)**:
+    - **Nivel 1**: 4 slots (posiciones para entrenar pilotos jóvenes a la vez).
+    - **Niveles 2-5**: +1 slot adicional por nivel.
+    - **Bonificación**: El rol de manager `Bureaucrat` otorga **+2 slots adicionales** por cada nivel de la academia.
+- **Hunting/Scouting**:
+    - Aparecen **2 prospectos jóvenes por semana**.
+    - Existe una **Cuota de Scouting por Temporada**: Inicia en 20 prospectos en Nivel 1 y aumenta a razón de +5 por cada nivel adicional. Una vez se alcanza esta cuota al ver prospectos cada semana, **no aparecerán más candidatos hasta la siguiente temporada**.
+- **Entrenamiento y Progreso**:
+    - Los pilotos jóvenes ingresan con niveles bajos (e.g. base 7 en lvl 1) y aumentan según el nivel de la academia (hasta base 15 en lvl 5).
+    - Tienen un potencial de crecimiento de entre 5 y 12 puntos según la academia.
+    - Contrato de 1 año con salario fijo de $100,000 y 0 de experiencia.
+    - Mientras estén seleccionados, entrenan y ganan experiencia participando pasivamente en el background simulator del FTG Karting Championship. No requieren configuraciones de setup ni neumáticos.
+- El manager puede visualizar en su "Academy Roster" un rango del potencial del piloto y actualizaciones periódicas de sus avances, pagando de su presupuesto (etiquetado "Academy").
+- Al finalizar la temporada, se pueden **ascender** al primer equipo, pero si el equipo ha llegado a su **límite de 5 pilotos totales**, no podrá ascender a nadie más. Los pilotos ascendidos tendrán moral al 100% y cobrarán 50% de salario.
+- Los jóvenes no seleccionados o decantados se auto-limpian al cierre del ciclo.
+
 ### Estado Físico y Recuperación
 - El atributo **Fitness** (0-100) es crítico para el rendimiento y la seguridad.
 - Los pilotos **recuperan 10 puntos de Fitness diariamente** de forma automática (hasta un máximo de 100).
@@ -121,177 +102,95 @@ La academia se puede mejorar hasta el nivel 5 pero solo 1 nivel por temporada.
 - **Idioma**: Los nombres de los equipos deben estar en **inglés**.
 - **Restricciones**: No se deben utilizar nombres de ciudades.
 - **Formato**: Los nombres deben combinar cualidades (Velocidad, rapidez, etc.) y colores o animales/elementos.
-- **Ejemplos**: Rapid Blue, Green Panther, Crimson Velocity, Apex Predators, etc.
+- **Ejemplos**: Rapid Blue, Green Panther, Crimson Velocity.
 
 ### Generación de Equipos
-- **Globalidad**: Los equipos no están atados a un país específico para la liga, pero pueden tener identidades temáticas según las reglas de nombres.
-- **Presupuesto**: Los equipos bot se generan con presupuestos base estandarizados según su liga.
+- **Globalidad**: Los equipos no están atados a un país, pero tienen identidades temáticas.
+- **Presupuesto**: Los bots inician con presupuestos base estandarizados según su liga.
 - **IDs**: Siguen un contador global único para asegurar trazabilidad.
-- **Livery (Librea)**: El sistema de personalización de libreas está **temporalmente oculto** en la interfaz de equipo hasta que se defina un diseño visual más robusto.
 
 ---
 
 ## 5. Instalaciones (Facilities)
 
+### Nombre e Interfaz
+- El menú de instalaciones se ha renombrado de "HQ" a **Facilities** en la navegación global.
+- Todas las instalaciones se consolidan bajo esta pestaña, incluyendo la Team Office y el Garage.
+
 ### Costos y Mejora
-- **Precio de Mejora**: El costo para subir de nivel es `$100,000 * (Nivel Actual + 1)`.
+- **Precio de Mejora**: El costo base para subir de nivel es `$100,000 * (Nivel Actual + 1)`.
 - **Nivel Máximo**: Las instalaciones pueden llegar hasta el **nivel 5**.
 - **Mantenimiento**: Cada instalación tiene un costo de mantenimiento semanal de `Nivel * $15,000` (es $0 si el nivel es 0).
 
-### Bonificaciones por Tipo
+### Bonificaciones Automáticas
 - **Oficina del Equipo (Team Office)**: Aumenta el presupuesto en un **5% por nivel**.
 - **Garage**: Aumenta la capacidad de reparación en un **2% por nivel**.
-- **Academia de Jóvenes (Youth Academy)**: Otorga **10 puntos de ojeo (scouting)** adicionales por nivel.
-
-### Visibilidad
-- **Roadmap Visible**: Todas las instalaciones definidas en el sistema son visibles en el HQ desde el inicio. Aquellas que no tienen funcionalidad implementada aún se muestran con la cintilla "COMING SOON" para informar al usuario de futuras mejoras.
-- **Instalaciones No Compradas**: Las instalaciones a Nivel 0 son plenamente visibles y permiten la compra inmediata si se dispone del presupuesto.
+- **Academia de Jóvenes**: Otorga **10 puntos de scouting** adicionales por nivel (visualizado en la cuota). Funcionalmente la Academia ya no se visita en Facilities sino en su propio menú "Academy", pero comparte la arquitectura de datos de las instalaciones.
 
 ---
 
 ## 6. Reglajes y Simulación (Setups)
 
-### Configuración del Coche
-- **Parámetros**: Alas (Delantera y Trasera), Suspensión y Relación de Marchas.
-- **Rango de Valores**: Todos los parámetros de reglaje se configuran en un rango de **0 a 100**.
-- **Neumáticos**: Existen 4 compuestos (Blando, Medio, Duro y Lluvia), cada uno con diferentes tasas de desgaste y rendimiento según la temperatura y clima.
-- **Estilo de Conducción**: Los pilotos pueden configurarse en 4 estilos (Defensivo, Normal, Ofensivo y Riesgo Máximo), afectando el ritmo y la probabilidad de error/accidente.
+### Configuración del Coche y Calificación
+- **Parámetros**: Alas (Delantera y Trasera), Suspensión y Relación de Marchas en un rango de **0 a 100**.
+- **Neumáticos**: Existen 4 compuestos (Blando, Medio, Duro y Lluvia).
+- **DriverSetupInfo**: La comunicación entre los componentes de setup y las estrategias en carrera están fuertemente tipadas usando `DriverSetupInfo` para garantizar validaciones de tipos de compuestos antes y después de `_buildCarConfiguration` o `_buildStrategyAndPitStops`.
+
+### Estilo de Conducción
+- Los pilotos usan 4 estilos (Defensivo, Normal, Ofensivo y Riesgo Máximo), afectando el tiempo por vuelta, degradación y probabilidad de accidente.
 
 ---
 
 ## 7. Perfiles de Manager (Backgrounds)
 
-Al crear un nuevo manager, el usuario debe seleccionar un contexto previo o perfil ("background"). Este perfil otorga bonificaciones (pros) y penalizaciones (contras) pasivas que impactan diferentes sistemas del juego.
-
-### Lista de Perfiles y Efectos
-
-#### 1. Ex-Driver (Ex-Piloto)
-*Using your racing intuition to lead.*
-- **Pros:**
-  - Bono técnico en sesiones de carrera (Mejores tiempos/ritmo).
-  - Mayor precisión en el feedback de los pilotos para el setup.
-  - Mayor motivación y menos errores en paradas en boxes (Pit crew respect).
-- **Contras:**
-  - Progresión lenta de atributos de gestión del manager.
-  - Salario necesario y expectativas financieras más altas.
-  - Sesgo hacia estrategias y estilos agresivos impulsados por IA (o desgaste de gomas).
-
-#### 2. Business Admin (Administrador)
-*Optimization and profit above all.*
-- **Pros:**
-  - Mejores tratos financieros y pagos en patrocinios (`+15%` base).
-  - Menores costos al mejorar instalaciones en el HQ (`-10%` o similar).
-  - Bonificación en ingresos de marketing semanales.
-- **Contras:**
-  - Tasa alta de recuperación de fatiga (los pilotos se cansan más rápido o se quejan más).
-  - Interacciones técnicas menos eficientes (desarrollo de R&D sufre un poco).
-  - Aversión al riesgo (moral afectada por tácticas arriesgadas).
-
-#### 3. Bureaucrat (Burócrata)
-*Master of rules and politics.*
-- **Pros:**
-  - Contratos de personal y salarios son más económicos (`-10%`).
-  - Reducción o inmunidad a ciertas penalizaciones menores (FIA).
-  - Estabilidad en la confianza de la directiva (Toleran mejor rachas de derrotas).
-- **Contras:**
-  - Armonía de equipo inestable y alta probabilidad de peleas de pilotos.
-  - Desarrollo de mejoras del coche más lento.
-  - Impacto negativo en moral si hay eventos mediáticos aburridos.
-
-#### 4. Ex-Engineer (Ex-Ingeniero)
-*Technical excellence is the only way.*
-- **Pros:**
-  - Aceleración en el setup del coche y en R&D.
-  - Mayor porcentaje base en la fiabilidad técnica del coche.
-  - Curva de mejora tecnológica más temprana.
-- **Contras:**
-  - Multiplicador menor de ganancia de Experiencia (XP) para los pilotos.
-  - Menos ingresos por patrocinios informales.
-  - Penalización a la moral por exceso de microgestión en pits.
-
-#### 5. No Experience (Sin Experiencia)
-*A fresh perspective on the sport.*
-- **Pros:**
-  - Potencial de máximo crecimiento en todos los stats del manager.
-  - Sin prejuicios ni rivalidades (relaciones neutras al nacer el universo).
-  - Balance perfecto como estilo de liderazgo por defecto.
-- **Contras:**
-  - Cero buffs automáticos iniciales al llegar al equipo.
-  - Reputación muy baja al entrar en la liga.
-  - Mayor rango de error o "ruido" al ver los stats de telemetría reales.
+El perfil otorga buffs y debuffs pasivos desde el inicio del universo.
+1. **Ex-Driver**: Bono técnico en pista, más tacto de setup, menos progreso de gestión, salario alto, agresión IA.
+2. **Business Admin**: Mejores contratos financieros (+15%), costos de HQ más baratos (-10%). *Contra:* Fatiga de pilotos altísima.
+3. **Bureaucrat**: Salarios económicos (-10%), menor penalización FIA. *Especial:* **Otorga +2 slots base adicionales en la Youth Academy**. *Contra:* Peleas de equipo, I+D lento.
+4. **Ex-Engineer**: R&D ultra veloz, mejoras en setup. *Contra:* Reducción de XP a pilotos.
+5. **No Experience**: Gran potencial de crecimiento total futuro, pero sin beneficios iniciales.
 
 ---
 
 ## 8. Identidad Visual y UI
 
-### Diseño "Onyx" (Premium Dark)
-Todas las tarjetas (cards) de gestión (Team, Personal, Drivers, Engineering, Finances, Sponsors) deben adherirse al lenguaje de diseño estéticamente premium establecido en el HQ:
-- **Fondo**: Gradiente lineal de `#1E1E1E` (arriba-izquierda) a `#0A0A0A` (abajo-derecha).
-- **Bordes**: Grosor de `1px` con color `Colors.white.withValues(alpha: 0.1)`.
-- **Esquinas**: Radio de borde (BorderRadius) fijo de `12px`.
-- **Sombras**: BoxShadow profundo (`blurRadius: 12-16`, `offset: (0, 6-8)`) con color `Colors.black.withValues(alpha: 0.4)`.
-- **Estructura**: Se debe evitar el widget `Card` nativo de Flutter en favor de `Container` con la decoración descrita para mayor control visual.
-
-### Micro-interacciones
-- **Hover Effects**: Los elementos interactivos dentro de las tarjetas deben tener sutiles cambios de opacidad o escala.
-- **Coming Soon**: Los módulos en desarrollo deben usar el filtro de opacidad y una etiqueta "COMING SOON" con tipografía `900` de Google Fonts Poppins.
-
-### Onboarding (Team Selection)
-- **Background Tecnológico**: Las tarjetas de selección de equipo deben utilizar la imagen `blueprints/blueprintcars.png` como fondo con una opacidad reducida (`0.15`) para reforzar la estética técnica y de ingeniería del juego desde el primer contacto.
+### Diseño "Onyx" y Temas Dinámicos
+- Ahora la aplicación soporta una **alternancia de temas Dark/Light (Toggle)** en tiempo real.
+- El lenguaje de diseño estéticamente premium ("Onyx") se ha adaptado a la variante luminosa conservando las sombras pesadas, bordes definidos y accesibilidad visual.
+- **Fondo Dark**: Gradiente lineal de `#1E1E1E` a `#0A0A0A` con bordes blancos tenues.
+- **Fondo Light**: Transiciones suaves y alto contraste en textos para evitar pérdida de legibilidad, tarjetas claras reteniendo proporciones idénticas a Onyx.
+- **Estructura Constante**: Se ha regulado profundamente un uso estandarizado que evita colores directos duros o barras separadoras dobles, restaurando limpiezas en Dashboards y modales.
 
 ### Badges tipo New
-- Cuando se agregue un elemento nuevo sea cual sea, debe aparecer una cintilla tipo "New" en la esquina superior derecha del elemento. Esta cintilla debe ser dorada y debe desaparecer automáticamente después de 7 días. Debe tener una animación de una ícono con forma de estrella que parpadee suavemente.
+- Al agregar elementos nuevos, muestran una cintilla dorada o el punto rojo ("New Dot") en la interfaz, con duración de tiempo limitado automatizada.
 
-## 9. Mercado de pilotos
+---
 
-### Tarjetas de pilotos
-- En las tarjetas de pilotos en el "Contract Details" debe aparecer el valor del piloto en el mercado, calculado por su edad, potencial y stats actuales + su nivel de marketability.
-- El botón "Fire" que existe actualmente debe cambiar por un botón llamado "Transfer Market" que abra un modal para poner al piloto en el mercado de transferencias o liberarlo por completo. El costo de la operación equivale al 10% del valor del piloto en el mercado. Si el piloto es liberado, debe ser eliminado del equipo y no podrá ser contratado nuevamente. Si se pone en el mercado de transferencias, debe aparecer un nuevo botón llamado "Cancel Transfer" que permita cancelar la operación. El costo de la operación no se recupera. Si se cancela la operación, el piloto debe permanecer en el equipo pero su moral se verá afectada negativamente.
-- La tarjeta del piloto que está en el mercado de fillajes, debe tener una cintilla en la esquina izquierda superior que diga "TRANSFER MARKET" y en la esquina derecha inferior que diga "CANCEL TRANSFER" con un botón para cancelar la operación.
+## 9. Finanzas (Finances) y CFO Dashboard
 
-### Mercado de transferencias
-- En el navbar aparece una opción llamada "Transfer Market"
-- Al entrar en el mercado de transferencias, se debe mostrar una lista de pilotos que están en el mercado de transferencias.
-- En la lista de pilotos, se debe mostrar el valor del piloto en el mercado, calculado por su edad, potencial y stats actuales + su nivel de marketability.
-- El mercado de transferencias funciona por sistema de pujas, es decir, los equipos pujan por los pilotos y el equipo que más puje se lleva al piloto.
-- El sistema de pujas funciona de la siguiente manera:
-  - Cada equipo tiene un presupuesto para fichajes que sale de su balance actual.
-  - Los equipos pueden pujar por los pilotos, igualando el valor del piloto en el mercado inicialmente. A partir de ahí, pueden pujar por múltiplos de 100k.
-  - Las pujas duran 24 horas.
-  - El equipo que más puje se lleva al piloto.
-  - Un piloto en el mercaje de fichajes no puede ser liberado.
-  - Un piloto en el mercaje de fichajes no puede ser puesto en el mercaje de fichajes nuevamente.
-  - Las pujas son secretas, es decir, los equipos no pueden ver las pujas de los otros equipos, pero sabrán si su puja ha sido superada por otro equipo y el número de pujas que se han realizado por el piloto.
-  - Cuando exista el sistema de Ojeador, se podrán ver todos los stats del piloto, su contrato actual y su valor en el mercado y el equipo que está ganando la puja en el momento.
-  - En la tabla que muestra la lista de pilotos, debe haber un cronómetro que muestre el tiempo restante para que finalice la puja. → La tabla debe tener estilo Onyx.
-  - Es un piloto cada 24 horas que sale al mercado de fichajes.
-  - El admin puede generar pilotos para el mercado de fichajes manualmente desde la vista de admin, sin afectar el resto de la base de datos.
-  - Los pilotos generados desde la vista de admin para el mercado de fichajes, tendrán stats de forma aleatoria, con una probabilidad de un 10% de ser un piloto con potencial de 5 estrellas, un 20% de ser un piloto con potencial de 4 estrellas, un 30% de ser un piloto con potencial de 3 estrellas, un 20% de ser un piloto con potencial de 2 estrellas y un 20% de ser un piloto con potencial de 1 estrella.
-  - Los pilotos generados desde la vista de admin para el mercado de fichajes, tendrán un contrato de 1 año y un salario de 100k. El valor del piloto en el mercado será también dependerá de su marketability.
-  - El admin podrá generar un total de 100 pilotos por vez, y podrá generar pilotos cada 24 horas. Esto se hace para evitar que el mercado de fichajes se llene de pilotos generados por el admin y equilibrar si ningún equipo pone pilotos en el mercado de fichajes.
-  - La tabla del mercado de fichajes debe tener la bandera del país del piloto, su  nombre, su edad, su nivel de marketability, su contrato actual, su salario, su valor en el mercado y el equipo que está ganando la puja en el momento, además del contador de tiempo restante para que finalice la puja. Debe tener un botón para pujar por el piloto. Si se da click en el nombre, se abrirá un modal con la información del piloto, similar a la vista de detalles del piloto de la academia: un rango de stats entre 1 y 100 para cada stat cercano a su stat real, pero no igual para no revelar el potencial del piloto y sus stats reales. En el modal se debe mostrar el nombre del piloto, su edad, su nacionalidad, su nivel de marketability, su contrato actual, su salario, su valor en el mercado y el equipo que está ganando la puja en el momento, además del contador de tiempo restante para que finalice la puja. Debe tener un botón para pujar por el piloto. Si se da click en el botón de pujar, se abrirá un modal con un text input para pujar por el piloto debe tener un botón para pujar por el piloto. El valor de la puja no debe superar el presupuesto para fichajes del equipo.
-  - El mercado de fichajes se abre al inicio de la temporada y se cierra faltando 1 carrera para el final de la temporada.
-  - Durante las simulaciones de carreras y Qualy los pilotos que estén en el mercado de fichajes, no podrán participar en las carreras. 
-  - La puja se puede cancelar, pero no se retorna el dinero al equipo, simplemente la compra no se hace.
-  - **Límites de equipo**: Un equipo no puede tener más de **5 pilotos** en total (sumando Pilotos Principales, Secundarios y Jóvenes de la Academia). El sistema impedirá realizar nuevas pujas o ascender pilotos si se ha alcanzado este límite.
-  - **Asignación de Pilotos tras Subasta**: 
-    - Si un equipo gana la puja por un piloto y ya tiene sus dos asientos principales ocupados (Piloto Principal y Secundario), el nuevo piloto entrará al equipo con el rol de **"Reserve"** (Reserva).
-    - En la interfaz, cualquier piloto que no esté asignado a uno de los dos coches del equipo (Car A o Car B) debe mostrar un badge de **"Reserve"** o **"Not Assigned"** al lado de su nombre.
-  
-  ### Gestión financiera, presupuesto para fichajes
-  - En la vista Finances, debe aparecer una tarjeta que permita con un slider, ajustar el presupuesto para fichajes, pero teniendo en cuenta que a mayor presupuesto para fichajes, menos dinero tendrá para gastos de mantenimiento, salarios y desarrollo de piezas. El slider debe tener un rango de 0 a 100, y debe mostrar el porcentaje de presupuesto para fichajes que se está asignando. Debe tener un botón para guardar los cambios.  Si el manager asigna un 20% del presupuesto para fichajes, le quedará un 80% del presupuesto para gastos de mantenimiento, salarios y desarrollo de piezas. Si el manager asigna un 100% del presupuesto para fichajes, le quedará un 0% del presupuesto para gastos de mantenimiento, salarios y desarrollo de piezas.
-  - Regla de salvación financiera: un manager jamás podrá asignar un presupuesto para fichajes que sea menor al 10% del presupuesto total, ni mayor al 90% del presupuesto total. Esto se hace para evitar que un manager se quede sin dinero para gastos de mantenimiento, salarios y desarrollo de piezas, o que un manager tenga demasiado dinero para gastos de mantenimiento, salarios y desarrollo de piezas.
+### Flujo de Caja y Run-Rate
+- El Dashboard financiero abandonó los viejos promedios históricos en favor de un enfoque proactivo de CFO.
+- Ahora existe un **True Cash Flow Projection**. Se calcula un **Run-Rate Semanal** que expone ingresos fijos frente a gastos fijos proyectados de la semana actual.
+- Otorga una visión instantánea de la quema o rentabilidad que tendrá un equipo semana a semana, eliminando cifras infladas pasadas.
 
-  ### Contratos de pilotos
-  - El botón "Renew" en la vista de detalles de piloto, debe abrir un modal que permita configurar los siguientes parámetros para negociar con el piloto.
-    - Número de temporadas mínimo 1, 3 o 5 temporadas.
-    - Rango salarial: el rango salarial debe ser calculado en base al salario actual del piloto y su nivel de marketability. El rango salarial debe ser de 100k en 100k, y debe tener un mínimo de 100k y un máximo de 10M. El rango salarial debe ser de 100k en 100k, y debe tener un mínimo de 100k y un máximo de 10M.
-    - Contract Status: Main Driver, Secondary Driver, Equal Status.
-    - La moral del piloto influirá en la negociación, de manera que si la moral del piloto es baja, será más difícil negociar con él. Si la moral del piloto es alta, será más fácil negociar con él.
-    - El piloto aceptará la oferta si el salario está dentro del rango salarial y el contrato es de al menos 1 temporada. Si el contrato es de 3 o 5 temporadas, el salario debe ser mayor al salario actual del piloto. Si el contrato es de 1 temporada, el salario puede ser igual o mayor al salario actual del piloto.
-    - Si el piloto acepta la oferta, se debe actualizar el contrato del piloto y se debe actualizar el salario del piloto. Si el piloto no acepta la oferta, se debe actualizar la moral del piloto y se debe actualizar el salario del piloto.
-    - Todos esos cambios deben reflejarse en la vista de detalles del piloto y en el balance finaciero con sus respectivos movimientos.
-    - Todos los pilotos tienen 3 intentos de negociación por temporada. Si el piloto no acepta la oferta, el piloto se irá del equipo al finalizar su contrato.
-    - Los pilotos que estén cerca de la edad de retiro, tendrán una cintilla debajo de su avatar que indique se retiran en 1 temporada. Siempre se debe mostrar esta cintilla si el piloto está en su última temporada. Si el piloto se retira, se debe eliminar del equipo y no podrá ser contratado nuevamente. Un piloto que se retira la próxima temporada no aceptará renovaciones de contrato, ni contratos de más de 1 temporada. Si el piloto acepta un contrato de 1 temporada, se debe eliminar del equipo al finalizar su contrato.
-    - Los pilotos con un potencial de 4 o 5 estrellas durante su carrera, se retirarán a los 38 años. Los pilotos con un potencial de 3 estrellas se retirarán a los 36 años. Los pilotos con un potencial de 2 estrellas se retirarán a los 34 años. Los pilotos con un potencial de 1 estrella se retirarán a los 32 años.
-    - Un piloto que se haya destacado durante una o varias temporadas y esté cerca de retirarse, puede marcarse como leyenda. Si un piloto es marcado como leyenda del equipo, se mostrará una cintilla debajo de su avatar que indique que es una leyenda del equipo. Un piloto leyenda aparecerá en el Hall de la fama del equipo en el Team Office. La única información será su avatar, nombre, nacionalidad y el Career Status que existe actualmente, pero con colores dorados.
+---
+
+## 10. Mercado de Fichajes y Transferencias
+
+### Accesibilidad Global
+- El "Transfer Market" es ahora un **Top-Level Item** en la navegación.
+- El botón "Fire" se ha actualizado y abre ventanas de "Transfer Market" para poder liberar pilotos asumiendo un 10% de su valor, o publicarlos a subasta.
+- Cualquier jugador expuesto tiene la pestaña **TRANSFER MARKET** o la posibilidad de **CANCEL TRANSFER** (con penalización de moral y sin reembolso del fee).
+
+### El Sistema de Subastas y Límites
+- **Roster Total**: Un equipo **NO puede tener más de 5 pilotos** entre Principales, Secundarios, Reservas y Jóvenes asimilados. Si llega a 5, se bloquearán nuevas pujas o ascensos de Academia.
+- Cada oferta inicial equivale al marketability + stats + edad, y los sobrecargos de puja avanzan de 100k en 100k.
+- Durante las últimas 24 hrs que dura la puja, los tiempos y pujadores secretos se actualizan. Quien ofrezca más a contrarreloj lo incorpora.
+- Si entra un piloto adicional y los asientos A y B están llenos, pasa automáticamente al estatus de **Reserve**.
+- Los pilotos subastados activamente jamás participan de simulaciones del fin de semana (Qualy/Carrera).
+
+### Presupuesto y Contratos Renovadores
+- Existe una barra especial (0-100%) para destinar X porcentaje de la billetera global estrictamente al fondo de transferencias. (Nunca excede 90% ni es inferior al 10% obligatorio operativo).
+- Las **renovaciones (Renew)** constan de 3 intentos vitalicios por temporada. Duraciones de 1, 3 o 5 años con saltos de banda salarial fijados en 100k.
+- Pilotos a 1 año del retiro (iconizado con cintilla de cuenta regresiva) rechazan contratos de >1 temporada.
+- Los pilotos de mayor lealtad u éxito pueden jubilarse y convertirse en **Leyendas del Equipo**, quedando perennemente en el Team Office Hall of Fame. 
