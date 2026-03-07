@@ -929,6 +929,7 @@ class Driver {
   final int contractYearsRemaining;
   final Map<String, double> weeklyGrowth;
   final String? portraitUrl;
+  final String? specialty;
   final String statusTitle;
 
   // Transfer Market Fields
@@ -1016,6 +1017,7 @@ class Driver {
     this.contractYearsRemaining = 1,
     this.weeklyGrowth = const {},
     this.portraitUrl,
+    this.specialty,
     this.statusTitle = 'Unknown Status',
     this.isTransferListed = false,
     this.transferListedAt,
@@ -1085,6 +1087,7 @@ class Driver {
       'highestBidderTeamName': highestBidderTeamName,
       'negotiationAttempts': negotiationAttempts,
       'priceAtListing': priceAtListing,
+      'specialty': specialty,
     };
   }
 
@@ -1147,6 +1150,7 @@ class Driver {
       highestBidderTeamName: map['highestBidderTeamName'],
       negotiationAttempts: map['negotiationAttempts'] ?? 0,
       priceAtListing: map['priceAtListing'] ?? 0,
+      specialty: map['specialty'],
     );
   }
 
@@ -1214,6 +1218,7 @@ class Driver {
     int? currentHighestBid,
     String? highestBidderTeamId,
     String? highestBidderTeamName,
+    String? specialty,
   }) {
     return Driver(
       id: id ?? this.id,
@@ -1246,6 +1251,7 @@ class Driver {
       highestBidderTeamId: highestBidderTeamId ?? this.highestBidderTeamId,
       highestBidderTeamName:
           highestBidderTeamName ?? this.highestBidderTeamName,
+      specialty: specialty ?? this.specialty,
     );
   }
 }

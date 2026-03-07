@@ -58,6 +58,18 @@ class YoungDriver {
   /// Historial de reportes semanales
   final List<Map<String, dynamic>> weeklyReports;
 
+  /// Si este piloto ha sido seleccionado para promocionar al equipo principal
+  final bool isMarkedForPromotion;
+
+  /// Especialidad ganada durante el entrenamiento (ej: 'Rainmaster')
+  final String? specialty;
+
+  /// Mensaje del evento aleatorio de la semana actual
+  final String? weeklyEventMessage;
+
+  /// Diferencial de estadísticas de la semana actual (ej: {'braking': 1})
+  final Map<String, int> weeklyStatDiffs;
+
   YoungDriver({
     required this.id,
     required this.name,
@@ -76,6 +88,10 @@ class YoungDriver {
     this.statRangeMax = const {},
     this.trainingProgress = const {},
     this.weeklyReports = const [],
+    this.isMarkedForPromotion = false,
+    this.specialty,
+    this.weeklyEventMessage,
+    this.weeklyStatDiffs = const {},
   });
 
   /// Habilidad actual en estrellas (1-5) para UI
@@ -114,6 +130,10 @@ class YoungDriver {
       'statRangeMax': statRangeMax,
       'trainingProgress': trainingProgress,
       'weeklyReports': weeklyReports,
+      'isMarkedForPromotion': isMarkedForPromotion,
+      'specialty': specialty,
+      'weeklyEventMessage': weeklyEventMessage,
+      'weeklyStatDiffs': weeklyStatDiffs,
     };
   }
 
@@ -152,6 +172,10 @@ class YoungDriver {
       weeklyReports: List<Map<String, dynamic>>.from(
         (map['weeklyReports'] ?? []).map((r) => Map<String, dynamic>.from(r)),
       ),
+      isMarkedForPromotion: map['isMarkedForPromotion'] ?? false,
+      specialty: map['specialty'],
+      weeklyEventMessage: map['weeklyEventMessage'],
+      weeklyStatDiffs: Map<String, int>.from(map['weeklyStatDiffs'] ?? {}),
     );
   }
 
@@ -173,6 +197,10 @@ class YoungDriver {
     Map<String, int>? statRangeMax,
     Map<String, double>? trainingProgress,
     List<Map<String, dynamic>>? weeklyReports,
+    bool? isMarkedForPromotion,
+    String? specialty,
+    String? weeklyEventMessage,
+    Map<String, int>? weeklyStatDiffs,
   }) {
     return YoungDriver(
       id: id ?? this.id,
@@ -192,6 +220,10 @@ class YoungDriver {
       statRangeMax: statRangeMax ?? this.statRangeMax,
       trainingProgress: trainingProgress ?? this.trainingProgress,
       weeklyReports: weeklyReports ?? this.weeklyReports,
+      isMarkedForPromotion: isMarkedForPromotion ?? this.isMarkedForPromotion,
+      specialty: specialty ?? this.specialty,
+      weeklyEventMessage: weeklyEventMessage ?? this.weeklyEventMessage,
+      weeklyStatDiffs: weeklyStatDiffs ?? this.weeklyStatDiffs,
     );
   }
 
