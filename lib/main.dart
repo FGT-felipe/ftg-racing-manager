@@ -4,13 +4,11 @@ import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
-import 'package:provider/provider.dart';
 import 'package:timezone/data/latest.dart' as tz_data;
 import 'package:flutter_web_plugins/url_strategy.dart';
 import 'firebase_options.dart';
 import 'l10n/app_localizations.dart';
 import 'theme/app_theme.dart';
-import 'theme/theme_provider.dart';
 import 'screens/auth/login_screen.dart';
 import 'screens/onboarding/create_manager_screen.dart';
 import 'screens/onboarding/team_selection_screen.dart';
@@ -51,16 +49,7 @@ void main() async {
     );
   }
 
-  // Initialize theme provider before running the app
-  final themeProvider = ThemeProvider();
-  await themeProvider.init();
-
-  runApp(
-    ChangeNotifierProvider.value(
-      value: themeProvider,
-      child: const FTGRacingApp(),
-    ),
-  );
+  runApp(const FTGRacingApp());
 }
 
 class FTGRacingApp extends StatelessWidget {
@@ -68,13 +57,11 @@ class FTGRacingApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final themeProvider = Provider.of<ThemeProvider>(context);
     return MaterialApp(
       title: 'FTG Racing Manager',
       debugShowCheckedModeBanner: false,
-      theme: AppTheme.lightTheme,
       darkTheme: AppTheme.darkTheme,
-      themeMode: themeProvider.themeMode,
+      themeMode: ThemeMode.dark,
       localizationsDelegates: const [
         AppLocalizations.delegate,
         GlobalMaterialLocalizations.delegate,

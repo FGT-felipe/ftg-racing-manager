@@ -80,11 +80,6 @@ class StatusCard extends StatelessWidget {
       decoration: BoxDecoration(
         color: Theme.of(context).cardTheme.color,
         borderRadius: BorderRadius.circular(12),
-        gradient: LinearGradient(
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-          colors: [mainColor.withValues(alpha: 0.1), Colors.transparent],
-        ),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -155,23 +150,6 @@ class FinanceCard extends StatelessWidget {
         decoration: BoxDecoration(
           color: Theme.of(context).cardTheme.color,
           borderRadius: BorderRadius.circular(12),
-          gradient: LinearGradient(
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-            colors: [
-              Theme.of(context).cardTheme.color ?? const Color(0xFF292A33),
-              Theme.of(context).cardTheme.color?.withValues(alpha: 0.8) ??
-                  const Color(0xFF15151E),
-            ],
-          ),
-          border: Border.all(color: Theme.of(context).dividerColor),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withValues(alpha: 0.3),
-              blurRadius: 15,
-              offset: const Offset(0, 8),
-            ),
-          ],
         ),
         child: Row(
           children: [
@@ -311,16 +289,8 @@ class UpcomingCircuitCard extends StatelessWidget {
         width: double.infinity,
         padding: const EdgeInsets.all(20),
         decoration: BoxDecoration(
+          color: Theme.of(context).cardTheme.color,
           borderRadius: BorderRadius.circular(12),
-          gradient: LinearGradient(
-            colors: [
-              Theme.of(context).cardTheme.color ?? const Color(0xFF15151E),
-              Theme.of(context).cardTheme.color?.withValues(alpha: 0.8) ??
-                  const Color(0xFF292A33),
-            ],
-            begin: Alignment.bottomLeft,
-            end: Alignment.topRight,
-          ),
         ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -528,23 +498,6 @@ class _RaceStatusHeroState extends State<RaceStatusHero>
       decoration: BoxDecoration(
         color: Theme.of(context).cardTheme.color,
         borderRadius: BorderRadius.circular(12),
-        gradient: LinearGradient(
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-          colors: [
-            Theme.of(context).cardTheme.color ?? const Color(0xFF1E1E1E),
-            Theme.of(context).cardTheme.color?.withValues(alpha: 0.9) ??
-                const Color(0xFF0A0A0A),
-          ],
-        ),
-        border: Border.all(color: Theme.of(context).dividerColor),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.5),
-            blurRadius: 20,
-            offset: const Offset(0, 10),
-          ),
-        ],
       ),
       child: ClipRRect(
         borderRadius: BorderRadius.circular(12),

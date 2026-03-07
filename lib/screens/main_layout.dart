@@ -4,16 +4,14 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:intl/intl.dart';
-import 'package:provider/provider.dart';
 
 import '../l10n/app_localizations.dart';
 import '../models/core_models.dart';
 import '../models/user_model.dart';
-import '../services/auth_service.dart';
+import '../../services/auth_service.dart';
 import '../services/notification_service.dart';
 import '../services/season_service.dart';
 import '../services/time_service.dart';
-import '../theme/theme_provider.dart';
 import '../widgets/common/app_logo.dart';
 import '../widgets/common/breadcrumbs.dart';
 import '../widgets/common/new_badge.dart';
@@ -348,20 +346,6 @@ class _MainLayoutState extends State<MainLayout> {
                             : AppLocalizations.of(context).notAvailable,
                       ),
                       const SizedBox(height: 24),
-                      const Divider(color: Colors.white10),
-                      const SizedBox(height: 16),
-                      // Preferences Section
-                      Text(
-                        AppLocalizations.of(context).preferencesTitle,
-                        style: GoogleFonts.poppins(
-                          fontSize: 12,
-                          fontWeight: FontWeight.w900,
-                          color: Theme.of(context).colorScheme.secondary,
-                          letterSpacing: 1.2,
-                        ),
-                      ),
-                      const SizedBox(height: 12),
-                      _buildThemeToggle(context),
                     ],
                   ),
                 ),
@@ -370,64 +354,6 @@ class _MainLayoutState extends State<MainLayout> {
           ),
         ],
       ),
-    );
-  }
-
-  Widget _buildThemeToggle(BuildContext context) {
-    final themeProvider = Provider.of<ThemeProvider>(context, listen: false);
-    final isDark = themeProvider.isDarkMode;
-    final l10n = AppLocalizations.of(context);
-
-    return StatefulBuilder(
-      builder: (context, setOverlayState) {
-        return InkWell(
-          onTap: () {
-            themeProvider.toggleTheme();
-            setOverlayState(() {});
-          },
-          borderRadius: BorderRadius.circular(8),
-          child: Padding(
-            padding: const EdgeInsets.symmetric(vertical: 8),
-            child: Row(
-              children: [
-                AnimatedSwitcher(
-                  duration: const Duration(milliseconds: 300),
-                  child: Icon(
-                    isDark ? Icons.dark_mode : Icons.light_mode,
-                    key: ValueKey(isDark),
-                    color: isDark
-                        ? Theme.of(context).colorScheme.secondary
-                        : Colors.amber,
-                    size: 20,
-                  ),
-                ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: Text(
-                    isDark ? l10n.darkModeLabel : l10n.lightModeLabel,
-                    style: GoogleFonts.raleway(
-                      fontSize: 14,
-                      fontWeight: FontWeight.w600,
-                      color: Colors.white,
-                    ),
-                  ),
-                ),
-                Transform.scale(
-                  scale: 0.8,
-                  child: Switch(
-                    value: isDark,
-                    onChanged: (val) {
-                      themeProvider.toggleTheme();
-                      setOverlayState(() {});
-                    },
-                    activeThumbColor: Theme.of(context).colorScheme.secondary,
-                  ),
-                ),
-              ],
-            ),
-          ),
-        );
-      },
     );
   }
 

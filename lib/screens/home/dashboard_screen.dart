@@ -350,10 +350,6 @@ class _DashboardScreenState extends State<DashboardScreen> {
                                                     ?.withValues(alpha: 0.5),
                                                 borderRadius:
                                                     BorderRadius.circular(12),
-                                                border: Border.all(
-                                                  color: Colors.white
-                                                      .withValues(alpha: 0.05),
-                                                ),
                                               ),
                                               child: Row(
                                                 children: [
