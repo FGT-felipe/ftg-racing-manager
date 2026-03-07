@@ -1272,7 +1272,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get navDashboard => 'Dashboard';
 
   @override
-  String get navHQ => 'HQ';
+  String get navHQ => 'Facilities';
 
   @override
   String get navTeamOffice => 'Office';

@@ -1274,7 +1274,7 @@ class AppLocalizationsEs extends AppLocalizations {
   String get navDashboard => 'Panel';
 
   @override
-  String get navHQ => 'Sede';
+  String get navHQ => 'Instalaciones';
 
   @override
   String get navTeamOffice => 'Oficina';

@@ -8,6 +8,7 @@ import '../../services/driver_assignment_service.dart';
 import '../../l10n/app_localizations.dart';
 import '../../widgets/common/new_dot.dart';
 import '../../services/time_service.dart';
+import '../../services/youth_academy_service.dart';
 
 class FinancesScreen extends StatelessWidget {
   final String teamId;
@@ -318,20 +319,42 @@ class FinancesScreen extends StatelessWidget {
         final weeklyNet = weeklyIncome + weeklyExpenses;
 
         // Fetch drivers to calculate staff costs
-        return FutureBuilder<List<Driver>>(
-          future: DriverAssignmentService().getDriversByTeam(teamId),
-          builder: (context, driversSnapshot) {
+        return FutureBuilder<List<dynamic>>(
+          future: Future.wait([
+            DriverAssignmentService().getDriversByTeam(teamId),
+            YouthAcademyService().streamSelectedDrivers(teamId).first,
+          ]),
+          builder: (context, snapshot) {
             int staffCost = 0;
-            if (driversSnapshot.hasData) {
-              for (final driver in driversSnapshot.data!) {
-                staffCost += driver.salary;
+            int academyTraineesCount = 0;
+            final List<Map<String, dynamic>> staffBreakdown = [];
+
+            if (snapshot.hasData) {
+              final drivers = snapshot.data![0] as List<Driver>;
+              final academyDrivers = snapshot.data![1] as List;
+              for (final driver in drivers) {
+                // Calculate weekly value: salary / 52
+                final weeklyWage = (driver.salary / 52).round();
+                staffCost += weeklyWage;
+                staffBreakdown.add({
+                  'name': '${driver.name} Salary',
+                  'cost': weeklyWage,
+                });
               }
+              academyTraineesCount = academyDrivers.length;
             }
             final listTrainerSalary = [0, 0, 50000, 120000, 250000, 500000];
             final weekStatus = teamData?['weekStatus'] as Map<String, dynamic>?;
             final trainerLvl = weekStatus?['fitnessTrainerLevel'] ?? 1;
             if (trainerLvl >= 1 && trainerLvl <= 5) {
-              staffCost += listTrainerSalary[trainerLvl];
+              final trainerCost = listTrainerSalary[trainerLvl];
+              if (trainerCost > 0) {
+                staffCost += trainerCost;
+                staffBreakdown.add({
+                  'name': 'Fitness Trainer Lvl $trainerLvl',
+                  'cost': trainerCost,
+                });
+              }
             }
 
             return NewDotWidget(
@@ -417,6 +440,8 @@ class FinancesScreen extends StatelessWidget {
                             financeService,
                             categoryTotals,
                             staffCost,
+                            staffBreakdown,
+                            academyTraineesCount,
                             teamData,
                           ),
 
@@ -555,6 +580,8 @@ class FinancesScreen extends StatelessWidget {
     FinanceService financeService,
     Map<String, int> categoryTotals,
     int staffCost,
+    List<Map<String, dynamic>> staffBreakdown,
+    int academyTraineesCount,
     Map<String, dynamic>? teamData,
   ) {
     final l10n = AppLocalizations.of(context);
@@ -738,9 +765,7 @@ class FinancesScreen extends StatelessWidget {
 
             // ACADEMY Trainee Wages Breakdown
             if (cat.type == 'ACADEMY') {
-              final int traineeWages = categoryTotals['ACADEMY'] ?? 0;
-              // We assume $10,000 per trainee if historical data is not present yet
-              // but the function already records it as 'ACADEMY' type.
+              final int traineeWages = -(academyTraineesCount * 10000);
 
               if (traineeWages != 0) {
                 final isPositive = traineeWages >= 0;
@@ -785,6 +810,19 @@ class FinancesScreen extends StatelessWidget {
                 valueColor: Colors.deepOrangeAccent,
                 icon: Icons.person_outline,
                 small: true,
+              ),
+            ),
+            ...staffBreakdown.map(
+              (s) => Padding(
+                padding: const EdgeInsets.only(bottom: 8, left: 16),
+                child: _SummaryRow(
+                  label: s['name'],
+                  value: financeService.formatCurrency(-(s['cost'] as int)),
+                  valueColor: Colors.deepOrange.withValues(alpha: 0.8),
+                  icon: Icons.subdirectory_arrow_right_rounded,
+                  iconColor: Colors.deepOrange.withValues(alpha: 0.5),
+                  small: true,
+                ),
               ),
             ),
           ],

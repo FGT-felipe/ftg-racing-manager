@@ -2381,7 +2381,7 @@ abstract class AppLocalizations {
   /// No description provided for @navHQ.
   ///
   /// In en, this message translates to:
-  /// **'HQ'**
+  /// **'Facilities'**
   String get navHQ;
 
   /// No description provided for @navTeamOffice.

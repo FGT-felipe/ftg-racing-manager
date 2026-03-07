@@ -99,59 +99,6 @@ class _MainLayoutState extends State<MainLayout> {
         ),
       ),
       NavNode(
-        id: 'hq',
-        titleBuilder: (context) => AppLocalizations.of(context).navHQ,
-        screen: HQScreen(
-          teamId: widget.teamId,
-          onNavigate: (id) {
-            final node = _findNodeById(id, _navTree);
-            if (node != null) _onNodeSelected(node);
-          },
-        ),
-        children: [
-          NavNode(
-            id: 'hq_office',
-            titleBuilder: (context) =>
-                AppLocalizations.of(context).navTeamOffice,
-            screen: TeamScreen(teamId: widget.teamId),
-          ),
-          NavNode(
-            id: 'hq_garage',
-            titleBuilder: (context) => AppLocalizations.of(context).navGarage,
-            screen: EngineeringScreen(teamId: widget.teamId),
-          ),
-          NavNode(
-            id: 'hq_academy',
-            titleBuilder: (context) =>
-                AppLocalizations.of(context).navYouthAcademy,
-            screen: YouthAcademyScreen(teamId: widget.teamId),
-          ),
-        ],
-      ),
-      NavNode(
-        id: 'racing',
-        titleBuilder: (context) => AppLocalizations.of(context).navRacing,
-        children: [
-          NavNode(
-            id: 'racing_setup',
-            titleBuilder: (context) =>
-                AppLocalizations.of(context).navWeekendSetup,
-            screen: PaddockScreen(teamId: widget.teamId),
-          ),
-          NavNode(
-            id: 'racing_day',
-            titleBuilder: (context) => AppLocalizations.of(context).navRaceDay,
-            screen: RaceDayScreen(teamId: widget.teamId),
-          ),
-        ],
-      ),
-      NavNode(
-        id: 'market',
-        titleBuilder: (context) => "Transfer Market",
-        screen: TransferMarketScreen(teamId: widget.teamId),
-        showNewBadge: true,
-      ),
-      NavNode(
         id: 'management',
         showNewBadge: true,
         titleBuilder: (context) => AppLocalizations.of(context).navManagement,
@@ -200,6 +147,58 @@ class _MainLayoutState extends State<MainLayout> {
             screen: SponsorshipScreen(teamId: widget.teamId),
           ),
         ],
+      ),
+      NavNode(
+        id: 'academy',
+        titleBuilder: (context) => AppLocalizations.of(context).navYouthAcademy,
+        screen: YouthAcademyScreen(teamId: widget.teamId),
+      ),
+      NavNode(
+        id: 'hq', // Reusing 'hq' ID but label will be translated to 'Facilities'
+        titleBuilder: (context) => AppLocalizations.of(context).navHQ,
+        screen: HQScreen(
+          teamId: widget.teamId,
+          onNavigate: (id) {
+            final node = _findNodeById(id, _navTree);
+            if (node != null) _onNodeSelected(node);
+          },
+        ),
+        children: [
+          NavNode(
+            id: 'hq_office',
+            titleBuilder: (context) =>
+                AppLocalizations.of(context).navTeamOffice,
+            screen: TeamScreen(teamId: widget.teamId),
+          ),
+          NavNode(
+            id: 'hq_garage',
+            titleBuilder: (context) => AppLocalizations.of(context).navGarage,
+            screen: EngineeringScreen(teamId: widget.teamId),
+          ),
+        ],
+      ),
+      NavNode(
+        id: 'racing',
+        titleBuilder: (context) => AppLocalizations.of(context).navRacing,
+        children: [
+          NavNode(
+            id: 'racing_setup',
+            titleBuilder: (context) =>
+                AppLocalizations.of(context).navWeekendSetup,
+            screen: PaddockScreen(teamId: widget.teamId),
+          ),
+          NavNode(
+            id: 'racing_day',
+            titleBuilder: (context) => AppLocalizations.of(context).navRaceDay,
+            screen: RaceDayScreen(teamId: widget.teamId),
+          ),
+        ],
+      ),
+      NavNode(
+        id: 'market',
+        titleBuilder: (context) => "Transfer Market",
+        screen: TransferMarketScreen(teamId: widget.teamId),
+        showNewBadge: true,
       ),
       NavNode(
         id: 'season',
