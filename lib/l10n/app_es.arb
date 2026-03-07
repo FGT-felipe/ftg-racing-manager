@@ -901,5 +901,8 @@
   "categoryQualifying": "Tasas de Clasificación",
   "categoryTax": "Impuestos y Rebalanceo",
   "categoryOther": "Otros",
-  "nextFinanceUpdate": "Próxima actualización"
+  "nextFinanceUpdate": "Próxima actualización",
+  "preferencesTitle": "Preferencias",
+  "darkModeLabel": "Modo Oscuro",
+  "lightModeLabel": "Modo Claro"
 }

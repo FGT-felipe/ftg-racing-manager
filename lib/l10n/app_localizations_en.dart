@@ -1987,4 +1987,13 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get nextFinanceUpdate => 'Next update';
+
+  @override
+  String get preferencesTitle => 'Preferences';
+
+  @override
+  String get darkModeLabel => 'Dark Mode';
+
+  @override
+  String get lightModeLabel => 'Light Mode';
 }

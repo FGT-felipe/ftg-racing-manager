@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 import '../../services/auth_service.dart';
 import '../../models/user_model.dart';
 import '../../models/user_models.dart'; // ManagerProfile
 import 'package:intl/intl.dart';
 import '../../l10n/app_localizations.dart';
+import '../../theme/theme_provider.dart';
 
 class AccountScreen extends StatefulWidget {
   const AccountScreen({super.key});
@@ -96,7 +98,7 @@ class _AccountScreenState extends State<AccountScreen> {
                 _managerProfile!.role.title,
               ),
               _buildInfoRow(
-                "Reputation", // reputationLabel was missed in ARB, using raw string
+                "Reputation",
                 _managerProfile!.reputation.toString(),
               ),
               _buildInfoRow(
@@ -127,6 +129,14 @@ class _AccountScreenState extends State<AccountScreen> {
                 ],
               ),
             ),
+
+          const SizedBox(height: 32),
+
+          // ── Preferences Section ──
+          _buildSectionTitle(AppLocalizations.of(context).preferencesTitle),
+          const SizedBox(height: 16),
+          _buildPreferencesCard(),
+
           const SizedBox(height: 32),
           SizedBox(
             width: double.infinity,
@@ -148,6 +158,58 @@ class _AccountScreenState extends State<AccountScreen> {
           ),
           const SizedBox(height: 48),
         ],
+      ),
+    );
+  }
+
+  // ── Preferences Card with Theme Toggle ──
+  Widget _buildPreferencesCard() {
+    final themeProvider = Provider.of<ThemeProvider>(context);
+    final isDark = themeProvider.isDarkMode;
+    final l10n = AppLocalizations.of(context);
+
+    return Card(
+      elevation: 2,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
+        child: Row(
+          children: [
+            AnimatedSwitcher(
+              duration: const Duration(milliseconds: 300),
+              transitionBuilder: (child, animation) {
+                return RotationTransition(
+                  turns: Tween(begin: 0.75, end: 1.0).animate(animation),
+                  child: FadeTransition(opacity: animation, child: child),
+                );
+              },
+              child: Icon(
+                isDark ? Icons.dark_mode : Icons.light_mode,
+                key: ValueKey(isDark),
+                color: isDark
+                    ? Theme.of(context).colorScheme.secondary
+                    : Colors.amber,
+                size: 28,
+              ),
+            ),
+            const SizedBox(width: 16),
+            Expanded(
+              child: Text(
+                isDark ? l10n.darkModeLabel : l10n.lightModeLabel,
+                style: TextStyle(
+                  fontWeight: FontWeight.w600,
+                  fontSize: 15,
+                  color: Theme.of(context).colorScheme.onSurface,
+                ),
+              ),
+            ),
+            Switch(
+              value: isDark,
+              onChanged: (_) => themeProvider.toggleTheme(),
+              activeThumbColor: Theme.of(context).colorScheme.secondary,
+            ),
+          ],
+        ),
       ),
     );
   }

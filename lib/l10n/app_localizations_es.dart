@@ -1992,4 +1992,13 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get nextFinanceUpdate => 'Próxima actualización';
+
+  @override
+  String get preferencesTitle => 'Preferencias';
+
+  @override
+  String get darkModeLabel => 'Modo Oscuro';
+
+  @override
+  String get lightModeLabel => 'Modo Claro';
 }

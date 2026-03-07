@@ -1093,5 +1093,8 @@
   "categoryQualifying": "Qualifying Fees",
   "categoryTax": "Taxes & Rebalance",
   "categoryOther": "Other",
-  "nextFinanceUpdate": "Next update"
+  "nextFinanceUpdate": "Next update",
+  "preferencesTitle": "Preferences",
+  "darkModeLabel": "Dark Mode",
+  "lightModeLabel": "Light Mode"
 }

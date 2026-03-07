@@ -153,14 +153,18 @@ class FinanceCard extends StatelessWidget {
       child: Container(
         padding: const EdgeInsets.all(20),
         decoration: BoxDecoration(
-          color: const Color(0xFF121212),
+          color: Theme.of(context).cardTheme.color,
           borderRadius: BorderRadius.circular(12),
-          gradient: const LinearGradient(
+          gradient: LinearGradient(
             begin: Alignment.topLeft,
             end: Alignment.bottomRight,
-            colors: [Color(0xFF1E1E1E), Color(0xFF0A0A0A)],
+            colors: [
+              Theme.of(context).cardTheme.color ?? const Color(0xFF292A33),
+              Theme.of(context).cardTheme.color?.withValues(alpha: 0.8) ??
+                  const Color(0xFF15151E),
+            ],
           ),
-          border: Border.all(color: Colors.white.withValues(alpha: 0.1)),
+          border: Border.all(color: Theme.of(context).dividerColor),
           boxShadow: [
             BoxShadow(
               color: Colors.black.withValues(alpha: 0.3),
@@ -190,7 +194,9 @@ class FinanceCard extends StatelessWidget {
                     fontSize: 9,
                     fontWeight: FontWeight.bold,
                     letterSpacing: 1.2,
-                    color: Colors.white.withValues(alpha: 0.4),
+                    color: Theme.of(
+                      context,
+                    ).colorScheme.onSurface.withValues(alpha: 0.4),
                   ),
                 ),
                 const SizedBox(height: 4),
@@ -224,7 +230,9 @@ class FinanceCard extends StatelessWidget {
                 Text(
                   "${AppLocalizations.of(context).estimatedAbbr} +\$1.2M",
                   style: TextStyle(
-                    color: Colors.white.withValues(alpha: 0.5),
+                    color: Theme.of(
+                      context,
+                    ).colorScheme.onSurface.withValues(alpha: 0.5),
                     fontSize: 10,
                     fontWeight: FontWeight.bold,
                   ),
@@ -304,8 +312,12 @@ class UpcomingCircuitCard extends StatelessWidget {
         padding: const EdgeInsets.all(20),
         decoration: BoxDecoration(
           borderRadius: BorderRadius.circular(12),
-          gradient: const LinearGradient(
-            colors: [Color(0xFF15151E), Color(0xFF292A33)],
+          gradient: LinearGradient(
+            colors: [
+              Theme.of(context).cardTheme.color ?? const Color(0xFF15151E),
+              Theme.of(context).cardTheme.color?.withValues(alpha: 0.8) ??
+                  const Color(0xFF292A33),
+            ],
             begin: Alignment.bottomLeft,
             end: Alignment.topRight,
           ),
@@ -514,14 +526,18 @@ class _RaceStatusHeroState extends State<RaceStatusHero>
     return Container(
       width: double.infinity,
       decoration: BoxDecoration(
-        color: const Color(0xFF121212),
+        color: Theme.of(context).cardTheme.color,
         borderRadius: BorderRadius.circular(12),
-        gradient: const LinearGradient(
+        gradient: LinearGradient(
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
-          colors: [Color(0xFF1E1E1E), Color(0xFF0A0A0A)],
+          colors: [
+            Theme.of(context).cardTheme.color ?? const Color(0xFF1E1E1E),
+            Theme.of(context).cardTheme.color?.withValues(alpha: 0.9) ??
+                const Color(0xFF0A0A0A),
+          ],
         ),
-        border: Border.all(color: Colors.white.withValues(alpha: 0.1)),
+        border: Border.all(color: Theme.of(context).dividerColor),
         boxShadow: [
           BoxShadow(
             color: Colors.black.withValues(alpha: 0.5),
@@ -580,14 +596,18 @@ class _RaceStatusHeroState extends State<RaceStatusHero>
                         children: [
                           Icon(
                             Icons.location_on,
-                            color: Colors.white.withValues(alpha: 0.5),
+                            color: Theme.of(
+                              context,
+                            ).colorScheme.onSurface.withValues(alpha: 0.5),
                             size: 16,
                           ),
                           const SizedBox(width: 4),
                           Text(
                             "${widget.flagEmoji} ${widget.countryCode}",
                             style: TextStyle(
-                              color: Colors.white.withValues(alpha: 0.7),
+                              color: Theme.of(
+                                context,
+                              ).colorScheme.onSurface.withValues(alpha: 0.7),
                               fontWeight: FontWeight.bold,
                             ),
                           ),
@@ -666,7 +686,7 @@ class _RaceStatusHeroState extends State<RaceStatusHero>
                                 _buildIntelRow(
                                   AppLocalizations.of(context).lapsIntel,
                                   "${widget.totalLaps}",
-                                  Colors.white,
+                                  Theme.of(context).colorScheme.onSurface,
                                 ),
                                 const SizedBox(height: 4),
                                 Row(
@@ -735,10 +755,17 @@ class _RaceStatusHeroState extends State<RaceStatusHero>
                       Container(
                         decoration: BoxDecoration(
                           borderRadius: BorderRadius.circular(12),
-                          gradient: const LinearGradient(
+                          gradient: LinearGradient(
                             begin: Alignment.topLeft,
                             end: Alignment.bottomRight,
-                            colors: [Color(0xFF2A2A2A), Color(0xFF000000)],
+                            colors: [
+                              Theme.of(context).cardTheme.color ??
+                                  const Color(0xFF2A2A2A),
+                              Theme.of(
+                                    context,
+                                  ).cardTheme.color?.withValues(alpha: 0.8) ??
+                                  const Color(0xFF000000),
+                            ],
                           ),
                           border: Border.all(
                             color: const Color(
@@ -799,7 +826,7 @@ class _RaceStatusHeroState extends State<RaceStatusHero>
         fontSize: 9,
         fontWeight: FontWeight.bold,
         letterSpacing: 0.8,
-        color: Colors.white.withValues(alpha: 0.4),
+        color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.4),
       ),
     );
   }
@@ -813,7 +840,9 @@ class _RaceStatusHeroState extends State<RaceStatusHero>
           style: TextStyle(
             fontSize: 9,
             fontWeight: FontWeight.bold,
-            color: Colors.white.withValues(alpha: 0.3),
+            color: Theme.of(
+              context,
+            ).colorScheme.onSurface.withValues(alpha: 0.3),
           ),
         ),
         Text(
@@ -833,16 +862,18 @@ class _RaceStatusHeroState extends State<RaceStatusHero>
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
       decoration: BoxDecoration(
-        color: Colors.white.withValues(alpha: 0.05),
+        color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.05),
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: Colors.white.withValues(alpha: 0.1)),
+        border: Border.all(
+          color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.1),
+        ),
       ),
       child: Text(
         "$label: ${value.toUpperCase()}",
-        style: const TextStyle(
+        style: TextStyle(
           fontSize: 8,
           fontWeight: FontWeight.bold,
-          color: Colors.white70,
+          color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.7),
         ),
       ),
     );
@@ -858,7 +889,9 @@ class _RaceStatusHeroState extends State<RaceStatusHero>
           style: TextStyle(
             fontSize: 9,
             fontWeight: FontWeight.bold,
-            color: Colors.white.withValues(alpha: 0.3),
+            color: Theme.of(
+              context,
+            ).colorScheme.onSurface.withValues(alpha: 0.3),
           ),
         ),
         const SizedBox(width: 2),
@@ -894,7 +927,7 @@ class _RaceStatusHeroState extends State<RaceStatusHero>
         border: Border.all(
           color: isLive
               ? const Color(0xFFFF5252).withValues(alpha: 0.2)
-              : Colors.white.withValues(alpha: 0.05),
+              : Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.05),
         ),
       ),
       child: Row(
@@ -912,7 +945,9 @@ class _RaceStatusHeroState extends State<RaceStatusHero>
           else
             Icon(
               Icons.do_not_disturb_on_total_silence,
-              color: Colors.white.withValues(alpha: 0.2),
+              color: Theme.of(
+                context,
+              ).colorScheme.onSurface.withValues(alpha: 0.2),
               size: 12,
             ),
           const SizedBox(width: 8),
@@ -926,7 +961,9 @@ class _RaceStatusHeroState extends State<RaceStatusHero>
               letterSpacing: 1.0,
               color: isLive
                   ? const Color(0xFFFF5252)
-                  : Colors.white.withValues(alpha: 0.3),
+                  : Theme.of(
+                      context,
+                    ).colorScheme.onSurface.withValues(alpha: 0.3),
             ),
           ),
         ],
@@ -972,7 +1009,9 @@ class _RaceStatusHeroState extends State<RaceStatusHero>
           style: TextStyle(
             fontSize: 10,
             fontWeight: FontWeight.w900,
-            color: Colors.white.withValues(alpha: 0.5),
+            color: Theme.of(
+              context,
+            ).colorScheme.onSurface.withValues(alpha: 0.5),
             letterSpacing: 1.5,
           ),
         ),
@@ -996,14 +1035,18 @@ class _RaceStatusHeroState extends State<RaceStatusHero>
             Icon(
               Icons.calendar_today,
               size: 10,
-              color: Colors.white.withValues(alpha: 0.3),
+              color: Theme.of(
+                context,
+              ).colorScheme.onSurface.withValues(alpha: 0.3),
             ),
             const SizedBox(width: 4),
             Text(
               "$dateStr · $timeStr",
               style: TextStyle(
                 fontSize: 10,
-                color: Colors.white.withValues(alpha: 0.4),
+                color: Theme.of(
+                  context,
+                ).colorScheme.onSurface.withValues(alpha: 0.4),
                 fontWeight: FontWeight.w600,
               ),
             ),
@@ -1024,11 +1067,11 @@ class _RaceStatusHeroState extends State<RaceStatusHero>
           ),
           child: Text(
             value,
-            style: const TextStyle(
+            style: TextStyle(
               fontFamily: 'monospace',
               fontSize: 20,
               fontWeight: FontWeight.w900,
-              color: Colors.white,
+              color: Theme.of(context).colorScheme.onSurface,
             ),
           ),
         ),
@@ -1080,14 +1123,18 @@ class PreparationChecklist extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
-        color: const Color(0xFF121212),
+        color: Theme.of(context).cardTheme.color,
         borderRadius: BorderRadius.circular(12),
-        gradient: const LinearGradient(
+        gradient: LinearGradient(
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
-          colors: [Color(0xFF1E1E1E), Color(0xFF0A0A0A)],
+          colors: [
+            Theme.of(context).cardTheme.color ?? const Color(0xFF1E1E1E),
+            Theme.of(context).cardTheme.color?.withValues(alpha: 0.9) ??
+                const Color(0xFF0A0A0A),
+          ],
         ),
-        border: Border.all(color: Colors.white.withValues(alpha: 0.1)),
+        border: Border.all(color: Theme.of(context).dividerColor),
         boxShadow: [
           BoxShadow(
             color: Colors.black.withValues(alpha: 0.3),
@@ -1102,7 +1149,9 @@ class PreparationChecklist extends StatelessWidget {
           Text(
             AppLocalizations.of(context).preRaceChecklist,
             style: TextStyle(
-              color: Colors.white.withValues(alpha: 0.4),
+              color: Theme.of(
+                context,
+              ).colorScheme.onSurface.withValues(alpha: 0.4),
               fontSize: 9,
               fontWeight: FontWeight.bold,
               letterSpacing: 1.5,
@@ -1117,7 +1166,10 @@ class PreparationChecklist extends StatelessWidget {
             ).completedLapsOf(completedLaps.toString(), totalLaps.toString()),
             completedLaps >= totalLaps,
           ),
-          Divider(color: Colors.white.withValues(alpha: 0.05), height: 20),
+          Divider(
+            color: Theme.of(context).dividerColor.withValues(alpha: 0.5),
+            height: 20,
+          ),
           _buildItem(
             context,
             AppLocalizations.of(context).qualifyingSetup,
@@ -1126,7 +1178,10 @@ class PreparationChecklist extends StatelessWidget {
                 : AppLocalizations.of(context).pendingStatus,
             setupSubmitted,
           ),
-          Divider(color: Colors.white.withValues(alpha: 0.05), height: 20),
+          Divider(
+            color: Theme.of(context).dividerColor.withValues(alpha: 0.5),
+            height: 20,
+          ),
           _buildItem(
             context,
             AppLocalizations.of(context).raceStrategyStatus,
@@ -1154,10 +1209,10 @@ class PreparationChecklist extends StatelessWidget {
       children: [
         Text(
           label.toUpperCase(),
-          style: const TextStyle(
+          style: TextStyle(
             fontSize: 11,
             fontWeight: FontWeight.w900,
-            color: Colors.white,
+            color: Theme.of(context).colorScheme.onSurface,
             letterSpacing: 0.5,
           ),
         ),

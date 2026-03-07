@@ -85,18 +85,20 @@ class _OnyxSkeletonState extends State<OnyxSkeleton> {
 
   @override
   Widget build(BuildContext context) {
-    return AnimatedBuilder(
-      animation: _manager.animation,
-      builder: (context, child) {
-        return Container(
-          width: widget.width,
-          height: widget.height,
-          decoration: BoxDecoration(
-            color: Colors.white.withValues(alpha: _manager.animation.value),
-            borderRadius: BorderRadius.circular(widget.borderRadius),
-          ),
-        );
-      },
+    return RepaintBoundary(
+      child: AnimatedBuilder(
+        animation: _manager.animation,
+        builder: (context, child) {
+          return Container(
+            width: widget.width,
+            height: widget.height,
+            decoration: BoxDecoration(
+              color: Colors.white.withValues(alpha: _manager.animation.value),
+              borderRadius: BorderRadius.circular(widget.borderRadius),
+            ),
+          );
+        },
+      ),
     );
   }
 }
