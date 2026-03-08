@@ -341,6 +341,12 @@ class _MainLayoutState extends State<MainLayout> {
                               )
                             : AppLocalizations.of(context).notAvailable,
                       ),
+                      _buildInfoRow(
+                        AppLocalizations.of(
+                          context,
+                        ).versionFooter.split(' - ').first,
+                        AppLocalizations.of(context).versionFooter,
+                      ),
                       const SizedBox(height: 24),
                     ],
                   ),
@@ -490,9 +496,10 @@ class _MainLayoutState extends State<MainLayout> {
       currentRace?.event.date,
     );
 
-    if (mounted) {
+    final isNowRace = status == RaceWeekStatus.race;
+    if (mounted && _isRaceInProgress != isNowRace) {
       setState(() {
-        _isRaceInProgress = status == RaceWeekStatus.race;
+        _isRaceInProgress = isNowRace;
       });
     }
   }

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:cloud_functions/cloud_functions.dart';
 import '../services/database_seeder.dart';
 import '../services/driver_assignment_service.dart';
 import '../services/team_assignment_service.dart';
@@ -238,6 +239,58 @@ class _AdminScreenState extends State<AdminScreen> {
                     ),
                   );
                 },
+              ),
+              const SizedBox(height: 16),
+              SizedBox(
+                width: double.infinity,
+                child: ElevatedButton.icon(
+                  onPressed: _isProcessing
+                      ? null
+                      : () async {
+                          setState(() => _isProcessing = true);
+                          try {
+                            final callable = FirebaseFunctions.instance
+                                .httpsCallable('forceQualy');
+                            final result = await callable.call();
+                            if (context.mounted) {
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                SnackBar(
+                                  content: Text(
+                                    "Success: ${result.data['message']}",
+                                  ),
+                                  backgroundColor: Colors.green,
+                                ),
+                              );
+                            }
+                          } catch (e) {
+                            if (context.mounted) {
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                SnackBar(
+                                  content: Text("Error: $e"),
+                                  backgroundColor: Colors.red,
+                                ),
+                              );
+                            }
+                          } finally {
+                            if (mounted) setState(() => _isProcessing = false);
+                          }
+                        },
+                  icon: _isProcessing
+                      ? const SizedBox(
+                          width: 20,
+                          height: 20,
+                          child: CircularProgressIndicator(strokeWidth: 2),
+                        )
+                      : const Icon(Icons.speed),
+                  label: const Text(
+                    "FORCE QUALIFYING SIMULATION FOR CURRENT RACE",
+                  ),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Colors.purpleAccent,
+                    foregroundColor: Colors.white,
+                    padding: const EdgeInsets.symmetric(vertical: 16),
+                  ),
+                ),
               ),
               const SizedBox(height: 32),
               const Text(

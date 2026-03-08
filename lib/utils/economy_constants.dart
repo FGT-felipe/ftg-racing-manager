@@ -1,29 +1,29 @@
-/// ──────────────────────────────────────────────────────────────────────────────
-/// ECONOMY CONSTANTS — Single source of truth for all monetary values.
-///
-///
-/// HOW TO USE:
-///   import 'package:ftg_racing_manager/utils/economy_constants.dart';
-///
-/// DESIGN PRINCIPLES:
-///   • A mid-pack team (P6-P8 finishes) should roughly break even each week
-///     with race prizes + one decent sponsor.
-///   • Top teams profit comfortably but never snowball uncontrollably.
-///   • Bottom teams must rely on sponsors to survive; zero sponsors = slow bleed.
-///   • Qualifying prizes are small bonuses, NOT game-changers by themselves.
-///
-/// BALANCE TARGETS (per race week, 2-driver team):
-///   Top team  (P1+P3, 40pts): Race ~$850k + Qualy ~$100k + Sponsors ~$200k ≈ $1.15M
-///   Mid team  (P6+P8, 14pts): Race ~$330k + Sponsors ~$70k               ≈ $400k
-///   Low team  (P15+P18, 0pts): Race ~$50k + Sponsors ~$30k               ≈ $80k
-///
-///   Typical weekly expenses for a developed team: $250k-$400k.
-///
-/// WHEN ADDING NEW FEATURES:
-///   1. Put any new monetary constant HERE.
-///   2. Reference the balance targets above to ensure alignment.
-///   3. Prefer scaling off existing constants rather than inventing new numbers.
-/// ──────────────────────────────────────────────────────────────────────────────
+// ──────────────────────────────────────────────────────────────────────────────
+// ECONOMY CONSTANTS — Single source of truth for all monetary values.
+//
+//
+// HOW TO USE:
+//   import 'package:ftg_racing_manager/utils/economy_constants.dart';
+//
+// DESIGN PRINCIPLES:
+//   • A mid-pack team (P6-P8 finishes) should roughly break even each week
+//     with race prizes + one decent sponsor.
+//   • Top teams profit comfortably but never snowball uncontrollably.
+//   • Bottom teams must rely on sponsors to survive; zero sponsors = slow bleed.
+//   • Qualifying prizes are small bonuses, NOT game-changers by themselves.
+//
+// BALANCE TARGETS (per race week, 2-driver team):
+//   Top team  (P1+P3, 40pts): Race ~$850k + Qualy ~$100k + Sponsors ~$200k ≈ $1.15M
+//   Mid team  (P6+P8, 14pts): Race ~$330k + Sponsors ~$70k               ≈ $400k
+//   Low team  (P15+P18, 0pts): Race ~$50k + Sponsors ~$30k               ≈ $80k
+//
+//   Typical weekly expenses for a developed team: $250k-$400k.
+//
+// WHEN ADDING NEW FEATURES:
+//   1. Put any new monetary constant HERE.
+//   2. Reference the balance targets above to ensure alignment.
+//   3. Prefer scaling off existing constants rather than inventing new numbers.
+// ──────────────────────────────────────────────────────────────────────────────
 
 // ═══════════════════════════════════════════
 //  RACE PRIZES  (paid to each TEAM after race)

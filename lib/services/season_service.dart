@@ -17,17 +17,26 @@ class SeasonService {
   /// Stream of the active season (first season in collection).
   /// For single-league setups; extend later with league/division filter if needed.
   Stream<Season?> getActiveSeasonStream() {
-    return _db.collection('seasons').limit(1).snapshots().map((snapshot) {
-      if (snapshot.docs.isEmpty) return null;
-      final data = snapshot.docs.first.data();
-      data['id'] = snapshot.docs.first.id;
-      return Season.fromMap(data);
-    });
+    return _db
+        .collection('seasons')
+        .orderBy('startDate', descending: true)
+        .limit(1)
+        .snapshots()
+        .map((snapshot) {
+          if (snapshot.docs.isEmpty) return null;
+          final data = snapshot.docs.first.data();
+          data['id'] = snapshot.docs.first.id;
+          return Season.fromMap(data);
+        });
   }
 
   /// One-shot fetch of active season.
   Future<Season?> getActiveSeason() async {
-    final snapshot = await _db.collection('seasons').limit(1).get();
+    final snapshot = await _db
+        .collection('seasons')
+        .orderBy('startDate', descending: true)
+        .limit(1)
+        .get();
     if (snapshot.docs.isEmpty) return null;
     final doc = snapshot.docs.first;
     final data = doc.data();
