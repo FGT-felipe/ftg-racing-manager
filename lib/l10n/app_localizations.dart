@@ -1505,7 +1505,7 @@ abstract class AppLocalizations {
   /// No description provided for @versionFooter.
   ///
   /// In en, this message translates to:
-  /// **'V3.5.1 - Fire Tower Games Studio'**
+  /// **'V3.5.2 - Fire Tower Games Studio'**
   String get versionFooter;
 
   /// No description provided for @continueWithGoogle.

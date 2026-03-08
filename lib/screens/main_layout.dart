@@ -341,6 +341,12 @@ class _MainLayoutState extends State<MainLayout> {
                               )
                             : AppLocalizations.of(context).notAvailable,
                       ),
+                      _buildInfoRow(
+                        AppLocalizations.of(
+                          context,
+                        ).versionFooter.split(' - ').first,
+                        AppLocalizations.of(context).versionFooter,
+                      ),
                       const SizedBox(height: 24),
                     ],
                   ),

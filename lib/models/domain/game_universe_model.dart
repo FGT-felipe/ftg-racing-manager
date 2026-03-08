@@ -86,7 +86,7 @@ class GameUniverse {
       createdAt: map['createdAt'] != null
           ? DateTime.parse(map['createdAt'])
           : DateTime.now(),
-      gameVersion: map['gameVersion'] ?? '1.0.0',
+      gameVersion: map['gameVersion'] ?? '3.5.2',
     );
   }
 
