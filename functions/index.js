@@ -654,263 +654,267 @@ async function runQualifyingLogic() {
 
     let leagueIdx = 0;
     for (const league of leagues) {
-      // Staggered: 5 min between leagues
-      if (leagueIdx > 0) await sleep(5 * 60 * 1000);
-      leagueIdx++;
+      try {
+        // Staggered: 15s between leagues (prevents timeout while giving DB a breather)
+        if (leagueIdx > 0) await sleep(15 * 1000);
+        leagueIdx++;
 
-      // --- Self-healing season lookup ---
-      let sId = league.currentSeasonId;
-      let sDoc = sId ?
-        await db.collection("seasons").doc(sId).get() : null;
+        // --- Self-healing season lookup ---
+        let sId = league.currentSeasonId;
+        let sDoc = sId ?
+          await db.collection("seasons").doc(sId).get() : null;
 
-      if (!sDoc || !sDoc.exists) {
-        logger.info(`Season ${sId || "N/A"} not found for ${league.name}, falling back to latest season...`);
-        const fallback = await db.collection("seasons")
-          .orderBy("startDate", "desc").limit(1).get();
-        if (fallback.empty) {
-          logger.info(`Skip league ${league.name}: No seasons exist at all`);
+        if (!sDoc || !sDoc.exists) {
+          logger.info(`Season ${sId || "N/A"} not found for ${league.name}, falling back to latest season...`);
+          const fallback = await db.collection("seasons")
+            .orderBy("startDate", "desc").limit(1).get();
+          if (fallback.empty) {
+            logger.info(`Skip league ${league.name}: No seasons exist at all`);
+            continue;
+          }
+          sDoc = fallback.docs[0];
+          sId = sDoc.id;
+          logger.info(`Using fallback season: ${sId}`);
+        }
+        const season = sDoc.data();
+
+        const raceEvent = (season.calendar || []).find((r) => !r.isCompleted);
+        if (!raceEvent) {
+          logger.info(`Skip league ${league.name}: No pending races in calendar`);
           continue;
         }
-        sDoc = fallback.docs[0];
-        sId = sDoc.id;
-        logger.info(`Using fallback season: ${sId}`);
-      }
-      const season = sDoc.data();
 
-      const raceEvent = (season.calendar || []).find((r) => !r.isCompleted);
-      if (!raceEvent) {
-        logger.info(`Skip league ${league.name}: No pending races in calendar`);
-        continue;
-      }
+        const circuit = getCircuit(raceEvent.circuitId);
+        const raceDocId = `${sId}_${raceEvent.id}`;
+        const rRef = db.collection("races").doc(raceDocId);
+        const rSnap = await rRef.get();
 
-      const circuit = getCircuit(raceEvent.circuitId);
-      const raceDocId = `${sId}_${raceEvent.id}`;
-      const rRef = db.collection("races").doc(raceDocId);
-      const rSnap = await rRef.get();
-
-      if (rSnap.exists && rSnap.data().qualyGrid) {
-        logger.info(`Qualy already done: ${raceDocId}`);
-        continue;
-      }
-
-      logger.info(`Qualy: ${league.name} - ${raceEvent.trackName}`);
-
-      // Gather all team IDs from teams array (or legacy divisions)
-      const teamIds = [];
-      if (league.teams && league.teams.length > 0) {
-        teamIds.push(...league.teams.map((t) => t.id || t));
-      } else {
-        (league.divisions || []).forEach((d) => {
-          if (d.teamIds) teamIds.push(...d.teamIds);
-        });
-      }
-      if (!teamIds.length) {
-        logger.info(`Skip league ${league.name}: No teams found in league.teams or league.divisions`);
-        continue;
-      }
-
-      const teamDocs = await fetchTeams(teamIds);
-      const qualyResults = [];
-
-      // Build manager roles map for qualifying modifiers
-      const managerRoles = {};
-      for (const tDoc of teamDocs) {
-        const t = tDoc.data();
-        if (t.managerId) {
-          const mgrDoc = await db.collection("managers").doc(t.managerId).get();
-          if (mgrDoc.exists) {
-            managerRoles[t.id] = mgrDoc.data().role || "";
-          }
+        if (rSnap.exists && rSnap.data().qualyGrid) {
+          logger.info(`Qualy already done: ${raceDocId}`);
+          continue;
         }
-      }
 
-      for (const tDoc of teamDocs) {
-        const team = tDoc.data();
-        const dSnap = await db.collection("drivers")
-          .where("teamId", "==", team.id).get();
+        logger.info(`Qualy: ${league.name} - ${raceEvent.trackName}`);
 
-        for (let di = 0; di < dSnap.docs.length; di++) {
-          const dDoc = dSnap.docs[di];
-          const driver = { ...dDoc.data(), id: dDoc.id, carIndex: di };
-
-          let finalLapTime = 0.0;
-          let isCrashed = false;
-          let tyreCompound = "medium";
-          let setupSubmitted = false;
-
-          let setup = { ...DEFAULT_SETUP };
-          const ws = team.weekStatus || {};
-          const ds = (ws.driverSetups || {})[driver.id];
-          const sent = ds && ds.isSetupSent;
-
-          if (team.isBot) {
-            // AI: near-ideal setup with randomness
-            const ideal = circuit.idealSetup;
-            setup.frontWing = ideal.frontWing + Math.floor(Math.random() * 10) - 5;
-            setup.rearWing = ideal.rearWing + Math.floor(Math.random() * 10) - 5;
-            setup.suspension = ideal.suspension + Math.floor(Math.random() * 10) - 5;
-            setup.gearRatio = ideal.gearRatio + Math.floor(Math.random() * 10) - 5;
-            const styles = ["normal", "normal", "offensive", "mostRisky"];
-            setup.qualifyingStyle = styles[Math.floor(Math.random() * styles.length)];
-            setupSubmitted = true;
-          } else if (sent && ds.qualifying) {
-            setup = { ...DEFAULT_SETUP, ...ds.qualifying };
-            setupSubmitted = true;
-          }
-
-          if (driver.isTransferListed) {
-            const ySnap = await db.collection("teams").doc(team.id)
-              .collection("academy").doc("config")
-              .collection("selected").limit(1).get();
-            if (!ySnap.empty) {
-              const yData = ySnap.docs[0].data();
-              driver.name = yData.name + " (Academy)";
-              const base = yData.baseSkill || 50;
-              driver.stats = {
-                braking: base, cornering: base, smoothness: base,
-                overtaking: base, consistency: base, adaptability: base,
-                focus: base, feedback: base, fitness: 100,
-                morale: 100, marketability: 30,
-              };
-            } else {
-              // Generic bad
-              driver.stats = { braking: 1, cornering: 1, smoothness: 1, overtaking: 1, consistency: 1, adaptability: 1, focus: 1, feedback: 1, fitness: 1 };
-              isCrashed = true; // Can't start properly without a driver
-            }
-            setup = { ...DEFAULT_SETUP, frontWing: 50, rearWing: 50, suspension: 50, gearRatio: 50, qualifyingStyle: "normal" };
-            setupSubmitted = true;
-          }
-
-          if (!driver.isTransferListed && !team.isBot && ds && ds.qualifyingBestTime && ds.qualifyingBestTime > 0) {
-            finalLapTime = ds.qualifyingBestTime;
-            isCrashed = ds.qualifyingDnf || false;
-            tyreCompound = ds.qualifyingBestCompound || setup.tyreCompound || "medium";
-          } else {
-            const cs = (team.carStats && team.carStats[String(di)]) || {};
-            const res = SimEngine.simulateLap({
-              circuit, carStats: cs,
-              driverStats: driver.stats || {},
-              setup,
-              style: setup.qualifyingStyle || "normal",
-              teamRole: managerRoles[team.id] || "",
-            });
-
-            // Ex-Engineer: +5% qualy success (5% faster lap)
-            finalLapTime = res.lapTime;
-            if (!res.isCrashed && managerRoles[team.id] === "exEngineer") {
-              finalLapTime *= 0.95;
-            }
-            isCrashed = res.isCrashed;
-            tyreCompound = setup.tyreCompound || "medium";
-          }
-
-          qualyResults.push({
-            driverId: driver.id,
-            driverName: driver.name,
-            teamName: team.name,
-            teamId: team.id,
-            lapTime: finalLapTime,
-            isCrashed: isCrashed,
-            tyreCompound: tyreCompound,
-            setupSubmitted: setupSubmitted || team.isBot,
+        // Gather all team IDs from teams array (or legacy divisions)
+        const teamIds = [];
+        if (league.teams && league.teams.length > 0) {
+          teamIds.push(...league.teams.map((t) => t.id || t));
+        } else {
+          (league.divisions || []).forEach((d) => {
+            if (d.teamIds) teamIds.push(...d.teamIds);
           });
         }
-      }
+        if (!teamIds.length) {
+          logger.info(`Skip league ${league.name}: No teams found in league.teams or league.divisions`);
+          continue;
+        }
 
-      // Sort grid
-      qualyResults.sort((a, b) => a.lapTime - b.lapTime);
-      if (qualyResults.length) {
-        const poleTime = qualyResults[0].lapTime;
-        qualyResults.forEach((r, i) => {
-          r.position = i + 1;
-          r.gap = r.lapTime - poleTime;
+        const teamDocs = await fetchTeams(teamIds);
+        const qualyResults = [];
+
+        // Build manager roles map for qualifying modifiers
+        const managerRoles = {};
+        for (const tDoc of teamDocs) {
+          const t = tDoc.data();
+          if (t.managerId) {
+            const mgrDoc = await db.collection("managers").doc(t.managerId).get();
+            if (mgrDoc.exists) {
+              managerRoles[t.id] = mgrDoc.data().role || "";
+            }
+          }
+        }
+
+        for (const tDoc of teamDocs) {
+          const team = tDoc.data();
+          const dSnap = await db.collection("drivers")
+            .where("teamId", "==", team.id).get();
+
+          for (let di = 0; di < dSnap.docs.length; di++) {
+            const dDoc = dSnap.docs[di];
+            const driver = { ...dDoc.data(), id: dDoc.id, carIndex: di };
+
+            let finalLapTime = 0.0;
+            let isCrashed = false;
+            let tyreCompound = "medium";
+            let setupSubmitted = false;
+
+            let setup = { ...DEFAULT_SETUP };
+            const ws = team.weekStatus || {};
+            const ds = (ws.driverSetups || {})[driver.id];
+            const sent = ds && ds.isSetupSent;
+
+            if (team.isBot) {
+              // AI: near-ideal setup with randomness
+              const ideal = circuit.idealSetup;
+              setup.frontWing = ideal.frontWing + Math.floor(Math.random() * 10) - 5;
+              setup.rearWing = ideal.rearWing + Math.floor(Math.random() * 10) - 5;
+              setup.suspension = ideal.suspension + Math.floor(Math.random() * 10) - 5;
+              setup.gearRatio = ideal.gearRatio + Math.floor(Math.random() * 10) - 5;
+              const styles = ["normal", "normal", "offensive", "mostRisky"];
+              setup.qualifyingStyle = styles[Math.floor(Math.random() * styles.length)];
+              setupSubmitted = true;
+            } else if (sent && ds.qualifying) {
+              setup = { ...DEFAULT_SETUP, ...ds.qualifying };
+              setupSubmitted = true;
+            }
+
+            if (driver.isTransferListed) {
+              const ySnap = await db.collection("teams").doc(team.id)
+                .collection("academy").doc("config")
+                .collection("selected").limit(1).get();
+              if (!ySnap.empty) {
+                const yData = ySnap.docs[0].data();
+                driver.name = yData.name + " (Academy)";
+                const base = yData.baseSkill || 50;
+                driver.stats = {
+                  braking: base, cornering: base, smoothness: base,
+                  overtaking: base, consistency: base, adaptability: base,
+                  focus: base, feedback: base, fitness: 100,
+                  morale: 100, marketability: 30,
+                };
+              } else {
+                // Generic bad
+                driver.stats = { braking: 1, cornering: 1, smoothness: 1, overtaking: 1, consistency: 1, adaptability: 1, focus: 1, feedback: 1, fitness: 1 };
+                isCrashed = true; // Can't start properly without a driver
+              }
+              setup = { ...DEFAULT_SETUP, frontWing: 50, rearWing: 50, suspension: 50, gearRatio: 50, qualifyingStyle: "normal" };
+              setupSubmitted = true;
+            }
+
+            if (!driver.isTransferListed && !team.isBot && ds && ds.qualifyingBestTime && ds.qualifyingBestTime > 0) {
+              finalLapTime = ds.qualifyingBestTime;
+              isCrashed = ds.qualifyingDnf || false;
+              tyreCompound = ds.qualifyingBestCompound || setup.tyreCompound || "medium";
+            } else {
+              const cs = (team.carStats && team.carStats[String(di)]) || {};
+              const res = SimEngine.simulateLap({
+                circuit, carStats: cs,
+                driverStats: driver.stats || {},
+                setup,
+                style: setup.qualifyingStyle || "normal",
+                teamRole: managerRoles[team.id] || "",
+              });
+
+              // Ex-Engineer: +5% qualy success (5% faster lap)
+              finalLapTime = res.lapTime;
+              if (!res.isCrashed && managerRoles[team.id] === "exEngineer") {
+                finalLapTime *= 0.95;
+              }
+              isCrashed = res.isCrashed;
+              tyreCompound = setup.tyreCompound || "medium";
+            }
+
+            qualyResults.push({
+              driverId: driver.id,
+              driverName: driver.name,
+              teamName: team.name,
+              teamId: team.id,
+              lapTime: finalLapTime,
+              isCrashed: isCrashed,
+              tyreCompound: tyreCompound,
+              setupSubmitted: setupSubmitted || team.isBot,
+            });
+          }
+        }
+
+        // Sort grid
+        qualyResults.sort((a, b) => a.lapTime - b.lapTime);
+        if (qualyResults.length) {
+          const poleTime = qualyResults[0].lapTime;
+          qualyResults.forEach((r, i) => {
+            r.position = i + 1;
+            r.gap = r.lapTime - poleTime;
+          });
+        }
+
+        // Save qualifying grid
+        await rRef.set({
+          seasonId: sId,
+          raceEventId: raceEvent.id,
+          trackName: raceEvent.trackName,
+          circuitId: raceEvent.circuitId,
+          qualyGrid: qualyResults,
+          qualifyingResults: qualyResults,
+          status: "qualifying",
+          updatedAt: admin.firestore.FieldValue.serverTimestamp(),
+        }, { merge: true });
+
+        // Update pole stats
+        const pole = qualyResults.find((r) => !r.isCrashed);
+        if (pole) {
+          const inc = admin.firestore.FieldValue.increment(1);
+          await db.collection("drivers")
+            .doc(pole.driverId).update({ poles: inc });
+          await db.collection("teams")
+            .doc(pole.teamId).update({ poles: inc });
+
+          /*
+          await addPressNews(lId, {
+            title: `POLE POSITION: ${raceEvent.trackName.toUpperCase()}`,
+            message: `${pole.driverName} (${pole.teamName}) takes POLE!`,
+            type: "POLE",
+            eventType: "Qualifying",
+            pilotName: pole.driverName,
+            teamName: pole.teamName,
+          });
+          */
+        }
+
+        // OFFICE NEWS & QUALY PRIZE MONEY: each team gets qualy report
+        const teamGroups = {};
+        qualyResults.forEach((r) => {
+          if (!teamGroups[r.teamId]) teamGroups[r.teamId] = [];
+          teamGroups[r.teamId].push(r);
         });
+
+        // Distribute Prize Money for Qualy (P1: 50k, P2: 30k, P3: 15k)
+        const qualyPrizes = [50000, 30000, 15000];
+        const batchQ = db.batch();
+
+        for (let i = 0; i < Math.min(3, qualyResults.length); i++) {
+          const result = qualyResults[i];
+          if (result.isCrashed) continue;
+
+          const prizeAmount = qualyPrizes[i];
+          if (!prizeAmount) continue;
+
+          const teamRefPz = db.collection("teams").doc(result.teamId);
+          batchQ.update(teamRefPz, {
+            budget: admin.firestore.FieldValue.increment(prizeAmount)
+          });
+
+          const txRefQ = teamRefPz.collection("transactions").doc();
+          batchQ.set(txRefQ, {
+            id: txRefQ.id,
+            description: `Qualifying P${i + 1} Reward (${result.driverName})`,
+            amount: prizeAmount,
+            date: new Date().toISOString(),
+            type: "REWARD"
+          });
+        }
+        await batchQ.commit();
+
+        for (const [tid, drivers] of Object.entries(teamGroups)) {
+          const lines = drivers.map((d) => {
+            const status = d.isCrashed ? "DNF (Crash)" :
+              `P${d.position}`;
+            return `${d.driverName}: ${status}`;
+          }).join("\n");
+
+          await addOfficeNews(tid, {
+            title: "Qualifying Results",
+            message: lines,
+            type: "QUALIFYING_RESULT",
+            eventType: "Qualifying",
+            actionRoute: "/race_week/garage",
+          });
+        }
+
+        logger.info(`Qualy complete: ${raceDocId}`);
+      } catch (eLeague) {
+        logger.error(`Error processing qualifying for league ${league.name || "unknown"}`, eLeague);
       }
-
-      // Save qualifying grid
-      await rRef.set({
-        seasonId: sId,
-        raceEventId: raceEvent.id,
-        trackName: raceEvent.trackName,
-        circuitId: raceEvent.circuitId,
-        qualyGrid: qualyResults,
-        qualifyingResults: qualyResults,
-        status: "qualifying",
-        updatedAt: admin.firestore.FieldValue.serverTimestamp(),
-      }, { merge: true });
-
-      // Update pole stats
-      const pole = qualyResults.find((r) => !r.isCrashed);
-      if (pole) {
-        const inc = admin.firestore.FieldValue.increment(1);
-        await db.collection("drivers")
-          .doc(pole.driverId).update({ poles: inc });
-        await db.collection("teams")
-          .doc(pole.teamId).update({ poles: inc });
-
-        /*
-        await addPressNews(lId, {
-          title: `POLE POSITION: ${raceEvent.trackName.toUpperCase()}`,
-          message: `${pole.driverName} (${pole.teamName}) takes POLE!`,
-          type: "POLE",
-          eventType: "Qualifying",
-          pilotName: pole.driverName,
-          teamName: pole.teamName,
-        });
-        */
-      }
-
-      // OFFICE NEWS & QUALY PRIZE MONEY: each team gets qualy report
-      const teamGroups = {};
-      qualyResults.forEach((r) => {
-        if (!teamGroups[r.teamId]) teamGroups[r.teamId] = [];
-        teamGroups[r.teamId].push(r);
-      });
-
-      // Distribute Prize Money for Qualy (P1: 50k, P2: 30k, P3: 15k)
-      const qualyPrizes = [50000, 30000, 15000];
-      const batchQ = db.batch();
-
-      for (let i = 0; i < Math.min(3, qualyResults.length); i++) {
-        const result = qualyResults[i];
-        if (result.isCrashed) continue;
-
-        const prizeAmount = qualyPrizes[i];
-        if (!prizeAmount) continue;
-
-        const teamRefPz = db.collection("teams").doc(result.teamId);
-        batchQ.update(teamRefPz, {
-          budget: admin.firestore.FieldValue.increment(prizeAmount)
-        });
-
-        const txRefQ = teamRefPz.collection("transactions").doc();
-        batchQ.set(txRefQ, {
-          id: txRefQ.id,
-          description: `Qualifying P${i + 1} Reward (${result.driverName})`,
-          amount: prizeAmount,
-          date: new Date().toISOString(),
-          type: "REWARD"
-        });
-      }
-      await batchQ.commit();
-
-      for (const [tid, drivers] of Object.entries(teamGroups)) {
-        const lines = drivers.map((d) => {
-          const status = d.isCrashed ? "DNF (Crash)" :
-            `P${d.position}`;
-          return `${d.driverName}: ${status}`;
-        }).join("\n");
-
-        await addOfficeNews(tid, {
-          title: "Qualifying Results",
-          message: lines,
-          type: "QUALIFYING_RESULT",
-          eventType: "Qualifying",
-          actionRoute: "/race_week/garage",
-        });
-      }
-
-      logger.info(`Qualy complete: ${raceDocId}`);
     }
   } catch (err) {
     logger.error("Error in runQualifyingLogic", err);
@@ -921,7 +925,7 @@ exports.scheduledQualifying = onSchedule({
   schedule: "0 15 * * 6",
   timeZone: "America/Bogota",
   memory: "512MiB",
-  timeoutSeconds: 300,
+  timeoutSeconds: 540,
 }, async () => {
   await runQualifyingLogic();
 });
@@ -941,11 +945,27 @@ exports.forceQualy = onCall({
   }
 });
 
+exports.forceRace = onCall({
+  cors: true,
+  memory: "1GiB",
+  timeoutSeconds: 540,
+}, async (request) => {
+  try {
+    if (!request.auth) throw new Error("Unauthorized");
+    // Special: allow forcing a specific league or all
+    await runRaceLogic();
+    return { success: true, message: "Race forced successfully!" };
+  } catch (e) {
+    logger.error("Error forcing race", e);
+    return { success: false, error: e.toString() };
+  }
+});
+
 // ─────────────────────────────────────────────
 // 2. SCHEDULED RACE (Sun 3:00 PM COT)
 // ─────────────────────────────────────────────
 exports.scheduledRace = onSchedule({
-  schedule: "0 15 * * 0",
+  schedule: "0 14 * * 0",
   timeZone: "America/Bogota",
   memory: "1GiB",
   timeoutSeconds: 540,
@@ -962,342 +982,346 @@ exports.scheduledRace = onSchedule({
 
     let leagueIdx = 0;
     for (const league of leagues) {
-      if (leagueIdx > 0) await sleep(5 * 60 * 1000);
-      leagueIdx++;
+      try {
+        if (leagueIdx > 0) await sleep(15 * 1000);
+        leagueIdx++;
 
-      // --- Self-healing season lookup ---
-      let sId = league.currentSeasonId;
-      let sDoc = sId ?
-        await db.collection("seasons").doc(sId).get() : null;
+        // --- Self-healing season lookup ---
+        let sId = league.currentSeasonId;
+        let sDoc = sId ?
+          await db.collection("seasons").doc(sId).get() : null;
 
-      if (!sDoc || !sDoc.exists) {
-        logger.info(`Race: Season ${sId || "N/A"} not found, falling back...`);
-        const fallback = await db.collection("seasons")
-          .orderBy("startDate", "desc").limit(1).get();
-        if (fallback.empty) continue;
-        sDoc = fallback.docs[0];
-        sId = sDoc.id;
-        logger.info(`Race: Using fallback season: ${sId}`);
-      }
-      const season = sDoc.data();
-
-      const rIdx = (season.calendar || [])
-        .findIndex((r) => !r.isCompleted);
-      if (rIdx === -1) continue;
-      const rEvent = season.calendar[rIdx];
-
-      const raceDocId = `${sId}_${rEvent.id}`;
-      const rSnap = await db.collection("races")
-        .doc(raceDocId).get();
-
-      if (!rSnap.exists || !rSnap.data().qualyGrid) {
-        logger.warn(`No qualy grid: ${raceDocId}`);
-        continue;
-      }
-      const rData = rSnap.data();
-      if (rData.isFinished) continue;
-
-      const circuit = getCircuit(rEvent.circuitId);
-      logger.info(`Race: ${league.name} - ${rEvent.trackName}`);
-
-      // Build maps
-      const grid = rData.qualyGrid;
-      const teamIds = [...new Set(grid.map((g) => g.teamId))];
-      const teamDocs = await fetchTeams(teamIds);
-      const teamsMap = {};
-      teamDocs.forEach((td) => {
-        teamsMap[td.data().id] = td.data();
-      });
-
-      const driversMap = {};
-      const setupsMap = {};
-
-      for (let gi = 0; gi < grid.length; gi++) {
-        const g = grid[gi];
-        const dDoc = await db.collection("drivers")
-          .doc(g.driverId).get();
-        if (!dDoc.exists) continue;
-        const dData = { ...dDoc.data(), id: g.driverId };
-        dData.carIndex = gi % 2; // 0 or 1 per team
-        driversMap[g.driverId] = dData;
-
-        // Resolve race setup
-        const team = teamsMap[g.teamId] || {};
-        let su = { ...DEFAULT_SETUP };
-
-        if (team.isBot) {
-          const ideal = circuit.idealSetup;
-          su.frontWing = ideal.frontWing +
-            Math.floor(Math.random() * 10) - 5;
-          su.rearWing = ideal.rearWing +
-            Math.floor(Math.random() * 10) - 5;
-          su.suspension = ideal.suspension +
-            Math.floor(Math.random() * 10) - 5;
-          su.gearRatio = ideal.gearRatio +
-            Math.floor(Math.random() * 10) - 5;
-          su.initialFuel = 80 + Math.floor(Math.random() * 20);
-          su.pitStops = ["hard", "medium"];
-          su.pitStopFuel = [60, 40];
-          su.raceStyle = "normal";
-        } else {
-          const ws = team.weekStatus || {};
-          const ds = (ws.driverSetups || {})[g.driverId];
-          if (ds && ds.isSetupSent && ds.race) {
-            su = { ...DEFAULT_SETUP, ...ds.race };
-          }
+        if (!sDoc || !sDoc.exists) {
+          logger.info(`Race: Season ${sId || "N/A"} not found, falling back...`);
+          const fallback = await db.collection("seasons")
+            .orderBy("startDate", "desc").limit(1).get();
+          if (fallback.empty) continue;
+          sDoc = fallback.docs[0];
+          sId = sDoc.id;
+          logger.info(`Race: Using fallback season: ${sId}`);
         }
+        const season = sDoc.data();
 
-        if (dData.isTransferListed) {
-          const ySnap = await db.collection("teams").doc(team.id)
-            .collection("academy").doc("config")
-            .collection("selected").limit(1).get();
-          if (!ySnap.empty) {
-            const yData = ySnap.docs[0].data();
-            dData.name = yData.name + " (Academy)";
-            const base = yData.baseSkill || 50;
-            dData.stats = {
-              braking: base, cornering: base, smoothness: base,
-              overtaking: base, consistency: base, adaptability: base,
-              focus: base, feedback: base, fitness: 100,
-              morale: 100, marketability: 30,
-            };
-          } else {
-            dData.stats = { braking: 1, cornering: 1, smoothness: 1, overtaking: 1, consistency: 1, adaptability: 1, focus: 1, feedback: 1, fitness: 1 };
-          }
-          su = { ...DEFAULT_SETUP, frontWing: 50, rearWing: 50, suspension: 50, gearRatio: 50, raceStyle: "defensive", pitStops: ["hard"], pitStopFuel: [50] };
+        const rIdx = (season.calendar || [])
+          .findIndex((r) => !r.isCompleted);
+        if (rIdx === -1) continue;
+        const rEvent = season.calendar[rIdx];
+
+        const raceDocId = `${sId}_${rEvent.id}`;
+        const rSnap = await db.collection("races")
+          .doc(raceDocId).get();
+
+        if (!rSnap.exists || !rSnap.data().qualyGrid) {
+          logger.warn(`No qualy grid: ${raceDocId}`);
+          continue;
         }
+        const rData = rSnap.data();
+        if (rData.isFinished) continue;
 
-        // Override tyreCompound with qualy best
-        su.tyreCompound = g.tyreCompound || "medium";
-        if (dData.isTransferListed) su.tyreCompound = "hard";
-        setupsMap[g.driverId] = su;
-      }
+        const circuit = getCircuit(rEvent.circuitId);
+        logger.info(`Race: ${league.name} - ${rEvent.trackName}`);
 
-      // Build manager roles map (teamId -> role string)
-      const managerRoles = {};
-      for (const tid of teamIds) {
-        const t = teamsMap[tid];
-        if (t && t.managerId) {
-          const mgrDoc = await db.collection("managers").doc(t.managerId).get();
-          if (mgrDoc.exists) {
-            managerRoles[tid] = mgrDoc.data().role || "";
-          }
-        }
-      }
-
-      // Run full race
-      const result = SimEngine.simulateRace({
-        circuit, grid, teamsMap, driversMap, setupsMap, managerRoles,
-      });
-
-      // Calculate live duration for frontend
-      const avgQualyTime = grid.reduce(
-        (s, g) => s + (g.lapTime < 900 ? g.lapTime : 0), 0,
-      ) / grid.filter((g) => g.lapTime < 900).length;
-      const liveDurationSec = avgQualyTime * circuit.laps;
-
-      // Save race results to Firestore
-      const raceRef = db.collection("races").doc(raceDocId);
-      await raceRef.update({
-        status: "completed",
-        isFinished: true,
-        finalPositions: result.finalPositions,
-        totalTimes: result.totalTimes,
-        dnfs: result.dnfs,
-        liveDurationSeconds: liveDurationSec,
-        updateIntervalSeconds: 120,
-        completedAt: admin.firestore.FieldValue.serverTimestamp(),
-      });
-
-      // Save lap-by-lap data for frontend "live" playback
-      // Store in subcollection to avoid document size limits
-      const batch = db.batch();
-      const liveColl = raceRef.collection("laps");
-
-      // Store every 5th lap + last lap (to keep doc count manageable)
-      for (let i = 0; i < result.raceLog.length; i++) {
-        const isKeyLap = i % 5 === 0 ||
-          i === result.raceLog.length - 1;
-        if (isKeyLap) {
-          const lapRef = liveColl.doc(String(result.raceLog[i].lap));
-          batch.set(lapRef, result.raceLog[i]);
-        }
-      }
-      await batch.commit();
-
-      // Lock teams for processing
-      for (const tid of teamIds) {
-        await db.collection("teams").doc(tid).update({
-          "weekStatus.isLockedForProcessing": true,
+        // Build maps
+        const grid = rData.qualyGrid;
+        const teamIds = [...new Set(grid.map((g) => g.teamId))];
+        const teamDocs = await fetchTeams(teamIds);
+        const teamsMap = {};
+        teamDocs.forEach((td) => {
+          teamsMap[td.data().id] = td.data();
         });
-      }
 
-      // --- POINTS & STATS ---
-      const sorted = Object.keys(result.finalPositions)
-        .sort((a, b) => result.finalPositions[a] -
-          result.finalPositions[b]);
+        const driversMap = {};
+        const setupsMap = {};
 
-      const teamPointsAccum = {};
-      const teamPrizeAccum = {};
-      const statsBatch = db.batch();
+        for (let gi = 0; gi < grid.length; gi++) {
+          const g = grid[gi];
+          const dDoc = await db.collection("drivers")
+            .doc(g.driverId).get();
+          if (!dDoc.exists) continue;
+          const dData = { ...dDoc.data(), id: g.driverId };
+          dData.carIndex = gi % 2; // 0 or 1 per team
+          driversMap[g.driverId] = dData;
 
-      const getRacePrize = (pos) => {
-        if (pos === 0) return 500000;
-        if (pos === 1) return 350000;
-        if (pos === 2) return 250000;
-        if (pos >= 3 && pos <= 5) return 150000;
-        if (pos >= 6 && pos <= 9) return 100000;
-        return 25000;
-      };
+          // Resolve race setup
+          const team = teamsMap[g.teamId] || {};
+          let su = { ...DEFAULT_SETUP };
 
-      for (let i = 0; i < sorted.length; i++) {
-        const did = sorted[i];
-        if (result.dnfs.includes(did)) continue;
-
-        const pts = i < POINT_SYSTEM.length ? POINT_SYSTEM[i] : 0;
-        const isWin = i === 0;
-        const isPodium = i < 3;
-        const inc = admin.firestore.FieldValue.increment;
-
-        const dRef = db.collection("drivers").doc(did);
-        const du = { races: inc(1), seasonRaces: inc(1) };
-        if (pts > 0) {
-          du.points = inc(pts);
-          du.seasonPoints = inc(pts);
-        }
-        if (isWin) {
-          du.wins = inc(1);
-          du.seasonWins = inc(1);
-        }
-        if (isPodium) {
-          du.podiums = inc(1);
-          du.seasonPodiums = inc(1);
-        }
-        statsBatch.update(dRef, du);
-
-        const dData = driversMap[did];
-        if (dData) {
-          const tid = dData.teamId;
-          teamPointsAccum[tid] = (teamPointsAccum[tid] || 0) + pts;
-          teamPrizeAccum[tid] = (teamPrizeAccum[tid] || 0) + getRacePrize(i);
-        }
-      }
-
-      // Team stats and prize money
-      for (const tid of teamIds) {
-        const ep = teamPointsAccum[tid] || 0;
-        const earnings = teamPrizeAccum[tid] || 0;
-        const inc = admin.firestore.FieldValue.increment;
-        const tRef = db.collection("teams").doc(tid);
-
-        const tu = {
-          budget: inc(earnings),
-          races: inc(1), seasonRaces: inc(1),
-        };
-        if (ep > 0) {
-          tu.points = inc(ep);
-          tu.seasonPoints = inc(ep);
-        }
-
-        // Check win/podiums for this team
-        let teamWon = false;
-        let teamPod = 0;
-        for (let i = 0; i < sorted.length; i++) {
-          const d = driversMap[sorted[i]];
-          if (d && d.teamId === tid) {
-            if (i === 0 && !result.dnfs.includes(sorted[i])) {
-              teamWon = true;
+          if (team.isBot) {
+            const ideal = circuit.idealSetup;
+            su.frontWing = ideal.frontWing +
+              Math.floor(Math.random() * 10) - 5;
+            su.rearWing = ideal.rearWing +
+              Math.floor(Math.random() * 10) - 5;
+            su.suspension = ideal.suspension +
+              Math.floor(Math.random() * 10) - 5;
+            su.gearRatio = ideal.gearRatio +
+              Math.floor(Math.random() * 10) - 5;
+            su.initialFuel = 80 + Math.floor(Math.random() * 20);
+            su.pitStops = ["hard", "medium"];
+            su.pitStopFuel = [60, 40];
+            su.raceStyle = "normal";
+          } else {
+            const ws = team.weekStatus || {};
+            const ds = (ws.driverSetups || {})[g.driverId];
+            if (ds && ds.isSetupSent && ds.race) {
+              su = { ...DEFAULT_SETUP, ...ds.race };
             }
-            if (i < 3 && !result.dnfs.includes(sorted[i])) {
-              teamPod++;
+          }
+
+          if (dData.isTransferListed) {
+            const ySnap = await db.collection("teams").doc(team.id)
+              .collection("academy").doc("config")
+              .collection("selected").limit(1).get();
+            if (!ySnap.empty) {
+              const yData = ySnap.docs[0].data();
+              dData.name = yData.name + " (Academy)";
+              const base = yData.baseSkill || 50;
+              dData.stats = {
+                braking: base, cornering: base, smoothness: base,
+                overtaking: base, consistency: base, adaptability: base,
+                focus: base, feedback: base, fitness: 100,
+                morale: 100, marketability: 30,
+              };
+            } else {
+              dData.stats = { braking: 1, cornering: 1, smoothness: 1, overtaking: 1, consistency: 1, adaptability: 1, focus: 1, feedback: 1, fitness: 1 };
+            }
+            su = { ...DEFAULT_SETUP, frontWing: 50, rearWing: 50, suspension: 50, gearRatio: 50, raceStyle: "defensive", pitStops: ["hard"], pitStopFuel: [50] };
+          }
+
+          // Override tyreCompound with qualy best
+          su.tyreCompound = g.tyreCompound || "medium";
+          if (dData.isTransferListed) su.tyreCompound = "hard";
+          setupsMap[g.driverId] = su;
+        }
+
+        // Build manager roles map (teamId -> role string)
+        const managerRoles = {};
+        for (const tid of teamIds) {
+          const t = teamsMap[tid];
+          if (t && t.managerId) {
+            const mgrDoc = await db.collection("managers").doc(t.managerId).get();
+            if (mgrDoc.exists) {
+              managerRoles[tid] = mgrDoc.data().role || "";
             }
           }
         }
-        if (teamWon) {
-          tu.wins = inc(1);
-          tu.seasonWins = inc(1);
-        }
-        if (teamPod > 0) {
-          tu.podiums = inc(teamPod);
-          tu.seasonPodiums = inc(teamPod);
-        }
 
-        statsBatch.update(tRef, tu);
+        // Run full race
+        const result = SimEngine.simulateRace({
+          circuit, grid, teamsMap, driversMap, setupsMap, managerRoles,
+        });
 
-        // Add transaction for race prize money
-        if (earnings > 0) {
-          const txRefR = tRef.collection("transactions").doc();
-          statsBatch.set(txRefR, {
-            id: txRefR.id,
-            description: `Race Prize Money (${rEvent.trackName})`,
-            amount: earnings,
-            date: new Date().toISOString(),
-            type: "REWARD",
+        // Calculate live duration for frontend
+        const avgQualyTime = grid.reduce(
+          (s, g) => s + (g.lapTime < 900 ? g.lapTime : 0), 0,
+        ) / grid.filter((g) => g.lapTime < 900).length;
+        const liveDurationSec = avgQualyTime * circuit.laps;
+
+        // Save race results to Firestore
+        const raceRef = db.collection("races").doc(raceDocId);
+        await raceRef.update({
+          status: "completed",
+          isFinished: true,
+          finalPositions: result.finalPositions,
+          totalTimes: result.totalTimes,
+          dnfs: result.dnfs,
+          liveDurationSeconds: liveDurationSec,
+          updateIntervalSeconds: 120,
+          completedAt: admin.firestore.FieldValue.serverTimestamp(),
+        });
+
+        // Save lap-by-lap data for frontend "live" playback
+        // Store in subcollection to avoid document size limits
+        const batch = db.batch();
+        const liveColl = raceRef.collection("laps");
+
+        // Store every 5th lap + last lap (to keep doc count manageable)
+        for (let i = 0; i < result.raceLog.length; i++) {
+          const isKeyLap = i % 5 === 0 ||
+            i === result.raceLog.length - 1;
+          if (isKeyLap) {
+            const lapRef = liveColl.doc(String(result.raceLog[i].lap));
+            batch.set(lapRef, result.raceLog[i]);
+          }
+        }
+        await batch.commit();
+
+        // Lock teams for processing
+        for (const tid of teamIds) {
+          await db.collection("teams").doc(tid).update({
+            "weekStatus.isLockedForProcessing": true,
           });
         }
-      }
 
-      // Update season calendar
-      const updCal = [...season.calendar];
-      updCal[rIdx] = { ...updCal[rIdx], isCompleted: true };
-      statsBatch.update(
-        db.collection("seasons").doc(sId),
-        { calendar: updCal },
-      );
+        // --- POINTS & STATS ---
+        const sorted = Object.keys(result.finalPositions)
+          .sort((a, b) => result.finalPositions[a] -
+            result.finalPositions[b]);
 
-      await statsBatch.commit();
+        const teamPointsAccum = {};
+        const teamPrizeAccum = {};
+        const statsBatch = db.batch();
 
-      // --- NOTIFICATIONS ---
-      /*
-      const lId = league.id || "";
-      await addPressNews(lId, {
-        title: `RACE WINNER: ${rEvent.trackName.toUpperCase()}`,
-        message: `${winDrv.name} (${winTeam.name}) wins!`,
-        type: "WINNER",
-        eventType: "Race",
-        pilotName: winDrv.name,
-        teamName: winTeam.name,
-      });
-      */
+        const getRacePrize = (pos) => {
+          if (pos === 0) return 500000;
+          if (pos === 1) return 350000;
+          if (pos === 2) return 250000;
+          if (pos >= 3 && pos <= 5) return 150000;
+          if (pos >= 6 && pos <= 9) return 100000;
+          return 25000;
+        };
 
-      // Office News: each team gets its result
-      const teamGrp = {};
-      sorted.forEach((did, i) => {
-        const d = driversMap[did];
-        if (!d) return;
-        if (!teamGrp[d.teamId]) teamGrp[d.teamId] = [];
-        const isDnf = result.dnfs.includes(did);
-        teamGrp[d.teamId].push({
-          name: d.name,
-          pos: isDnf ? "DNF" : `P${i + 1}`,
-          pts: !isDnf && i < POINT_SYSTEM.length ?
-            POINT_SYSTEM[i] : 0,
-        });
-      });
+        for (let i = 0; i < sorted.length; i++) {
+          const did = sorted[i];
+          if (result.dnfs.includes(did)) continue;
 
-      for (const [tid, drivers] of Object.entries(teamGrp)) {
-        const earn = teamPrizeAccum[tid] || 0;
-        const lines = drivers.map(
-          (d) => `${d.name}: ${d.pos} (+${d.pts} pts)`,
-        ).join("\n");
-        await addOfficeNews(tid, {
-          title: `Race Results: ${rEvent.trackName}`,
-          message: `${lines}\nPrize: $${earn.toLocaleString()}`,
-          type: "RACE_RESULT",
+          const pts = i < POINT_SYSTEM.length ? POINT_SYSTEM[i] : 0;
+          const isWin = i === 0;
+          const isPodium = i < 3;
+          const inc = admin.firestore.FieldValue.increment;
+
+          const dRef = db.collection("drivers").doc(did);
+          const du = { races: inc(1), seasonRaces: inc(1) };
+          if (pts > 0) {
+            du.points = inc(pts);
+            du.seasonPoints = inc(pts);
+          }
+          if (isWin) {
+            du.wins = inc(1);
+            du.seasonWins = inc(1);
+          }
+          if (isPodium) {
+            du.podiums = inc(1);
+            du.seasonPodiums = inc(1);
+          }
+          statsBatch.update(dRef, du);
+
+          const dData = driversMap[did];
+          if (dData) {
+            const tid = dData.teamId;
+            teamPointsAccum[tid] = (teamPointsAccum[tid] || 0) + pts;
+            teamPrizeAccum[tid] = (teamPrizeAccum[tid] || 0) + getRacePrize(i);
+          }
+        }
+
+        // Team stats and prize money
+        for (const tid of teamIds) {
+          const ep = teamPointsAccum[tid] || 0;
+          const earnings = teamPrizeAccum[tid] || 0;
+          const inc = admin.firestore.FieldValue.increment;
+          const tRef = db.collection("teams").doc(tid);
+
+          const tu = {
+            budget: inc(earnings),
+            races: inc(1), seasonRaces: inc(1),
+          };
+          if (ep > 0) {
+            tu.points = inc(ep);
+            tu.seasonPoints = inc(ep);
+          }
+
+          // Check win/podiums for this team
+          let teamWon = false;
+          let teamPod = 0;
+          for (let i = 0; i < sorted.length; i++) {
+            const d = driversMap[sorted[i]];
+            if (d && d.teamId === tid) {
+              if (i === 0 && !result.dnfs.includes(sorted[i])) {
+                teamWon = true;
+              }
+              if (i < 3 && !result.dnfs.includes(sorted[i])) {
+                teamPod++;
+              }
+            }
+          }
+          if (teamWon) {
+            tu.wins = inc(1);
+            tu.seasonWins = inc(1);
+          }
+          if (teamPod > 0) {
+            tu.podiums = inc(teamPod);
+            tu.seasonPodiums = inc(teamPod);
+          }
+
+          statsBatch.update(tRef, tu);
+
+          // Add transaction for race prize money
+          if (earnings > 0) {
+            const txRefR = tRef.collection("transactions").doc();
+            statsBatch.set(txRefR, {
+              id: txRefR.id,
+              description: `Race Prize Money (${rEvent.trackName})`,
+              amount: earnings,
+              date: new Date().toISOString(),
+              type: "REWARD",
+            });
+          }
+        }
+
+        // Update season calendar
+        const updCal = [...season.calendar];
+        updCal[rIdx] = { ...updCal[rIdx], isCompleted: true };
+        statsBatch.update(
+          db.collection("seasons").doc(sId),
+          { calendar: updCal },
+        );
+
+        await statsBatch.commit();
+
+        // --- NOTIFICATIONS ---
+        /*
+        const lId = league.id || "";
+        await addPressNews(lId, {
+          title: `RACE WINNER: ${rEvent.trackName.toUpperCase()}`,
+          message: `${winDrv.name} (${winTeam.name}) wins!`,
+          type: "WINNER",
           eventType: "Race",
+          pilotName: winDrv.name,
+          teamName: winTeam.name,
         });
+        */
+
+        // Office News: each team gets its result
+        const teamGrp = {};
+        sorted.forEach((did, i) => {
+          const d = driversMap[did];
+          if (!d) return;
+          if (!teamGrp[d.teamId]) teamGrp[d.teamId] = [];
+          const isDnf = result.dnfs.includes(did);
+          teamGrp[d.teamId].push({
+            name: d.name,
+            pos: isDnf ? "DNF" : `P${i + 1}`,
+            pts: !isDnf && i < POINT_SYSTEM.length ?
+              POINT_SYSTEM[i] : 0,
+          });
+        });
+
+        for (const [tid, drivers] of Object.entries(teamGrp)) {
+          const earn = teamPrizeAccum[tid] || 0;
+          const lines = drivers.map(
+            (d) => `${d.name}: ${d.pos} (+${d.pts} pts)`,
+          ).join("\n");
+          await addOfficeNews(tid, {
+            title: `Race Results: ${rEvent.trackName}`,
+            message: `${lines}\nPrize: $${earn.toLocaleString()}`,
+            type: "RACE_RESULT",
+            eventType: "Race",
+          });
+        }
+
+        // Schedule post-race processing (1h later)
+        // We set a flag; the postRaceProcessing function
+        // checks this timestamp
+        await raceRef.update({
+          postRaceProcessingAt: new Date(
+            Date.now() + 60 * 60 * 1000,
+          ),
+        });
+
+        logger.info(`Race complete: ${raceDocId}`);
+      } catch (eLeague) {
+        logger.error(`Error processing race for league ${league.name || "unknown"}`, eLeague);
       }
-
-      // Schedule post-race processing (1h later)
-      // We set a flag; the postRaceProcessing function
-      // checks this timestamp
-      await raceRef.update({
-        postRaceProcessingAt: new Date(
-          Date.now() + 60 * 60 * 1000,
-        ),
-      });
-
-      logger.info(`Race complete: ${raceDocId}`);
     }
   } catch (err) {
     logger.error("Error in scheduledRace", err);
