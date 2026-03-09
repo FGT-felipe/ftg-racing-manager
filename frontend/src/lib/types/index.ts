@@ -217,6 +217,10 @@ export interface YoungDriver {
     isMarkedForPromotion: boolean;
     statRangeMin: Record<string, number>;
     statRangeMax: Record<string, number>;
+    pendingAction?: boolean;
+    weeklyEventMessage?: string | null;
+    weeklyStatDiffs?: Record<string, number>;
+    trainingProgress?: Record<string, number>;
 }
 
 export interface AppNotification {
