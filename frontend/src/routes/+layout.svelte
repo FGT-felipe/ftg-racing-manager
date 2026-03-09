@@ -23,6 +23,10 @@
   import { authStore } from "$lib/stores/auth.svelte";
   import { teamStore } from "$lib/stores/team.svelte";
   import { seasonStore } from "$lib/stores/season.svelte";
+  import { notificationStore } from "$lib/stores/notifications.svelte";
+  import { transactionStore } from "$lib/stores/transactions.svelte";
+  import { managerStore } from "$lib/stores/manager.svelte";
+  import { universeStore } from "$lib/stores/universe.svelte";
 
   let { children } = $props();
 
@@ -73,6 +77,14 @@
     }
   });
 
+  // Initialize Stores
+  $effect(() => {
+    notificationStore.init();
+    transactionStore.init();
+    managerStore.init();
+    universeStore.init();
+  });
+
   // Refined Routing Logic (Anti-Race Condition)
   $effect(() => {
     if (!browser) return;
@@ -88,23 +100,47 @@
       return;
     }
 
-    // 3. Wait for Team Data
-    if (teamStore.value.loading) return;
+    // 3. Wait for Profile & Team Data
+    if (managerStore.isLoading || teamStore.value.loading) return;
 
     // 4. Decision making
+    const manager = managerStore.profile;
     const team = teamStore.value.team;
 
+    // Check for Manager Profile
+    if (!manager) {
+      if (currentPath !== "/onboarding/create-manager") {
+        console.log("No manager found, redirecting to profile creation.");
+        goto("/onboarding/create-manager");
+      }
+      return;
+    }
+
+    // Check for Team
     if (!team) {
-      if (currentPath !== "/create-team") {
-        console.log("No team found, redirecting to creation flow.");
-        goto("/create-team");
+      // If they are on manager creation but already have a profile, move them to team selection
+      if (currentPath === "/onboarding/create-manager") {
+        goto("/onboarding/team-selection");
+        return;
       }
-    } else {
-      // User has a team, block restricted paths
-      if (currentPath === "/login" || currentPath === "/create-team") {
-        console.log("Team active, bypassing auth/creation gates.");
-        goto("/");
+
+      if (currentPath !== "/onboarding/team-selection") {
+        console.log("No team found, redirecting to team selection.");
+        goto("/onboarding/team-selection");
       }
+      return;
+    }
+
+    // User has everything, block restricted paths
+    const onboardingPaths = [
+      "/login",
+      "/onboarding/create-manager",
+      "/onboarding/team-selection",
+      "/create-team",
+    ];
+    if (onboardingPaths.includes(currentPath)) {
+      console.log("All systems active, bypassing onboarding gates.");
+      goto("/");
     }
   });
 </script>
@@ -123,7 +159,7 @@
         >
       </div>
     </div>
-  {:else if currentPath === "/login" || currentPath === "/create-team"}
+  {:else if currentPath === "/login" || currentPath.startsWith("/onboarding")}
     {@render children()}
   {:else}
     <div

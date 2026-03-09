@@ -9,12 +9,18 @@
     let loading = $derived(teamData.loading || authStore.loading);
     let isAdmin = $derived(authStore.isAdmin);
 
-    // Fallback for transfer budget as it doesn't currently exist in the Team model
-    // but requested by user, default to '$0.0M' if undefined.
     let transferBudgetFmt = $derived.by(() => {
         if (!team) return "$0.0M";
-        const rawBudget = (team as any).transferBudget || 0;
-        return `$${(rawBudget / 1000000).toFixed(1)}M`;
+        const percentage = team.transferBudgetPercentage || 20;
+        const amount = team.budget * (percentage / 100);
+        return `$${(amount / 1000000).toFixed(1)}M`;
+    });
+
+    let operationalBudgetFmt = $derived.by(() => {
+        if (!team) return "$0.0M";
+        const percentage = team.transferBudgetPercentage || 20;
+        const amount = team.budget * (1 - percentage / 100);
+        return `$${(amount / 1000000).toFixed(1)}M`;
     });
 </script>
 
@@ -49,17 +55,17 @@
                 </div>
             </div>
         {:else if team}
-            <!-- Total Balance -->
+            <!-- Operational Balance -->
             <div class="flex flex-col items-start gap-0.5">
                 <span
                     class="text-[10px] uppercase font-bold text-app-primary/50 font-heading tracking-widest"
                 >
-                    Total Balance
+                    Operational
                 </span>
                 <span
                     class="text-[16px] font-bold text-app-primary font-sans tracking-wide"
                 >
-                    {teamStore.formattedBudget}
+                    {operationalBudgetFmt}
                 </span>
             </div>
 
@@ -68,7 +74,7 @@
                 <span
                     class="text-[10px] uppercase font-bold text-app-primary/50 font-heading tracking-widest"
                 >
-                    Transfer Budget
+                    Transfer Cap
                 </span>
                 <span
                     class="text-[16px] font-bold text-app-primary/80 font-sans tracking-wide"
