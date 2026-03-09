@@ -1,7 +1,8 @@
 import { db } from '$lib/firebase/config';
 import { collection, query, where, onSnapshot, limit } from 'firebase/firestore';
-import type { Team } from '$lib/types';
+import { authStore } from '$lib/stores/auth.svelte';
 import { browser } from '$app/environment';
+import type { Team } from '$lib/types';
 
 export function createTeamStore() {
     let currentTeam = $state<Team | null>(null);
@@ -75,6 +76,70 @@ export function createTeamStore() {
             if (!currentTeam) return '$0M';
             // simple formatter for million representation
             return `$${(currentTeam.budget / 1000000).toFixed(1)}M`;
+        },
+        async claimTeam(teamId: string) {
+            const user = authStore.user;
+            if (!user) throw new Error("Authentication required");
+
+            const { doc, runTransaction } = await import('firebase/firestore');
+            const teamRef = doc(db, 'teams', teamId);
+
+            await runTransaction(db, async (transaction) => {
+                const teamDoc = await transaction.get(teamRef);
+
+                if (!teamDoc.exists()) {
+                    throw new Error("Team does not exist");
+                }
+
+                const data = teamDoc.data();
+                if (data?.managerId) {
+                    throw new Error("Team already taken");
+                }
+
+                transaction.update(teamRef, {
+                    managerId: user.uid,
+                    isBot: false
+                });
+            });
+        },
+        async renameTeam(newName: string) {
+            if (!currentTeam) throw new Error("No team active");
+            const newNameTrimmed = newName.trim();
+            if (!newNameTrimmed || newNameTrimmed === currentTeam.name) return;
+
+            const { doc, runTransaction } = await import('firebase/firestore');
+            const teamRef = doc(db, 'teams', currentTeam.id);
+            const nameChangeCost = 500000;
+
+            await runTransaction(db, async (transaction) => {
+                const teamDoc = await transaction.get(teamRef);
+                if (!teamDoc.exists()) throw new Error("Team not found");
+
+                const data = teamDoc.data();
+                const currentCount = data.nameChangeCount || 0;
+                const budget = data.budget || 0;
+                const isFirstChange = currentCount === 0;
+
+                if (!isFirstChange && budget < nameChangeCost) {
+                    throw new Error("Insufficient budget for name change");
+                }
+
+                const costApplied = isFirstChange ? 0 : nameChangeCost;
+
+                transaction.update(teamRef, {
+                    name: newNameTrimmed,
+                    budget: budget - costApplied,
+                    nameChangeCount: currentCount + 1
+                });
+            });
+        },
+        async updateTransferBudgetPercentage(percentage: number) {
+            if (!currentTeam) return;
+            const { doc, updateDoc } = await import('firebase/firestore');
+            const teamRef = doc(db, 'teams', currentTeam.id);
+            await updateDoc(teamRef, {
+                transferBudgetPercentage: percentage
+            });
         }
     };
 }

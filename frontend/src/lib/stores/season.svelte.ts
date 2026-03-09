@@ -32,7 +32,12 @@ class SeasonStore {
     }
 
     init(seasonId: string) {
-        if (!seasonId || this.currentSeasonId === seasonId) return;
+        if (!seasonId) {
+            this.value.loading = false;
+            this.value.season = null;
+            return;
+        }
+        if (this.currentSeasonId === seasonId) return;
 
         console.log(`📡 SeasonStore: Initializing for Season ${seasonId}`);
         this.clear();

@@ -32,9 +32,7 @@ export function createAuthStore() {
             return loading;
         },
         get isAdmin() {
-            // Placeholder admin check until custom claims are implemented from SimEngine
-            // Example: return user?.uid === 'YOUR_ADMIN_UID';
-            return false;
+            return user?.email === 'felipe@firetower.games';
         },
         async loginWithGoogle() {
             try {

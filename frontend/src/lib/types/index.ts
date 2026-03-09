@@ -114,6 +114,8 @@ export interface Team {
     seasonPodiums: number;
     seasonPoles: number;
     nameChangeCount: number;
+    lastRaceDebrief?: string | null;
+    lastRaceResult?: string | null;
 
     carStats: Record<string, Record<string, number>>; // Usually '0' and '1' mapped to aero, powertrain, chassis, reliability
     weekStatus: Record<string, any>;
@@ -130,13 +132,15 @@ export enum FacilityType {
     scoutingOffice = 'scoutingOffice',
     racingSimulator = 'racingSimulator',
     gym = 'gym',
-    rdOffice = 'rdOffice'
+    rdOffice = 'rdOffice',
+    carMuseum = 'carMuseum'
 }
 
 export interface Facility {
     type: FacilityType;
     level: number;
     isLocked: boolean;
+    maintenanceCost: number;
     lastUpgradeSeasonId?: string | null;
 }
 
@@ -190,6 +194,33 @@ export interface Driver {
     highestBidderTeamName?: string | null;
     negotiationAttempts: number;
     priceAtListing: number;
+}
+
+export interface YoungDriver {
+    id: string;
+    name: string;
+    age: number;
+    gender: 'M' | 'F';
+    nationality: {
+        code: string;
+        name: string;
+        flagEmoji: string;
+    };
+    baseSkill: number;
+    growthPotential: number;
+    potentialStars: number;
+    salary: number;
+    portraitUrl?: string | null;
+    status: 'candidate' | 'selected';
+    selectedAt?: Date | null;
+    expiresAt?: Date | null;
+    isMarkedForPromotion: boolean;
+    statRangeMin: Record<string, number>;
+    statRangeMax: Record<string, number>;
+    pendingAction?: boolean;
+    weeklyEventMessage?: string | null;
+    weeklyStatDiffs?: Record<string, number>;
+    trainingProgress?: Record<string, number>;
 }
 
 export interface AppNotification {
