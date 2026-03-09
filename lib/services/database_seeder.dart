@@ -8,9 +8,12 @@ import 'universe_service.dart';
 import 'team_assignment_service.dart';
 import 'driver_assignment_service.dart';
 import 'driver_status_service.dart';
+import 'circuit_service.dart';
+import 'dart:math';
 
 class DatabaseSeeder {
   static final FirebaseFirestore _db = FirebaseFirestore.instance;
+  static final CircuitService _circuitService = CircuitService();
 
   /// Contador para IDs únicos
 
@@ -120,7 +123,6 @@ class DatabaseSeeder {
         final now = startDate ?? DateTime.now();
         final l10n = lookupAppLocalizations(const Locale('en'));
 
-        // Define the full 9-race calendar in order, mapping circuitId → l10n name + metadata
         final calendarData = [
           {
             'circuitId': 'mexico',
@@ -182,13 +184,27 @@ class DatabaseSeeder {
           i,
         ) {
           final data = calendarData[i];
+          final circuitId = data['circuitId']!;
+          final circuit = _circuitService.getCircuitProfile(circuitId);
+          final random = Random();
+          final conditions = [
+            'Sunny',
+            'Cloudy',
+            'Overcast',
+            'Rain',
+            'Light Rain',
+          ];
+
           return RaceEvent(
             id: 'r${i + 1}',
             trackName: data['name']!,
             countryCode: data['country']!,
             flagEmoji: data['flag']!,
-            circuitId: data['circuitId']!,
-            date: now.add(Duration(days: 7 * (i + 1))), // Week 1, 2, 3...9
+            circuitId: circuitId,
+            date: now.add(Duration(days: 7 * (i + 1))),
+            totalLaps: circuit.laps, // Use dynamic laps
+            weatherQualifying: conditions[random.nextInt(3)],
+            weatherRace: conditions[random.nextInt(conditions.length)],
             isCompleted: false,
           );
         });

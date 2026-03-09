@@ -2180,6 +2180,18 @@ abstract class AppLocalizations {
   /// **'View Results'**
   String get viewResultsBtn;
 
+  /// No description provided for @paddockLocked.
+  ///
+  /// In en, this message translates to:
+  /// **'Paddock Locked'**
+  String get paddockLocked;
+
+  /// No description provided for @waitingForPaddock.
+  ///
+  /// In en, this message translates to:
+  /// **'Opens Monday 00:00'**
+  String get waitingForPaddock;
+
   /// No description provided for @circuitIntelTitle.
   ///
   /// In en, this message translates to:

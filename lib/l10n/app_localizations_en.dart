@@ -1166,6 +1166,12 @@ class AppLocalizationsEn extends AppLocalizations {
   String get viewResultsBtn => 'View Results';
 
   @override
+  String get paddockLocked => 'Paddock Locked';
+
+  @override
+  String get waitingForPaddock => 'Opens Monday 00:00';
+
+  @override
   String get circuitIntelTitle => 'Circuit Intel';
 
   @override

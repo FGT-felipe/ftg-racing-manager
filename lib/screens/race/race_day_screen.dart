@@ -118,7 +118,10 @@ class _RaceDayScreenState extends State<RaceDayScreen>
       final circuitProfile = CircuitService().getCircuitProfile(
         raceEvent.circuitId,
       );
-      _totalLaps = circuitProfile.laps;
+      // Fallback to circuit profile if event totalLaps is 0 or missing
+      if (_totalLaps <= 0) {
+        _totalLaps = circuitProfile.laps;
+      }
 
       _raceId = SeasonService().raceDocumentId(season.id, raceEvent);
 
@@ -263,11 +266,13 @@ class _RaceDayScreenState extends State<RaceDayScreen>
         _currentLapNumber = 0;
       } else {
         // Map elapsed time to lap number
-        final fraction = (elapsed / _liveDurationSeconds).clamp(0.0, 1.0);
-        final estimatedLap = (fraction * _totalLaps).round().clamp(
-          1,
-          _totalLaps,
-        );
+        double fraction = 0.0;
+        if (_liveDurationSeconds > 0 && !_liveDurationSeconds.isNaN) {
+          fraction = (elapsed / _liveDurationSeconds).clamp(0.0, 1.0);
+        }
+        final estimatedLap = _totalLaps > 0
+            ? (fraction * _totalLaps).round().clamp(1, _totalLaps)
+            : 0;
 
         // Find the closest key lap we have data for
         _currentLapNumber = _sortedLapKeys.first;
@@ -342,10 +347,13 @@ class _RaceDayScreenState extends State<RaceDayScreen>
       int bestPos = 999;
       String? lapLeader;
       for (var pe in positions.entries) {
-        final p = (pe.value as num).toInt();
-        if (p < bestPos) {
-          bestPos = p;
-          lapLeader = pe.key;
+        final val = pe.value;
+        if (val != null && val is num) {
+          final p = val.toInt();
+          if (p < bestPos) {
+            bestPos = p;
+            lapLeader = pe.key;
+          }
         }
       }
       if (lapLeader != null) {
@@ -400,10 +408,11 @@ class _RaceDayScreenState extends State<RaceDayScreen>
     // Inject a FINISH event when race reaches the last lap
     if (_currentLapNumber >= _totalLaps && _currentLapNumber > 0) {
       final sorted = _currentPositions.entries.toList()
-        ..sort(
-          (a, b) =>
-              (a.value as num).toInt().compareTo((b.value as num).toInt()),
-        );
+        ..sort((a, b) {
+          final aVal = (a.value as num?)?.toInt() ?? 99;
+          final bVal = (b.value as num?)?.toInt() ?? 99;
+          return aVal.compareTo(bVal);
+        });
 
       final p1 = sorted.isNotEmpty ? _driverName(sorted[0].key) : '???';
       final p2 = sorted.length > 1 ? _driverName(sorted[1].key) : '???';
@@ -577,8 +586,9 @@ class _RaceDayScreenState extends State<RaceDayScreen>
 
       // 3. Simulate
       final result = await RaceService().simulateRaceSession(
-        raceId: "demo_race",
+        raceId: currentRace.event.id,
         leagueId: season.leagueId,
+        currentRace: currentRace.event,
         circuit: circuit,
         grid: grid,
         teamsMap: teamsMap,
@@ -653,12 +663,14 @@ class _RaceDayScreenState extends State<RaceDayScreen>
   // ─── Helpers ───
 
   String _formatLapTime(double seconds) {
+    if (seconds.isNaN || seconds.isInfinite) return "--:--.---";
     final mins = (seconds / 60).floor();
     final secs = seconds - (mins * 60);
     return "$mins:${secs.toStringAsFixed(3).padLeft(6, '0')}";
   }
 
   String _formatRaceTime(double totalSeconds) {
+    if (totalSeconds.isNaN || totalSeconds.isInfinite) return "--:--:--";
     final hours = (totalSeconds / 3600).floor();
     final mins = ((totalSeconds % 3600) / 60).floor();
     final secs = (totalSeconds % 60).floor();
@@ -742,32 +754,85 @@ class _RaceDayScreenState extends State<RaceDayScreen>
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final l10n = AppLocalizations.of(context);
-    final timeService = TimeService();
-
-    // Check race status
-    return FutureBuilder<Season?>(
-      future: SeasonService().getActiveSeason(),
-      builder: (context, snapshot) {
-        if (_isLoading) {
-          return Center(
+    try {
+      return _buildInternal(context);
+    } catch (e, stack) {
+      debugPrint('CRITICAL UI ERROR: $e\n$stack');
+      return Scaffold(
+        backgroundColor: const Color(0xFF0A0A0A),
+        body: Center(
+          child: Padding(
+            padding: const EdgeInsets.all(24.0),
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                CircularProgressIndicator(color: theme.primaryColor),
+                const Icon(
+                  Icons.error_outline,
+                  color: Colors.redAccent,
+                  size: 48,
+                ),
                 const SizedBox(height: 16),
-                Text(
-                  l10n.raceDayLoadingData.toUpperCase(),
+                const Text(
+                  'RACE VIEWER ERROR',
                   style: TextStyle(
-                    color: Colors.white.withValues(alpha: 0.4),
-                    fontSize: 12,
+                    color: Colors.white,
                     fontWeight: FontWeight.bold,
-                    letterSpacing: 1.5,
+                    letterSpacing: 1.2,
                   ),
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  e.toString(),
+                  style: TextStyle(
+                    color: Colors.white.withValues(alpha: 0.5),
+                    fontSize: 12,
+                  ),
+                  textAlign: TextAlign.center,
+                ),
+                const SizedBox(height: 24),
+                ElevatedButton(
+                  onPressed: () => setState(() => _loadRaceData()),
+                  child: const Text('RETRY LOADING'),
                 ),
               ],
             ),
+          ),
+        ),
+      );
+    }
+  }
+
+  Widget _buildInternal(BuildContext context) {
+    final timeService = TimeService();
+
+    if (_isLoading) {
+      return const Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            CircularProgressIndicator(color: Color(0xFF00BCD4)),
+            SizedBox(height: 16),
+            Text(
+              'LOADING DATA...',
+              style: TextStyle(
+                color: Colors.white24,
+                fontSize: 10,
+                letterSpacing: 2,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+          ],
+        ),
+      );
+    }
+
+    return StreamBuilder<Season?>(
+      stream: SeasonService().getActiveSeasonStream(),
+      builder: (context, snapshot) {
+        if (!snapshot.hasData &&
+            snapshot.connectionState == ConnectionState.waiting) {
+          return const Center(
+            child: CircularProgressIndicator(color: Color(0xFF00BCD4)),
           );
         }
 
@@ -1195,9 +1260,11 @@ class _RaceDayScreenState extends State<RaceDayScreen>
 
     // Sort by position
     final sorted = _currentPositions.entries.toList()
-      ..sort(
-        (a, b) => (a.value as num).toInt().compareTo((b.value as num).toInt()),
-      );
+      ..sort((a, b) {
+        final aVal = (a.value as num?)?.toInt() ?? 99;
+        final bVal = (b.value as num?)?.toInt() ?? 99;
+        return aVal.compareTo(bVal);
+      });
 
     return Container(
       decoration: BoxDecoration(
@@ -1348,11 +1415,12 @@ class _RaceDayScreenState extends State<RaceDayScreen>
                   itemBuilder: (context, index) {
                     final entry = sorted[index];
                     final driverId = entry.key;
-                    final pos = (entry.value as num).toInt();
+                    final pos = (entry.value as num?)?.toInt() ?? 99;
                     final lapTime = (_currentLapTimes[driverId] as num?)
                         ?.toDouble();
                     final isPlayer = _isPlayerTeam(driverId);
-                    final isDnf = lapTime == null || lapTime > 900;
+                    final isDnf =
+                        lapTime == null || lapTime.isNaN || lapTime > 900;
                     final isFastestLap = driverId == _overallFastestDriverId;
                     final isPitting = _allEvents.any(
                       (e) =>
@@ -1365,19 +1433,19 @@ class _RaceDayScreenState extends State<RaceDayScreen>
                     IconData? changeIcon;
                     Color? changeColor;
                     if (_previousPositions.containsKey(driverId)) {
-                      final prevPos = (_previousPositions[driverId] as num)
-                          .toInt();
-                      if (pos < prevPos) {
-                        changeIcon = Icons.arrow_drop_up;
-                        changeColor = const Color(0xFF00C853); // Green
-                      } else if (pos > prevPos) {
-                        changeIcon = Icons.arrow_drop_down;
-                        changeColor = const Color(0xFFFF5252); // Red
-                      } else {
-                        changeIcon = Icons.remove;
-                        changeColor = Colors.white.withValues(
-                          alpha: 0.3,
-                        ); // Neutral
+                      final prevPosVal = _previousPositions[driverId];
+                      if (prevPosVal != null && prevPosVal is num) {
+                        final prevPos = prevPosVal.toInt();
+                        if (pos < prevPos) {
+                          changeIcon = Icons.arrow_drop_up;
+                          changeColor = const Color(0xFF00C853);
+                        } else if (pos > prevPos) {
+                          changeIcon = Icons.arrow_drop_down;
+                          changeColor = const Color(0xFFFF5252);
+                        } else {
+                          changeIcon = Icons.remove;
+                          changeColor = Colors.white.withValues(alpha: 0.3);
+                        }
                       }
                     }
 
@@ -1389,7 +1457,9 @@ class _RaceDayScreenState extends State<RaceDayScreen>
                       intervalText = l10n.leader.toUpperCase();
                     } else if (leaderLapTime != null && leaderLapTime < 900) {
                       final gap = lapTime - leaderLapTime;
-                      intervalText = '+${gap.toStringAsFixed(3)}s';
+                      intervalText = gap.isFinite
+                          ? '+${gap.toStringAsFixed(3)}s'
+                          : '—';
                     } else {
                       intervalText = _formatLapTime(lapTime);
                     }

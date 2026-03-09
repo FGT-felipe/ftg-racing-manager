@@ -88,6 +88,34 @@ class RaceEvent {
       weatherRace: map['weatherRace'] ?? 'Sunny',
     );
   }
+
+  RaceEvent copyWith({
+    String? id,
+    String? trackName,
+    String? countryCode,
+    String? flagEmoji,
+    String? circuitId,
+    DateTime? date,
+    bool? isCompleted,
+    int? totalLaps,
+    String? weatherPractice,
+    String? weatherQualifying,
+    String? weatherRace,
+  }) {
+    return RaceEvent(
+      id: id ?? this.id,
+      trackName: trackName ?? this.trackName,
+      countryCode: countryCode ?? this.countryCode,
+      flagEmoji: flagEmoji ?? this.flagEmoji,
+      circuitId: circuitId ?? this.circuitId,
+      date: date ?? this.date,
+      isCompleted: isCompleted ?? this.isCompleted,
+      totalLaps: totalLaps ?? this.totalLaps,
+      weatherPractice: weatherPractice ?? this.weatherPractice,
+      weatherQualifying: weatherQualifying ?? this.weatherQualifying,
+      weatherRace: weatherRace ?? this.weatherRace,
+    );
+  }
 }
 
 class Season {
@@ -382,6 +410,8 @@ class Team {
   final int seasonPodiums;
   final int seasonPoles;
   final int nameChangeCount;
+  final String? lastRaceDebrief;
+  final String? lastRaceResult;
 
   final Map<String, Map<String, int>> carStats;
   final Map<String, dynamic> weekStatus;
@@ -406,6 +436,8 @@ class Team {
     this.seasonPodiums = 0,
     this.seasonPoles = 0,
     this.nameChangeCount = 0,
+    this.lastRaceDebrief,
+    this.lastRaceResult,
     required this.carStats,
     required this.weekStatus,
     this.sponsors = const {},
@@ -440,6 +472,8 @@ class Team {
       'seasonPodiums': seasonPodiums,
       'seasonPoles': seasonPoles,
       'nameChangeCount': nameChangeCount,
+      'lastRaceDebrief': lastRaceDebrief,
+      'lastRaceResult': lastRaceResult,
       'carStats': carStats,
       'weekStatus': weekStatus,
       'sponsors': sponsors.map((k, v) => MapEntry(k, v.toMap())),
@@ -507,6 +541,8 @@ class Team {
       seasonPodiums: map['seasonPodiums'] ?? 0,
       seasonPoles: map['seasonPoles'] ?? 0,
       nameChangeCount: map['nameChangeCount'] ?? 0,
+      lastRaceDebrief: map['lastRaceDebrief'],
+      lastRaceResult: map['lastRaceResult'],
       carStats: carStatsMap,
       weekStatus: Map<String, dynamic>.from(map['weekStatus'] ?? {}),
       sponsors: (map['sponsors'] as Map<String, dynamic>? ?? {}).map(
@@ -537,6 +573,8 @@ class Team {
     int? seasonPodiums,
     int? seasonPoles,
     int? nameChangeCount,
+    String? lastRaceDebrief,
+    String? lastRaceResult,
     Map<String, Map<String, int>>? carStats,
     Map<String, dynamic>? weekStatus,
     Map<String, ActiveContract>? sponsors,
@@ -560,6 +598,8 @@ class Team {
       seasonPodiums: seasonPodiums ?? this.seasonPodiums,
       seasonPoles: seasonPoles ?? this.seasonPoles,
       nameChangeCount: nameChangeCount ?? this.nameChangeCount,
+      lastRaceDebrief: lastRaceDebrief ?? this.lastRaceDebrief,
+      lastRaceResult: lastRaceResult ?? this.lastRaceResult,
       carStats: carStats ?? this.carStats,
       weekStatus: weekStatus ?? this.weekStatus,
       sponsors: sponsors ?? this.sponsors,
@@ -911,6 +951,9 @@ class Driver {
   final int seasonPodiums;
   final int seasonPoles;
 
+  final List<Map<String, dynamic>> championshipForm;
+  final double form;
+
   /// Estadísticas actuales del piloto (0-100 por stat).
   /// Claves definidas en [DriverStats].
   final Map<String, int> stats;
@@ -1008,6 +1051,8 @@ class Driver {
     this.seasonWins = 0,
     this.seasonPodiums = 0,
     this.seasonPoles = 0,
+    this.championshipForm = const [],
+    this.form = 5.0,
     required this.stats,
     this.statPotentials = const {},
     this.traits = const [],
@@ -1070,6 +1115,8 @@ class Driver {
       'seasonWins': seasonWins,
       'seasonPodiums': seasonPodiums,
       'seasonPoles': seasonPoles,
+      'championshipForm': championshipForm,
+      'form': form,
       'stats': stats,
       'statPotentials': statPotentials,
       'traits': traits.map((t) => t.name).toList(),
@@ -1115,16 +1162,20 @@ class Driver {
       potential: map['potential'] ?? 3,
       points: map['points'] ?? 0,
       gender: map['gender'] ?? 'M',
-      championships: map['championships'] ?? 0,
-      races: map['races'] ?? 0,
-      wins: map['wins'] ?? 0,
-      podiums: map['podiums'] ?? 0,
-      poles: map['poles'] ?? 0,
+      championships: map['championships'] ?? map['titles'] ?? 0,
+      races: map['races'] ?? map['totalRaces'] ?? 0,
+      wins: map['wins'] ?? map['totalWins'] ?? 0,
+      podiums: map['podiums'] ?? map['totalPodiums'] ?? 0,
+      poles: map['poles'] ?? map['totalPoles'] ?? 0,
       seasonPoints: map['seasonPoints'] ?? 0,
       seasonRaces: map['seasonRaces'] ?? 0,
       seasonWins: map['seasonWins'] ?? 0,
       seasonPodiums: map['seasonPodiums'] ?? 0,
       seasonPoles: map['seasonPoles'] ?? 0,
+      championshipForm: (map['championshipForm'] as List? ?? [])
+          .map((e) => Map<String, dynamic>.from(e))
+          .toList(),
+      form: (map['form'] as num? ?? 5.0).toDouble(),
       stats: migratedStats,
       statPotentials: Map<String, int>.from(map['statPotentials'] ?? {}),
       traits: parsedTraits,
@@ -1203,6 +1254,8 @@ class Driver {
     int? wins,
     int? podiums,
     int? poles,
+    List<Map<String, dynamic>>? championshipForm,
+    double? form,
     Map<String, int>? stats,
     Map<String, int>? statPotentials,
     List<DriverTrait>? traits,
@@ -1234,6 +1287,8 @@ class Driver {
       wins: wins ?? this.wins,
       podiums: podiums ?? this.podiums,
       poles: poles ?? this.poles,
+      championshipForm: championshipForm ?? this.championshipForm,
+      form: form ?? this.form,
       stats: stats ?? this.stats,
       statPotentials: statPotentials ?? this.statPotentials,
       traits: traits ?? this.traits,

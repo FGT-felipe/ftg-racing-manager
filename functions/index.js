@@ -177,23 +177,42 @@ const SimEngine = {
     const brk = (driverStats.braking || 50) / 100.0;
     const crn = (driverStats.cornering || 50) / 100.0;
     const foc = (driverStats.focus || 50) / 100.0;
+    const adp = (driverStats.adaptability || 50) / 100.0;
     let df = 1.0 - (brk * 0.02 + crn * 0.025 + (foc - 0.5) * 0.01);
+
+    const isWet = (p.weather || "").toLowerCase().includes("rain") || (p.weather || "").toLowerCase().includes("wet");
+    if (isWet) {
+      if (driverStats.traits && driverStats.traits.includes("rainMaster")) {
+        df -= 0.01;
+      }
+      // General rain penalty if not on wets
+      if (setup.tyreCompound !== "wet") {
+        penalty += 5.0;
+      } else {
+        penalty -= 0.3; // Wet tyre bonus in rain
+      }
+    } else if (setup.tyreCompound === "wet") {
+      penalty += 3.0; // Penalty for using wets on dry track
+    }
 
     // Style
     const st = style || "normal";
-    let sBonus = 0; let accProb = 0.03;
+    let sBonus = 0; let accProb = 0.001;
     if (st === "mostRisky") {
-      sBonus = 0.04; accProb = 0.20;
+      sBonus = 0.04; accProb = 0.003;
     } else if (st === "offensive") {
-      sBonus = 0.02; accProb = 0.10;
+      sBonus = 0.02; accProb = 0.0015;
     } else if (st === "defensive") {
-      sBonus = -0.01; accProb = 0.01;
+      sBonus = -0.01; accProb = 0.0005;
     }
     df -= sBonus;
-    // Ex-Driver: +5% extra crash probability
+    // Reliability reduces crash chance
+    const rV = clamp(s.reliability || 1, 1, 20);
+    accProb *= (1.0 - (rV / 30.0));
+    // Ex-Driver: small extra crash probability
     const teamRole = p.teamRole || "";
     let extraCrash = 0;
-    if (teamRole === "exDriver") extraCrash = 0.05;
+    if (teamRole === "exDriver") extraCrash = 0.001;
     const crashed = Math.random() < (accProb + extraCrash);
 
     let lap = circuit.baseLapTime * carFactor * df + penalty;
@@ -208,9 +227,11 @@ const SimEngine = {
    * @return {Object} Full race result.
    */
   simulateRace(p) {
-    const { circuit, grid, teamsMap, driversMap, setupsMap, managerRoles } = p;
+    const { circuit, grid, teamsMap, driversMap, setupsMap, managerRoles, raceEvent } = p;
     const roles = managerRoles || {};
-    const totalLaps = circuit.laps;
+    const totalLaps = raceEvent.totalLaps || circuit.laps;
+    const isWet = (raceEvent.weatherRace || "").toLowerCase().includes("rain") ||
+      (raceEvent.weatherRace || "").toLowerCase().includes("wet");
 
     // Initialise state
     const order = grid.map((g) => g.driverId);
@@ -251,6 +272,7 @@ const SimEngine = {
           setup: { ...su, tyreCompound: compound[did] },
           style: style[did],
           teamRole: roles[driver.teamId] || "",
+          weather: raceEvent.weatherRace,
         });
 
         if (res.isCrashed) {
@@ -391,9 +413,9 @@ const SimEngine = {
       raceLog.push({ lap, lapTimes, positions: pos, tyres: { ...compound }, events: lapEvents });
     }
 
-    // Hard compound penalty (35s)
+    // Hard compound penalty (35s) - Only if NOT wet
     for (const did of curOrder) {
-      if (!dnfs.includes(did) && !usedHard[did]) {
+      if (!dnfs.includes(did) && !usedHard[did] && !isWet) {
         total[did] = (total[did] || 0) + 35.0;
         if (raceLog.length) {
           raceLog[raceLog.length - 1].events.push({
@@ -794,6 +816,7 @@ async function runQualifyingLogic() {
                 setup,
                 style: setup.qualifyingStyle || "normal",
                 teamRole: managerRoles[team.id] || "",
+                weather: raceEvent.weatherQualifying,
               });
 
               // Ex-Engineer: +5% qualy success (5% faster lap)
@@ -964,15 +987,10 @@ exports.forceRace = onCall({
 // ─────────────────────────────────────────────
 // 2. SCHEDULED RACE (Sun 3:00 PM COT)
 // ─────────────────────────────────────────────
-exports.scheduledRace = onSchedule({
-  schedule: "0 14 * * 0",
-  timeZone: "America/Bogota",
-  memory: "1GiB",
-  timeoutSeconds: 540,
-}, async () => {
-  logger.info("=== RACE START ===");
 
+async function runRaceLogic() {
   try {
+
     const uDoc = await db.collection("universe")
       .doc("game_universe_v1").get();
     if (!uDoc.exists) return;
@@ -1063,8 +1081,13 @@ exports.scheduledRace = onSchedule({
           } else {
             const ws = team.weekStatus || {};
             const ds = (ws.driverSetups || {})[g.driverId];
-            if (ds && ds.isSetupSent && ds.race) {
+            if (ds && (ds.isSetupSent || ds.raceSubmitted) && ds.race) {
               su = { ...DEFAULT_SETUP, ...ds.race };
+            } else {
+              // Missing setup penalty: fallback to generic DEFAULT_SETUP
+              // The R1 resimulation used strong fallbacks here to fix a data loss bug.
+              // Reverting to DEFAULT_SETUP for future races.
+              su = { ...DEFAULT_SETUP };
             }
           }
 
@@ -1107,24 +1130,34 @@ exports.scheduledRace = onSchedule({
         }
 
         // Run full race
-        const result = SimEngine.simulateRace({
-          circuit, grid, teamsMap, driversMap, setupsMap, managerRoles,
+        const raceRes = SimEngine.simulateRace({
+          circuit, grid,
+          teamsMap,
+          driversMap,
+          setupsMap,
+          managerRoles,
+          raceEvent: rEvent,
         });
 
         // Calculate live duration for frontend
-        const avgQualyTime = grid.reduce(
-          (s, g) => s + (g.lapTime < 900 ? g.lapTime : 0), 0,
-        ) / grid.filter((g) => g.lapTime < 900).length;
-        const liveDurationSec = avgQualyTime * circuit.laps;
+        const validQualyTimes = grid.filter((g) => g.lapTime > 0 && g.lapTime < 900);
+        const avgQualyTime = validQualyTimes.length > 0
+          ? validQualyTimes.reduce((s, g) => s + g.lapTime, 0) / validQualyTimes.length
+          : circuit.baseLapTime || 90; // Fallback to circuit base lap time
+
+        let liveDurationSec = avgQualyTime * (circuit.laps || 50);
+        if (isNaN(liveDurationSec) || liveDurationSec <= 0) {
+          liveDurationSec = (circuit.baseLapTime || 90) * (circuit.laps || 50);
+        }
 
         // Save race results to Firestore
         const raceRef = db.collection("races").doc(raceDocId);
         await raceRef.update({
           status: "completed",
           isFinished: true,
-          finalPositions: result.finalPositions,
-          totalTimes: result.totalTimes,
-          dnfs: result.dnfs,
+          finalPositions: raceRes.finalPositions,
+          totalTimes: raceRes.totalTimes,
+          dnfs: raceRes.dnfs,
           liveDurationSeconds: liveDurationSec,
           updateIntervalSeconds: 120,
           completedAt: admin.firestore.FieldValue.serverTimestamp(),
@@ -1136,12 +1169,12 @@ exports.scheduledRace = onSchedule({
         const liveColl = raceRef.collection("laps");
 
         // Store every 5th lap + last lap (to keep doc count manageable)
-        for (let i = 0; i < result.raceLog.length; i++) {
+        for (let i = 0; i < raceRes.raceLog.length; i++) {
           const isKeyLap = i % 5 === 0 ||
-            i === result.raceLog.length - 1;
+            i === raceRes.raceLog.length - 1;
           if (isKeyLap) {
-            const lapRef = liveColl.doc(String(result.raceLog[i].lap));
-            batch.set(lapRef, result.raceLog[i]);
+            const lapRef = liveColl.doc(String(raceRes.raceLog[i].lap));
+            batch.set(lapRef, raceRes.raceLog[i]);
           }
         }
         await batch.commit();
@@ -1154,9 +1187,9 @@ exports.scheduledRace = onSchedule({
         }
 
         // --- POINTS & STATS ---
-        const sorted = Object.keys(result.finalPositions)
-          .sort((a, b) => result.finalPositions[a] -
-            result.finalPositions[b]);
+        const sorted = Object.keys(raceRes.finalPositions)
+          .sort((a, b) => raceRes.finalPositions[a] -
+            raceRes.finalPositions[b]);
 
         const teamPointsAccum = {};
         const teamPrizeAccum = {};
@@ -1173,14 +1206,18 @@ exports.scheduledRace = onSchedule({
 
         for (let i = 0; i < sorted.length; i++) {
           const did = sorted[i];
-          if (result.dnfs.includes(did)) continue;
+          const isDnf = raceRes.dnfs.includes(did);
+          const inc = admin.firestore.FieldValue.increment;
+          const dRef = db.collection("drivers").doc(did);
+          const dData = driversMap[did];
+
+          if (!dData) continue;
 
           const pts = i < POINT_SYSTEM.length ? POINT_SYSTEM[i] : 0;
           const isWin = i === 0;
           const isPodium = i < 3;
-          const inc = admin.firestore.FieldValue.increment;
 
-          const dRef = db.collection("drivers").doc(did);
+          // Stats to update
           const du = { races: inc(1), seasonRaces: inc(1) };
           if (pts > 0) {
             du.points = inc(pts);
@@ -1194,14 +1231,43 @@ exports.scheduledRace = onSchedule({
             du.podiums = inc(1);
             du.seasonPodiums = inc(1);
           }
+
+          // Morale & Form Update
+          let mDelta = -5;
+          let fDelta = -0.01;
+          if (isDnf) {
+            mDelta = -15; fDelta = -0.1;
+          } else if (isWin) {
+            mDelta = 10; fDelta = 0.1;
+          } else if (isPodium) {
+            mDelta = 7; fDelta = 0.05;
+          } else if (pts > 0) {
+            mDelta = 3; fDelta = 0.02;
+          }
+
+          const curStats = dData.stats || {};
+          const newMorale = Math.min(100, Math.max(0, (curStats.morale || 50) + mDelta));
+          const newForm = Math.min(10, Math.max(1, (dData.form || 5.0) + fDelta));
+
+          du["stats.morale"] = newMorale;
+          du.form = newForm;
+
+          // Championship Form (Recent results)
+          const cForm = dData.championshipForm || [];
+          cForm.unshift({
+            event: rEvent.trackName,
+            pos: isDnf ? "DNF" : `P${i + 1}`,
+            pts: pts,
+            date: new Date().toISOString(),
+          });
+          if (cForm.length > 10) cForm.pop();
+          du.championshipForm = cForm;
+
           statsBatch.update(dRef, du);
 
-          const dData = driversMap[did];
-          if (dData) {
-            const tid = dData.teamId;
-            teamPointsAccum[tid] = (teamPointsAccum[tid] || 0) + pts;
-            teamPrizeAccum[tid] = (teamPrizeAccum[tid] || 0) + getRacePrize(i);
-          }
+          const tid = dData.teamId;
+          teamPointsAccum[tid] = (teamPointsAccum[tid] || 0) + pts;
+          teamPrizeAccum[tid] = (teamPrizeAccum[tid] || 0) + (isDnf ? 25000 : getRacePrize(i));
         }
 
         // Team stats and prize money
@@ -1226,10 +1292,10 @@ exports.scheduledRace = onSchedule({
           for (let i = 0; i < sorted.length; i++) {
             const d = driversMap[sorted[i]];
             if (d && d.teamId === tid) {
-              if (i === 0 && !result.dnfs.includes(sorted[i])) {
+              if (i === 0 && !raceRes.dnfs.includes(sorted[i])) {
                 teamWon = true;
               }
-              if (i < 3 && !result.dnfs.includes(sorted[i])) {
+              if (i < 3 && !raceRes.dnfs.includes(sorted[i])) {
                 teamPod++;
               }
             }
@@ -1281,31 +1347,72 @@ exports.scheduledRace = onSchedule({
         });
         */
 
-        // Office News: each team gets its result
+        // Office News & Race Debrief: each team gets its result and analysis
         const teamGrp = {};
         sorted.forEach((did, i) => {
           const d = driversMap[did];
           if (!d) return;
           if (!teamGrp[d.teamId]) teamGrp[d.teamId] = [];
-          const isDnf = result.dnfs.includes(did);
+          const isDnf = raceRes.dnfs.includes(did);
           teamGrp[d.teamId].push({
+            id: did,
             name: d.name,
             pos: isDnf ? "DNF" : `P${i + 1}`,
+            posInt: i + 1,
             pts: !isDnf && i < POINT_SYSTEM.length ?
               POINT_SYSTEM[i] : 0,
+            isDnf,
           });
         });
 
-        for (const [tid, drivers] of Object.entries(teamGrp)) {
+        // Generate personalized debriefs for each team
+        for (const tid of teamIds) {
+          const drivers = teamGrp[tid] || [];
+          if (drivers.length === 0) continue;
+
           const earn = teamPrizeAccum[tid] || 0;
           const lines = drivers.map(
             (d) => `${d.name}: ${d.pos} (+${d.pts} pts)`,
           ).join("\n");
+
+          // Basic analysis for debrief
+          let debrief = "";
+          const p1 = drivers[0];
+          const p2 = drivers[1];
+
+          if (p1 && p2) {
+            const avgPos = (p1.isDnf ? 20 : p1.posInt) + (p2.isDnf ? 20 : p2.posInt);
+            if (avgPos <= 10) {
+              debrief = "Excellent weekend! Both drivers brought home solid points. The strategy was spot on.";
+            } else if (p1.isDnf || p2.isDnf) {
+              debrief = "A tough one. Any DNF really hurts our championship chances. We need to look at reliability and driver focus.";
+            } else if (avgPos >= 30) {
+              debrief = "Disappointing result. We are severely lacking pace. You should check if the car updates are being effective or if the drivers need more training.";
+            } else {
+              debrief = "A mediocre performance. We finished roughly where we expected, but to move up the grid we need more aggressive car development.";
+            }
+
+            // Setup feedback
+            const su1 = setupsMap[p1.id] || DEFAULT_SETUP;
+            const ideal = circuit.idealSetup;
+            const gap = Math.abs(su1.frontWing - ideal.frontWing) + Math.abs(su1.suspension - ideal.suspension);
+            if (gap > 20) {
+              debrief += "\n\nNote: The drivers complained about the car's balance. It seems our current Setup is quite far from the track's ideal requirements.";
+            } else if (gap < 5) {
+              debrief += "\n\nNote: The setup was very close to perfect! The drivers felt confident in the corners.";
+            }
+          }
+
+          // Update Team with last debrief
+          await db.collection("teams").doc(tid).update({
+            lastRaceDebrief: debrief,
+            lastRaceResult: lines,
+          });
+
           await addOfficeNews(tid, {
-            title: `Race Results: ${rEvent.trackName}`,
-            message: `${lines}\nPrize: $${earn.toLocaleString()}`,
+            title: `Race Summary: ${rEvent.trackName}`,
+            message: `${lines}\n\nANALYSIS:\n${debrief}\n\nPrize: $${earn.toLocaleString()}`,
             type: "RACE_RESULT",
-            eventType: "Race",
           });
         }
 
@@ -1316,6 +1423,7 @@ exports.scheduledRace = onSchedule({
           postRaceProcessingAt: new Date(
             Date.now() + 60 * 60 * 1000,
           ),
+          postRaceProcessed: false,
         });
 
         logger.info(`Race complete: ${raceDocId}`);
@@ -1323,10 +1431,23 @@ exports.scheduledRace = onSchedule({
         logger.error(`Error processing race for league ${league.name || "unknown"}`, eLeague);
       }
     }
+
   } catch (err) {
-    logger.error("Error in scheduledRace", err);
+    logger.error("Error in runRaceLogic", err);
   }
+}
+
+
+exports.scheduledRace = onSchedule({
+  schedule: "0 14 * * 0",
+  timeZone: "America/Bogota",
+  memory: "1GiB",
+  timeoutSeconds: 540,
+}, async () => {
+  logger.info("=== RACE START ===");
+  await runRaceLogic();
 });
+
 
 // ─────────────────────────────────────────────
 // 3. POST-RACE PROCESSING (Every 30 min check)
@@ -1342,7 +1463,7 @@ exports.postRaceProcessing = onSchedule({
     // Find races that need post-processing
     const racesSnap = await db.collection("races")
       .where("isFinished", "==", true)
-      .where("postRaceProcessed", "==", null)
+      .where("postRaceProcessed", "==", false)
       .get();
 
     for (const rDoc of racesSnap.docs) {
@@ -1373,6 +1494,7 @@ exports.postRaceProcessing = onSchedule({
         // Read current weekStatus to preserve Bureaucrat cooldown
         const tDoc = await db.collection("teams").doc(tid).get();
         if (!tDoc.exists) continue;
+        const tRef = db.collection("teams").doc(tid);
 
         const teamData = tDoc.data();
         const curWs = teamData.weekStatus || {};
@@ -1445,7 +1567,9 @@ exports.postRaceProcessing = onSchedule({
             // Apply XP from FTG Karting Championship weekly simulation
             let curWeekly = yDriver.weeklyGrowth || 0;
             const growthPot = yDriver.growthPotential || 5;
-            const xpGain = Math.floor(Math.random() * (growthPot * 10)) + 30;
+            // Increased growth rate for better feel + Academy Level Bonus
+            const levelBonus = (academyLevel - 1) * 8;
+            const xpGain = Math.floor(Math.random() * (growthPot * 15)) + 40 + levelBonus;
             curWeekly += xpGain;
 
             let applyBaseGrowth = false;
@@ -1538,11 +1662,11 @@ exports.postRaceProcessing = onSchedule({
           const traineeWages = selectedSnap.size * 10000;
           if (traineeWages > 0) {
             const wageTx = tRef.collection("transactions").doc();
-            batch.set(wageTx, {
+            batchA.set(wageTx, {
               id: wageTx.id,
               description: `Academy: Weekly wages for ${selectedSnap.size} trainees`,
               amount: -traineeWages,
-              date: nowIso,
+              date: new Date().toISOString(),
               type: "ACADEMY",
             });
           }
@@ -1630,7 +1754,6 @@ exports.postRaceProcessing = onSchedule({
         const newBudget = currentBudget + weeklyIncome - weeklyExpense;
 
         const batch = db.batch();
-        const tRef = db.collection("teams").doc(tid);
 
         batch.update(tRef, {
           "weekStatus": {
@@ -1911,5 +2034,190 @@ exports.resolveTransferMarket = onSchedule({
     logger.info(`=== TRANSFER MARKET RESOLVER COMPLETE. Batches: ${batches.length} ===`);
   } catch (error) {
     logger.error("Error in resolveTransferMarket:", error);
+  }
+});
+
+exports.megaFixDebriefs = onCall({
+  memory: "1GiB",
+  timeoutSeconds: 540,
+}, async (request) => {
+  logger.info("=== MEGA FIX DEBRIEFS START ===");
+  try {
+    const leaguesSnap = await db.collection("leagues").get();
+    let totalUpdated = 0;
+
+    // Fetch all drivers once to avoid inside-loop latency
+    const dSnap = await db.collection("drivers").get();
+    const driversMap = {};
+    dSnap.forEach((doc) => driversMap[doc.id] = { ...doc.data(), id: doc.id });
+
+    for (const lDoc of leaguesSnap.docs) {
+      const league = lDoc.data();
+      const sId = league.currentSeasonId;
+      if (!sId) continue;
+
+      const sDoc = await db.collection("seasons").doc(sId).get();
+      if (!sDoc.exists) continue;
+      const season = sDoc.data();
+
+      // Find last COMPLETED race
+      let rIdx = -1;
+      if (season.calendar) {
+        for (let i = season.calendar.length - 1; i >= 0; i--) {
+          if (season.calendar[i].isCompleted) {
+            rIdx = i;
+            break;
+          }
+        }
+      }
+
+      if (rIdx === -1) {
+        logger.info(`League ${lDoc.id} has no completed races.`);
+        continue;
+      }
+
+      const rEvent = season.calendar[rIdx];
+      const raceDocId = `${sId}_${rEvent.id}`;
+      const rSnap = await db.collection("races").doc(raceDocId).get();
+
+      if (!rSnap.exists) {
+        logger.warn(`No race doc for ${raceDocId}`);
+        continue;
+      }
+
+      const rData = rSnap.data();
+      const raceRes = rData.results;
+      if (!raceRes || !raceRes.sorted) {
+        logger.warn(`No results in race doc ${raceDocId}`);
+        continue;
+      }
+
+      const setupsMap = rData.setups || {};
+      const teamGrp = {};
+      raceRes.sorted.forEach((did, i) => {
+        const d = driversMap[did];
+        if (!d || !d.teamId) return;
+        if (!teamGrp[d.teamId]) teamGrp[d.teamId] = [];
+        const isDnf = (raceRes.dnfs || []).includes(did);
+        teamGrp[d.teamId].push({
+          id: did, name: d.name, pos: isDnf ? "DNF" : `P${i + 1}`,
+          posInt: i + 1, pts: !isDnf && i < POINT_SYSTEM.length ? POINT_SYSTEM[i] : 0, isDnf,
+        });
+      });
+
+      const circuit = getCircuit(rEvent.circuitId);
+      for (const tid of Object.keys(teamGrp)) {
+        const drivers = teamGrp[tid] || [];
+        if (drivers.length === 0) continue;
+
+        const lines = drivers.map((d) => `${d.name}: ${d.pos} (+${d.pts} pts)`).join("\n");
+        let debrief = "";
+        const p1 = drivers[0];
+        const p2 = drivers[1];
+
+        if (p1 && p2) {
+          const avgPos = (p1.isDnf ? 20 : p1.posInt) + (p2.isDnf ? 20 : p2.posInt);
+          if (avgPos <= 10) debrief = "Excellent weekend! Both drivers brought home solid points. The strategy was spot on.";
+          else if (p1.isDnf || p2.isDnf) debrief = "A tough one. Any DNF really hurts our championship chances. We need to look at reliability and driver focus.";
+          else if (avgPos >= 30) debrief = "Disappointing result. We are severely lacking pace. You should check if the car updates are being effective or if the drivers need more training.";
+          else debrief = "A mediocre performance. We finished roughly where we expected, but to move up the grid we need more aggressive car development.";
+
+          const su1 = setupsMap[p1.id] || DEFAULT_SETUP;
+          const ideal = circuit.idealSetup;
+          const gap = Math.abs(su1.frontWing - ideal.frontWing) + Math.abs(su1.suspension - ideal.suspension);
+          if (gap > 20) debrief += "\n\nNote: The drivers complained about the car's balance. It seems our current Setup is quite far from the track's ideal requirements.";
+          else if (gap < 5) debrief += "\n\nNote: The setup was very close to perfect! The drivers felt confident in the corners.";
+        } else if (p1) {
+          debrief = `${p1.name}: ${p1.pos}. Necesitamos ambos coches en pista para maximizar resultados.`;
+        } else {
+          debrief = "Sin análisis disponible para este equipo.";
+        }
+
+        // 1. Update Team Document (Main debrief card)
+        await db.collection("teams").doc(tid).set({
+          lastRaceDebrief: debrief,
+          lastRaceResult: lines,
+        }, { merge: true });
+
+        // 2. Add News entry
+        await addOfficeNews(tid, {
+          title: `Race Summary: ${rEvent.trackName}`,
+          message: `${lines}\n\nANALYSIS:\n${debrief}`,
+          type: "RACE_RESULT",
+        });
+        totalUpdated++;
+      }
+    }
+    logger.info(`=== MEGA FIX COMPLETED: ${totalUpdated} updated ===`);
+    return { success: true, updated: totalUpdated };
+  } catch (err) {
+    logger.error("MegaFix failed", err);
+    return { success: false, error: err.message };
+  }
+});
+
+exports.forceFixGBA = onCall({
+  timeoutSeconds: 120,
+}, async (request) => {
+  logger.info("=== FORCE FIX GBA START ===");
+  try {
+    const teamSnap = await db.collection("teams").where("name", "==", "GBA Racing").get();
+    if (teamSnap.empty) return { success: false, error: "GBA Racing not found" };
+    const teamDoc = teamSnap.docs[0];
+    const tid = teamDoc.id;
+    const teamData = teamDoc.data();
+    const lId = teamData.leagueId;
+    if (!lId) return { success: false, error: "League not found for GBA" };
+
+    const lDoc = await db.collection("leagues").doc(lId).get();
+    if (!lDoc.exists) return { success: false, error: "League doc not found" };
+    const sId = lDoc.data().currentSeasonId;
+    if (!sId) return { success: false, error: "Current season not found" };
+
+    const sDoc = await db.collection("seasons").doc(sId).get();
+    if (!sDoc.exists) return { success: false, error: "Season doc not found" };
+    const season = sDoc.data();
+
+    // Find last COMPLETED race
+    let rIdx = -1;
+    if (season.calendar) {
+      for (let i = season.calendar.length - 1; i >= 0; i--) {
+        if (season.calendar[i].isCompleted) {
+          rIdx = i;
+          break;
+        }
+      }
+    }
+
+    if (rIdx === -1) return { success: false, error: "No completed races in this season" };
+    const rEvent = season.calendar[rIdx];
+    const raceDocId = `${sId}_${rEvent.id}`;
+    const rSnap = await db.collection("races").doc(raceDocId).get();
+    if (!rSnap.exists) return { success: false, error: `Race doc ${raceDocId} not found` };
+    const rData = rSnap.data();
+
+    const dSnap = await db.collection("drivers").where("teamId", "==", tid).get();
+    const drivers = dSnap.docs.map((d) => ({ ...d.data(), id: d.id }));
+    const results = rData.results;
+    if (!results || !results.finalPositions) return { success: false, error: "No positions in race results" };
+
+    const lines = drivers.map((d) => {
+      const pos = results.finalPositions[d.id];
+      const isDnf = (results.dnfs || []).includes(d.id);
+      return `${d.name}: ${isDnf ? "DNF" : "P" + pos}`;
+    }).join("\n");
+
+    const debrief = "Analysis forced for GBA: Reviewing telemetry from " + rEvent.trackName + ". Highlights: " + lines;
+
+    await teamDoc.ref.update({ lastRaceDebrief: debrief, lastRaceResult: lines });
+    await addOfficeNews(tid, {
+      title: `Race Summary: ${rEvent.trackName}`,
+      message: `${lines}\n\nANALYSIS:\n${debrief}`,
+      type: "RACE_RESULT",
+    });
+    return { success: true, tid };
+  } catch (err) {
+    logger.error("forceFixGBA failed", err);
+    return { success: false, error: err.message };
   }
 });

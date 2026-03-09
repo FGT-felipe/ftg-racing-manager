@@ -1,6 +1,6 @@
 const https = require('https');
 
-const url = 'https://firestore.googleapis.com/v1/projects/ftg-racing-manager/databases/(default)/documents/races?pageSize=50&key=AIzaSyA0RViQhIglCogFLtic-vL_9YgrXLezTZY';
+const url = 'https://firestore.googleapis.com/v1/projects/ftg-racing-manager/databases/(default)/documents/races?pageSize=50&key=YOUR_API_KEY';
 
 https.get(url, (res) => {
     let data = '';

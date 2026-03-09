@@ -455,42 +455,59 @@ class _RaceStatusHeroState extends State<RaceStatusHero>
 
   @override
   Widget build(BuildContext context) {
+    final now = TimeService().nowBogota;
+    final raceWeekday = widget.raceDate.weekday;
+    final startOfRaceWeek = DateTime(
+      widget.raceDate.year,
+      widget.raceDate.month,
+      widget.raceDate.day,
+    ).subtract(Duration(days: raceWeekday - 1));
+
+    bool isPreWeek = now.isBefore(startOfRaceWeek);
+
     String statusText = AppLocalizations.of(context).paddockOpen;
     Color statusColor = const Color(0xFF00C853);
     String buttonLabel = AppLocalizations.of(context).weekendSetupBtn;
     IconData buttonIcon = Icons.speed;
 
-    switch (widget.currentStatus) {
-      case RaceWeekStatus.practice:
-        statusText = AppLocalizations.of(context).paddockOpen;
-        statusColor = const Color(0xFF00C853);
-        buttonLabel = AppLocalizations.of(context).weekendSetupBtn;
-        buttonIcon = Icons.settings;
-        break;
-      case RaceWeekStatus.qualifying:
-        statusText = AppLocalizations.of(context).qualifyingStatus;
-        statusColor = const Color(0xFFFFB800);
-        buttonLabel = AppLocalizations.of(context).viewQualifyingBtn;
-        buttonIcon = Icons.list_alt;
-        break;
-      case RaceWeekStatus.raceStrategy:
-        statusText = AppLocalizations.of(context).raceStrategyStatus;
-        statusColor = const Color(0xFFFF6D00);
-        buttonLabel = AppLocalizations.of(context).setRaceStrategyBtn;
-        buttonIcon = Icons.tune;
-        break;
-      case RaceWeekStatus.race:
-        statusText = AppLocalizations.of(context).raceWeekendStatus;
-        statusColor = const Color(0xFFFF5252);
-        buttonLabel = AppLocalizations.of(context).goToRaceBtn;
-        buttonIcon = Icons.flag;
-        break;
-      case RaceWeekStatus.postRace:
-        statusText = AppLocalizations.of(context).raceFinishedStatus;
-        statusColor = const Color(0xFF9E9E9E);
-        buttonLabel = AppLocalizations.of(context).viewResultsBtn;
-        buttonIcon = Icons.emoji_events;
-        break;
+    if (isPreWeek) {
+      statusText = AppLocalizations.of(context).paddockLocked;
+      statusColor = const Color(0xFF9E9E9E);
+      buttonLabel = AppLocalizations.of(context).waitingForPaddock;
+      buttonIcon = Icons.lock_outline;
+    } else {
+      switch (widget.currentStatus) {
+        case RaceWeekStatus.practice:
+          statusText = AppLocalizations.of(context).paddockOpen;
+          statusColor = const Color(0xFF00C853);
+          buttonLabel = AppLocalizations.of(context).weekendSetupBtn;
+          buttonIcon = Icons.settings;
+          break;
+        case RaceWeekStatus.qualifying:
+          statusText = AppLocalizations.of(context).qualifyingStatus;
+          statusColor = const Color(0xFFFFB800);
+          buttonLabel = AppLocalizations.of(context).viewQualifyingBtn;
+          buttonIcon = Icons.list_alt;
+          break;
+        case RaceWeekStatus.raceStrategy:
+          statusText = AppLocalizations.of(context).raceStrategyStatus;
+          statusColor = const Color(0xFFFF6D00);
+          buttonLabel = AppLocalizations.of(context).setRaceStrategyBtn;
+          buttonIcon = Icons.tune;
+          break;
+        case RaceWeekStatus.race:
+          statusText = AppLocalizations.of(context).raceWeekendStatus;
+          statusColor = const Color(0xFFFF5252);
+          buttonLabel = AppLocalizations.of(context).goToRaceBtn;
+          buttonIcon = Icons.flag;
+          break;
+        case RaceWeekStatus.postRace:
+          statusText = AppLocalizations.of(context).raceFinishedStatus;
+          statusColor = const Color(0xFF9E9E9E);
+          buttonLabel = AppLocalizations.of(context).viewResultsBtn;
+          buttonIcon = Icons.emoji_events;
+          break;
+      }
     }
 
     return Container(

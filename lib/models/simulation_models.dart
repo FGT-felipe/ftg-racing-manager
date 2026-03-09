@@ -243,3 +243,9 @@ class RaceSessionResult {
     required this.dnfs,
   });
 }
+
+class QualifyingSessionResult {
+  final List<Map<String, dynamic>> grid;
+
+  QualifyingSessionResult({required this.grid});
+}
