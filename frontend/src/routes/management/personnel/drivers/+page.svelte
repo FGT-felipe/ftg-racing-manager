@@ -16,6 +16,7 @@
     } from "lucide-svelte";
     import { fly, fade } from "svelte/transition";
     import { type Driver } from "$lib/types";
+    import DriverAvatar from "$lib/components/DriverAvatar.svelte";
 
     let team = $derived(teamStore.value.team);
     let isLoading = $derived(teamStore.value.loading);
@@ -188,18 +189,11 @@
                                     <div
                                         class="w-10 h-10 rounded-full bg-white/5 border border-white/10 overflow-hidden flex items-center justify-center p-0.5"
                                     >
-                                        {#if driver.portraitUrl}
-                                            <img
-                                                src={driver.portraitUrl}
-                                                alt=""
-                                                class="w-full h-full rounded-full object-cover"
-                                            />
-                                        {:else}
-                                            <User
-                                                size={20}
-                                                class="text-white/20"
-                                            />
-                                        {/if}
+                                        <DriverAvatar
+                                            id={driver.id}
+                                            gender={driver.gender}
+                                            class="w-full h-full"
+                                        />
                                     </div>
                                     <div class="flex flex-col">
                                         <span
@@ -306,11 +300,10 @@
                             <div
                                 class="w-14 h-14 rounded-2xl bg-white/5 border border-white/10 overflow-hidden p-1"
                             >
-                                <img
-                                    src={driver.portraitUrl ||
-                                        "/staff/default_pilot.png"}
-                                    alt=""
-                                    class="w-full h-full object-cover rounded-xl"
+                                <DriverAvatar
+                                    id={driver.id}
+                                    gender={driver.gender}
+                                    class="w-full h-full"
                                 />
                             </div>
                             <div class="flex flex-col">

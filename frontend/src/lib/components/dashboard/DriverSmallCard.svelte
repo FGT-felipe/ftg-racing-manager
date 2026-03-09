@@ -1,6 +1,7 @@
 <script lang="ts">
     import type { Driver } from "$lib/types";
     import DriverStars from "$lib/components/DriverStars.svelte";
+    import DriverAvatar from "$lib/components/DriverAvatar.svelte";
 
     let { driver, carIndex } = $props<{
         driver: Driver;
@@ -48,15 +49,11 @@
         <div
             class="w-10 h-10 rounded-full bg-app-text/5 border border-app-border flex items-center justify-center overflow-hidden"
         >
-            {#if driver.portraitUrl}
-                <img
-                    src={driver.portraitUrl}
-                    alt={driver.name}
-                    class="w-full h-full object-cover"
-                />
-            {:else}
-                <span class="text-xl">{getFlagEmoji(driver.countryCode)}</span>
-            {/if}
+            <DriverAvatar
+                id={driver.id}
+                gender={driver.gender}
+                class="w-full h-full"
+            />
         </div>
         <div
             class="absolute -bottom-1 -right-1 w-5 h-5 bg-app-primary text-black rounded-full flex items-center justify-center text-[10px] font-black border-2 border-app-surface"
