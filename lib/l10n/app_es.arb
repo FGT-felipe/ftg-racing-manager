@@ -361,6 +361,8 @@
   "goToRaceBtn": "Ir a Carrera",
   "raceFinishedStatus": "Carrera Finalizada",
   "viewResultsBtn": "Ver Resultados",
+  "paddockLocked": "Paddock Cerrado",
+  "waitingForPaddock": "Abierto el lunes 00:00",
   "circuitIntelTitle": "Información del Circuito",
   "aeroIntel": "Aero",
   "highIntel": "Alto",

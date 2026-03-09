@@ -186,7 +186,9 @@ class _QualifyingScreenState extends State<QualifyingScreen> {
                               ),
                             ),
                             trailing: Text(
-                              "${(row['lapTime'] as double).toStringAsFixed(3)}s",
+                              (row['lapTime'] as double).isFinite
+                                  ? "${(row['lapTime'] as double).toStringAsFixed(3)}s"
+                                  : "—",
                               style: TextStyle(
                                 fontWeight: FontWeight.bold,
                                 fontSize: 16,

@@ -47,7 +47,7 @@ class DefaultFirebaseOptions {
   }
 
   static const FirebaseOptions web = FirebaseOptions(
-    apiKey: 'AIzaSyA0RViQhIglCogFLtic-vL_9YgrXLezTZY',
+    apiKey: 'AIzaSyC8G4F_y73hSfso9rQuIAtoK5q-dEW1rb0',
     appId: '1:822361821036:web:54e166db008180e748ed49',
     messagingSenderId: '822361821036',
     projectId: 'ftg-racing-manager',
@@ -57,7 +57,7 @@ class DefaultFirebaseOptions {
   );
 
   static const FirebaseOptions android = FirebaseOptions(
-    apiKey: 'AIzaSyABVXH5RRcZV8UgAS8oOC2XEC2fpUzuYpw',
+    apiKey: 'AIzaSyC8G4F_y73hSfso9rQuIAtoK5q-dEW1rb0',
     appId: '1:822361821036:android:ae317c8dd178d51848ed49',
     messagingSenderId: '822361821036',
     projectId: 'ftg-racing-manager',
@@ -65,12 +65,13 @@ class DefaultFirebaseOptions {
   );
 
   static const FirebaseOptions ios = FirebaseOptions(
-    apiKey: 'AIzaSyAYkibJXmWhuZyER-1EcToqjG6305Jk2Qc',
+    apiKey: 'AIzaSyC8G4F_y73hSfso9rQuIAtoK5q-dEW1rb0',
     appId: '1:822361821036:ios:e69aae6344c6e24248ed49',
     messagingSenderId: '822361821036',
     projectId: 'ftg-racing-manager',
     storageBucket: 'ftg-racing-manager.firebasestorage.app',
-    iosClientId: '822361821036-shp1s82ioam62qu6q23dictq6ep9j7u0.apps.googleusercontent.com',
+    iosClientId:
+        '822361821036-shp1s82ioam62qu6q23dictq6ep9j7u0.apps.googleusercontent.com',
     iosBundleId: 'com.firetower.racingmanager',
   );
 }

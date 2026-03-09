@@ -20,14 +20,27 @@ import 'services/database_seeder.dart';
 // import 'services/academy_migration.dart';
 
 void main() async {
-  if (kReleaseMode) {
-    debugPrint = (String? message, {int? wrapWidth}) {};
-  }
+  // RE-ACTIVAR CONSOLA PARA DEBUG (URGENTE)
+  debugPrint = (String? message, {int? wrapWidth}) {
+    print(message);
+  };
 
+  print("APP_START: Iniciando Flutter...");
   WidgetsFlutterBinding.ensureInitialized();
   usePathUrlStrategy();
   tz_data.initializeTimeZones();
-  await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
+
+  print("APP_START: Inicializando Firebase...");
+  try {
+    if (Firebase.apps.isEmpty) {
+      await Firebase.initializeApp(
+        options: DefaultFirebaseOptions.currentPlatform,
+      );
+    }
+    print("APP_START: Firebase OK");
+  } catch (e) {
+    print("APP_START_ERROR: Fallo en Firebase: $e");
+  }
 
   // Run one-time migration for academy sync
   // MIGRATION COMPLETED: Commented out to prevent permission errors on hot reload
@@ -49,7 +62,91 @@ void main() async {
     );
   }
 
-  runApp(const FTGRacingApp());
+  runApp(const ErrorBoundary(child: FTGRacingApp()));
+}
+
+class ErrorBoundary extends StatefulWidget {
+  final Widget child;
+  const ErrorBoundary({super.key, required this.child});
+
+  @override
+  State<ErrorBoundary> createState() => _ErrorBoundaryState();
+}
+
+class _ErrorBoundaryState extends State<ErrorBoundary> {
+  Object? _error;
+  StackTrace? _stack;
+
+  @override
+  void initState() {
+    super.initState();
+    FlutterError.onError = (details) {
+      print("FLUTTER_ERROR_CAPTURED: ${details.exception}\n${details.stack}");
+      setState(() {
+        _error = details.exception;
+        _stack = details.stack;
+      });
+    };
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    if (_error != null) {
+      return MaterialApp(
+        home: Scaffold(
+          backgroundColor: Colors.black,
+          body: Center(
+            child: SingleChildScrollView(
+              padding: const EdgeInsets.all(24),
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  const Icon(Icons.error_outline, color: Colors.red, size: 64),
+                  const SizedBox(height: 24),
+                  const Text(
+                    'CRITICAL UI FATAL ERROR',
+                    style: TextStyle(
+                      color: Colors.white,
+                      fontWeight: FontWeight.bold,
+                      fontSize: 20,
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+                  Text(
+                    _error.toString(),
+                    style: const TextStyle(
+                      color: Colors.redAccent,
+                      fontFamily: 'monospace',
+                    ),
+                  ),
+                  const SizedBox(height: 24),
+                  Text(
+                    _stack.toString(),
+                    style: const TextStyle(
+                      color: Colors.white54,
+                      fontSize: 10,
+                      fontFamily: 'monospace',
+                    ),
+                  ),
+                  const SizedBox(height: 32),
+                  ElevatedButton(
+                    onPressed: () {
+                      setState(() {
+                        _error = null;
+                        _stack = null;
+                      });
+                    },
+                    child: const Text('RELOAD APP'),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ),
+      );
+    }
+    return widget.child;
+  }
 }
 
 class FTGRacingApp extends StatelessWidget {
@@ -57,27 +154,38 @@ class FTGRacingApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return MaterialApp(
-      title: 'FTG Racing Manager',
-      debugShowCheckedModeBanner: false,
-      darkTheme: AppTheme.darkTheme,
-      themeMode: ThemeMode.dark,
-      localizationsDelegates: const [
-        AppLocalizations.delegate,
-        GlobalMaterialLocalizations.delegate,
-        GlobalWidgetsLocalizations.delegate,
-        GlobalCupertinoLocalizations.delegate,
-      ],
-      supportedLocales: AppLocalizations.supportedLocales,
-      // Forzar idioma a Inglés por ahora.
-      // Para habilitar Español (u otros idiomas del sistema), eliminar la línea 'locale' de abajo.
-      locale: const Locale('en'),
-      initialRoute: '/',
-      routes: {
-        '/': (context) => const AuthWrapper(),
-        '/admin': (context) => const AdminScreen(),
-      },
-    );
+    try {
+      return MaterialApp(
+        title: 'FTG Racing Manager',
+        debugShowCheckedModeBanner: false,
+        darkTheme: AppTheme.darkTheme,
+        themeMode: ThemeMode.dark,
+        localizationsDelegates: const [
+          AppLocalizations.delegate,
+          GlobalMaterialLocalizations.delegate,
+          GlobalWidgetsLocalizations.delegate,
+          GlobalCupertinoLocalizations.delegate,
+        ],
+        supportedLocales: AppLocalizations.supportedLocales,
+        locale: const Locale('en'),
+        initialRoute: '/',
+        routes: {
+          '/': (context) => const AuthWrapper(),
+          '/admin': (context) => const AdminScreen(),
+        },
+      );
+    } catch (e) {
+      return MaterialApp(
+        home: Scaffold(
+          body: Center(
+            child: Text(
+              'Fatal Start Error: $e',
+              style: const TextStyle(color: Colors.red),
+            ),
+          ),
+        ),
+      );
+    }
   }
 }
 
@@ -120,34 +228,42 @@ class ManagerProfileCheck extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // LEVEL 2: Listen to Manager Document REALTIME
+    print("CHECK: Buscando perfil de Manager para $uid...");
     return StreamBuilder<DocumentSnapshot>(
       stream: FirebaseFirestore.instance
           .collection('managers')
           .doc(uid)
           .snapshots(),
       builder: (context, managerSnapshot) {
-        if (managerSnapshot.connectionState == ConnectionState.waiting) {
+        if (managerSnapshot.hasError) {
+          print("ERROR: Fallo buscando Manager: ${managerSnapshot.error}");
           return Scaffold(
-            backgroundColor: Theme.of(context).scaffoldBackgroundColor,
             body: Center(
-              child: CircularProgressIndicator(
-                color: Theme.of(context).primaryColor,
+              child: Text(
+                "Error Manager: ${managerSnapshot.error}",
+                style: const TextStyle(color: Colors.red),
               ),
             ),
           );
         }
 
+        if (managerSnapshot.connectionState == ConnectionState.waiting) {
+          print("CHECK: Esperando datos de Manager...");
+          return const Scaffold(
+            body: Center(child: CircularProgressIndicator()),
+          );
+        }
+
         bool profileExists =
             managerSnapshot.hasData && managerSnapshot.data!.exists;
+        print("CHECK: Perfil Manager existe? $profileExists");
 
         if (profileExists) {
-          // Profile exists, now check for Team
           final data = managerSnapshot.data!.data() as Map<String, dynamic>;
           final nationality = data['nationality'] as String? ?? 'Brazil';
           return TeamCheck(uid: uid, nationality: nationality);
         } else {
-          // No profile -> Create Manager
+          print("CHECK: Redirigiendo a Creación de Manager");
           return const CreateManagerScreen();
         }
       },
@@ -162,7 +278,7 @@ class TeamCheck extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // LEVEL 3: Listen to Team Assignment REALTIME
+    print("CHECK: Buscando Equipo para $uid...");
     return StreamBuilder<QuerySnapshot>(
       stream: FirebaseFirestore.instance
           .collection('teams')
@@ -170,24 +286,36 @@ class TeamCheck extends StatelessWidget {
           .limit(1)
           .snapshots(),
       builder: (context, teamSnapshot) {
-        if (teamSnapshot.connectionState == ConnectionState.waiting) {
+        if (teamSnapshot.hasError) {
+          print("ERROR: Fallo buscando Equipo: ${teamSnapshot.error}");
           return Scaffold(
-            backgroundColor: Theme.of(context).scaffoldBackgroundColor,
             body: Center(
-              child: CircularProgressIndicator(
-                color: Theme.of(context).primaryColor,
+              child: Text(
+                "Error Equipo: ${teamSnapshot.error}",
+                style: const TextStyle(color: Colors.red),
               ),
             ),
           );
         }
 
-        if (teamSnapshot.hasData && teamSnapshot.data!.docs.isNotEmpty) {
-          // Team exists -> Main Layout
+        if (teamSnapshot.connectionState == ConnectionState.waiting) {
+          print("CHECK: Esperando datos de Equipo...");
+          return const Scaffold(
+            body: Center(child: CircularProgressIndicator()),
+          );
+        }
+
+        bool hasTeam =
+            teamSnapshot.hasData && teamSnapshot.data!.docs.isNotEmpty;
+        print("CHECK: Equipo encontrado? $hasTeam");
+
+        if (hasTeam) {
           final teamId = teamSnapshot.data!.docs.first.id;
+          print("CHECK: Entrando a Layout Principal con equipo $teamId");
           return MainLayout(teamId: teamId);
         }
 
-        // No Team -> Team Selection
+        print("CHECK: Redirigiendo a Selección de Equipo");
         return TeamSelectionScreen(nationality: nationality);
       },
     );

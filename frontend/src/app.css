@@ -1,0 +1,76 @@
+@import "tailwindcss";
+
+@import url('https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800;900&family=Raleway:wght@400;500;600;700;800&family=Montserrat:wght@600;900&display=swap') layer(base);
+
+@theme {
+  --color-app-bg: var(--bg-color);
+  --color-app-surface: var(--surface-color);
+  --color-app-text: var(--text-color);
+  --color-app-primary: var(--primary-color);
+  --color-app-primary-foreground: var(--primary-foreground-color);
+  --color-app-accent: var(--accent-color);
+  --color-app-success: var(--success-color);
+  --color-app-error: var(--error-color);
+  --color-app-danger: var(--error-color);
+  /* Compatibility alias */
+  --color-app-border: var(--border-color);
+
+  --font-heading: "Poppins", sans-serif;
+  --font-sans: "Raleway", sans-serif;
+  --font-poppins: "Poppins", sans-serif;
+  --font-raleway: "Raleway", sans-serif;
+  --font-montserrat: "Montserrat", sans-serif;
+}
+
+@layer base {
+  :root {
+    /* Light Mode (Deportivo técnico) */
+    --bg-color: #F3F4F6;
+    --surface-color: #FFFFFF;
+    --text-color: #111827;
+    --primary-color: #3A40B1;
+    --primary-foreground-color: #FFFFFF;
+    --accent-color: #3B82F6;
+    --success-color: #10B981;
+    --error-color: #EF4444;
+    --border-color: rgba(17, 24, 39, 0.1);
+  }
+
+  .dark {
+    /* Premium Luxury Theme (Satin Gold & Onyx) */
+    --bg-color: #0F0F12;
+    --surface-color: #1E1E1E;
+    --text-color: #E0E0E0;
+    --primary-color: #C5A059;
+    --primary-foreground-color: #000000;
+    --accent-color: #D4AF37;
+    --success-color: #00C853;
+    --error-color: #EF5350;
+    --border-color: rgba(197, 160, 89, 0.1);
+  }
+
+  body {
+    background-color: var(--bg-color);
+    color: var(--text-color);
+    min-height: 100vh;
+    font-family: var(--font-sans);
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+
+  h1,
+  h2,
+  h3,
+  h4,
+  h5,
+  h6 {
+    font-family: var(--font-heading);
+  }
+}
+
+@layer utilities {
+  .neon-glow {
+    /* Uses Neon Green #00E676 */
+    box-shadow: 0 0 15px 1px rgba(0, 230, 118, 0.5);
+  }
+}

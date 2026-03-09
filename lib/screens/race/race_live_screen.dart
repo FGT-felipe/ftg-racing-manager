@@ -23,6 +23,7 @@ class RaceLiveScreen extends StatefulWidget {
 class _RaceLiveScreenState extends State<RaceLiveScreen> {
   bool _initializing = true;
   bool _simulating = false;
+  String? _errorMessage;
   RaceSessionResult? _fullResult;
   int _currentLapIndex = 0; // 0-based index for UI loop
   Timer? _raceTimer;
@@ -30,6 +31,7 @@ class _RaceLiveScreenState extends State<RaceLiveScreen> {
   // Cache for display
   final Map<String, Driver> _driversMap = {};
   final Map<String, Team> _teamsMap = {};
+  Season? _season;
 
   @override
   void initState() {
@@ -57,6 +59,9 @@ class _RaceLiveScreenState extends State<RaceLiveScreen> {
       if (current == null) throw Exception("No pending race");
       final raceEvent = current.event;
       final raceId = SeasonService().raceDocumentId(widget.seasonId, raceEvent);
+
+      // Store season for later use in applyRaceResults
+      _season = season;
 
       final raceDoc = await FirebaseFirestore.instance
           .collection('races')
@@ -139,17 +144,18 @@ class _RaceLiveScreenState extends State<RaceLiveScreen> {
 
       final circuit = CircuitService().getCircuitProfile(raceEvent.circuitId);
 
-      // 3. Run Simulation (Calculate all laps)
+      // 3. Simulate
       _fullResult = await RaceService().simulateRaceSession(
-        raceId: raceId,
+        raceId: raceEvent.id,
         leagueId: season.leagueId,
+        currentRace: current.event,
         circuit: circuit,
         grid: grid,
         teamsMap: _teamsMap,
         driversMap: _driversMap,
         setupsMap: setupsMap,
+        isDemo: true,
       );
-
       setState(() {
         _initializing = false;
         _simulating = true;
@@ -159,10 +165,16 @@ class _RaceLiveScreenState extends State<RaceLiveScreen> {
       _startReplay();
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(SnackBar(content: Text("Error: $e")));
-        Navigator.pop(context);
+        setState(() {
+          _initializing = false;
+          _errorMessage = e.toString();
+        });
+        if (!widget.isEmbed) {
+          ScaffoldMessenger.of(
+            context,
+          ).showSnackBar(SnackBar(content: Text("Error: $e")));
+          Navigator.pop(context);
+        }
       }
     }
   }
@@ -200,8 +212,11 @@ class _RaceLiveScreenState extends State<RaceLiveScreen> {
 
     // Apply Results
     final applyRes = await RaceService().applyRaceResults(
-      widget.seasonId,
-      _fullResult!,
+      seasonId: widget.seasonId,
+      leagueId: _season!.leagueId,
+      raceResult: _fullResult!,
+      teamsMap: _teamsMap,
+      driversMap: _driversMap,
     );
 
     if (!mounted) return;
@@ -266,10 +281,41 @@ class _RaceLiveScreenState extends State<RaceLiveScreen> {
       return Scaffold(body: loadingIndicator);
     }
 
-    if (_fullResult == null) {
-      const errorContent = Center(child: Text("Simulation Error"));
+    if (_errorMessage != null || _fullResult == null) {
+      final errorContent = Center(
+        child: Padding(
+          padding: const EdgeInsets.all(24.0),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              const Icon(Icons.error_outline, color: Colors.orange, size: 48),
+              const SizedBox(height: 16),
+              const Text(
+                "Simulation Error",
+                style: TextStyle(
+                  color: Colors.orange,
+                  fontWeight: FontWeight.bold,
+                  fontSize: 18,
+                ),
+              ),
+              const SizedBox(height: 8),
+              Text(
+                _errorMessage ?? "Unknown error",
+                style: const TextStyle(color: Colors.white70),
+                textAlign: TextAlign.center,
+              ),
+            ],
+          ),
+        ),
+      );
       if (widget.isEmbed) return errorContent;
-      return const Scaffold(body: errorContent);
+      return Scaffold(body: errorContent);
+    }
+
+    if (_fullResult!.laps.isEmpty) {
+      const emptyContent = Center(child: Text("No lap data available."));
+      if (widget.isEmbed) return emptyContent;
+      return const Scaffold(body: emptyContent);
     }
 
     final currentLapData = _fullResult!.laps[_currentLapIndex];
@@ -448,9 +494,13 @@ class _RaceLiveScreenState extends State<RaceLiveScreen> {
                     intervalText = 'LEADER';
                   } else if (leaderLapTime != null && leaderLapTime < 900) {
                     final gap = lapTime - leaderLapTime;
-                    intervalText = '+${gap.toStringAsFixed(3)}s';
+                    intervalText = gap.isFinite
+                        ? '+${gap.toStringAsFixed(3)}s'
+                        : '—';
                   } else {
-                    intervalText = '${lapTime.toStringAsFixed(3)}s';
+                    intervalText = lapTime.isFinite
+                        ? '${lapTime.toStringAsFixed(3)}s'
+                        : '—';
                   }
 
                   return Card(
@@ -535,12 +585,14 @@ class _RaceLiveScreenState extends State<RaceLiveScreen> {
   }
 
   String _formatLapTime(double seconds) {
+    if (seconds.isNaN || seconds.isInfinite) return "--:--.---";
     final mins = (seconds / 60).floor();
     final secs = seconds - (mins * 60);
     return "$mins:${secs.toStringAsFixed(3).padLeft(6, '0')}";
   }
 
   String _formatRaceTime(double totalSeconds) {
+    if (totalSeconds.isNaN || totalSeconds.isInfinite) return "--:--:--";
     final hours = (totalSeconds / 3600).floor();
     final mins = ((totalSeconds % 3600) / 60).floor();
     final secs = (totalSeconds % 60).floor();

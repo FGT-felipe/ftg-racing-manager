@@ -1108,6 +1108,15 @@ class _DriverCardState extends State<DriverCard>
     BuildContext context, {
     bool fillSpace = false,
   }) {
+    final rows = widget.driver.championshipForm.take(5).map((f) {
+      return [
+        (f['event'] ?? 'RACE').toString().toUpperCase(),
+        '--', // Q placeholder
+        (f['pos'] ?? '--').toString(),
+        (f['pts'] ?? '0').toString(),
+      ];
+    }).toList();
+
     return _buildTinyTable(
       context,
       title: AppLocalizations.of(context).championshipFormTitle.toUpperCase(),
@@ -1119,7 +1128,7 @@ class _DriverCardState extends State<DriverCard>
         TextAlign.center,
         TextAlign.center,
       ],
-      rows: [], // Will be populated when history service is implemented
+      rows: rows,
       maxRows: 5,
       fillSpace: fillSpace,
     );

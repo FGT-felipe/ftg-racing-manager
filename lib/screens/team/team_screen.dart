@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:cloud_functions/cloud_functions.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../../models/core_models.dart';
 import '../../models/user_models.dart';
@@ -149,22 +150,341 @@ class _TeamScreenState extends State<TeamScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return SingleChildScrollView(
-      padding: const EdgeInsets.all(20),
-      child: Column(
-        children: [
-          // Row 1: Team Name + Career Stats (30/70)
-          Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
+    return StreamBuilder<DocumentSnapshot>(
+      stream: FirebaseFirestore.instance
+          .collection('teams')
+          .doc(widget.teamId)
+          .snapshots(),
+      builder: (context, snapshot) {
+        if (!snapshot.hasData) {
+          return const Center(child: CircularProgressIndicator());
+        }
+
+        final teamData = snapshot.data!.data() as Map<String, dynamic>? ?? {};
+        final lastDebrief = teamData['lastRaceDebrief'] as String?;
+        final lastResult = teamData['lastRaceResult'] as String?;
+
+        return SingleChildScrollView(
+          padding: const EdgeInsets.all(20),
+          child: Column(
             children: [
-              Expanded(flex: 3, child: _buildNameChangeCard(context)),
-              const SizedBox(width: 20),
-              Expanded(flex: 7, child: _buildTeamCareerStats(context)),
+              // Row 1: Team Name + Career Stats (30/70)
+              Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Expanded(flex: 3, child: _buildNameChangeCard(context)),
+                  const SizedBox(width: 20),
+                  Expanded(flex: 7, child: _buildTeamCareerStats(context)),
+                ],
+              ),
+              const SizedBox(height: 20),
+
+              // Race Debrief Card (Only show if there's a debrief)
+              if (lastDebrief != null && lastDebrief.isNotEmpty) ...[
+                _buildRaceDebriefCard(context, lastDebrief, lastResult),
+                const SizedBox(height: 20),
+              ],
+
+              // Row 2: Manager Card (Livery card hidden until redesign)
+              _buildManagerCard(context),
+              const SizedBox(height: 32),
+
+              // Row 3: Official Communications (News History)
+              _buildOfficialCommunications(context),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
+  Widget _buildOfficialCommunications(BuildContext context) {
+    final theme = Theme.of(context);
+    final accentColor = theme.colorScheme.secondary;
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Padding(
+          padding: const EdgeInsets.only(left: 4, bottom: 16),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Expanded(
+                child: Text(
+                  "COMUNICADOS OFICIALES",
+                  style: GoogleFonts.poppins(
+                    fontSize: 12,
+                    fontWeight: FontWeight.w900,
+                    color: Colors.white.withValues(alpha: 0.5),
+                    letterSpacing: 1.5,
+                  ),
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ),
+              const SizedBox(width: 8),
+              InkWell(
+                onTap: () async {
+                  try {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(
+                        content: Text("Iniciando sincronización..."),
+                      ),
+                    );
+                    final functions = FirebaseFunctions.instance;
+                    // Calling megaFixDebriefs
+                    await functions.httpsCallable('megaFixDebriefs').call();
+
+                    if (mounted) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(
+                          content: Text(
+                            "¡Sincronización completada! Refrescando...",
+                          ),
+                          backgroundColor: Colors.green,
+                        ),
+                      );
+                    }
+                  } catch (e) {
+                    print("Sync error: $e");
+                    if (mounted) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(
+                          content: Text(
+                            "Error: $e. Reintentando con fix directo...",
+                          ),
+                          backgroundColor: Colors.orange,
+                        ),
+                      );
+                      // Fallback to forceFixGBA just in case
+                      try {
+                        await FirebaseFunctions.instance
+                            .httpsCallable('forceFixGBA')
+                            .call();
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(
+                            content: Text("Fix directo aplicado."),
+                            backgroundColor: Colors.green,
+                          ),
+                        );
+                      } catch (e2) {
+                        print("Fallback fail: $e2");
+                      }
+                    }
+                  }
+                },
+                child: Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 12,
+                    vertical: 6,
+                  ),
+                  decoration: BoxDecoration(
+                    color: accentColor.withValues(alpha: 0.1),
+                    borderRadius: BorderRadius.circular(20),
+                    border: Border.all(
+                      color: accentColor.withValues(alpha: 0.2),
+                    ),
+                  ),
+                  child: Row(
+                    children: [
+                      Icon(Icons.sync, size: 12, color: accentColor),
+                      const SizedBox(width: 6),
+                      Text(
+                        "SINCRONIZAR",
+                        style: GoogleFonts.poppins(
+                          fontSize: 10,
+                          fontWeight: FontWeight.w800,
+                          color: accentColor,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+        StreamBuilder<QuerySnapshot>(
+          stream: FirebaseFirestore.instance
+              .collection('teams')
+              .doc(widget.teamId)
+              .collection('news')
+              .orderBy('timestamp', descending: true)
+              .limit(10)
+              .snapshots(),
+          builder: (context, snapshot) {
+            if (!snapshot.hasData) {
+              return const Center(child: CircularProgressIndicator());
+            }
+
+            final news = snapshot.data!.docs;
+            if (news.isEmpty) {
+              return Container(
+                padding: const EdgeInsets.all(32),
+                width: double.infinity,
+                decoration: BoxDecoration(
+                  color: Colors.white.withValues(alpha: 0.02),
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(
+                    color: Colors.white.withValues(alpha: 0.05),
+                  ),
+                ),
+                child: Column(
+                  children: [
+                    Icon(Icons.mail_outline, color: Colors.white24, size: 32),
+                    const SizedBox(height: 12),
+                    Text(
+                      "No hay comunicados recientes",
+                      style: GoogleFonts.raleway(
+                        color: Colors.white38,
+                        fontSize: 13,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ],
+                ),
+              );
+            }
+
+            return Column(
+              children: news.map<Widget>((doc) {
+                final data = doc.data() as Map<String, dynamic>;
+                final timestamp = data['timestamp'] as Timestamp?;
+                final dateStr = timestamp != null
+                    ? "${timestamp.toDate().day}/${timestamp.toDate().month} ${timestamp.toDate().hour}:${timestamp.toDate().minute.toString().padLeft(2, '0')}"
+                    : "--/--";
+
+                return Container(
+                  margin: const EdgeInsets.only(bottom: 12),
+                  padding: const EdgeInsets.all(20),
+                  decoration: BoxDecoration(
+                    gradient: const LinearGradient(
+                      begin: Alignment.topLeft,
+                      end: Alignment.bottomRight,
+                      colors: [Color(0xFF1E1E1E), Color(0xFF0A0A0A)],
+                    ),
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(
+                      color: Colors.white.withValues(alpha: 0.05),
+                      width: 1,
+                    ),
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Text(
+                            data['title'] ?? 'Comunicado',
+                            style: GoogleFonts.poppins(
+                              fontSize: 14,
+                              fontWeight: FontWeight.w800,
+                              color: accentColor,
+                            ),
+                          ),
+                          Text(
+                            dateStr,
+                            style: GoogleFonts.robotoMono(
+                              fontSize: 10,
+                              color: Colors.white24,
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 12),
+                      Text(
+                        data['message'] ?? '',
+                        style: GoogleFonts.raleway(
+                          fontSize: 13,
+                          color: Colors.white70,
+                          height: 1.5,
+                        ),
+                      ),
+                    ],
+                  ),
+                );
+              }).toList(),
+            );
+          },
+        ),
+      ],
+    );
+  }
+
+  Widget _buildRaceDebriefCard(
+    BuildContext context,
+    String debrief,
+    String? result,
+  ) {
+    final theme = Theme.of(context);
+    final accentColor = theme.colorScheme.secondary;
+
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        gradient: const LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [Color(0xFF1E1E1E), Color(0xFF0A0A0A)],
+        ),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: accentColor.withValues(alpha: 0.2), width: 1),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.4),
+            blurRadius: 12,
+            offset: const Offset(0, 6),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Icon(Icons.analytics_outlined, color: accentColor, size: 20),
+              const SizedBox(width: 12),
+              Text(
+                "LAST RACE DEBRIEF",
+                style: GoogleFonts.poppins(
+                  fontSize: 12,
+                  fontWeight: FontWeight.w900,
+                  color: accentColor,
+                  letterSpacing: 1.2,
+                ),
+              ),
             ],
           ),
           const SizedBox(height: 20),
-          // Row 2: Manager Card (Livery card hidden until redesign)
-          _buildManagerCard(context),
+          if (result != null) ...[
+            Container(
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: Colors.white.withValues(alpha: 0.03),
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: Text(
+                result,
+                style: GoogleFonts.robotoMono(
+                  fontSize: 12,
+                  color: Colors.white70,
+                  height: 1.4,
+                ),
+              ),
+            ),
+            const SizedBox(height: 20),
+          ],
+          Text(
+            debrief,
+            style: GoogleFonts.raleway(
+              fontSize: 14,
+              color: Colors.white.withValues(alpha: 0.9),
+              height: 1.5,
+              fontWeight: FontWeight.w500,
+            ),
+          ),
         ],
       ),
     );

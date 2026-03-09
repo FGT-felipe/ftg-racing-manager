@@ -561,6 +561,8 @@
   "goToRaceBtn": "Go To Race",
   "raceFinishedStatus": "Race Finished Status",
   "viewResultsBtn": "View Results",
+  "paddockLocked": "Paddock Locked",
+  "waitingForPaddock": "Opens Monday 00:00",
   "circuitIntelTitle": "Circuit Intel",
   "aeroIntel": "Aero Intel",
   "highIntel": "High Intel",

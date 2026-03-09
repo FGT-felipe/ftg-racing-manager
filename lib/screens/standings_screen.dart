@@ -204,6 +204,8 @@ class _StandingsScreenState extends State<StandingsScreen> {
                         child: Column(
                           children: [
                             TabBar(
+                              isScrollable: true,
+                              tabAlignment: TabAlignment.start,
                               indicatorColor: const Color(0xFF00C853),
                               labelColor: const Color(0xFF00C853),
                               unselectedLabelColor: Colors.white.withValues(
@@ -211,9 +213,9 @@ class _StandingsScreenState extends State<StandingsScreen> {
                               ),
                               indicatorSize: TabBarIndicatorSize.label,
                               labelStyle: GoogleFonts.poppins(
-                                fontSize: 13,
+                                fontSize: 12,
                                 fontWeight: FontWeight.bold,
-                                letterSpacing: 1.2,
+                                letterSpacing: 1.1,
                               ),
                               tabs: [
                                 Tab(text: l10n.navDrivers.toUpperCase()),
@@ -618,7 +620,9 @@ class _LastRaceStandingsTab extends StatelessWidget {
                 }
                 final raceData =
                     raceSnapshot.data!.data() as Map<String, dynamic>?;
-                if (raceData == null || raceData['qualifyingResults'] == null) {
+                if (raceData == null ||
+                    raceData['finalPositions'] == null ||
+                    raceData['qualyGrid'] == null) {
                   return Center(
                     child: Text(
                       AppLocalizations.of(context).noDataAvailableYet,
@@ -626,9 +630,34 @@ class _LastRaceStandingsTab extends StatelessWidget {
                   );
                 }
 
-                final results = List<Map<String, dynamic>>.from(
-                  raceData['qualifyingResults'] ?? [],
+                // Match finalPositions with qualyGrid to get names
+                final finalPositionsMap = Map<String, dynamic>.from(
+                  raceData['finalPositions'],
                 );
+                final qualyGrid = List<Map<String, dynamic>>.from(
+                  raceData['qualyGrid'],
+                );
+
+                final sortedDriverIds = finalPositionsMap.keys.toList()
+                  ..sort(
+                    (a, b) => (finalPositionsMap[a] as num).compareTo(
+                      finalPositionsMap[b] as num,
+                    ),
+                  );
+
+                final results = sortedDriverIds.map((driverId) {
+                  final driverGridData = qualyGrid.firstWhere(
+                    (g) => g['driverId'] == driverId,
+                    orElse: () => <String, dynamic>{},
+                  );
+                  return <String, dynamic>{
+                    'driverId': driverId,
+                    'driverName': driverGridData['driverName'] ?? 'Unknown',
+                    'teamId': driverGridData['teamId'] ?? '',
+                    'teamName': driverGridData['teamName'] ?? 'Unknown',
+                    'position': finalPositionsMap[driverId],
+                  };
+                }).toList();
 
                 final l10n = AppLocalizations.of(context);
 
