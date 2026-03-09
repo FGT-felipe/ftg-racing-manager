@@ -226,16 +226,18 @@ class _TeamScreenState extends State<TeamScreen> {
               InkWell(
                 onTap: () async {
                   try {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(
-                        content: Text("Iniciando sincronización..."),
-                      ),
-                    );
+                    if (context.mounted) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(
+                          content: Text("Iniciando sincronización..."),
+                        ),
+                      );
+                    }
                     final functions = FirebaseFunctions.instance;
                     // Calling megaFixDebriefs
                     await functions.httpsCallable('megaFixDebriefs').call();
 
-                    if (mounted) {
+                    if (context.mounted) {
                       ScaffoldMessenger.of(context).showSnackBar(
                         const SnackBar(
                           content: Text(
@@ -246,8 +248,8 @@ class _TeamScreenState extends State<TeamScreen> {
                       );
                     }
                   } catch (e) {
-                    print("Sync error: $e");
-                    if (mounted) {
+                    debugPrint("Sync error: $e");
+                    if (context.mounted) {
                       ScaffoldMessenger.of(context).showSnackBar(
                         SnackBar(
                           content: Text(
@@ -261,14 +263,16 @@ class _TeamScreenState extends State<TeamScreen> {
                         await FirebaseFunctions.instance
                             .httpsCallable('forceFixGBA')
                             .call();
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(
-                            content: Text("Fix directo aplicado."),
-                            backgroundColor: Colors.green,
-                          ),
-                        );
+                        if (context.mounted) {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(
+                              content: Text("Fix directo aplicado."),
+                              backgroundColor: Colors.green,
+                            ),
+                          );
+                        }
                       } catch (e2) {
-                        print("Fallback fail: $e2");
+                        debugPrint("Fallback fail: $e2");
                       }
                     }
                   }
