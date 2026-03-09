@@ -1,22 +1,29 @@
+import 'package:flutter/material.dart';
+
 void main() {
-  double d1 = 0.0;
-  double d2 = 0.0;
-  double res = d1 / d2;
-  print("0.0 / 0.0 = $res (isNaN: ${res.isNaN})");
+  debugPrint("CRASH_V2: App starting...");
 
-  try {
-    double clamped = res.clamp(0.0, 1.0);
-    print("Clamped: $clamped");
-  } catch (e) {
-    print("Error clamping NaN: $e");
-  }
+  FlutterError.onError = (details) {
+    debugPrint("CRASH_V2: Caught error: ${details.exception}");
+  };
 
-  double inf = 1.0 / 0.0;
-  print("1.0 / 0.0 = $inf (isInfinite: ${inf.isInfinite})");
-  try {
-    double clamped = inf.clamp(0.0, 1.0);
-    print("Clamped infinity: $clamped");
-  } catch (e) {
-    print("Error clamping Infinity: $e");
-  }
+  debugPrint("CRASH_V2: Triggering exception...");
+
+  runApp(
+    MaterialApp(
+      home: Scaffold(
+        body: Center(
+          child: ElevatedButton(
+            onPressed: () {
+              debugPrint("CRASH_V2: Button pressed, throwing...");
+              throw Exception("V2_BUTTON_CRASH");
+            },
+            child: const Text("CRASH NOW"),
+          ),
+        ),
+      ),
+    ),
+  );
+
+  debugPrint("CRASH_V2: Post-runApp reached");
 }

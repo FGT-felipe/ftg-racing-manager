@@ -6,8 +6,4 @@ String formatRaceTime(double totalSeconds) {
   return '${hours.toString().padLeft(2, '0')}H:${mins.toString().padLeft(2, '0')}M:${secs.toString().padLeft(2, '0')}S';
 }
 
-void main() {
-  print("Normal: ${formatRaceTime(3661)}");
-  print("NaN: ${formatRaceTime(double.nan)}");
-  print("Infinity: ${formatRaceTime(double.infinity)}");
-}
+void main() {}

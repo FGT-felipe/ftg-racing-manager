@@ -1,4 +1,3 @@
-import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_auth/firebase_auth.dart';
@@ -20,26 +19,21 @@ import 'services/database_seeder.dart';
 // import 'services/academy_migration.dart';
 
 void main() async {
-  // RE-ACTIVAR CONSOLA PARA DEBUG (URGENTE)
-  debugPrint = (String? message, {int? wrapWidth}) {
-    print(message);
-  };
-
-  print("APP_START: Iniciando Flutter...");
+  debugPrint("APP_START: Iniciando Flutter...");
   WidgetsFlutterBinding.ensureInitialized();
   usePathUrlStrategy();
   tz_data.initializeTimeZones();
 
-  print("APP_START: Inicializando Firebase...");
+  debugPrint("APP_START: Inicializando Firebase...");
   try {
     if (Firebase.apps.isEmpty) {
       await Firebase.initializeApp(
         options: DefaultFirebaseOptions.currentPlatform,
       );
     }
-    print("APP_START: Firebase OK");
+    debugPrint("APP_START: Firebase OK");
   } catch (e) {
-    print("APP_START_ERROR: Fallo en Firebase: $e");
+    debugPrint("APP_START_ERROR: Fallo en Firebase: $e");
   }
 
   // Run one-time migration for academy sync
@@ -81,7 +75,9 @@ class _ErrorBoundaryState extends State<ErrorBoundary> {
   void initState() {
     super.initState();
     FlutterError.onError = (details) {
-      print("FLUTTER_ERROR_CAPTURED: ${details.exception}\n${details.stack}");
+      debugPrint(
+        "FLUTTER_ERROR_CAPTURED: ${details.exception}\n${details.stack}",
+      );
       setState(() {
         _error = details.exception;
         _stack = details.stack;
@@ -228,7 +224,7 @@ class ManagerProfileCheck extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    print("CHECK: Buscando perfil de Manager para $uid...");
+    debugPrint("CHECK: Buscando perfil de Manager para $uid...");
     return StreamBuilder<DocumentSnapshot>(
       stream: FirebaseFirestore.instance
           .collection('managers')
@@ -236,7 +232,7 @@ class ManagerProfileCheck extends StatelessWidget {
           .snapshots(),
       builder: (context, managerSnapshot) {
         if (managerSnapshot.hasError) {
-          print("ERROR: Fallo buscando Manager: ${managerSnapshot.error}");
+          debugPrint("ERROR: Fallo buscando Manager: ${managerSnapshot.error}");
           return Scaffold(
             body: Center(
               child: Text(
@@ -248,7 +244,7 @@ class ManagerProfileCheck extends StatelessWidget {
         }
 
         if (managerSnapshot.connectionState == ConnectionState.waiting) {
-          print("CHECK: Esperando datos de Manager...");
+          debugPrint("CHECK: Esperando datos de Manager...");
           return const Scaffold(
             body: Center(child: CircularProgressIndicator()),
           );
@@ -256,14 +252,14 @@ class ManagerProfileCheck extends StatelessWidget {
 
         bool profileExists =
             managerSnapshot.hasData && managerSnapshot.data!.exists;
-        print("CHECK: Perfil Manager existe? $profileExists");
+        debugPrint("CHECK: Perfil Manager existe? $profileExists");
 
         if (profileExists) {
           final data = managerSnapshot.data!.data() as Map<String, dynamic>;
           final nationality = data['nationality'] as String? ?? 'Brazil';
           return TeamCheck(uid: uid, nationality: nationality);
         } else {
-          print("CHECK: Redirigiendo a Creación de Manager");
+          debugPrint("CHECK: Redirigiendo a Creación de Manager");
           return const CreateManagerScreen();
         }
       },
@@ -278,7 +274,7 @@ class TeamCheck extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    print("CHECK: Buscando Equipo para $uid...");
+    debugPrint("CHECK: Buscando Equipo para $uid...");
     return StreamBuilder<QuerySnapshot>(
       stream: FirebaseFirestore.instance
           .collection('teams')
@@ -287,7 +283,7 @@ class TeamCheck extends StatelessWidget {
           .snapshots(),
       builder: (context, teamSnapshot) {
         if (teamSnapshot.hasError) {
-          print("ERROR: Fallo buscando Equipo: ${teamSnapshot.error}");
+          debugPrint("ERROR: Fallo buscando Equipo: ${teamSnapshot.error}");
           return Scaffold(
             body: Center(
               child: Text(
@@ -299,7 +295,7 @@ class TeamCheck extends StatelessWidget {
         }
 
         if (teamSnapshot.connectionState == ConnectionState.waiting) {
-          print("CHECK: Esperando datos de Equipo...");
+          debugPrint("CHECK: Esperando datos de Equipo...");
           return const Scaffold(
             body: Center(child: CircularProgressIndicator()),
           );
@@ -307,15 +303,15 @@ class TeamCheck extends StatelessWidget {
 
         bool hasTeam =
             teamSnapshot.hasData && teamSnapshot.data!.docs.isNotEmpty;
-        print("CHECK: Equipo encontrado? $hasTeam");
+        debugPrint("CHECK: Equipo encontrado? $hasTeam");
 
         if (hasTeam) {
           final teamId = teamSnapshot.data!.docs.first.id;
-          print("CHECK: Entrando a Layout Principal con equipo $teamId");
+          debugPrint("CHECK: Entrando a Layout Principal con equipo $teamId");
           return MainLayout(teamId: teamId);
         }
 
-        print("CHECK: Redirigiendo a Selección de Equipo");
+        debugPrint("CHECK: Redirigiendo a Selección de Equipo");
         return TeamSelectionScreen(nationality: nationality);
       },
     );
