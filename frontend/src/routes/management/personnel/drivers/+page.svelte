@@ -14,9 +14,12 @@
         List as ListIcon,
         User,
     } from "lucide-svelte";
+
     import { fly, fade } from "svelte/transition";
     import { type Driver } from "$lib/types";
     import DriverAvatar from "$lib/components/DriverAvatar.svelte";
+    import DriverStars from "$lib/components/DriverStars.svelte";
+    import DriverDetailModal from "$lib/components/DriverDetailModal.svelte";
 
     let team = $derived(teamStore.value.team);
     let isLoading = $derived(teamStore.value.loading);
@@ -25,12 +28,22 @@
     let viewMode = $state<"grid" | "table">("table");
     let searchQuery = $state("");
 
-    $effect(() => {
+    let selectedDriver = $state<Driver | null>(null);
+    let isDetailModalOpen = $state(false);
+
+    function openDriverDetail(driver: Driver) {
+        selectedDriver = driver;
+        isDetailModalOpen = true;
+    }
+
+    async function refreshDrivers() {
         if (team?.id) {
-            staffService.getTeamDrivers(team.id).then((d) => {
-                drivers = d;
-            });
+            drivers = await staffService.getTeamDrivers(team.id);
         }
+    }
+
+    $effect(() => {
+        refreshDrivers();
     });
 
     let filteredDrivers = $derived(
@@ -218,19 +231,7 @@
                                 </span>
                             </td>
                             <td class="py-6 px-4">
-                                <div class="flex items-center gap-1">
-                                    {#each Array(5) as _, i}
-                                        <Star
-                                            size={10}
-                                            class={i < (driver.potential || 0)
-                                                ? "text-app-primary"
-                                                : "text-white/10"}
-                                            fill={i < (driver.potential || 0)
-                                                ? "currentColor"
-                                                : "none"}
-                                        />
-                                    {/each}
-                                </div>
+                                <DriverStars {driver} size={14} />
                             </td>
                             <td class="py-6 px-4">
                                 <div class="flex items-center gap-2">
@@ -259,23 +260,31 @@
                                 </div>
                             </td>
                             <td class="py-6 px-4">
-                                <div
-                                    class="flex items-center gap-4 text-[10px] font-black text-white/30 uppercase tracking-tighter"
-                                >
-                                    <div class="flex flex-col items-center">
-                                        <span class="text-white"
-                                            >{driver.wins}</span
-                                        ><span>Wins</span>
-                                    </div>
-                                    <div class="flex flex-col items-center">
-                                        <span class="text-white"
-                                            >{driver.podiums}</span
-                                        ><span>Pods</span>
-                                    </div>
+                                <div class="flex items-center gap-1.5">
+                                    {#each (driver.championshipForm || []).slice(-5) as form}
+                                        {@const posRank =
+                                            parseInt(
+                                                form.pos.replace("P", ""),
+                                            ) || 20}
+                                        <div
+                                            class="w-2.5 h-2.5 rounded-full {posRank <=
+                                            3
+                                                ? 'bg-yellow-400'
+                                                : posRank <= 10
+                                                  ? 'bg-green-500'
+                                                  : 'bg-red-500/40'}"
+                                            title="P{posRank}"
+                                        ></div>
+                                    {:else}
+                                        <span class="text-[9px] text-white/10"
+                                            >No data</span
+                                        >
+                                    {/each}
                                 </div>
                             </td>
                             <td class="py-6 px-8 text-right">
                                 <button
+                                    onclick={() => openDriverDetail(driver)}
                                     class="px-4 py-2 bg-white/5 border border-white/10 rounded-xl text-[9px] font-black uppercase tracking-widest text-white/60 hover:bg-app-primary hover:text-black hover:border-app-primary transition-all"
                                 >
                                     Manage
@@ -369,20 +378,9 @@
                     <div
                         class="flex items-center justify-between pt-4 border-t border-white/5"
                     >
-                        <div class="flex items-center gap-1">
-                            {#each Array(5) as _, i}
-                                <Star
-                                    size={10}
-                                    class={i < (driver.potential || 0)
-                                        ? "text-app-primary"
-                                        : "text-white/10"}
-                                    fill={i < (driver.potential || 0)
-                                        ? "currentColor"
-                                        : "none"}
-                                />
-                            {/each}
-                        </div>
+                        <DriverStars {driver} size={12} />
                         <button
+                            onclick={() => openDriverDetail(driver)}
                             class="text-[10px] font-black text-app-primary uppercase tracking-[0.2em] flex items-center gap-2 group-hover:gap-3 transition-all"
                         >
                             Open Profile <ChevronLeft
@@ -405,6 +403,15 @@
             <Plus size={16} strokeWidth={3} /> Scout Driver Market
         </a>
     </div>
+
+    {#if selectedDriver}
+        <DriverDetailModal
+            driver={selectedDriver}
+            isOpen={isDetailModalOpen}
+            onClose={() => (isDetailModalOpen = false)}
+            onRefresh={refreshDrivers}
+        />
+    {/if}
 </div>
 
 <style>

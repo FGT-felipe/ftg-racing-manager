@@ -24,6 +24,23 @@
     import { driverStore } from "$lib/stores/driver.svelte";
     import DriverStars from "$lib/components/DriverStars.svelte";
     import DriverAvatar from "$lib/components/DriverAvatar.svelte";
+    import {
+        calculateAcademyCurrentStars,
+        calculateAcademyMaxStars,
+    } from "$lib/utils/driver";
+    import { t, type TranslationKey } from "$lib/utils/i18n";
+
+    function getSpecialtyKey(
+        specialty: string | null | undefined,
+    ): TranslationKey | null {
+        if (!specialty) return null;
+        const s = specialty.toLowerCase().replace(/\s+/g, "_");
+        if (s === "rainmaster") return "rain_master";
+        if (s === "tyre_whisperer") return "tyre_whisperer";
+        if (s === "late_braker") return "late_braker";
+        if (s === "defensive_minister") return "defensive_minister";
+        return null;
+    }
 
     // Initialize stores
     youthAcademyStore.init();
@@ -108,7 +125,7 @@
             <p
                 class="text-zinc-500 font-black tracking-[0.3em] text-[10px] uppercase animate-pulse"
             >
-                Syncing Academy Network
+                {t("academy_sync")}
             </p>
         </div>
     {:else if !youthAcademyStore.config}
@@ -143,7 +160,7 @@
                     class="text-emerald-400 font-black text-[10px] tracking-[0.2em] uppercase mb-8 flex items-center gap-2"
                 >
                     <Zap class="w-3.5 h-3.5" />
-                    Operational Benefits
+                    {t("operational_benefits")}
                 </h3>
 
                 <div class="grid grid-cols-1 sm:grid-cols-2 gap-8 mb-10">
@@ -155,13 +172,12 @@
                             <h4
                                 class="text-white font-black text-sm mb-1 uppercase tracking-tight italic"
                             >
-                                Active Scouting
+                                {t("active_scouting")}
                             </h4>
                             <p
                                 class="text-zinc-500 text-[11px] leading-relaxed"
                             >
-                                Scout up to 2 high-potential prospects every
-                                week based on regional availability.
+                                {t("scouting_desc")}
                             </p>
                         </div>
                     </div>
@@ -173,13 +189,12 @@
                             <h4
                                 class="text-white font-black text-sm mb-1 uppercase tracking-tight italic"
                             >
-                                Elite Training
+                                {t("elite_training")}
                             </h4>
                             <p
                                 class="text-zinc-500 text-[11px] leading-relaxed"
                             >
-                                Advanced simulation rigs and mentoring programs
-                                for selected trainees.
+                                {t("training_desc")}
                             </p>
                         </div>
                     </div>
@@ -191,7 +206,7 @@
                     <div class="flex flex-col">
                         <span
                             class="text-[10px] font-black text-zinc-600 uppercase tracking-widest mb-1"
-                            >Establishment Fee</span
+                            >{t("establishment_fee")}</span
                         >
                         <span
                             class="text-2xl font-black text-white italic tracking-tighter"
@@ -201,7 +216,7 @@
                     <div class="flex flex-col">
                         <span
                             class="text-[10px] font-black text-zinc-600 uppercase tracking-widest mb-1"
-                            >Available Funds</span
+                            >{t("available_funds")}</span
                         >
                         <span
                             class="text-2xl font-black italic tracking-tighter {(teamStore
@@ -269,7 +284,7 @@
                         <span>Acquiring Assets</span>
                     </div>
                 {:else}
-                    Initialize Regional Hub
+                    {t("initialize_hub")}
                 {/if}
             </button>
         </div>
@@ -322,8 +337,8 @@
                             >
                             <span
                                 class="text-[11px] font-black text-zinc-500 uppercase tracking-[0.2em]"
-                                >{youthAcademyStore.config?.countryName} Regional
-                                Hub</span
+                                >{youthAcademyStore.config?.countryName}
+                                {t("regional_hub")}</span
                             >
                         </div>
                     </div>
@@ -337,7 +352,7 @@
                             <div class="flex justify-between items-end mb-2.5">
                                 <span
                                     class="text-[10px] font-black text-zinc-500 uppercase tracking-[0.2em]"
-                                    >Roster Capacity</span
+                                    >{t("roster_capacity")}</span
                                 >
                                 <span class="text-sm font-black text-white"
                                     >{youthAcademyStore.selectedDrivers
@@ -362,7 +377,7 @@
                             <div class="flex justify-between items-end mb-2.5">
                                 <span
                                     class="text-[10px] font-black text-zinc-500 uppercase tracking-[0.2em]"
-                                    >Scouting Quota</span
+                                    >{t("scouting_quota")}</span
                                 >
                                 <span class="text-sm font-black text-white"
                                     >{youthAcademyStore.selectedDrivers
@@ -401,7 +416,7 @@
                             <div class="flex flex-col items-start">
                                 <span
                                     class="text-[9px] font-black uppercase tracking-[0.1em] leading-none mb-1"
-                                    >Upgrade Facility</span
+                                    >{t("upgrade_facility")}</span
                                 >
                                 <span
                                     class="text-sm font-black tracking-tighter leading-none italic"
@@ -429,7 +444,7 @@
                     <h4
                         class="text-[10px] font-black text-zinc-500 uppercase tracking-[0.2em] mb-6"
                     >
-                        Target Promotion
+                        {t("target_promotion")}
                     </h4>
                     {#if youthAcademyStore.selectedDrivers.some((d) => d.isMarkedForPromotion)}
                         {@const promoted =
@@ -478,11 +493,11 @@
                                 <h5
                                     class="font-black text-sm tracking-tight leading-none mb-1 uppercase text-zinc-600"
                                 >
-                                    No Program Target
+                                    {t("no_target")}
                                 </h5>
                                 <span
                                     class="text-[9px] font-black uppercase tracking-tighter text-zinc-700"
-                                    >Mark a Graduand</span
+                                    >{t("mark_graduand")}</span
                                 >
                             </div>
                         </div>
@@ -494,7 +509,7 @@
                 >
                     <span
                         class="text-[10px] font-black text-zinc-600 uppercase tracking-widest"
-                        >Team Size</span
+                        >{t("team_size")}</span
                     >
                     <div class="flex items-center gap-2">
                         <div class="flex gap-1.5">
@@ -529,11 +544,11 @@
                         <h3
                             class="text-2xl font-black text-white tracking-tighter uppercase italic"
                         >
-                            Training Roster
+                            {t("training_roster")}
                         </h3>
                         <span
                             class="px-3 py-1 bg-emerald-500/10 text-emerald-400 text-[10px] font-black rounded-lg uppercase border border-emerald-500/20 ml-2 tracking-widest"
-                            >Active Ops</span
+                            >{t("active_ops")}</span
                         >
                     </div>
                 </div>
@@ -550,15 +565,12 @@
                         <h4
                             class="text-white font-black text-2xl mb-3 uppercase tracking-tight italic"
                         >
-                            Program Dormant
+                            {t("program_dormant")}
                         </h4>
                         <p
                             class="text-zinc-500 text-sm max-w-sm font-medium leading-relaxed"
                         >
-                            Your state-of-the-art facility is operational but
-                            idle. Review the weekly scouting reports and sign
-                            high-ceiling candidates to initiate their
-                            development path.
+                            {t("program_idle_desc")}
                         </p>
                     </div>
                 {:else}
@@ -582,7 +594,7 @@
                                         <h4
                                             class="text-white font-black text-xl uppercase tracking-tighter mb-2 italic"
                                         >
-                                            Urgent Insight Needed
+                                            {t("urgent_insight")}
                                         </h4>
                                         <p
                                             class="text-zinc-400 font-bold text-xs mb-8 px-4 leading-relaxed tracking-wide italic"
@@ -645,6 +657,19 @@
                                             >
                                                 {driver.name}
                                             </h4>
+                                            {#if getSpecialtyKey(driver.specialty)}
+                                                <div class="mt-1 flex gap-2">
+                                                    <span
+                                                        class="px-2 py-0.5 bg-fuchsia-500/10 text-fuchsia-400 text-[9px] font-black rounded border border-fuchsia-500/20 tracking-wider uppercase"
+                                                    >
+                                                        {t(
+                                                            getSpecialtyKey(
+                                                                driver.specialty,
+                                                            )!,
+                                                        )}
+                                                    </span>
+                                                </div>
+                                            {/if}
                                             <div
                                                 class="flex items-center gap-2"
                                             >
@@ -676,8 +701,12 @@
                                             </div>
                                         </div>
                                         <DriverStars
-                                            currentStars={driver.baseSkill / 20}
-                                            maxStars={5}
+                                            currentStars={calculateAcademyCurrentStars(
+                                                driver,
+                                            )}
+                                            maxStars={calculateAcademyMaxStars(
+                                                driver,
+                                            )}
                                         />
                                         <div
                                             class="flex items-center gap-4 mt-4"
@@ -685,7 +714,7 @@
                                             <div class="flex flex-col">
                                                 <span
                                                     class="text-[9px] font-black text-zinc-600 uppercase tracking-widest leading-none mb-1.5"
-                                                    >Status</span
+                                                    >{t("role")}</span
                                                 >
                                                 <div
                                                     class="flex items-center gap-1.5"
@@ -695,7 +724,9 @@
                                                     ></div>
                                                     <span
                                                         class="text-[11px] font-black text-emerald-400 uppercase tracking-widest italic"
-                                                        >In Training</span
+                                                        >{t(
+                                                            "in_training",
+                                                        )}</span
                                                     >
                                                 </div>
                                             </div>
@@ -705,7 +736,7 @@
                                             <div class="flex flex-col">
                                                 <span
                                                     class="text-[9px] font-black text-zinc-600 uppercase tracking-widest leading-none mb-1.5"
-                                                    >Growth</span
+                                                    >{t("potential_peak")}</span
                                                 >
                                                 <span
                                                     class="text-[11px] font-black text-white uppercase tracking-tighter"
@@ -858,13 +889,13 @@
                     <h3
                         class="text-2xl font-black text-white tracking-tighter uppercase italic"
                     >
-                        Scouting INTEL
+                        {t("scouting_intel")}
                     </h3>
                     <div
                         class="flex items-center gap-2 text-[10px] font-black text-zinc-500 uppercase tracking-widest"
                     >
                         <Target class="w-5 h-5" />
-                        <span>Live Data</span>
+                        <span>{t("live_data")}</span>
                     </div>
                 </div>
 
@@ -898,14 +929,29 @@
                                         >
                                             {candidate.name}
                                         </h4>
+                                        {#if getSpecialtyKey(candidate.specialty)}
+                                            <div
+                                                class="px-2 py-0.5 bg-fuchsia-500/10 text-fuchsia-400 text-[8px] font-black rounded border border-fuchsia-500/20 tracking-wider uppercase w-max"
+                                            >
+                                                {t(
+                                                    getSpecialtyKey(
+                                                        candidate.specialty,
+                                                    )!,
+                                                )}
+                                            </div>
+                                        {/if}
                                         <span
                                             class="text-[10px] font-black text-zinc-600 uppercase"
                                             >{candidate.age}Y</span
                                         >
                                     </div>
                                     <DriverStars
-                                        currentStars={candidate.baseSkill / 20}
-                                        maxStars={5}
+                                        currentStars={calculateAcademyCurrentStars(
+                                            candidate,
+                                        )}
+                                        maxStars={calculateAcademyMaxStars(
+                                            candidate,
+                                        )}
                                     />
                                     <div
                                         class="flex flex-wrap items-center gap-3 mt-3"
@@ -918,13 +964,12 @@
                                             />
                                             <span
                                                 class="text-[10px] font-black text-emerald-400 uppercase tracking-tighter italic"
-                                                >{(
-                                                    ((candidate.baseSkill ??
-                                                        0) +
-                                                        (candidate.growthPotential ??
-                                                            0)) /
-                                                    20
-                                                ).toFixed(1)} Stars Potential</span
+                                                >{t("stars_potential", {
+                                                    stars: (
+                                                        candidate.potentialStars ||
+                                                        0
+                                                    ).toFixed(1),
+                                                })}</span
                                             >
                                         </div>
                                     </div>
@@ -941,7 +986,7 @@
                                     <UserPlus
                                         class="w-4 h-4 transition-transform group-hover/btn:rotate-12"
                                     />
-                                    <span>Sign Contract</span>
+                                    <span>{t("sign_contract")}</span>
                                 </button>
                                 <button
                                     class="flex items-center justify-center gap-2 py-4 bg-white/5 text-zinc-600 text-[11px] font-black uppercase rounded-2xl border border-white/5 hover:bg-red-500/10 hover:text-red-400 hover:border-red-500/30 transition-all active:scale-95"
@@ -951,7 +996,7 @@
                                         )}
                                 >
                                     <XCircle class="w-4 h-4" />
-                                    <span>Dismiss</span>
+                                    <span>{t("dismiss")}</span>
                                 </button>
                             </div>
 
@@ -959,8 +1004,8 @@
                                 class="mt-4 flex items-center justify-between px-2"
                             >
                                 <span
-                                    class="text-[9px] font-black text-zinc-700 uppercase tracking-widest leading-none"
-                                    >Scouted Contract Fee</span
+                                    class="text-[9px] font-black text-zinc-600 uppercase tracking-widest leading-none"
+                                    >{t("scouted_fee")}</span
                                 >
                                 <span
                                     class="text-[11px] font-black text-white italic tracking-tighter"
@@ -984,12 +1029,12 @@
                             <p
                                 class="text-zinc-600 text-[10px] font-black uppercase tracking-[0.2em] mb-1 italic"
                             >
-                                Intelligence Pool Empty
+                                {t("program_dormant")}
                             </p>
                             <p
                                 class="text-zinc-800 text-[9px] font-bold uppercase tracking-widest"
                             >
-                                Next assessment in 7 days
+                                {t("seasons_plural")}
                             </p>
                         </div>
                     {/if}
@@ -1006,17 +1051,16 @@
                                 class="text-white/60 text-[11px] font-black uppercase tracking-[0.3em] mb-4 flex items-center gap-3"
                             >
                                 <Target class="w-5 h-5" />
-                                Regional Focus
+                                {t("regional_focus")}
                             </h5>
                             <p
                                 class="text-zinc-400 text-xs leading-relaxed font-medium italic opacity-80 group-hover:opacity-100 transition-opacity"
                             >
-                                Scouting efforts are strategically concentrated
-                                in <span class="text-white font-black"
-                                    >{youthAcademyStore.config?.countryName?.toUpperCase()}</span
-                                >. Graduates will emerge with peak regional
-                                technical expertise and optimized market entry
-                                overhead.
+                                {t("scouting_efforts", {
+                                    country:
+                                        youthAcademyStore.config?.countryName?.toUpperCase() ||
+                                        "",
+                                })}
                             </p>
                         </div>
                     </div>

@@ -45,6 +45,10 @@ async function syncUniverse() {
                 leagues[li].drivers[di].seasonPodiums = real.seasonPodiums || 0;
                 leagues[li].drivers[di].races = real.races || 0;
                 leagues[li].drivers[di].seasonRaces = real.seasonRaces || 0;
+                leagues[li].drivers[di].championships = real.championships || 0;
+                leagues[li].drivers[di].championshipForm = real.championshipForm || [];
+                leagues[li].drivers[di].careerHistory = real.careerHistory || [];
+
             }
         }
 

@@ -51,21 +51,45 @@ El universo del juego se organiza en una serie de ligas jerárquicas en lugar de
 - Cada equipo puede adquirir una academia de jóvenes pagando la cuota inicial ($100k).
 - La academia se puede mejorar hasta el **nivel 5**, pero solo se permite **1 mejora por temporada**.
 - Al comprar la academia, el manager elige un **País de Origen** que aplicará a todos los pilotos graduados de ella.
-- **Capacidad de Roster (Slots)**:
-    - **Nivel 1**: 4 slots (posiciones para entrenar pilotos jóvenes a la vez).
-    - **Niveles 2-5**: +1 slot adicional por nivel.
-    - **Bonificación**: El rol de manager `Bureaucrat` otorga **+2 slots adicionales** por cada nivel de la academia.
-- **Hunting/Scouting**:
-    - Aparecen **2 prospectos jóvenes por semana**.
-    - Existe una **Cuota de Scouting por Temporada**: Inicia en 20 prospectos en Nivel 1 y aumenta a razón de +5 por cada nivel adicional. Una vez se alcanza esta cuota al ver prospectos cada semana, **no aparecerán más candidatos hasta la siguiente temporada**.
-- **Entrenamiento y Progreso**:
-    - Los pilotos jóvenes ingresan con niveles bajos (e.g. base 7 en lvl 1) y aumentan según el nivel de la academia (hasta base 15 en lvl 5).
-    - Tienen un potencial de crecimiento de entre 5 y 12 puntos según la academia.
-    - Contrato de 1 año con salario fijo de $100,000 y 0 de experiencia.
-    - Mientras estén seleccionados, entrenan y ganan experiencia participando pasivamente en el background simulator del FTG Karting Championship. No requieren configuraciones de setup ni neumáticos.
-- El manager puede visualizar en su "Academy Roster" un rango del potencial del piloto y actualizaciones periódicas de sus avances, pagando de su presupuesto (etiquetado "Academy").
-- Al finalizar la temporada, se pueden **ascender** al primer equipo, pero si el equipo ha llegado a su **límite de 5 pilotos totales**, no podrá ascender a nadie más. Los pilotos ascendidos tendrán moral al 100% y cobrarán 50% de salario.
-- Los jóvenes no seleccionados o decantados se auto-limpian al cierre del ciclo.
+
+#### Lógica de Estrellas y Visualización
+- **Pilotos de Academia**: Se calculan usando **Redondeo (`round`)**.
+    - `Habilidad Actual = round(baseSkill / 20)`. Mínimo 1 estrella.
+    - `Potencial Máximo = round((baseSkill + growthPotential) / 20)`. Mínimo 1 estrella.
+- **Pilotos Profesionales**: Se calculan usando **Techo (`ceil`)**.
+    - `Habilidad Actual = ceil(promedioStats / 20)`. Tope máximo limitado por su potencial.
+- **Visualización (Standard FTG)**:
+    - **Azul**: Nivel de habilidad actual.
+    - **Ámbar (Opacidad 50%)**: Diferencia entre habilidad actual y potencial máximo.
+    - **Outline/Vacía**: Espacios restantes hasta completar 5 estrellas.
+
+#### Influencia del Nivel de Academia (Scouting)
+El nivel de la academia dicta la calidad de los candidatos encontrados semanalmente:
+- **Nivel 1**: Candidatos de 1.0 a 3.0 estrellas actuales. Potencial máximo topado en 3.5 estrellas.
+- **Nivel 3**: Candidatos de 1.5 a 3.5 estrellas actuales. Potencial máximo topado en 4.5 estrellas.
+- **Nivel 5**: Candidatos de 2.0 a 4.0 estrellas actuales. Único nivel donde aparecen pilotos de **5.0 estrellas de potencial**.
+- **Cuota de Scouting**: 20 prospectos en Nivel 1, aumentando +5 por nivel (hasta 40 en Nivel 5). Si se alcanza, no aparecen más hasta la próxima temporada.
+
+#### Especializaciones de Pilotos
+Los pilotos jóvenes pueden "despertar" una especialidad durante su entrenamiento si cumplen:
+1. `baseSkill >= 40`.
+2. Una estadística específica alcanza **55 puntos**.
+- **Especialidades**:
+    - **Rainmaster**: Adaptabilidad >= 55.
+    - **Tyre Whisperer**: Smoothness >= 55.
+    - **Late Braker**: Braking >= 55.
+    - **Defensive Minister**: Overtaking >= 55.
+- **Persistencia**: Las especialidades son permanentes y **se transfieren al equipo principal** tras la promoción.
+
+#### Roster, Entrenamiento y Promoción
+- **Capacidad (Slots)**: 4 slots en Nivel 1, +1 por nivel adicional. El rol `Bureaucrat` otorga **+2 adicionales** por nivel.
+- **Entrenamiento**: Los seleccionados ganan XP semanalmente en el simulador de fondo (Karting Championship).
+- **Ascenso (Promotion)**:
+    - Se realiza al finalizar la temporada (Season End).
+    - Los pilotos ascendidos reciben el título de **"Rookie"**.
+    - Inician con **100% de moral**.
+    - Su salario es el **50%** del salario del piloto al que reemplazan (ventaja competitiva de la academia).
+    - Límite máximo de 5 pilotos totales en el equipo (incluyendo reservas).
 
 ### Estado Físico y Recuperación
 - El atributo **Fitness** (0-100) es crítico para el rendimiento y la seguridad.

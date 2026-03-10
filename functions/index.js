@@ -1692,6 +1692,32 @@ exports.postRaceProcessing = onSchedule({
                   const newDriverRef = db.collection("drivers").doc(newDriverId);
 
                   // Create the new driver for the main squad
+                  const currentYear = 2026;
+                  const teamsSnap = await db.collection("teams").get();
+                  const teamsMap = {};
+                  teamsSnap.docs.forEach(d => {
+                    teamsMap[d.id] = d.data().name;
+                  });
+
+                  const driverHistory = [];
+                  const historyCount = Math.min(6, (yData.age || 18) - 18); // Max 6 years of history, starting from 18
+
+                  for (let i = 1; i <= historyCount; i++) {
+                    const year = currentYear - i;
+                    // For academy drivers, their history is always "Independent"
+                    const teamN = "Independent";
+
+                    driverHistory.push({
+                      year,
+                      teamName: teamN,
+                      series: "Formula FTG", // Assuming all academy drivers come from this series
+                      races: 22, // Standard number of races
+                      wins: Math.floor(Math.random() * (yData.potential > 3 ? 5 : 2)),
+                      podiums: Math.floor(Math.random() * (yData.potential > 3 ? 8 : 4)),
+                      isChampion: (yData.potential >= 5 && Math.random() > 0.8)
+                    });
+                  }
+
                   await newDriverRef.set({
                     id: newDriverId,
                     teamId: tid,
@@ -1717,6 +1743,8 @@ exports.postRaceProcessing = onSchedule({
                     seasonPodiums: 0,
                     seasonPoles: 0,
                     traits: [],
+                    careerHistory: driverHistory,
+                    statusTitle: "Rookie" // Default status for promoted academy drivers
                   });
 
                   await addOfficeNews(tid, {
@@ -2221,3 +2249,92 @@ exports.forceFixGBA = onCall({
     return { success: false, error: err.message };
   }
 });
+
+/**
+ * Admin utility to restore historical data (2020-2025) for active drivers.
+ */
+exports.restoreDriversHistory = onCall({
+  cors: true,
+  memory: "512MiB",
+  timeoutSeconds: 540,
+}, async (request) => {
+  logger.info("restoreDriversHistory triggered", { auth: request.auth?.uid });
+  try {
+    const driversSnap = await db.collection("drivers").get();
+    const teamsSnap = await db.collection("teams").get();
+    const teamsMap = {};
+    teamsSnap.docs.forEach((d) => {
+      teamsMap[d.id] = d.data().name || "Unknown Team";
+    });
+
+    const batch = db.batch();
+    let count = 0;
+
+    for (const dDoc of driversSnap.docs) {
+      const data = dDoc.data();
+      const isActive = data.teamId != null || data.isTransferListed === true;
+      if (!isActive) continue;
+
+      const age = data.age || 25;
+      const potential = data.potential || 3;
+      const careerHistory = [];
+      let tR = 0; let tW = 0; let tP = 0; let tC = 0;
+
+      const wRB = potential * 0.04;
+      const pRB = potential * 0.10;
+      const teamN = teamsMap[data.teamId] || "Independent";
+
+      for (let y = 2025; y >= 2020; y--) {
+        const yA = 2026 - y;
+        const aAY = age - yA;
+        if (aAY < 18) continue;
+
+        let pF = 1.0;
+        if (aAY < 23) pF = 0.7 + Math.random() * 0.2;
+        else if (aAY < 27) pF = 0.9 + Math.random() * 0.2;
+        else if (aAY <= 32) pF = 1.1 + Math.random() * 0.3;
+        else if (aAY <= 36) pF = 0.8 + Math.random() * 0.2;
+        else pF = 0.5 + Math.random() * 0.3;
+
+        const sR = 9 + Math.floor(Math.random() * 2);
+        let yW = Math.floor(sR * wRB * pF * (0.8 + Math.random() * 0.4));
+        let yP = Math.floor(sR * pRB * pF * (0.8 + Math.random() * 0.4));
+
+        if (yW > sR) yW = sR;
+        if (yP > sR) yP = sR;
+        if (yP < yW) yP = yW;
+
+        const isC = yW >= 5 && Math.random() > 0.6;
+
+        careerHistory.push({
+          year: y,
+          teamName: data.teamId ? teamN : "Independiente",
+          series: "FTG LEAGUE",
+          races: sR,
+          wins: yW,
+          podiums: yP,
+          isChampion: isC,
+        });
+
+        tR += sR; tW += yW; tP += yP;
+        if (isC) tC++;
+      }
+
+      batch.update(dDoc.ref, {
+        races: tR,
+        wins: tW,
+        podiums: tP,
+        championships: tC,
+        careerHistory: careerHistory,
+      });
+      count++;
+    }
+
+    await batch.commit();
+    return { success: true, count };
+  } catch (err) {
+    logger.error("restoreDriversHistory failed", err);
+    return { success: false, error: err.message };
+  }
+});
+

@@ -11,7 +11,7 @@
         id,
         gender = "M",
         seed,
-        size = 100,
+        size,
         class: className = "",
     }: Props = $props();
 
@@ -51,13 +51,13 @@
 
 <div
     class="relative overflow-hidden rounded-[2rem] bg-zinc-950 border border-white/5 shadow-2xl {className}"
-    style="width: {size}px; height: {size}px;"
+    style={size ? `width: ${size}px; height: ${size}px;` : ""}
 >
     <!-- Driver Portrait -->
     <img
         src={avatarUrl}
         alt="Driver Avatar"
-        class="w-full h-full object-cover object-center"
+        class="w-full h-full object-cover object-top"
         loading="lazy"
     />
 
