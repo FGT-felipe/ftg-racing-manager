@@ -20,13 +20,7 @@
     // Use professional DiceBear API for high-quality, procedural vector avatars
     // Style: 'avataaars' - Clean, modern, and professional
     const avatarUrl = $derived(
-        `https://api.dicebear.com/7.x/avataaars/png?seed=${
-            seed || id
-        }&backgroundColor=transparent&top=${
-            isFemale
-                ? "longHair,curvy,bob,straight01,straight02,turban,frizzle,curly"
-                : "shortFlat,shortRound,shortWaved,shavedSides,shortCurly,noHair"
-        }&accessoriesProbability=10`,
+        `https://api.dicebear.com/7.x/avataaars/png?seed=${seed || id}&backgroundColor=transparent`,
     );
 </script>
 
