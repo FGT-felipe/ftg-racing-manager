@@ -47,7 +47,7 @@
 </svelte:head>
 
 <div
-    class="flex flex-col gap-6 p-6 lg:p-8 w-full max-w-[1200px] mx-auto animate-fade-in text-app-text"
+    class="flex flex-col gap-10 p-6 lg:p-8 w-full max-w-[1400px] mx-auto animate-fade-in text-app-text"
 >
     <!-- Loading state -->
     {#if teamData.loading || authStore.loading}
@@ -57,6 +57,30 @@
             ></div>
         </div>
     {:else if team}
+        {@const nameParts = team.name.split(" ")}
+        <!-- Dashboard Header Section -->
+        <header class="flex flex-col gap-2">
+            <div class="flex items-center gap-3">
+                <span
+                    class="text-[10px] font-black tracking-[0.3em] text-app-primary/40 uppercase font-heading"
+                >
+                    Welcome {authStore.user?.displayName || "Manager"}
+                </span>
+            </div>
+            <h1
+                class="text-4xl lg:text-5xl font-heading font-black tracking-tighter uppercase italic text-white mt-1"
+            >
+                {#if nameParts.length > 1}
+                    {nameParts[0]}
+                    <span class="text-app-primary"
+                        >{nameParts.slice(1).join(" ")}</span
+                    >
+                {:else}
+                    <span class="text-app-primary">{team.name}</span>
+                {/if}
+            </h1>
+        </header>
+
         <!-- Grid Layout for Dashboard Main View -->
         <div class="grid grid-cols-1 lg:grid-cols-3 gap-8 w-full items-start">
             <!-- Left/Center Col: Main Ops -->

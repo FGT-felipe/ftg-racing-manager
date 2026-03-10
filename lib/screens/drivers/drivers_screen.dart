@@ -404,63 +404,62 @@ class _DriversScreenState extends State<DriversScreen> {
       context: context,
       builder: (ctx) => Dialog(
         backgroundColor: Colors.transparent,
-        insetPadding: const EdgeInsets.all(16),
-        child: SingleChildScrollView(
-          child: Center(
-            child: SizedBox(
-              width: MediaQuery.of(context).size.width * 0.8,
-              child: Stack(
-                clipBehavior: Clip.none,
-                children: [
-                  DriverCard(
-                    driver: driver,
-                    teamName: _teamName,
-                    leagueName: _leagueName,
-                    currentYear: _currentYear,
-                    onRenew: () {
-                      Navigator.pop(ctx);
-                      RenewContractModal.show(context, widget.teamId, driver);
-                    },
-                    onTransferMarket: () {
-                      Navigator.pop(ctx);
-                      TransferOptionsModal.show(context, widget.teamId, driver);
-                    },
-                    onCancelTransfer: () async {
-                      try {
-                        await TransferMarketService().cancelTransfer(
-                          widget.teamId,
-                          driver.id,
-                        );
-                        if (context.mounted) {
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            const SnackBar(
-                              content: Text(
-                                "Transfer cancelled! Morale decreased.",
-                              ),
-                            ),
-                          );
-                        }
-                      } catch (e) {
-                        if (context.mounted) {
-                          ScaffoldMessenger.of(
-                            context,
-                          ).showSnackBar(SnackBar(content: Text("Error: $e")));
-                        }
-                      }
-                      if (ctx.mounted) Navigator.pop(ctx);
-                    },
-                  ),
-                  Positioned(
-                    top: 12,
-                    right: 12,
-                    child: IconButton(
-                      icon: const Icon(Icons.close, color: Colors.white),
-                      onPressed: () => Navigator.pop(ctx),
-                    ),
-                  ),
-                ],
+        insetPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 32),
+        child: ConstrainedBox(
+          constraints: BoxConstraints(
+            maxWidth: MediaQuery.of(context).size.width * 0.9,
+            maxHeight: MediaQuery.of(context).size.height * 0.85,
+          ),
+          child: Stack(
+            clipBehavior: Clip.none,
+            children: [
+              DriverCard(
+                driver: driver,
+                teamName: _teamName,
+                leagueName: _leagueName,
+                currentYear: _currentYear,
+                onRenew: () {
+                  Navigator.pop(ctx);
+                  RenewContractModal.show(context, widget.teamId, driver);
+                },
+                onTransferMarket: () {
+                  Navigator.pop(ctx);
+                  TransferOptionsModal.show(context, widget.teamId, driver);
+                },
+                onCancelTransfer: () async {
+                  try {
+                    await TransferMarketService().cancelTransfer(
+                      widget.teamId,
+                      driver.id,
+                    );
+                    if (context.mounted) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(
+                          content: Text(
+                            "Transfer cancelled! Morale decreased.",
+                          ),
+                        ),
+                      );
+                    }
+                  } catch (e) {
+                    if (context.mounted) {
+                      ScaffoldMessenger.of(
+                        context,
+                      ).showSnackBar(SnackBar(content: Text("Error: $e")));
+                    }
+                  }
+                  if (ctx.mounted) Navigator.pop(ctx);
+                },
               ),
-            ),
+              Positioned(
+                top: 0,
+                right: 0,
+                child: IconButton(
+                  icon: const Icon(Icons.close, color: Colors.white70),
+                  onPressed: () => Navigator.pop(ctx),
+                ),
+              ),
+            ],
           ),
         ),
       ),

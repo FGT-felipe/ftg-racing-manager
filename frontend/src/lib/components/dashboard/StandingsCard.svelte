@@ -2,6 +2,7 @@
     import { teamStore } from "$lib/stores/team.svelte";
     import { universeStore } from "$lib/stores/universe.svelte";
     import { Trophy, User, Users, ChevronRight } from "lucide-svelte";
+    import DriverAvatar from "$lib/components/DriverAvatar.svelte";
     import { fly } from "svelte/transition";
 
     let team = $derived(teamStore.value.team);
@@ -95,9 +96,13 @@
                         >
                             <div class="flex items-center gap-3">
                                 <div
-                                    class="w-8 h-8 rounded-full bg-white/5 flex items-center justify-center text-white/40"
+                                    class="w-8 h-8 rounded-full bg-white/5 flex items-center justify-center overflow-hidden"
                                 >
-                                    <User size={16} />
+                                    <DriverAvatar
+                                        id={driver.id}
+                                        gender={driver.gender}
+                                        class="w-full h-full"
+                                    />
                                 </div>
                                 <div class="flex flex-col">
                                     <span

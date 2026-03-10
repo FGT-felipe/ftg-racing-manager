@@ -228,6 +228,25 @@
                                 <small>Sync with global master config</small>
                             </div>
                         </button>
+                        <button
+                            class="action-btn warning"
+                            disabled={!!processingAction}
+                            onclick={() =>
+                                runAction(
+                                    "restoreDriversHistory",
+                                    "Restore and clean up all drivers' career history (Fixes 'F1 Team')",
+                                )}
+                        >
+                            <span class="icon"
+                                >{processingAction === "restoreDriversHistory"
+                                    ? "⌛"
+                                    : "👨‍✈️"}</span
+                            >
+                            <div class="label">
+                                <strong>Restore Driver History</strong>
+                                <small>Fix F1 Team & regenerate stats</small>
+                            </div>
+                        </button>
                     </div>
                 </section>
 

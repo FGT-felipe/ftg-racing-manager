@@ -1,13 +1,43 @@
 <script lang="ts">
-    let {
-        currentStars = 0,
-        maxStars = 0,
-        size = 14,
-    } = $props<{
-        currentStars: number;
-        maxStars: number;
+    import { Star } from "lucide-svelte";
+    import { type Driver, type YoungDriver } from "$lib/types";
+    import {
+        calculateCurrentStars,
+        calculateMaxStars,
+    } from "$lib/utils/driver";
+
+    interface Props {
+        driver?: Driver | YoungDriver;
         size?: number;
-    }>();
+        currentStars?: number;
+        maxStars?: number;
+    }
+
+    let {
+        driver,
+        size = 12,
+        currentStars: propCurrent,
+        maxStars: propMax,
+    }: Props = $props();
+
+    const currentStars = $derived(
+        propCurrent !== undefined
+            ? propCurrent
+            : driver
+              ? "stats" in driver
+                  ? calculateCurrentStars(driver as Driver)
+                  : (driver as any).potentialStars || 1 // Fallback for raw academy data
+              : 0,
+    );
+    const maxStars = $derived(
+        propMax !== undefined
+            ? propMax
+            : driver
+              ? "stats" in driver
+                  ? calculateMaxStars(driver as Driver)
+                  : (driver as any).potentialStars || 5 // Fallback
+              : 1,
+    );
 </script>
 
 <div class="flex items-center">

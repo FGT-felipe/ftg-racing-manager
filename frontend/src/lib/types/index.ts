@@ -154,6 +154,24 @@ export enum DriverTrait {
     youngProdigy = 'youngProdigy'
 }
 
+export interface ChampionshipForm {
+    event: string;
+    pos: string;
+    pts: number;
+    date: string;
+}
+
+export interface CareerHistoryItem {
+    year: number;
+    teamName: string;
+    series: string;
+    races: number;
+    wins: number;
+    podiums: number;
+    isChampion: boolean;
+}
+
+
 export interface Driver {
     id: string;
     teamId?: string | null;
@@ -178,7 +196,10 @@ export interface Driver {
     stats: Record<string, number>;
     statPotentials: Record<string, number>;
     traits: DriverTrait[];
+    championshipForm: ChampionshipForm[];
+    careerHistory?: CareerHistoryItem[];
     countryCode: string;
+
     role: string;
     salary: number;
     contractYearsRemaining: number;
@@ -221,6 +242,7 @@ export interface YoungDriver {
     weeklyEventMessage?: string | null;
     weeklyStatDiffs?: Record<string, number>;
     trainingProgress?: Record<string, number>;
+    specialty?: string | null;
 }
 
 export interface AppNotification {
