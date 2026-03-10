@@ -16,24 +16,48 @@
     }: Props = $props();
 
     const isFemale = $derived(gender === "F" || gender === "female");
+    const suffixes = [
+        "a",
+        "b",
+        "c",
+        "d",
+        "e",
+        "f",
+        "g",
+        "h",
+        "i",
+        "j",
+        "k",
+        "l",
+    ];
 
-    // Use professional DiceBear API for high-quality, procedural vector avatars
-    // Style: 'avataaars' - Clean, modern, and professional
-    const avatarUrl = $derived(
-        `https://api.dicebear.com/7.x/avataaars/png?seed=${seed || id}&backgroundColor=transparent`,
-    );
+    // Semi-deterministic selection using a simple hash of the ID
+    function getHashIndex(str: string, len: number) {
+        let hash = 0;
+        for (let i = 0; i < str.length; i++) {
+            hash = str.charCodeAt(i) + ((hash << 5) - hash);
+        }
+        return Math.abs(hash) % len;
+    }
+
+    const avatarUrl = $derived.by(() => {
+        const index = getHashIndex(seed || id, suffixes.length);
+        const suffix = suffixes[index];
+        const folder = isFemale ? "female" : "male";
+        const prefix = isFemale ? "female_driver" : "male_driver";
+        return `/${folder}/${prefix}_${suffix}.png`;
+    });
 </script>
 
 <div
     class="relative overflow-hidden rounded-[2rem] bg-zinc-950 border border-white/5 shadow-2xl {className}"
     style="width: {size}px; height: {size}px;"
 >
-    <!-- Professional Avatar from DiceBear -->
+    <!-- Driver Portrait -->
     <img
         src={avatarUrl}
         alt="Driver Avatar"
-        class="w-full h-full object-cover transform scale-110 translate-y-2"
-        crossorigin="anonymous"
+        class="w-full h-full object-cover object-center"
         loading="lazy"
     />
 
