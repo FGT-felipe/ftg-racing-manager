@@ -16,6 +16,14 @@ export function createAuthStore() {
     let loading = $state<boolean>(true);
 
     onAuthStateChanged(auth, (firebaseUser) => {
+        // Support for Playwright/Testing Mocking
+        if (browser && (window as any).__MOCK_AUTH__) {
+            console.log('🧪 MOCK Auth Active');
+            user = (window as any).__MOCK_AUTH__.user;
+            loading = false;
+            return;
+        }
+
         console.log('🛡️ Auth State Changed:', firebaseUser ? `User logged in: ${firebaseUser.uid}` : 'No user');
         user = firebaseUser;
         // Only flip loading flag once Firebase has resolved the session

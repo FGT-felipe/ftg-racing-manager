@@ -27,29 +27,38 @@ export class StaffService {
         });
     }
 
-    async upgradeTrainer(teamId: string, currentLevel: number, cost: number) {
+    async changeTrainerLevel(teamId: string, newLevel: number, cost: number, isUpgrade: boolean) {
         const teamRef = doc(db, 'teams', teamId);
         await runTransaction(db, async (transaction) => {
             const teamDoc = await transaction.get(teamRef);
             if (!teamDoc.exists()) return;
 
-            const budget = teamDoc.data().budget || 0;
-            if (budget < cost) throw new Error("Insufficient budget");
+            if (isUpgrade) {
+                const budget = teamDoc.data().budget || 0;
+                if (budget < cost) throw new Error("Insufficient budget");
 
-            transaction.update(teamRef, {
-                budget: increment(-cost),
-                'weekStatus.fitnessTrainerLevel': currentLevel + 1,
-                'weekStatus.fitnessTrainerUpgradedThisWeek': true
-            });
+                transaction.update(teamRef, {
+                    budget: increment(-cost),
+                    'weekStatus.fitnessTrainerLevel': newLevel,
+                    'weekStatus.fitnessTrainerUpgradedThisWeek': true
+                });
+            } else {
+                transaction.update(teamRef, {
+                    'weekStatus.fitnessTrainerLevel': newLevel,
+                    'weekStatus.fitnessTrainerUpgradedThisWeek': true
+                });
+            }
 
-            const txRef = doc(collection(teamRef, 'transactions'));
-            transaction.set(txRef, {
-                id: txRef.id,
-                description: `Staff Upgrade: Fitness Trainer (Lvl ${currentLevel + 1})`,
-                amount: -cost,
-                date: new Date().toISOString(),
-                type: 'OTHER'
-            });
+            if (isUpgrade) {
+                const txRef = doc(collection(teamRef, 'transactions'));
+                transaction.set(txRef, {
+                    id: txRef.id,
+                    description: `Staff Upgrade: Fitness Trainer (Lvl ${newLevel})`,
+                    amount: -cost,
+                    date: new Date().toISOString(),
+                    type: 'OTHER'
+                });
+            }
         });
     }
 
@@ -154,7 +163,8 @@ export class StaffService {
             if (!driverDoc.exists()) throw new Error("Driver not found");
 
             const driverData = driverDoc.data() as Driver;
-            const currentContractEnd = driverData.contractEnd ? new Date(driverData.contractEnd) : new Date();
+            const endDateStr = driverData.contract?.endDate;
+            const currentContractEnd = endDateStr ? new Date(endDateStr) : new Date();
             const newContractEnd = new Date(currentContractEnd.setFullYear(currentContractEnd.getFullYear() + years));
 
             // Example renewal cost: 10% of current annual salary per renewed year
@@ -171,7 +181,7 @@ export class StaffService {
             });
 
             transaction.update(driverRef, {
-                contractEnd: newContractEnd.toISOString(),
+                'contract.endDate': newContractEnd.toISOString(),
                 // Optionally, update salary or other contract terms here
             });
 

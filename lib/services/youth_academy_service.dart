@@ -56,7 +56,7 @@ class YouthAcademyService {
     return snap.data() as Map<String, dynamic>?;
   }
 
-  /// Purchase the Youth Academy (level 1) for $100,000.
+  /// Purchase the Youth Academy (level 1) for $10,000.
   ///
   /// Creates the config doc, generates 2 initial candidates (1M + 1F),
   /// and records the transaction.
@@ -74,7 +74,7 @@ class YouthAcademyService {
       if (!teamSnap.exists) throw Exception('Team not found');
 
       final team = Team.fromMap(teamSnap.data() as Map<String, dynamic>);
-      const purchasePrice = 100000;
+      const purchasePrice = 10000;
 
       if (team.budget < purchasePrice) {
         throw Exception('Insufficient budget to purchase Youth Academy');

@@ -207,7 +207,7 @@ class _YouthAcademyScreenState extends State<YouthAcademyScreen> {
                           ),
                         ),
                         Text(
-                          _financeService.formatCurrency(100000),
+                          _financeService.formatCurrency(10000),
                           style: GoogleFonts.poppins(
                             fontSize: 18,
                             fontWeight: FontWeight.w900,
@@ -233,7 +233,7 @@ class _YouthAcademyScreenState extends State<YouthAcademyScreen> {
                           style: GoogleFonts.poppins(
                             fontSize: 14,
                             fontWeight: FontWeight.w600,
-                            color: team.budget >= 100000
+                            color: team.budget >= 10000
                                 ? green
                                 : theme.colorScheme.error,
                           ),
@@ -334,7 +334,7 @@ class _YouthAcademyScreenState extends State<YouthAcademyScreen> {
                 child: ElevatedButton(
                   onPressed:
                       (_selectedCountry != null &&
-                          team.budget >= 100000 &&
+                          team.budget >= 10000 &&
                           !_isPurchasing)
                       ? () => _purchaseAcademy(team)
                       : null,

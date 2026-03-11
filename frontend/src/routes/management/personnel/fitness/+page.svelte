@@ -90,14 +90,23 @@
         }
     }
 
-    async function handleUpgrade() {
-        if (!team?.id || trainerLevel >= 5 || hasUpgradedThisWeek) return;
-        const cost = upgradeCosts[trainerLevel + 1];
-        if (team.budget < cost) return;
+    async function handleChangeLevel(targetIsUpgrade: boolean) {
+        if (!team?.id || hasUpgradedThisWeek) return;
+
+        const newLevel = targetIsUpgrade ? trainerLevel + 1 : trainerLevel - 1;
+        if (newLevel < 1 || newLevel > 5) return;
+
+        const cost = targetIsUpgrade ? upgradeCosts[newLevel] : 0;
+        if (targetIsUpgrade && team.budget < cost) return;
 
         isUpgrading = true;
         try {
-            await staffService.upgradeTrainer(team.id, trainerLevel, cost);
+            await staffService.changeTrainerLevel(
+                team.id,
+                newLevel,
+                cost,
+                targetIsUpgrade,
+            );
         } finally {
             isUpgrading = false;
         }
@@ -240,9 +249,13 @@
                                         >
                                         <span
                                             class="text-sm font-black text-white"
-                                            >{formatCurrency(
-                                                salaryByLevel[trainerLevel],
-                                            )}</span
+                                            >{salaryByLevel[trainerLevel] === 0
+                                                ? "FREE"
+                                                : formatCurrency(
+                                                      salaryByLevel[
+                                                          trainerLevel
+                                                      ],
+                                                  )}</span
                                         >
                                     </div>
                                 </div>
@@ -345,7 +358,7 @@
                                         isUpgrading ||
                                         team.budget <
                                             upgradeCosts[trainerLevel + 1]}
-                                    onclick={handleUpgrade}
+                                    onclick={() => handleChangeLevel(true)}
                                     class="p-6 bg-white/5 border border-white/5 rounded-2xl flex flex-col items-center gap-2 hover:border-app-primary transition-all disabled:opacity-20 flex-1"
                                 >
                                     <ArrowUp
@@ -366,17 +379,53 @@
                                 </button>
                             {/if}
 
-                            <div
-                                class="p-6 bg-black/20 border border-white/5 rounded-2xl flex flex-col items-center justify-center gap-2 text-center"
-                            >
-                                <span
-                                    class="text-[9px] font-black text-white/20 uppercase tracking-widest"
-                                    >Staff Status</span
+                            {#if trainerLevel > 1}
+                                <button
+                                    disabled={hasUpgradedThisWeek ||
+                                        isUpgrading}
+                                    onclick={() => handleChangeLevel(false)}
+                                    class="p-6 bg-white/5 border border-white/5 rounded-2xl flex flex-col items-center gap-2 hover:border-red-400 transition-all disabled:opacity-20 flex-1"
                                 >
-                                <span class="text-xs font-bold text-white/60"
-                                    >Ready for Operations</span
+                                    <ArrowDown size={20} class="text-red-400" />
+                                    <span
+                                        class="text-[9px] font-black text-white/40 uppercase tracking-widest"
+                                        >Downgrade to Level {trainerLevel -
+                                            1}</span
+                                    >
+                                    <span
+                                        class="text-sm font-black text-white italic"
+                                        >FREE</span
+                                    >
+                                </button>
+                            {/if}
+
+                            {#if trainerLevel === 5}
+                                <div
+                                    class="p-6 bg-black/20 border border-white/5 rounded-2xl flex flex-col items-center justify-center gap-2 text-center"
                                 >
-                            </div>
+                                    <span
+                                        class="text-[9px] font-black text-white/20 uppercase tracking-widest"
+                                        >Staff Status</span
+                                    >
+                                    <span
+                                        class="text-xs font-bold text-white/60"
+                                        >Elite Level Reached</span
+                                    >
+                                </div>
+                            {:else if trainerLevel === 1 && !hasUpgradedThisWeek}
+                                <div
+                                    class="p-6 bg-black/20 border border-white/5 rounded-2xl flex flex-col items-center justify-center gap-2 text-center"
+                                >
+                                    <span
+                                        class="text-[9px] font-black text-white/20 uppercase tracking-widest"
+                                        >Staff Status</span
+                                    >
+                                    <span
+                                        class="text-xs font-bold text-white/60"
+                                        >Ready for Operations</span
+                                    >
+                                </div>
+                            {/if}
                         </div>
                     </div>
                 </section>

@@ -1,0 +1,18 @@
+﻿Loading svelte-check in workspace: d:\PROYECTOS\Fire Tower Games\Projects\ftg-racing-manager\frontend
+Getting Svelte diagnostics...
+
+d:\PROYECTOS\Fire Tower Games\Projects\ftg-racing-manager\frontend\[32msrc\lib\services\staff.svelte.ts[39m:166:51
+[31mError[39m: Property 'contract' does not exist on type 'Driver'. 
+[36m            const driverData = driverDoc.data() as Driver;
+            const currentContractEnd = driverData.[35mcontract[36m?.endDate ? new Date(driverData.contract.endDate) : new Date();
+            const newContractEnd = new Date(currentContractEnd.setFullYear(currentContractEnd.getFullYear() + years));[39m
+
+d:\PROYECTOS\Fire Tower Games\Projects\ftg-racing-manager\frontend\[32msrc\lib\services\staff.svelte.ts[39m:166:91
+[31mError[39m: Property 'contract' does not exist on type 'Driver'. 
+[36m            const driverData = driverDoc.data() as Driver;
+            const currentContractEnd = driverData.contract?.endDate ? new Date(driverData.[35mcontract[36m.endDate) : new Date();
+            const newContractEnd = new Date(currentContractEnd.setFullYear(currentContractEnd.getFullYear() + years));[39m
+
+====================================
+[31msvelte-check found 2 errors and 0 warnings in 1 file
+[39m

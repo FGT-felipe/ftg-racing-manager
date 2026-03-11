@@ -71,7 +71,7 @@ export const translations = {
         scouting_intel: "Scouting Intel",
         live_data: "Live Data",
         stars_potential: "{stars} Stars Potential",
-        sign_contract: "Sign Contract",
+        sign_contract: "Scout",
         scouted_fee: "Scouted Contract Fee",
         regional_focus: "Regional Focus",
         scouting_efforts: "Scouting efforts are strategically concentrated in {country}.",
@@ -81,7 +81,17 @@ export const translations = {
         late_braker: "Late Braker",
         defensive_minister: "Defensive Minister",
         in_training: "In Training",
-        rookie: "Rookie"
+        rookie: "Rookie",
+        academy_title: "Youth Academy",
+        academy_subtitle: "Establish a regional scouting hub and develop next-gen talent",
+        target_region_selection: "Target Region Selection",
+        acquiring_assets: "Acquiring Assets",
+        academy_header: "Academy",
+        season_finale: "Season Finale",
+        critical_development_fallback: "Critical development stage reached. Manager decision protocol activated.",
+        resolve_flow: "Resolve Flow",
+        mark_for_promotion: "Mark for Promotion",
+        release_driver_tooltip: "Release Driver"
     },
     es: {
         career_view: "Vista Profesional",
@@ -152,7 +162,7 @@ export const translations = {
         scouting_intel: "Información de Scouting",
         live_data: "Datos en Vivo",
         stars_potential: "{stars} Estrellas de Potencial",
-        sign_contract: "Firmar Contrato",
+        sign_contract: "Ojear",
         scouted_fee: "Costo de Contrato de Scouting",
         regional_focus: "Enfoque Regional",
         scouting_efforts: "Los esfuerzos de scouting están concentrados estratégicamente en {country}.",
@@ -162,7 +172,17 @@ export const translations = {
         late_braker: "Frenador Tardío",
         defensive_minister: "Ministro de Defensa",
         in_training: "En Entrenamiento",
-        rookie: "Novato"
+        rookie: "Novato",
+        academy_title: "Academia de Jóvenes",
+        academy_subtitle: "Establece un centro regional de scouting y desarrolla talento de próxima generación",
+        target_region_selection: "Selección de Región Objetivo",
+        acquiring_assets: "Adquiriendo Activos",
+        academy_header: "Academia",
+        season_finale: "Final de Temporada",
+        critical_development_fallback: "Se ha alcanzado una etapa crítica de desarrollo. Protocolo de decisión del manager activado.",
+        resolve_flow: "Resolver Flujo",
+        mark_for_promotion: "Marcar para Promoción",
+        release_driver_tooltip: "Liberar Piloto"
     }
 };
 
@@ -186,4 +206,52 @@ export function t(key: keyof typeof translations['en'], params?: Record<string, 
 
 export function setLanguage(lang: Language) {
     currentLang = lang;
+}
+
+/**
+ * Fallback translation for hardcoded Spanish strings stored in database
+ * specifically for Youth Academy narrative events.
+ */
+export function translateAcademyNarrative(message: string | null | undefined): string {
+    if (!message) return "";
+
+    // If language is Spanish, we might want to keep it if it's already Spanish,
+    // but the requirement is "everything in English" for now.
+    // If we ever want proper i18n for these, they should be stored as keys.
+
+    let translated = message;
+
+    const mapping = [
+        { es: /asombró a los ingenieros con su ritmo en lluvia/i, en: "amazed the engineers with their pace in the rain" },
+        { es: /se adaptó rápidamente a un cambio drástico en el clima/i, en: "quickly adapted to a drastic change in the weather" },
+        { es: /pasó horas extra perfeccionando su trazada en curvas/i, en: "spent extra hours perfecting their line through curves" },
+        { es: /demostró un paso por curva impecable en el simulador/i, en: "demonstrated impeccable cornering in the simulator" },
+        { es: /mostró una gran delicadeza con los neumáticos/i, en: "showed great finesse with the tires" },
+        { es: /mejoró su fluidez de conducción notablemente/i, en: "remarkably improved their driving fluidness" },
+        { es: /demostró una gran destreza y confianza al frenar tarde/i, en: "showed great skill and confidence in braking late" },
+        { es: /ajustó su técnica de frenado para ganar tiempo/i, en: "adjusted their braking technique to gain time" },
+        { es: /realizó maniobras de rebase brillantes en su última carrera/i, en: "performed brilliant overtaking maneuvers in their last race" },
+        { es: /mostró una agresividad calculada perfecta para adelantar/i, en: "showed perfect calculated aggressiveness for passing" },
+        { es: /se mostró inquebrantable bajo presión manteniendo tiempos constantes/i, en: "remained unshakable under pressure, maintaining constant lap times" },
+        { es: /no cometió ni un solo error en toda la semana de pruebas/i, en: "did not make a single mistake throughout the testing week" },
+        { es: /estuvo extremadamente concentrado ignorando distracciones externas/i, en: "was extremely concentrated, ignoring external distractions" },
+        { es: /leyó perfectamente las señales del equipo durante la sesión/i, en: "perfectly read the team's signals during the session" },
+        { es: /superó todas las pruebas físicas con la mejor nota del grupo/i, en: "passed all physical tests with the best score in the group" },
+        { es: /mostró una resistencia física superior en tandas largas/i, en: "showed superior physical endurance in long runs" },
+        { es: /Continuó su progresión constante en el programa/i, en: "Continued their steady progression in the program" },
+        { es: /estuvo distraído por asuntos personales y su enfoque bajó/i, en: "was distracted by personal matters and their focus dropped" },
+        { es: /faltó a sesiones de entrenamiento físico/i, en: "missed physical training sessions" },
+        { es: /sufrió un leve incidente perdiendo confianza al frenar/i, en: "suffered a minor incident, losing confidence in braking" }
+    ];
+
+    for (const item of mapping) {
+        if (item.es.test(translated)) {
+            // Replace the matched Spanish part with the English one, 
+            // keeping the rest (like the driver's name at the start)
+            translated = translated.replace(item.es, item.en);
+            break;
+        }
+    }
+
+    return translated;
 }

@@ -596,7 +596,7 @@ function generateAcademyCandidate(academyLevel, countryCode, gender) {
     portraitUrl: `https://api.dicebear.com/7.x/notionists/png?seed=${id}&gender=${gender === "M" ? "male" : "female"}`,
     status: "candidate",
     expiresAt,
-    salary: 100000,
+    salary: 10000,
     contractYears: 1,
     statRangeMin,
     statRangeMax,
@@ -1541,10 +1541,20 @@ exports.postRaceProcessing = onSchedule({
         const dSnap = await db.collection("drivers").where("teamId", "==", tid).get();
         dSnap.forEach((doc) => {
           const d = doc.data();
-          const salary = d.salary || 100000; // default $100k
+          const salary = d.salary || 10000; // default $10k
           salaryCost += Math.round(salary / 52); // weekly wage
         });
         weeklyExpense += salaryCost;
+
+        // 3.5 Fitness Trainer Salary
+        const trainerLevel = curWs.fitnessTrainerLevel || 1;
+        const trainerSalaries = [0, 0, 50000, 120000, 250000, 500000];
+        const trainerSalary = (trainerLevel >= 0 && trainerLevel < trainerSalaries.length) ?
+          trainerSalaries[trainerLevel] : 0;
+
+        if (trainerSalary > 0) {
+          weeklyExpense += trainerSalary;
+        }
 
         // 4. Academy Processing
         const academyConfigDoc = await db.collection("teams").doc(tid).collection("academy").doc("config").get();
@@ -1604,17 +1614,17 @@ exports.postRaceProcessing = onSchedule({
 
               // Random Narrative based on the boosted stat
               const positiveEvents = {
-                adaptability: [`${yDriver.name} asombró a los ingenieros con su ritmo en lluvia.`, `${yDriver.name} se adaptó rápidamente a un cambio drástico en el clima.`],
-                cornering: [`${yDriver.name} pasó horas extra perfeccionando su trazada en curvas.`, `${yDriver.name} demostró un paso por curva impecable en el simulador.`],
-                smoothness: [`${yDriver.name} mostró una gran delicadeza con los neumáticos.`, `${yDriver.name} mejoró su fluidez de conducción notablemente.`],
-                braking: [`${yDriver.name} demostró una gran destreza y confianza al frenar tarde.`, `${yDriver.name} ajustó su técnica de frenado para ganar tiempo.`],
-                overtaking: [`${yDriver.name} realizó maniobras de rebase brillantes en su última carrera.`, `${yDriver.name} mostró una agresividad calculada perfecta para adelantar.`],
-                consistency: [`${yDriver.name} se mostró inquebrantable bajo presión manteniendo tiempos constantes.`, `${yDriver.name} no cometió ni un solo error en toda la semana de pruebas.`],
-                focus: [`${yDriver.name} estuvo extremadamente concentrado ignorando distracciones externas.`, `${yDriver.name} leyó perfectamente las señales del equipo durante la sesión.`],
-                fitness: [`${yDriver.name} superó todas las pruebas físicas con la mejor nota del grupo.`, `${yDriver.name} mostró una resistencia física superior en tandas largas.`],
+                adaptability: [`${yDriver.name} amazed the engineers with their pace in the rain.`, `${yDriver.name} quickly adapted to a drastic change in the weather.`],
+                cornering: [`${yDriver.name} spent extra hours perfecting their line through curves.`, `${yDriver.name} demonstrated impeccable cornering in the simulator.`],
+                smoothness: [`${yDriver.name} showed great finesse with the tires.`, `${yDriver.name} remarkably improved their driving fluidness.`],
+                braking: [`${yDriver.name} showed great skill and confidence in braking late.`, `${yDriver.name} adjusted their braking technique to gain time.`],
+                overtaking: [`${yDriver.name} performed brilliant overtaking maneuvers in their last race.`, `${yDriver.name} showed perfect calculated aggressiveness for passing.`],
+                consistency: [`${yDriver.name} remained unshakable under pressure, maintaining constant lap times.`, `${yDriver.name} did not make a single mistake throughout the testing week.`],
+                focus: [`${yDriver.name} was extremely concentrated, ignoring external distractions.`, `${yDriver.name} perfectly read the team's signals during the session.`],
+                fitness: [`${yDriver.name} passed all physical tests with the best score in the group.`, `${yDriver.name} showed superior physical endurance in long runs.`],
               };
 
-              const eventPool = positiveEvents[boostedStat] || ["Continuó su progresión constante en el programa."];
+              const eventPool = positiveEvents[boostedStat] || ["Continued their steady progression in the program."];
               eventMsg = eventPool[Math.floor(Math.random() * eventPool.length)];
 
               updates.stats = statsObj;
@@ -1622,9 +1632,9 @@ exports.postRaceProcessing = onSchedule({
               // Occasional small negative event if no growth happened
               if (Math.random() < 0.15) {
                 const negativeEvents = [
-                  { msg: `${yDriver.name} estuvo distraído por asuntos personales y su enfoque bajó.`, stat: "focus", diff: -1 },
-                  { msg: `${yDriver.name} faltó a sesiones de entrenamiento físico.`, stat: "fitness", diff: -1 },
-                  { msg: `${yDriver.name} sufrió un leve incidente perdiendo confianza al frenar.`, stat: "braking", diff: -1 },
+                  { msg: `${yDriver.name} was distracted by personal matters and their focus dropped.`, stat: "focus", diff: -1 },
+                  { msg: `${yDriver.name} missed physical training sessions.`, stat: "fitness", diff: -1 },
+                  { msg: `${yDriver.name} suffered a minor incident, losing confidence in braking.`, stat: "braking", diff: -1 },
                 ];
                 const neg = negativeEvents[Math.floor(Math.random() * negativeEvents.length)];
                 eventMsg = neg.msg;
@@ -1792,6 +1802,8 @@ exports.postRaceProcessing = onSchedule({
             upgradesThisWeek: 0,
             upgradeCooldownWeeksLeft: cooldown,
             isLockedForProcessing: false,
+            fitnessTrainerUpgradedThisWeek: false,
+            fitnessTrainerTrainedThisWeek: false,
           },
           "sponsors": updatedSponsors,
           "budget": newBudget,
@@ -1828,6 +1840,17 @@ exports.postRaceProcessing = onSchedule({
             id: salaryTx.id,
             description: "Driver Salaries",
             amount: -salaryCost,
+            date: nowIso,
+            type: "SALARY",
+          });
+        }
+
+        if (trainerSalary > 0) {
+          const trainerTx = tRef.collection("transactions").doc();
+          batch.set(trainerTx, {
+            id: trainerTx.id,
+            description: `Staff: Fitness Trainer Salary (Lvl ${trainerLevel})`,
+            amount: -trainerSalary,
             date: nowIso,
             type: "SALARY",
           });
@@ -1994,7 +2017,7 @@ exports.resolveTransferMarket = onSchedule({
           currentHighestBid: admin.firestore.FieldValue.delete(),
           highestBidderTeamId: admin.firestore.FieldValue.delete(),
           teamId: highestBidderId,
-          salary: Math.max(driver.salary || 100000, 100000), // maintain or set default
+          salary: Math.max(driver.salary || 10000, 10000), // maintain or set default
           contractYearsRemaining: 1, // standard 1 year after transfer
         });
         opCount++;
@@ -2156,9 +2179,9 @@ exports.megaFixDebriefs = onCall({
           if (gap > 20) debrief += "\n\nNote: The drivers complained about the car's balance. It seems our current Setup is quite far from the track's ideal requirements.";
           else if (gap < 5) debrief += "\n\nNote: The setup was very close to perfect! The drivers felt confident in the corners.";
         } else if (p1) {
-          debrief = `${p1.name}: ${p1.pos}. Necesitamos ambos coches en pista para maximizar resultados.`;
+          debrief = `${p1.name}: ${p1.pos}. We need both cars on track to maximize results.`;
         } else {
-          debrief = "Sin análisis disponible para este equipo.";
+          debrief = "No analysis available for this team.";
         }
 
         // 1. Update Team Document (Main debrief card)

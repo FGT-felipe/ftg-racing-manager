@@ -18,113 +18,16 @@
     } from "lucide-svelte";
     import { onDestroy } from "svelte";
 
+    import { circuitService } from "$lib/services/circuit_service.svelte";
+
     let nextEvent = $derived(seasonStore.nextEvent);
     let weekStatus = $derived(
         teamStore.value.team?.weekStatus?.globalStatus || "practice",
     );
 
-    // Enhanced Circuit Data matching Flutter's CircuitService
-    const CIRCUITS: Record<string, any> = {
-        mexico: {
-            aero: 0.4,
-            powertrain: 0.4,
-            chassis: 0.2,
-            characteristics: {
-                "Top Speed": "High",
-                "Tyre Wear": "Medium",
-                "Fuel Consumption": "Normal",
-            },
-        },
-        vegas: {
-            aero: 0.2,
-            powertrain: 0.6,
-            chassis: 0.2,
-            characteristics: {
-                "Top Speed": "Very High",
-                "Tyre Wear": "Low",
-                "Fuel Consumption": "High",
-            },
-        },
-        interlagos: {
-            aero: 0.3,
-            powertrain: 0.3,
-            chassis: 0.4,
-            characteristics: {
-                Elevation: "Significant",
-                Weather: "Unpredictable",
-                "Tyre Wear": "High",
-            },
-        },
-        miami: {
-            aero: 0.4,
-            powertrain: 0.3,
-            chassis: 0.3,
-            characteristics: {
-                Surface: "Smooth",
-                "Top Speed": "High",
-                "Tyre Wear": "Normal",
-            },
-        },
-        san_pablo_street: {
-            aero: 0.2,
-            powertrain: 0.2,
-            chassis: 0.6,
-            characteristics: {
-                Type: "Street",
-                Bumpy: "Yes",
-                "Tyre Wear": "High",
-            },
-        },
-        indianapolis: {
-            aero: 0.3,
-            powertrain: 0.4,
-            chassis: 0.3,
-            characteristics: {
-                "Oval Section": "Partial",
-                "Top Speed": "Very High",
-                "Tyre Wear": "Medium",
-            },
-        },
-        montreal: {
-            aero: 0.2,
-            powertrain: 0.4,
-            chassis: 0.4,
-            characteristics: {
-                Braking: "Heavy",
-                Kerbs: "Aggressive",
-                "Fuel Consumption": "High",
-            },
-        },
-        texas: {
-            aero: 0.5,
-            powertrain: 0.2,
-            chassis: 0.3,
-            characteristics: {
-                "S-Curves": "Technical",
-                Elevation: "Extreme",
-                "Tyre Wear": "Very High",
-            },
-        },
-        buenos_aires: {
-            aero: 0.3,
-            powertrain: 0.2,
-            chassis: 0.5,
-            characteristics: {
-                Technical: "Very",
-                "Top Speed": "Medium",
-                "Tyre Wear": "Medium",
-            },
-        },
-    };
-
     let circuitInfo = $derived(
         nextEvent
-            ? CIRCUITS[nextEvent.circuitId] || {
-                  aero: 0.33,
-                  powertrain: 0.34,
-                  chassis: 0.33,
-                  characteristics: { General: "Standard Circuit" },
-              }
+            ? circuitService.getCircuitProfile(nextEvent.circuitId)
             : null,
     );
 
@@ -432,7 +335,8 @@
                             >
                                 <div
                                     class="h-full bg-app-primary"
-                                    style="width: {circuitInfo.aero * 100}%"
+                                    style="width: {circuitInfo.aeroWeight *
+                                        100}%"
                                 ></div>
                             </div>
                         </div>
@@ -449,7 +353,7 @@
                             >
                                 <div
                                     class="h-full bg-blue-400"
-                                    style="width: {circuitInfo.powertrain *
+                                    style="width: {circuitInfo.powertrainWeight *
                                         100}%"
                                 ></div>
                             </div>
@@ -467,7 +371,8 @@
                             >
                                 <div
                                     class="h-full bg-green-400"
-                                    style="width: {circuitInfo.chassis * 100}%"
+                                    style="width: {circuitInfo.chassisWeight *
+                                        100}%"
                                 ></div>
                             </div>
                         </div>

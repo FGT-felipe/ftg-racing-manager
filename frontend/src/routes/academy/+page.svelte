@@ -28,7 +28,11 @@
         calculateAcademyCurrentStars,
         calculateAcademyMaxStars,
     } from "$lib/utils/driver";
-    import { t, type TranslationKey } from "$lib/utils/i18n";
+    import {
+        t,
+        translateAcademyNarrative,
+        type TranslationKey,
+    } from "$lib/utils/i18n";
 
     function getSpecialtyKey(
         specialty: string | null | undefined,
@@ -140,12 +144,9 @@
                 <h1
                     class="text-5xl font-black tracking-tighter text-white mb-3 leading-none italic uppercase"
                 >
-                    Youth Academy
+                    {t("academy_title")}
                 </h1>
-                <p class="text-zinc-400 font-medium tracking-wide">
-                    Establish a regional scouting hub and develop next-gen
-                    talent
-                </p>
+                {t("academy_subtitle")}
             </div>
 
             <div
@@ -210,7 +211,7 @@
                         >
                         <span
                             class="text-2xl font-black text-white italic tracking-tighter"
-                            >$100,000</span
+                            >{formatCurrencyCompact(10000)}</span
                         >
                     </div>
                     <div class="flex flex-col">
@@ -220,7 +221,7 @@
                         >
                         <span
                             class="text-2xl font-black italic tracking-tighter {(teamStore
-                                .value.team?.budget ?? 0) >= 100000
+                                .value.team?.budget ?? 0) >= 10000
                                 ? 'text-emerald-400'
                                 : 'text-red-400'}"
                         >
@@ -239,7 +240,7 @@
                     class="text-emerald-400 font-black text-[10px] tracking-[0.2em] uppercase mb-6 flex items-center gap-2"
                 >
                     <Globe class="w-3.5 h-3.5" />
-                    Target Region Selection
+                    {t("target_region_selection")}
                 </h3>
 
                 <div class="grid grid-cols-2 sm:grid-cols-4 gap-3">
@@ -267,12 +268,12 @@
             <button
                 class="w-full py-5 rounded-2xl font-black tracking-[0.3em] uppercase transition-all relative overflow-hidden group
                 {selectedCountry &&
-                (teamStore.value.team?.budget ?? 0) >= 100000 &&
+                (teamStore.value.team?.budget ?? 0) >= 10000 &&
                 !isPurchasing
                     ? 'bg-emerald-500 hover:bg-emerald-400 text-black shadow-2xl shadow-emerald-500/20 active:scale-[0.98]'
                     : 'bg-zinc-800 text-zinc-600 cursor-not-allowed'}"
                 disabled={!selectedCountry ||
-                    (teamStore.value.team?.budget ?? 0) < 100000 ||
+                    (teamStore.value.team?.budget ?? 0) < 10000 ||
                     isPurchasing}
                 onclick={handlePurchase}
             >
@@ -281,7 +282,7 @@
                         <div
                             class="w-5 h-5 border-2 border-black/30 border-t-black rounded-full animate-spin"
                         ></div>
-                        <span>Acquiring Assets</span>
+                        <span>{t("acquiring_assets")}</span>
                     </div>
                 {:else}
                     {t("initialize_hub")}
@@ -315,7 +316,7 @@
                             <h2
                                 class="text-4xl font-black text-white tracking-tighter uppercase italic leading-none"
                             >
-                                Academy
+                                {t("academy_header")}
                             </h2>
                             <div
                                 class="flex gap-1 bg-black/40 px-2 py-1 rounded-lg border border-white/5"
@@ -475,7 +476,7 @@
                                     ></div>
                                     <span
                                         class="text-[10px] font-black text-emerald-400 uppercase tracking-tighter"
-                                        >Season Finale</span
+                                        >{t("season_finale")}</span
                                     >
                                 </div>
                             </div>
@@ -599,8 +600,12 @@
                                         <p
                                             class="text-zinc-400 font-bold text-xs mb-8 px-4 leading-relaxed tracking-wide italic"
                                         >
-                                            "{driver.weeklyEventMessage ||
-                                                "Critical development stage reached. Manager decision protocol activated."}"
+                                            "{translateAcademyNarrative(
+                                                driver.weeklyEventMessage,
+                                            ) ||
+                                                t(
+                                                    "critical_development_fallback",
+                                                )}"
                                         </p>
 
                                         <div class="flex gap-4 w-full">
@@ -610,7 +615,8 @@
                                                     youthAcademyStore.solveAcademyAction(
                                                         driver.id,
                                                         "resolve",
-                                                    )}>Resolve Flow</button
+                                                    )}
+                                                >{t("resolve_flow")}</button
                                             >
                                             <button
                                                 class="flex-1 py-4 bg-white/10 text-white font-black uppercase text-xs rounded-2xl border border-white/10 hover:bg-white/20 transition-all"
@@ -682,7 +688,9 @@
                                                             driver.id,
                                                             !driver.isMarkedForPromotion,
                                                         )}
-                                                    title="Mark for Promotion"
+                                                    title={t(
+                                                        "mark_for_promotion",
+                                                    )}
                                                 >
                                                     <TrendingUp
                                                         class="w-5 h-5"
@@ -694,7 +702,9 @@
                                                         youthAcademyStore.releaseDriver(
                                                             driver.id,
                                                         )}
-                                                    title="Release Driver"
+                                                    title={t(
+                                                        "release_driver_tooltip",
+                                                    )}
                                                 >
                                                     <XCircle class="w-5 h-5" />
                                                 </button>
@@ -873,7 +883,9 @@
                                         <p
                                             class="text-[11px] text-zinc-400 font-medium leading-relaxed italic opacity-80 group-hover/msg:opacity-100 transition-opacity"
                                         >
-                                            "{driver.weeklyEventMessage}"
+                                            "{translateAcademyNarrative(
+                                                driver.weeklyEventMessage,
+                                            )}"
                                         </p>
                                     </div>
                                 {/if}
@@ -1009,9 +1021,7 @@
                                 >
                                 <span
                                     class="text-[11px] font-black text-white italic tracking-tighter"
-                                    >{formatCurrencyCompact(
-                                        candidate.salary ?? 100000,
-                                    )}</span
+                                    >{formatCurrencyCompact(10000)}</span
                                 >
                             </div>
                         </div>

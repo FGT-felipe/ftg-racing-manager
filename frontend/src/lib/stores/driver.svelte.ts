@@ -10,6 +10,14 @@ export function createDriverStore() {
     let unsubscribe: (() => void) | null = null;
 
     function init() {
+        // Support for Playwright/Testing Mocking
+        if (browser && (window as any).__MOCK_DRIVERS__) {
+            console.log('🧪 MOCK Drivers Active');
+            drivers = (window as any).__MOCK_DRIVERS__;
+            isLoading = false;
+            return;
+        }
+
         $effect(() => {
             const teamId = teamStore.value.team?.id;
 
