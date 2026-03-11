@@ -381,19 +381,27 @@
                     <div
                         class="flex flex-wrap gap-3 border-t border-app-border pt-6"
                     >
-                        {#each Object.entries(circuitInfo.characteristics) as [key, value]}
+                        {#if circuitInfo.characteristics}
+                            {#each Object.entries(circuitInfo.characteristics).filter(([key]) => key.toLowerCase() !== 'weather') as [key, value]}
+                            {@const tooltip = 
+                                key.toLowerCase().includes('fuel') ? 'Fuel consumption ranges between 1.0 and 1.9 liters per lap.' :
+                                key.toLowerCase().includes('tyre') ? 'Indicates the rate of tire degradation on this surface.' :
+                                key.toLowerCase().includes('elevation') ? 'Significant height changes affecting balance and power.' : null
+                            }
                             <div
-                                class="px-3 py-1.5 bg-app-text/5 border border-app-border rounded-lg flex items-center gap-2"
+                                class="px-3 py-1.5 bg-app-text/5 border border-app-border rounded-lg flex items-center gap-2 cursor-help group/item"
+                                title={tooltip}
                             >
                                 <span
-                                    class="text-[8px] font-black text-app-text/40 uppercase tracking-tighter"
+                                    class="text-[8px] font-black text-app-text/40 uppercase tracking-tighter group-hover/item:text-app-primary transition-colors"
                                     >{key}</span
                                 >
                                 <span class="text-[9px] font-bold text-app-text"
                                     >{value}</span
                                 >
                             </div>
-                        {/each}
+                            {/each}
+                        {/if}
                     </div>
                 {:else}
                     <div

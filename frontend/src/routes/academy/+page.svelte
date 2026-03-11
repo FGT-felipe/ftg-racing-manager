@@ -429,16 +429,28 @@
                             <div class="flex flex-col items-start">
                                 <span
                                     class="text-[9px] font-black uppercase tracking-[0.1em] leading-none mb-1"
-                                    >{t("upgrade_facility")}</span
                                 >
+                                    {#if youthAcademyStore.config?.academyLevel >= 5}
+                                        {t("max_level")}
+                                    {:else if !youthAcademyStore.canUpgrade && !isUpgrading}
+                                        LIMIT REACHED
+                                    {:else}
+                                        {t("upgrade_facility")}
+                                    {/if}
+                                </span>
                                 <span
                                     class="text-sm font-black tracking-tighter leading-none italic"
-                                    >${formatCurrencyCompact(
-                                        1000000 *
-                                            (youthAcademyStore.config
-                                                ?.academyLevel ?? 1),
-                                    )}</span
                                 >
+                                    {#if !youthAcademyStore.canUpgrade && !isUpgrading && youthAcademyStore.config?.academyLevel < 5}
+                                        Next Season
+                                    {:else}
+                                        ${formatCurrencyCompact(
+                                            1000000 *
+                                                (youthAcademyStore.config
+                                                    ?.academyLevel ?? 1),
+                                        )}
+                                    {/if}
+                                </span>
                             </div>
                         </button>
                     </div>

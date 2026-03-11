@@ -221,6 +221,7 @@ export function createYouthAcademyStore() {
             }
 
             const teamRef = doc(db, 'teams', teamId);
+            const configRef = doc(db, 'teams', teamId, 'academy', 'config');
             const candidateRef = doc(db, 'teams', teamId, 'academy', 'config', 'candidates', candidateId);
             const selectedRef = doc(db, 'teams', teamId, 'academy', 'config', 'selected', candidateId);
 
@@ -237,7 +238,7 @@ export function createYouthAcademyStore() {
                     selectedAt: serverTimestamp()
                 });
                 transaction.delete(candidateRef);
-                transaction.update(config, {
+                transaction.update(configRef, {
                     scoutsUsedThisSeason: increment(1)
                 });
                 transaction.update(teamRef, { budget: budget - salary });

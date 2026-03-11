@@ -270,7 +270,7 @@
                         </h4>
                     </div>
 
-                    {#if circuit}
+                    {#if circuit && circuit.characteristics}
                         <div class="space-y-4">
                             {#each Object.entries(circuit.characteristics) as [key, val]}
                                 <div

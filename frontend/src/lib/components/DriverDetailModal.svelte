@@ -28,6 +28,7 @@
         calculateCurrentStars,
         calculateMaxStars,
         isNearingRetirement,
+        isRetiringNextSeason,
     } from "$lib/utils/driver";
     import { t } from "$lib/utils/i18n";
     import { getTitleInfo } from "$lib/constants/titles";
@@ -122,9 +123,14 @@
     async function handleRenew() {
         if (!team?.id || !driver) return;
 
-        // Block if nearing retirement (38+)
-        if (isNearingRetirement(driver)) {
+        // Block if retiring next season (38+)
+        if (isRetiringNextSeason(driver)) {
             alert(t("retirement_alert", { name: driver.name }));
+            return;
+        }
+
+        // Warning if nearing retirement (35-37)
+        if (isNearingRetirement(driver) && !window.confirm(t("retirement_alert", { name: driver.name }) + "\n\nDo you want to proceed anyway?")) {
             return;
         }
 
@@ -221,7 +227,7 @@
             >
                 <!-- FRONT SIDE -->
                 <div
-                    class="card-front absolute inset-0 bg-[#121216] border border-app-border rounded-[32px] overflow-hidden shadow-2xl flex flex-col md:flex-row backface-hidden"
+                    class="card-front absolute inset-0 bg-[#121216] border border-app-border rounded-[32px] overflow-hidden shadow-2xl flex flex-col md:flex-row backface-hidden [transform:rotateY(0deg)]"
                 >
                     <!-- Close Button -->
                     <button
@@ -398,10 +404,10 @@
                                 <button
                                     class="flex-1 flex items-center justify-center gap-3 px-6 py-4 bg-app-primary/10 border border-app-primary/20 rounded-2xl text-app-primary text-[10px] font-black uppercase tracking-widest hover:bg-app-primary hover:text-app-primary-foreground transition-all disabled:opacity-50"
                                     onclick={handleRenew}
-                                    disabled={isProcessing}
+                                    disabled={isProcessing || isRetiringNextSeason(driver)}
                                 >
                                     <RefreshCw size={16} />
-                                    {t("renew_contract")}
+                                    {isRetiringNextSeason(driver) ? "Retiring Soon" : t("renew_contract")}
                                 </button>
                             </div>
                             <div class="flex gap-4">
@@ -434,6 +440,26 @@
                             >
                                 {t("championship_form")}
                             </h3>
+
+                            <!-- Season Summary Stats -->
+                            <div class="grid grid-cols-4 gap-2 mb-2">
+                                <div class="bg-app-primary/5 border border-app-primary/10 rounded-xl p-2 flex flex-col items-center">
+                                    <span class="text-[7px] font-black text-app-primary uppercase">{t("races")}</span>
+                                    <span class="text-xs font-black text-app-text tabular-nums">{driver.seasonRaces || 0}</span>
+                                </div>
+                                <div class="bg-app-primary/5 border border-app-primary/10 rounded-xl p-2 flex flex-col items-center">
+                                    <span class="text-[7px] font-black text-app-primary uppercase">{t("wins")}</span>
+                                    <span class="text-xs font-black text-app-text tabular-nums">{driver.seasonWins || 0}</span>
+                                </div>
+                                <div class="bg-app-primary/5 border border-app-primary/10 rounded-xl p-2 flex flex-col items-center">
+                                    <span class="text-[7px] font-black text-app-primary uppercase">{t("podiums")}</span>
+                                    <span class="text-xs font-black text-app-text tabular-nums">{driver.seasonPodiums || 0}</span>
+                                </div>
+                                <div class="bg-app-primary/5 border border-app-primary/10 rounded-xl p-2 flex flex-col items-center">
+                                    <span class="text-[7px] font-black text-app-primary uppercase">{t("poles")}</span>
+                                    <span class="text-xs font-black text-app-text tabular-nums">{driver.seasonPoles || 0}</span>
+                                </div>
+                            </div>
                             <div class="grid grid-cols-5 gap-2">
                                 {#each Array(5) as _, i}
                                     {@const item = driver.championshipForm?.[i]}

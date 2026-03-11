@@ -25,8 +25,10 @@
         Clock,
         BarChart3,
         Info,
+        TrendingUp,
     } from "lucide-svelte";
     import InstructionCard from "$lib/components/layout/InstructionCard.svelte";
+    import { getRoleById } from "$lib/constants/manager";
 
     let isEditingName = $state(false);
     let newName = $state("");
@@ -54,6 +56,27 @@
         races:
             (driverStore.carADriver?.races || 0) +
             (driverStore.carBDriver?.races || 0),
+    });
+
+    const managerAge = $derived.by(() => {
+        if (!managerStore.profile?.birthDate) return null;
+        try {
+            const birth = new Date(managerStore.profile.birthDate);
+            const now = new Date();
+            let age = now.getFullYear() - birth.getFullYear();
+            const m = now.getMonth() - birth.getMonth();
+            if (m < 0 || (m === 0 && now.getDate() < birth.getDate())) {
+                age--;
+            }
+            return age;
+        } catch (e) {
+            return null;
+        }
+    });
+
+    const managerRole = $derived.by(() => {
+        const bgId = managerStore.profile?.backgroundId || "ex_driver";
+        return getRoleById(bgId);
     });
 
     // Real-time news subscription
@@ -320,33 +343,88 @@
                 </div>
             </div>
 
-            <!-- Manager Info -->
             <div
-                class="bg-app-surface border border-app-border rounded-2xl p-6 relative overflow-hidden"
+                class="bg-app-surface border border-app-border rounded-2xl overflow-hidden relative group shadow-lg"
             >
-                <div class="flex items-center gap-4 mb-4">
+                <div class="p-6 border-b border-app-border bg-app-text/5 flex items-center gap-4">
                     <div
-                        class="w-12 h-12 rounded-full bg-app-primary/10 border border-app-primary/20 flex items-center justify-center"
+                        class="w-14 h-14 rounded-full bg-app-primary text-app-primary-foreground border-4 border-app-primary/20 flex items-center justify-center font-heading font-black text-2xl italic"
                     >
-                        <span class="text-xl font-black text-app-primary"
-                            >{managerStore.profile?.firstName?.[0] || "M"}</span
-                        >
+                        {managerStore.profile?.firstName?.[0] || "M"}
                     </div>
                     <div>
-                        <h4 class="text-sm font-black text-app-text uppercase">
-                            {managerStore.profile?.firstName}
-                            {managerStore.profile?.lastName}
+                        <h4 class="text-lg font-black text-app-text uppercase tracking-tight">
+                            {managerStore.profile?.firstName} {managerStore.profile?.lastName}
                         </h4>
-                        <span
-                            class="text-[10px] font-black text-app-primary uppercase tracking-widest"
-                            >{managerStore.profile?.role}</span
-                        >
+                        <div class="flex items-center gap-2">
+                            <span class="text-[9px] font-black text-app-primary uppercase tracking-widest px-2 py-0.5 bg-app-primary/10 rounded">
+                                {managerRole?.title || managerStore.profile?.role || "Manager"}
+                            </span>
+                            {#if managerStore.profile?.nationality}
+                                <span class="text-[9px] font-bold text-app-text/40 uppercase">
+                                    {managerStore.profile.nationality}
+                                </span>
+                            {/if}
+                        </div>
                     </div>
                 </div>
-                <p class="text-[12px] text-app-text/50 leading-relaxed italic">
-                    "Leading this organization through technical innovation and
-                    strategic excellence."
-                </p>
+
+                <div class="p-6 space-y-6">
+                    <!-- Bio/Rep Row -->
+                    <div class="grid grid-cols-2 gap-4">
+                        <div class="flex flex-col gap-1">
+                            <span class="text-[9px] font-bold text-app-text/30 uppercase tracking-widest">Reputation</span>
+                            <div class="flex items-center gap-2">
+                                <span class="text-xl font-black text-app-text">{managerStore.profile?.reputation || 50}</span>
+                                <div class="h-1.5 flex-1 bg-app-text/5 rounded-full overflow-hidden">
+                                    <div class="h-full bg-app-primary" style="width: {managerStore.profile?.reputation || 50}%"></div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="flex flex-col gap-1">
+                            <span class="text-[9px] font-bold text-app-text/30 uppercase tracking-widest">Age</span>
+                            <span class="text-xl font-black text-app-text">{managerAge || "--"} YRS</span>
+                        </div>
+                    </div>
+
+                    <!-- Role Description -->
+                    <p class="text-[12px] text-app-text/50 leading-relaxed italic border-l-2 border-app-primary/20 pl-4 py-1">
+                        "{managerRole?.desc || "Leading this organization through technical innovation and strategic excellence."}"
+                    </p>
+
+                    <!-- Perks & Drawbacks -->
+                    {#if managerRole}
+                        <div class="space-y-4 pt-2">
+                            <div class="space-y-2">
+                                <h5 class="text-[8px] font-black text-green-400 uppercase tracking-widest flex items-center gap-2">
+                                    <TrendingUp size={10} /> Strategic Advantages
+                                </h5>
+                                <div class="grid grid-cols-1 gap-1">
+                                    {#each managerRole.pros as pro}
+                                        <div class="text-[10px] font-bold text-app-text/60 flex items-center gap-2">
+                                            <div class="w-1 h-1 rounded-full bg-green-400"></div>
+                                            {pro}
+                                        </div>
+                                    {/each}
+                                </div>
+                            </div>
+
+                            <div class="space-y-2 opacity-60">
+                                <h5 class="text-[8px] font-black text-red-400 uppercase tracking-widest flex items-center gap-2">
+                                    <X size={10} /> Operational Challenges
+                                </h5>
+                                <div class="grid grid-cols-1 gap-1">
+                                    {#each managerRole.cons as con}
+                                        <div class="text-[10px] font-bold text-app-text/40 flex items-center gap-2">
+                                            <div class="w-1 h-1 rounded-full bg-red-400"></div>
+                                            {con}
+                                        </div>
+                                    {/each}
+                                </div>
+                            </div>
+                        </div>
+                    {/if}
+                </div>
             </div>
         </div>
 

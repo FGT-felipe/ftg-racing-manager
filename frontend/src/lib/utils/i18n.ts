@@ -46,7 +46,8 @@ export const translations = {
         current_team: "Current Team",
         previous_team: "Previous Team",
         potential_peak_label: "Potential Peak",
-        academy_sync: "Syncing Academy Network",
+        academy_sync: "Synchronizing Academy...",
+        max_level: "Max Level",
         operational_benefits: "Operational Benefits",
         active_scouting: "Active Scouting",
         scouting_desc: "Scout high-potential prospects every week based on regional availability.",
@@ -137,7 +138,8 @@ export const translations = {
         current_team: "Equipo Actual",
         previous_team: "Equipo Anterior",
         potential_peak_label: "Pico de Potencial",
-        academy_sync: "Sincronizando Red de la Academia",
+        academy_sync: "Sincronizando la Academia...",
+        max_level: "Nivel Máximo",
         operational_benefits: "Beneficios Operativos",
         active_scouting: "Scouting Activo",
         scouting_desc: "Busca prospectos de alto potencial cada semana según disponibilidad regional.",
@@ -243,8 +245,8 @@ export function translateAcademyNarrative(message: string | null | undefined): s
         { es: /faltó a sesiones de entrenamiento físico/i, en: "missed physical training sessions" },
         { es: /sufrió un leve incidente perdiendo confianza al frenar/i, en: "suffered a minor incident, losing confidence in braking" },
         // Fallback para strings quemados antiguos (Beta anterior)
-        { es: /^Resolved: resolve$/i, en: "The driver successfully completed the requested flow." },
-        { es: /^Resolved: dismiss$/i, en: "The matter was dismissed and no further action was required." }
+        { es: /^Resolved:\s*resolve$/i, en: "The driver successfully completed the requested flow." },
+        { es: /^Resolved:\s*dismiss$/i, en: "The matter was dismissed and no further action was required." }
     ];
 
     for (const item of mapping) {

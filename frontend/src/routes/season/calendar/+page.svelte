@@ -127,14 +127,16 @@
                                 <span class="font-black uppercase tracking-widest text-app-text/40">Laps</span>
                                 <span class="font-bold text-app-text">{event.totalLaps ?? circuit.laps}</span>
                             </div>
-                            <div class="flex items-center justify-between text-[9px]">
-                                <span class="font-black uppercase tracking-widest text-app-text/40">Top Speed</span>
-                                <span class="font-bold text-app-text">{circuit.characteristics['Top Speed'] ?? 'N/A'}</span>
-                            </div>
-                            <div class="flex items-center justify-between text-[9px]">
-                                <span class="font-black uppercase tracking-widest text-app-text/40">Tyre Wear</span>
-                                <span class="font-bold text-app-text">{circuit.characteristics['Tyre Wear'] ?? 'N/A'}</span>
-                            </div>
+                            {#if circuit.characteristics}
+                                <div class="flex items-center justify-between text-[9px]">
+                                    <span class="font-black uppercase tracking-widest text-app-text/40">Top Speed</span>
+                                    <span class="font-bold text-app-text">{circuit.characteristics['Top Speed'] ?? 'N/A'}</span>
+                                </div>
+                                <div class="flex items-center justify-between text-[9px]">
+                                    <span class="font-black uppercase tracking-widest text-app-text/40">Tyre Wear</span>
+                                    <span class="font-bold text-app-text">{circuit.characteristics['Tyre Wear'] ?? 'N/A'}</span>
+                                </div>
+                            {/if}
                         </div>
 
                         <!-- Difficulty Bar -->

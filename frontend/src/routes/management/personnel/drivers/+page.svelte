@@ -260,26 +260,25 @@
                                 </div>
                             </td>
                             <td class="py-6 px-4">
-                                <div class="flex items-center gap-1.5">
-                                    {#each (driver.championshipForm || []).slice(-5) as form}
-                                        {@const posRank =
-                                            parseInt(
-                                                form.pos.replace("P", ""),
-                                            ) || 20}
-                                        <div
-                                            class="w-2.5 h-2.5 rounded-full {posRank <=
-                                            3
-                                                ? 'bg-yellow-400'
-                                                : posRank <= 10
-                                                  ? 'bg-green-500'
-                                                  : 'bg-red-500/40'}"
-                                            title="P{posRank}"
-                                        ></div>
-                                    {:else}
-                                        <span class="text-[9px] text-app-text/10"
-                                            >No data</span
-                                        >
-                                    {/each}
+                                <div class="flex flex-col gap-1">
+                                    <div class="flex items-center gap-2">
+                                        <span class="text-xs font-black text-app-primary italic tabular-nums">
+                                            {driver.seasonPoints} PTS
+                                        </span>
+                                        <div class="flex items-center gap-1 opacity-60">
+                                            {#each (driver.championshipForm || []).slice(-3) as form}
+                                                {@const posRank = parseInt(form.pos.replace("P", "")) || 20}
+                                                <div
+                                                    class="w-2 h-2 rounded-full {posRank <= 3 ? 'bg-yellow-400' : posRank <= 10 ? 'bg-green-500' : 'bg-red-500/40'}"
+                                                    title="P{posRank}"
+                                                ></div>
+                                            {/each}
+                                        </div>
+                                    </div>
+                                    <div class="flex items-center gap-2.5 text-[8px] font-black text-app-text/30 uppercase tracking-widest">
+                                        <span>{driver.seasonWins} Wins</span>
+                                        <span>{driver.seasonPodiums} Podiums</span>
+                                    </div>
                                 </div>
                             </td>
                             <td class="py-6 px-8 text-right">
@@ -344,7 +343,7 @@
                             <span
                                 class="text-[8px] font-black text-app-text/20 uppercase tracking-widest"
                                 >Morale</span
-                            >
+                              >
                             <span
                                 class="text-xs font-black {getMoraleColor(
                                     driver.stats?.morale || 50,
@@ -367,12 +366,19 @@
                         >
                             <span
                                 class="text-[8px] font-black text-app-text/20 uppercase tracking-widest"
-                                >Poles</span
+                                >Points</span
                             >
-                            <span class="text-xs font-black text-app-text"
-                                >{driver.poles}</span
+                            <span class="text-xs font-black text-app-primary tabular-nums"
+                                >{driver.seasonPoints}</span
                             >
                         </div>
+                    </div>
+
+                    <div class="flex items-center justify-between px-2 text-[10px] font-bold text-app-text/30 uppercase tracking-tighter">
+                        <span>Season Record:</span>
+                        <span class="text-app-text/60">
+                            {driver.seasonWins}W · {driver.seasonPodiums}P · {driver.seasonPoles}L
+                        </span>
                     </div>
 
                     <div

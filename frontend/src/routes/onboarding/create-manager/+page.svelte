@@ -14,6 +14,7 @@
         Sparkles,
     } from "lucide-svelte";
     import { fly, fade } from "svelte/transition";
+    import { MANAGER_ROLES } from "$lib/constants/manager";
 
     let firstName = $state("");
     let lastName = $state("");
@@ -25,61 +26,7 @@
     let selectedRoleId = $state("ex_driver");
     let isSubmitting = $state(false);
 
-    const roles = [
-        {
-            id: "ex_driver",
-            title: "Ex-Driver",
-            desc: "A veteran of the track with deep technical understanding.",
-            icon: Trophy,
-            pros: [
-                "+5 driver feedback for setup",
-                "+2% driver race pace",
-                "+10 driver morale during race",
-                "Unlocks Risky Driver Style",
-            ],
-            cons: [
-                "Drivers salary is 20% higher",
-                "+5% higher risk of race crashes",
-            ],
-        },
-        {
-            id: "business",
-            title: "Business Mogul",
-            desc: "Focused on the bottom line and maximizing revenue.",
-            icon: PieChart,
-            pros: [
-                "+15% better financial sponsorship deals",
-                "-10% facility upgrade costs",
-            ],
-            cons: [
-                "-2% driver race pace",
-                "-10% driver morale if sponsor goals fail",
-            ],
-        },
-        {
-            id: "bureaucrat",
-            title: "Bureaucrat",
-            desc: "Expert in regulations and infrastructure optimization.",
-            icon: Gavel,
-            pros: [
-                "-10% facility purchase and upgrade costs",
-                "+1 extra youth academy driver per level",
-            ],
-            cons: ["Car part upgrade cooldown is 2 weeks (not 1)"],
-        },
-        {
-            id: "engineer",
-            title: "Lead Engineer",
-            desc: "Technical wizard focused on car performance.",
-            icon: Wrench,
-            pros: [
-                "Can upgrade 2 car parts simultaneously",
-                "-10% tyre wear",
-                "+5% Qualifying success probability",
-            ],
-            cons: ["-5% driver XP gain", "Car part upgrades cost double"],
-        },
-    ];
+    const roles = MANAGER_ROLES;
 
     async function handleEstablishCareer() {
         if (!firstName || !lastName || !day || !month || !year) return;

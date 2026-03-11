@@ -235,13 +235,19 @@
         <div
             class="bg-app-surface border border-app-border rounded-xl p-4 flex items-center overflow-x-auto gap-2 no-scrollbar"
         >
-            {#if circuit}
-                {#each Object.entries(circuit.characteristics) as [key, val]}
+            {#if circuit && circuit.characteristics}
+                {#each Object.entries(circuit.characteristics).filter(([key]) => key.toLowerCase() !== 'weather') as [key, val]}
+                    {@const tooltip = 
+                        key.toLowerCase().includes('fuel') ? 'Fuel consumption ranges between 1.0 and 1.9 liters per lap.' :
+                        key.toLowerCase().includes('tyre') ? 'Indicates the rate of tire degradation on this surface.' :
+                        key.toLowerCase().includes('elevation') ? 'Significant height changes affecting balance and power.' : null
+                    }
                     <div
-                        class="px-3 py-1.5 rounded-lg bg-blue-500/10 border border-blue-500/20 whitespace-nowrap"
+                        class="px-3 py-1.5 rounded-lg bg-blue-500/10 border border-blue-500/20 whitespace-nowrap cursor-help group/item"
+                        title={tooltip}
                     >
                         <span
-                            class="text-[9px] font-black text-blue-400 uppercase tracking-tighter"
+                            class="text-[9px] font-black text-blue-400 uppercase tracking-tighter group-hover/item:text-blue-300 transition-colors"
                             >{key}: {val}</span
                         >
                     </div>
