@@ -241,7 +241,10 @@ export function translateAcademyNarrative(message: string | null | undefined): s
         { es: /Continuó su progresión constante en el programa/i, en: "Continued their steady progression in the program" },
         { es: /estuvo distraído por asuntos personales y su enfoque bajó/i, en: "was distracted by personal matters and their focus dropped" },
         { es: /faltó a sesiones de entrenamiento físico/i, en: "missed physical training sessions" },
-        { es: /sufrió un leve incidente perdiendo confianza al frenar/i, en: "suffered a minor incident, losing confidence in braking" }
+        { es: /sufrió un leve incidente perdiendo confianza al frenar/i, en: "suffered a minor incident, losing confidence in braking" },
+        // Fallback para strings quemados antiguos (Beta anterior)
+        { es: /^Resolved: resolve$/i, en: "The driver successfully completed the requested flow." },
+        { es: /^Resolved: dismiss$/i, en: "The matter was dismissed and no further action was required." }
     ];
 
     for (const item of mapping) {

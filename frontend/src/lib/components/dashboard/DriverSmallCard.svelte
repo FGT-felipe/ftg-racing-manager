@@ -56,7 +56,7 @@
             />
         </div>
         <div
-            class="absolute -bottom-1 -right-1 w-5 h-5 bg-app-primary text-black rounded-full flex items-center justify-center text-[10px] font-black border-2 border-app-surface"
+            class="absolute -bottom-1 -right-1 w-5 h-5 bg-app-primary text-app-primary-foreground rounded-full flex items-center justify-center text-[10px] font-black border-2 border-app-surface"
         >
             {carIndex === 0 ? "A" : "B"}
         </div>
@@ -65,7 +65,7 @@
     <div class="flex-grow min-w-0">
         <div class="flex items-center justify-between gap-2">
             <h4
-                class="text-xs font-black text-white uppercase truncate tracking-tight"
+                class="text-xs font-black text-app-text uppercase truncate tracking-tight"
             >
                 {driver.name}
             </h4>

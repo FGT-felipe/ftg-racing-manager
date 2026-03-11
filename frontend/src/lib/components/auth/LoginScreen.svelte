@@ -49,19 +49,19 @@
 
 <div
     class="relative flex min-h-screen w-full flex-col items-center justify-center p-6 bg-center bg-no-repeat overflow-hidden"
-    style="background-image: url('/login_image.png'); background-size: 100% 100%;"
+    style="background-image: url('/login_image.png'); background-size: cover; background-position: center;"
 >
     <!-- Subtle deep overlay -->
-    <div class="absolute inset-0 bg-black/85"></div>
+    <div class="absolute inset-0 bg-app-bg/90 lg:bg-app-bg/80"></div>
 
     <div class="relative max-w-md w-full flex flex-col items-center gap-10">
         <!-- Header Section -->
         <div class="flex flex-col items-center gap-6">
-            <div class="scale-125 drop-shadow-[0_0_15px_rgba(255,255,255,0.1)]">
+            <div class="scale-125 drop-shadow-[0_0_15px_rgba(var(--primary-color-rgb),0.2)]">
                 <AppLogo size={56} />
             </div>
             <p
-                class="font-raleway text-sm text-app-primary italic uppercase tracking-[0.25em] font-bold drop-shadow-sm"
+                class="font-raleway text-sm text-app-primary italic uppercase tracking-[0.25em] font-bold drop-shadow-sm text-center"
             >
                 Your team, your strategy, your glory.
             </p>
@@ -69,19 +69,26 @@
 
         <!-- Auth Card - Transparent Luxury -->
         <div
-            class="w-full bg-black/40 backdrop-blur-xl border border-app-primary/30 p-10 rounded-[2.5rem] shadow-2xl flex flex-col gap-8"
+            class="w-full bg-app-surface/40 backdrop-blur-xl border border-app-primary/20 p-10 rounded-[2.5rem] shadow-2xl flex flex-col gap-8"
         >
+            <!-- User requested: Badge above google login -->
+            <div class="flex justify-center -mb-2">
+                <div class="px-2 py-0.5 bg-app-primary text-app-primary-foreground font-black text-[9px] rounded uppercase tracking-[0.2em] shadow-lg shadow-app-primary/20">
+                    BETA V4
+                </div>
+            </div>
+
             <!-- Google Login (Luxury Style) -->
             <button
                 type="button"
                 onclick={handleGoogleLogin}
                 disabled={isProcessing}
-                class="w-full bg-black hover:bg-white/5 text-app-primary border border-app-primary rounded-2xl py-4 flex items-center justify-center gap-3 transition-all disabled:opacity-50 group font-bold tracking-widest text-[11px] uppercase"
+                class="w-full bg-app-surface hover:bg-app-primary/5 text-app-primary border border-app-primary/20 rounded-2xl py-4 flex items-center justify-center gap-3 transition-all disabled:opacity-50 group font-bold tracking-widest text-[11px] uppercase shadow-sm"
             >
                 <img
                     src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg"
                     alt="G"
-                    class="w-5 h-5 group-hover:scale-110 transition-transform brightness-125"
+                    class="w-5 h-5 group-hover:scale-110 transition-transform"
                 />
                 <span>Sign in with Google</span>
             </button>
@@ -121,11 +128,10 @@
                         bind:value={email}
                         disabled={isProcessing}
                         placeholder="Email Address"
-                        class="w-full bg-black/60 border border-white/5 rounded-2xl py-4.5 pl-16 pr-6 text-sm focus:outline-none focus:border-app-primary transition-all disabled:opacity-50 placeholder:text-app-text/20"
+                        class="w-full bg-app-surface/60 border border-app-border rounded-2xl py-4.5 pl-16 pr-6 text-sm focus:outline-none focus:border-app-primary transition-all disabled:opacity-50 placeholder:text-app-text/30"
                         required
                     />
                 </div>
-
                 <!-- Password Input -->
                 <div class="relative flex items-center text-app-text group">
                     <div
@@ -138,7 +144,7 @@
                         bind:value={password}
                         disabled={isProcessing}
                         placeholder="Password"
-                        class="w-full bg-black/60 border border-white/5 rounded-2xl py-4.5 pl-16 pr-6 text-sm focus:outline-none focus:border-app-primary transition-all disabled:opacity-50 placeholder:text-app-text/20"
+                        class="w-full bg-app-surface/60 border border-app-border rounded-2xl py-4.5 pl-16 pr-6 text-sm focus:outline-none focus:border-app-primary transition-all disabled:opacity-50 placeholder:text-app-text/30"
                         required
                     />
                 </div>
@@ -179,7 +185,7 @@
                 {isRegistering ? "Already a Member?" : "New Manager?"}
             </span>
             <span
-                class="text-white group-hover:text-app-primary transition-colors text-[11px] font-black tracking-[0.25em] uppercase border-b-2 border-app-primary/20 group-hover:border-app-primary pb-1"
+                class="text-app-text/50 group-hover:text-app-primary transition-colors text-[11px] font-black tracking-[0.25em] uppercase border-b-2 border-app-primary/20 group-hover:border-app-primary pb-1"
             >
                 {isRegistering ? "Back to Login" : "Join Here"}
             </span>

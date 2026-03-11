@@ -18,9 +18,11 @@
     import { doc, onSnapshot } from "firebase/firestore";
     import { seasonStore } from "$lib/stores/season.svelte";
     import { circuitService } from "$lib/services/circuit_service.svelte";
+    import { flip } from "svelte/animate";
 
     let results = $state<any[]>([]);
     let raceInfo = $state<any>(null);
+    let events = $state<any[]>([]);
     let isLoading = $state(true);
 
     const nextEvent = $derived(seasonStore.nextEvent);
@@ -42,6 +44,8 @@
                 const data = snap.data();
                 raceInfo = data;
                 results = data.raceResults || [];
+                // Sort events by lap descending
+                events = (data.events || []).sort((a: any, b: any) => b.lap - a.lap);
             }
             isLoading = false;
         });
@@ -72,7 +76,7 @@
     {:else if !raceInfo || results.length === 0}
         <div
             in:fade
-            class="bg-black/40 border border-red-500/20 rounded-2xl p-12 flex flex-col items-center justify-center text-center gap-8 min-h-[500px] relative overflow-hidden"
+            class="bg-app-text/40 border border-red-500/20 rounded-2xl p-12 flex flex-col items-center justify-center text-center gap-8 min-h-[500px] relative overflow-hidden"
         >
             <div
                 class="absolute inset-0 bg-red-500/5 animate-pulse pointer-events-none"
@@ -94,26 +98,26 @@
                         >
                     </div>
                     <h3
-                        class="font-black text-4xl lg:text-5xl uppercase italic text-white tracking-tighter"
+                        class="font-black text-4xl lg:text-5xl uppercase italic text-app-text tracking-tighter"
                     >
                         Live Session Pending
                     </h3>
                 </div>
             </div>
-            <p class="max-w-xl text-white/40 text-sm font-medium relative z-10">
+            <p class="max-w-xl text-app-text/40 text-sm font-medium relative z-10">
                 Data stream from {circuit?.name || "the track"} is currently inactive.
                 The broadcast will start once the race director confirms the session
                 launch.
             </p>
             <div
-                class="px-8 py-5 bg-black/40 rounded-2xl border border-white/5 relative z-10"
+                class="px-8 py-5 bg-app-text/40 rounded-2xl border border-app-border relative z-10"
             >
                 <p
-                    class="text-[10px] font-black text-white/20 uppercase tracking-[0.2em] mb-1"
+                    class="text-[10px] font-black text-app-text/20 uppercase tracking-[0.2em] mb-1"
                 >
                     Status
                 </p>
-                <p class="text-xl font-black italic text-white uppercase">
+                <p class="text-xl font-black italic text-app-text uppercase">
                     Waiting for Race Start
                 </p>
             </div>
@@ -121,13 +125,13 @@
     {:else}
         <!-- Real-time Leaderboard UI -->
         <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
-            <!-- Left: Standings -->
-            <div class="lg:col-span-8 space-y-4">
+            <!-- Left: Standings (reduced to col-span-5) -->
+            <div class="lg:col-span-5 space-y-4">
                 <div
                     class="bg-app-surface border border-app-border rounded-2xl overflow-hidden shadow-2xl"
                 >
                     <div
-                        class="p-6 border-b border-white/5 bg-[#121212] flex items-center justify-between"
+                        class="p-6 border-b border-app-border bg-app-surface flex items-center justify-between"
                     >
                         <div class="flex items-center gap-3">
                             <Activity size={18} class="text-red-500" />
@@ -140,12 +144,12 @@
                         <div class="flex items-center gap-4">
                             <div class="text-right">
                                 <p
-                                    class="text-[9px] font-black text-white/30 uppercase leading-none mb-1"
+                                    class="text-[9px] font-black text-app-text/30 uppercase leading-none mb-1"
                                 >
                                     Lap
                                 </p>
                                 <p
-                                    class="text-lg font-black italic text-white tabular-nums leading-none"
+                                    class="text-lg font-black italic text-app-text tabular-nums leading-none"
                                 >
                                     {raceInfo.lapCount || 0} / {raceInfo.totalLaps ||
                                         "--"}
@@ -157,16 +161,17 @@
                     <div
                         class="divide-y divide-white/5 overflow-y-auto max-h-[600px] custom-scrollbar"
                     >
-                        {#each results as row, i}
+                        {#each results as row, i (row.driverId)}
                             <div
                                 in:slide
+                                animate:flip={{ duration: 400 }}
                                 class="p-4 flex items-center gap-4 hover:bg-white/[0.02] transition-colors"
                             >
                                 <div
-                                    class="w-8 h-8 rounded bg-black/40 flex items-center justify-center font-black italic text-xs {i <
+                                    class="w-8 h-8 rounded bg-app-text/40 flex items-center justify-center font-black italic text-xs {i <
                                     3
                                         ? 'text-red-500'
-                                        : 'text-white/20'}"
+                                        : 'text-app-text/20'}"
                                 >
                                     {i + 1}
                                 </div>
@@ -174,7 +179,7 @@
                                 <div class="flex-1 min-w-0">
                                     <div class="flex items-center gap-2">
                                         <p
-                                            class="text-[13px] font-black text-white truncate uppercase"
+                                            class="text-[13px] font-black text-app-text truncate uppercase"
                                         >
                                             {row.driverName}
                                         </p>
@@ -186,7 +191,7 @@
                                         {/if}
                                     </div>
                                     <p
-                                        class="text-[9px] font-bold text-white/30 uppercase tracking-widest"
+                                        class="text-[9px] font-bold text-app-text/30 uppercase tracking-widest"
                                     >
                                         {row.teamName}
                                     </p>
@@ -194,7 +199,7 @@
 
                                 <div class="text-right">
                                     <p
-                                        class="text-xs font-black italic text-white tabular-nums mb-1"
+                                        class="text-xs font-black italic text-app-text tabular-nums mb-1"
                                     >
                                         {row.lastLapTime
                                             ? row.lastLapTime.toFixed(3)
@@ -203,7 +208,7 @@
                                     <p
                                         class="text-[9px] font-bold {i === 0
                                             ? 'text-green-500'
-                                            : 'text-white/40'} uppercase tabular-nums"
+                                            : 'text-app-text/40'} uppercase tabular-nums"
                                     >
                                         {formatGap(row.gapToLeader)}
                                     </p>
@@ -214,8 +219,44 @@
                 </div>
             </div>
 
-            <!-- Right: Track Telemetry -->
-            <div class="lg:col-span-4 space-y-6">
+            <!-- Middle: Live Ticker Feed -->
+            <div class="lg:col-span-4 space-y-4">
+                <div class="bg-app-surface border border-app-border rounded-2xl overflow-hidden shadow-2xl flex flex-col h-full max-h-[670px]">
+                    <div class="p-6 border-b border-app-border bg-app-surface flex items-center gap-3">
+                        <Zap size={18} class="text-yellow-500" />
+                        <h3 class="font-black text-xs uppercase tracking-widest italic text-app-text flex-1">
+                            Race Control Feed
+                        </h3>
+                        <div class="w-2 h-2 rounded-full bg-red-500 animate-pulse"></div>
+                    </div>
+                    
+                    <div class="flex-1 overflow-y-auto p-4 space-y-3 custom-scrollbar">
+                        {#if events.length === 0}
+                            <div class="h-full flex flex-col items-center justify-center text-app-text/20">
+                                <Activity size={32} class="mb-4 opacity-50" />
+                                <span class="text-[10px] font-black uppercase tracking-widest">Awaiting Events</span>
+                            </div>
+                        {:else}
+                            {#each events as ev (ev.lap + '-' + ev.driverId + '-' + ev.type)}
+                                <div class="bg-app-text/20 border-l-2 p-3 rounded-r-lg {ev.type === 'overtake' ? 'border-blue-500' : ev.type === 'accident' ? 'border-red-500' : ev.type === 'pitstop' ? 'border-yellow-500' : 'border-app-border'}">
+                                    <div class="flex items-center gap-2 mb-1">
+                                        <span class="text-[9px] font-black uppercase tracking-widest text-app-text/40">LAP {ev.lap}</span>
+                                        <span class="text-[9px] font-black uppercase {ev.type === 'overtake' ? 'text-blue-400' : ev.type === 'accident' ? 'text-red-400' : ev.type === 'pitstop' ? 'text-yellow-400' : 'text-app-text/60'} px-1.5 py-0.5 rounded bg-app-text/5">
+                                            {ev.type}
+                                        </span>
+                                    </div>
+                                    <p class="text-xs font-medium text-app-text/80 leading-snug">
+                                        {ev.message}
+                                    </p>
+                                </div>
+                            {/each}
+                        {/if}
+                    </div>
+                </div>
+            </div>
+
+            <!-- Right: Track Telemetry (reduced to 3) -->
+            <div class="lg:col-span-3 space-y-6">
                 <!-- Track Info -->
                 <div
                     class="bg-app-surface border border-app-border rounded-2xl p-6 space-y-6"
@@ -223,7 +264,7 @@
                     <div class="flex items-center gap-2">
                         <Gauge size={16} class="text-red-500" />
                         <h4
-                            class="text-[10px] font-black text-white/40 uppercase tracking-widest"
+                            class="text-[10px] font-black text-app-text/40 uppercase tracking-widest"
                         >
                             Track Telemetry
                         </h4>
@@ -233,14 +274,14 @@
                         <div class="space-y-4">
                             {#each Object.entries(circuit.characteristics) as [key, val]}
                                 <div
-                                    class="flex items-center justify-between p-3 bg-black/20 rounded-xl border border-white/5"
+                                    class="flex items-center justify-between p-3 bg-app-text/20 rounded-xl border border-app-border"
                                 >
                                     <span
-                                        class="text-[10px] font-black text-white/30 uppercase"
+                                        class="text-[10px] font-black text-app-text/30 uppercase"
                                         >{key}</span
                                     >
                                     <span
-                                        class="text-xs font-black text-white italic"
+                                        class="text-xs font-black text-app-text italic"
                                         >{val}</span
                                     >
                                 </div>
@@ -251,7 +292,7 @@
 
                 <!-- Weather/Conditions placeholder (literal) -->
                 <div
-                    class="bg-black/40 border border-white/5 rounded-2xl p-6 flex flex-col items-center justify-center text-center gap-4 aspect-square"
+                    class="bg-app-text/40 border border-app-border rounded-2xl p-6 flex flex-col items-center justify-center text-center gap-4 aspect-square"
                 >
                     <div
                         class="w-12 h-12 rounded-full border-2 border-green-500/20 flex items-center justify-center text-green-500"
@@ -260,12 +301,12 @@
                     </div>
                     <div>
                         <p
-                            class="text-lg font-black text-white italic uppercase"
+                            class="text-lg font-black text-app-text italic uppercase"
                         >
                             Session Live
                         </p>
                         <p
-                            class="text-[9px] font-bold text-white/30 uppercase tracking-[0.2em] mt-1"
+                            class="text-[9px] font-bold text-app-text/30 uppercase tracking-[0.2em] mt-1"
                         >
                             Telemetry Sync Active
                         </p>

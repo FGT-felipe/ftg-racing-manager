@@ -11,7 +11,8 @@
     } from "$lib/types";
     import { seasonStore } from "$lib/stores/season.svelte";
     import { circuitService } from "$lib/services/circuit_service.svelte";
-    import { practiceService } from "$lib/services/practice_service.svelte";
+    import { raceService } from "$lib/services/race_service.svelte";
+    import { timeService } from "$lib/services/time_service.svelte";
     import {
         Timer,
         Zap,
@@ -21,6 +22,7 @@
         Info,
         ChevronRight,
         Flag,
+        Activity,
     } from "lucide-svelte";
     import { onMount, untrack } from "svelte";
     import DriverAvatar from "$lib/components/DriverAvatar.svelte";
@@ -143,11 +145,14 @@
             };
 
             // Simulate Flying Lap
-            const result = practiceService.simulatePracticeRun(
-                circuit,
-                team,
+            const carIndex = teamDrivers.findIndex((d: any) => d.id === driver.id);
+            const carStats = teamStore.value.team?.carStats?.[String(carIndex)] || { aero: 1, powertrain: 1, chassis: 1 };
+            const result = raceService.simulatePracticeRun(
                 driver,
                 setupToRun,
+                circuit,
+                carStats,
+                nextEvent?.weatherQualifying || "Sunny"
             );
 
             // Wait for visual effect
@@ -206,6 +211,24 @@
     }
 </script>
 
+{#if timeService.currentStatus === 'qualifying'}
+    <!-- Qualy in Progress Holding View -->
+    <div class="flex flex-col items-center justify-center p-12 text-center min-h-[400px]">
+        <Activity size={64} class="text-app-primary mb-6 animate-pulse" />
+        <h2 class="text-3xl font-black italic text-app-text uppercase tracking-widest mb-4">
+            Qualifying Session in Progress
+        </h2>
+        <p class="text-sm text-app-text/60 max-w-lg mb-8 leading-relaxed">
+            The servers are currently processing the official Qualifying session. 
+            No further setup changes or flying laps can be submitted at this time. 
+            Please wait for the session to complete to view the final starting grid.
+        </p>
+        <div class="flex items-center gap-2 text-app-primary px-4 py-2 bg-app-primary/10 rounded-lg">
+            <Timer size={16} />
+            <span class="text-[10px] font-black uppercase tracking-widest">Waiting for Backend Sim...</span>
+        </div>
+    </div>
+{:else}
 <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
     <!-- Left Column: Setup Controls -->
     <div class="lg:col-span-6 space-y-6">
@@ -231,11 +254,11 @@
         {/if}
 
         <div
-            class="bg-[#121212] border border-white/10 rounded-2xl p-6 relative overflow-hidden shadow-2xl"
+            class="bg-app-surface border border-app-border rounded-2xl p-6 relative overflow-hidden shadow-2xl"
         >
             <div class="flex items-center justify-between mb-8">
                 <h3
-                    class="font-black text-xs text-white uppercase tracking-[0.2em]"
+                    class="font-black text-xs text-app-text uppercase tracking-[0.2em]"
                 >
                     Qualifying Setup
                 </h3>
@@ -250,9 +273,14 @@
 
             <!-- Sliders -->
             <div class="space-y-6">
-                {#each [{ label: "Front Wing", field: "frontWing" as keyof CarSetup, icon: Wind, color: "text-cyan-400", locked: false }, { label: "Rear Wing", field: "rearWing" as keyof CarSetup, icon: Wind, color: "text-cyan-400", locked: isParcFerme }, { label: "Suspension", field: "suspension" as keyof CarSetup, icon: Navigation, color: "text-purple-400", locked: isParcFerme }, { label: "Gear Ratio", field: "gearRatio" as keyof CarSetup, icon: Zap, color: "text-orange-400", locked: isParcFerme }] as item}
+                {#each [
+                    { label: "Front Wing", field: "frontWing" as keyof CarSetup, icon: Wind, color: "text-cyan-400", locked: false, hintL: "Top Speed (0)", hintR: "Corner Grip (100)" }, 
+                    { label: "Rear Wing", field: "rearWing" as keyof CarSetup, icon: Wind, color: "text-cyan-400", locked: isParcFerme, hintL: "Top Speed (0)", hintR: "Corner Grip (100)" }, 
+                    { label: "Suspension", field: "suspension" as keyof CarSetup, icon: Navigation, color: "text-purple-400", locked: isParcFerme, hintL: "Soft/Bumps (0)", hintR: "Stiff/Aero (100)" }, 
+                    { label: "Gear Ratio", field: "gearRatio" as keyof CarSetup, icon: Zap, color: "text-orange-400", locked: isParcFerme, hintL: "Acceleration (0)", hintR: "Top Speed (100)" }
+                ] as item}
                     <div
-                        class="space-y-3 {item.locked
+                        class="space-y-3 group {item.locked
                             ? 'opacity-50 grayscale'
                             : ''}"
                     >
@@ -269,7 +297,7 @@
                                     >
                                 {/if}
                             </div>
-                            <span class="text-sm font-black text-white"
+                            <span class="text-sm font-black text-app-text"
                                 >{setup[item.field]}</span
                             >
                         </div>
@@ -279,13 +307,17 @@
                             max="100"
                             bind:value={setup[item.field]}
                             disabled={item.locked}
-                            class="w-full accent-current h-1.5 bg-white/5 rounded-full appearance-none {item.locked
+                            class="w-full accent-current h-1.5 bg-app-text/5 rounded-full appearance-none {item.locked
                                 ? 'cursor-not-allowed'
                                 : 'cursor-pointer'} {item.color.replace(
                                 'text-',
                                 'accent-',
                             )}"
                         />
+                        <div class="flex justify-between px-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                            <span class="text-[8px] font-bold text-app-text/40 uppercase tracking-wider text-left max-w-[45%]">{item.hintL}</span>
+                            <span class="text-[8px] font-bold text-app-text/40 uppercase tracking-wider text-right max-w-[45%]">{item.hintR}</span>
+                        </div>
                     </div>
                 {/each}
             </div>
@@ -293,7 +325,7 @@
             <!-- Tyres -->
             <div class="mt-8 space-y-3">
                 <span
-                    class="text-[9px] font-black text-white/40 uppercase tracking-widest"
+                    class="text-[9px] font-black text-app-text/40 uppercase tracking-widest"
                     >Qualifying Compound</span
                 >
                 <div class="grid grid-cols-4 gap-3">
@@ -301,8 +333,8 @@
                         <button
                             class="px-2 py-3 rounded-xl border transition-all flex flex-col items-center gap-2 {setup.tyreCompound ===
                             tc
-                                ? 'bg-app-primary border-app-primary text-black'
-                                : 'bg-white/5 border-white/5 text-white/40 hover:bg-white/10'}"
+                                ? 'bg-app-primary border-app-primary text-app-primary-foreground'
+                                : 'bg-app-text/5 border-app-border text-app-text/40 hover:bg-app-text/10'}"
                             onclick={() => (setup.tyreCompound = tc)}
                         >
                             <div
@@ -311,7 +343,7 @@
                                     : tc === 'medium'
                                       ? 'bg-yellow-500'
                                       : tc === 'hard'
-                                        ? 'bg-white'
+                                        ? 'bg-app-surface'
                                         : 'bg-blue-500'} shadow-[0_0_10px_rgba(255,255,255,0.2)]"
                             ></div>
                             <span
@@ -334,7 +366,7 @@
             <div class="flex justify-between items-start">
                 <div>
                     <h4
-                        class="text-[10px] font-black text-white/40 uppercase tracking-widest mb-1"
+                        class="text-[10px] font-black text-app-text/40 uppercase tracking-widest mb-1"
                     >
                         Qualy Attempts
                     </h4>
@@ -345,19 +377,19 @@
                                     ? isDnf && i === attempts - 1
                                         ? 'bg-red-500'
                                         : 'bg-app-primary'
-                                    : 'bg-white/10'}"
+                                    : 'bg-app-text/10'}"
                             ></div>
                         {/each}
                     </div>
                 </div>
                 <div class="text-right">
                     <h4
-                        class="text-[10px] font-black text-white/40 uppercase tracking-widest mb-1"
+                        class="text-[10px] font-black text-app-text/40 uppercase tracking-widest mb-1"
                     >
                         Best Lap Time
                     </h4>
                     <span
-                        class="text-2xl font-black italic text-white tabular-nums"
+                        class="text-2xl font-black italic text-app-text tabular-nums"
                     >
                         {formatTime(bestTime)}
                     </span>
@@ -375,7 +407,7 @@
                 </div>
             {:else if attempts >= MAX_ATTEMPTS}
                 <div
-                    class="bg-white/5 border border-white/10 text-white/50 rounded-xl p-4 flex flex-col items-center justify-center text-center mt-4"
+                    class="bg-app-text/5 border border-app-border text-app-text/50 rounded-xl p-4 flex flex-col items-center justify-center text-center mt-4"
                 >
                     <Flag size={24} class="mb-2" />
                     <span class="text-xs font-black uppercase"
@@ -384,7 +416,7 @@
                 </div>
             {:else}
                 <button
-                    class="w-full mt-4 py-4 bg-app-primary text-black font-black uppercase tracking-widest text-sm rounded-xl hover:scale-[1.02] active:scale-95 transition-all disabled:opacity-50 disabled:scale-100 flex items-center justify-center gap-2 shadow-lg shadow-app-primary/20"
+                    class="w-full mt-4 py-4 bg-app-primary text-app-primary-foreground font-black uppercase tracking-widest text-sm rounded-xl hover:scale-[1.02] active:scale-95 transition-all disabled:opacity-50 disabled:scale-100 flex items-center justify-center gap-2 shadow-lg shadow-app-primary/20"
                     disabled={isSimulating || !driver}
                     onclick={runQualyAttempt}
                 >
@@ -403,7 +435,7 @@
 
         <!-- Official Results Table (Mini View) -->
         <div
-            class="flex-1 bg-[#121212] border border-white/10 rounded-2xl flex flex-col overflow-hidden"
+            class="flex-1 bg-app-surface border border-app-border rounded-2xl flex flex-col overflow-hidden"
         >
             <div
                 class="bg-app-primary/10 border-b border-app-primary/20 px-4 py-3 flex items-center gap-2"
@@ -416,20 +448,20 @@
             </div>
 
             <!-- Table Header -->
-            <div class="flex px-4 py-2 bg-white/5 border-b border-white/5">
-                <span class="w-8 text-[9px] font-black text-white/30 uppercase"
+            <div class="flex px-4 py-2 bg-app-text/5 border-b border-app-border">
+                <span class="w-8 text-[9px] font-black text-app-text/30 uppercase"
                     >Pos</span
                 >
                 <span
-                    class="flex-1 text-[9px] font-black text-white/30 uppercase"
+                    class="flex-1 text-[9px] font-black text-app-text/30 uppercase"
                     >Driver</span
                 >
                 <span
-                    class="w-12 text-[9px] font-black text-white/30 uppercase text-center"
+                    class="w-12 text-[9px] font-black text-app-text/30 uppercase text-center"
                     >Tyre</span
                 >
                 <span
-                    class="w-20 text-[9px] font-black text-white/30 uppercase text-right"
+                    class="w-20 text-[9px] font-black text-app-text/30 uppercase text-right"
                     >Time</span
                 >
             </div>
@@ -441,14 +473,14 @@
                         class="flex items-center px-2 py-2.5 rounded-lg {row.driverId ===
                         driverId
                             ? 'bg-app-primary/10'
-                            : 'hover:bg-white/5'} transition-colors"
+                            : 'hover:bg-app-text/5'} transition-colors"
                     >
                         <span
                             class="w-8 text-xs font-black {row.bestTime > 0
                                 ? idx < 3
                                     ? 'text-app-primary'
-                                    : 'text-white/80'
-                                : 'text-white/30'}"
+                                    : 'text-app-text/80'
+                                : 'text-app-text/30'}"
                         >
                             {row.bestTime > 0 ? idx + 1 : "-"}
                         </span>
@@ -461,7 +493,7 @@
                                 size={16}
                             />
                             <span
-                                class="text-xs font-bold text-white truncate {row.driverId ===
+                                class="text-xs font-bold text-app-text truncate {row.driverId ===
                                 driverId
                                     ? 'text-app-primary'
                                     : ''}"
@@ -479,11 +511,11 @@
                                         : row.compound === 'medium'
                                           ? 'bg-yellow-500'
                                           : row.compound === 'hard'
-                                            ? 'bg-white'
+                                            ? 'bg-app-surface'
                                             : 'bg-blue-500'}"
                                 ></div>
                             {:else}
-                                <span class="text-white/20">-</span>
+                                <span class="text-app-text/20">-</span>
                             {/if}
                         </div>
 
@@ -492,8 +524,8 @@
                                 class="text-xs font-black italic {row.isDnf
                                     ? 'text-red-500'
                                     : row.bestTime > 0
-                                      ? 'text-white'
-                                      : 'text-white/30'}"
+                                      ? 'text-app-text'
+                                      : 'text-app-text/30'}"
                             >
                                 {formatTime(row.bestTime)}
                             </span>
@@ -504,6 +536,7 @@
         </div>
     </div>
 </div>
+{/if}
 
 <style>
     .custom-scrollbar::-webkit-scrollbar {

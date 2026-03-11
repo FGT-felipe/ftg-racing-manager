@@ -22,14 +22,14 @@
     }
 </script>
 
-<div class="w-full bg-[#15151E] overflow-hidden">
+<div class="w-full bg-app-surface overflow-hidden">
     <!-- Fixed Header -->
     <div
-        class="flex items-center w-full px-[20px] py-[12px] bg-white/[0.03] border-b border-white/[0.05]"
+        class="flex items-center w-full px-[20px] py-[12px] bg-app-text/[0.03] border-b border-app-border"
     >
         {#each columns as col, i}
             <div
-                class="font-heading font-bold text-[10px] tracking-[1.1px] text-white/40 uppercase"
+                class="font-heading font-bold text-[10px] tracking-[1.1px] text-app-text/40 uppercase"
                 style="flex: {getFlex(i)};"
             >
                 {col}
@@ -44,24 +44,24 @@
             {@const isOdd = rowIndex % 2 !== 0}
 
             <div
-                class="flex items-center w-full px-[20px] py-[14px] border-b-[0.5px] border-white/[0.05] transition duration-150 ease-in-out cursor-default
+                class="flex items-center w-full px-[20px] py-[14px] border-b-[0.5px] border-app-border transition duration-150 ease-in-out cursor-default
                {isHighlighted
-                    ? 'bg-[#00C853]/10 border-l-[4px] border-l-[#00C853]'
+                    ? 'bg-app-success/10 border-l-[4px] border-l-app-success'
                     : ''}
-               {!isHighlighted && isOdd ? 'bg-white/[0.01]' : ''}
+               {!isHighlighted && isOdd ? 'bg-app-text/[0.01]' : ''}
                {!isHighlighted && !isOdd ? 'bg-transparent' : ''}
-               {!isHighlighted ? 'hover:bg-[#00C853]/5' : ''}"
+               {!isHighlighted ? 'hover:bg-app-success/5' : ''}"
             >
                 {#each row as cell, colIndex}
                     <div
                         class="font-sans text-[12px]
                    {isHighlighted
-                            ? 'text-[#00C853] font-black'
+                            ? 'text-app-success font-black'
                             : colIndex === 0
-                              ? 'text-white/50 font-medium'
+                              ? 'text-app-text/50 font-medium'
                               : colIndex === columns.length - 1
-                                ? 'text-white/90 font-bold'
-                                : 'text-white/90 font-medium'}"
+                                ? 'text-app-text/90 font-bold'
+                                : 'text-app-text/90 font-medium'}"
                         style="flex: {getFlex(colIndex)};"
                     >
                         {cell}

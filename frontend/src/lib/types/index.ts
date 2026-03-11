@@ -198,6 +198,7 @@ export interface Driver {
     traits: DriverTrait[];
     championshipForm: ChampionshipForm[];
     careerHistory?: CareerHistoryItem[];
+    contract?: { endDate?: string; [key: string]: any; };
     countryCode: string;
 
     role: string;
@@ -239,6 +240,7 @@ export interface YoungDriver {
     statRangeMin: Record<string, number>;
     statRangeMax: Record<string, number>;
     pendingAction?: boolean;
+    pendingActionType?: string | null;
     weeklyEventMessage?: string | null;
     weeklyStatDiffs?: Record<string, number>;
     trainingProgress?: Record<string, number>;

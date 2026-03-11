@@ -28,7 +28,7 @@
     </h3>
 
     <div
-        class="flex-1 bg-app-surface border border-white/5 rounded-2xl p-8 flex flex-col gap-8 relative overflow-hidden group transition-all hover:border-app-primary/20"
+        class="flex-1 bg-app-surface border border-app-border rounded-2xl p-8 flex flex-col gap-8 relative overflow-hidden group transition-all hover:border-app-primary/20"
     >
         <!-- Background Decoration -->
         <div
@@ -49,22 +49,22 @@
                 <div class="flex items-center justify-between">
                     <div class="flex flex-col gap-1">
                         <span
-                            class="text-[9px] font-black text-white/30 uppercase tracking-widest"
+                            class="text-[9px] font-black text-app-text/30 uppercase tracking-widest"
                             >Constructor Position</span
                         >
                         <div class="flex items-baseline gap-2">
                             <h4
-                                class="text-3xl font-heading font-black text-white italic tracking-tighter uppercase"
+                                class="text-3xl font-heading font-black text-app-text italic tracking-tighter uppercase"
                             >
                                 {getOrdinal(standing.position)}
                             </h4>
                             <span
-                                class="text-xs font-bold text-white/20 whitespace-nowrap"
+                                class="text-xs font-bold text-app-text/20 whitespace-nowrap"
                                 >OF {standing.total} TEAMS</span
                             >
                         </div>
                     </div>
-                    <div class="p-3 bg-white/5 rounded-xl text-app-primary">
+                    <div class="p-3 bg-app-text/5 rounded-xl text-app-primary">
                         <Trophy size={20} />
                     </div>
                 </div>
@@ -74,29 +74,29 @@
                         >{standing.points}</span
                     >
                     <span
-                        class="text-[9px] font-black text-white/20 uppercase tracking-widest"
+                        class="text-[9px] font-black text-app-text/20 uppercase tracking-widest"
                         >Points Season Total</span
                     >
                 </div>
             </div>
 
-            <div class="h-px w-full bg-white/5"></div>
+            <div class="h-px w-full bg-app-text/5"></div>
 
             <!-- Drivers Standing -->
             <div class="flex flex-col gap-4">
                 <span
-                    class="text-[9px] font-black text-white/30 uppercase tracking-widest"
+                    class="text-[9px] font-black text-app-text/30 uppercase tracking-widest"
                     >Our Pilots</span
                 >
 
                 <div class="flex flex-col gap-3">
                     {#each driverStandings as driver (driver.id)}
                         <div
-                            class="flex items-center justify-between p-3 bg-black/20 rounded-xl border border-white/5 group/driver hover:border-app-primary/20 transition-all"
+                            class="flex items-center justify-between p-3 bg-app-text/20 rounded-xl border border-app-border group/driver hover:border-app-primary/20 transition-all"
                         >
                             <div class="flex items-center gap-3">
                                 <div
-                                    class="w-8 h-8 rounded-full bg-white/5 flex items-center justify-center overflow-hidden"
+                                    class="w-8 h-8 rounded-full bg-app-text/5 flex items-center justify-center overflow-hidden"
                                 >
                                     <DriverAvatar
                                         id={driver.id}
@@ -106,11 +106,11 @@
                                 </div>
                                 <div class="flex flex-col">
                                     <span
-                                        class="text-[10px] font-black text-white uppercase italic"
+                                        class="text-[10px] font-black text-app-text uppercase italic"
                                         >{driver.name}</span
                                     >
                                     <span
-                                        class="text-[8px] font-bold text-white/30 uppercase tracking-tighter pt-0.5"
+                                        class="text-[8px] font-bold text-app-text/30 uppercase tracking-tighter pt-0.5"
                                         >{driver.seasonPoints} PTS</span
                                     >
                                 </div>
@@ -128,7 +128,7 @@
 
             <a
                 href="/season"
-                class="flex items-center gap-2 text-[10px] font-black text-white/40 uppercase tracking-widest mt-auto group/link hover:text-white transition-all pt-4"
+                class="flex items-center gap-2 text-[10px] font-black text-app-text/40 uppercase tracking-widest mt-auto group/link hover:text-app-text transition-all pt-4"
             >
                 Full Standings <ChevronRight
                     size={14}

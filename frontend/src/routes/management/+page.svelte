@@ -59,7 +59,7 @@
             </span>
         </div>
         <h1
-            class="text-4xl lg:text-5xl font-heading font-black tracking-tighter uppercase italic text-white mt-1"
+            class="text-4xl lg:text-5xl font-heading font-black tracking-tighter uppercase italic text-app-text mt-1"
         >
             Management <span class="text-app-primary">Center</span>
         </h1>
@@ -71,7 +71,7 @@
             <a
                 href={item.path}
                 in:fly={{ y: 20, duration: 400, delay: i * 100 }}
-                class="group relative bg-app-surface border border-white/5 rounded-3xl p-8 transition-all duration-300 hover:border-app-primary/30 hover:shadow-[0_20px_40px_rgba(0,0,0,0.3)] overflow-hidden"
+                class="group relative bg-app-surface border border-app-border rounded-3xl p-8 transition-all duration-300 hover:border-app-primary/30 hover:shadow-[0_20px_40px_rgba(0,0,0,0.3)] overflow-hidden"
             >
                 <!-- Background Gradient Decoration -->
                 <div
@@ -86,7 +86,7 @@
                             <item.icon size={32} strokeWidth={2.5} />
                         </div>
                         <div
-                            class="text-white/10 group-hover:text-app-primary transition-colors"
+                            class="text-app-text/10 group-hover:text-app-primary transition-colors"
                         >
                             <ChevronRight size={20} />
                         </div>
@@ -94,7 +94,7 @@
 
                     <div class="flex flex-col gap-1">
                         <h2
-                            class="text-2xl font-black text-white uppercase tracking-tight group-hover:text-app-primary transition-colors"
+                            class="text-2xl font-black text-app-text uppercase tracking-tight group-hover:text-app-primary transition-colors"
                         >
                             {item.title}
                         </h2>
@@ -112,7 +112,7 @@
                             ></div>
                         </div>
                         <span
-                            class="text-[9px] font-black tracking-widest text-white/20 group-hover:text-white/40 uppercase"
+                            class="text-[9px] font-black tracking-widest text-app-text/20 group-hover:text-app-text/40 uppercase"
                         >
                             Access Module
                         </span>
@@ -124,28 +124,28 @@
 
     <!-- Quick Status Footer -->
     <div
-        class="mt-12 pt-8 border-t border-white/5 flex flex-wrap gap-12 opacity-50"
+        class="mt-12 pt-8 border-t border-app-border flex flex-wrap gap-12 opacity-50"
     >
         <div class="flex flex-col gap-1">
             <span
                 class="text-[9px] font-black uppercase tracking-widest text-app-text/40"
                 >Efficiency</span
             >
-            <span class="text-sm font-bold text-white">94.2%</span>
+            <span class="text-sm font-bold text-app-text">94.2%</span>
         </div>
         <div class="flex flex-col gap-1">
             <span
                 class="text-[9px] font-black uppercase tracking-widest text-app-text/40"
                 >Morale</span
             >
-            <span class="text-sm font-bold text-white">Very High</span>
+            <span class="text-sm font-bold text-app-text">Very High</span>
         </div>
         <div class="flex flex-col gap-1">
             <span
                 class="text-[9px] font-black uppercase tracking-widest text-app-text/40"
                 >System Load</span
             >
-            <span class="text-sm font-bold text-white">Optimal</span>
+            <span class="text-sm font-bold text-app-text">Optimal</span>
         </div>
     </div>
 </div>

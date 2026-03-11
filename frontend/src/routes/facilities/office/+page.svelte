@@ -200,7 +200,7 @@
                                 id="team-name"
                                 type="text"
                                 bind:value={newName}
-                                class="w-full bg-app-text/5 border border-app-border rounded-xl px-4 py-3 font-black text-white focus:outline-none focus:border-app-primary/50 transition-all"
+                                class="w-full bg-app-text/5 border border-app-border rounded-xl px-4 py-3 font-black text-app-text focus:outline-none focus:border-app-primary/50 transition-all"
                                 placeholder="Enter team name..."
                             />
                         </div>
@@ -208,7 +208,7 @@
                             <button
                                 onclick={handleRename}
                                 disabled={isSavingName}
-                                class="flex-1 py-2.5 bg-app-primary text-black font-black uppercase text-[10px] tracking-widest rounded-lg hover:scale-[1.02] active:scale-95 transition-all disabled:opacity-50"
+                                class="flex-1 py-2.5 bg-app-primary text-app-primary-foreground font-black uppercase text-[10px] tracking-widest rounded-lg hover:scale-[1.02] active:scale-95 transition-all disabled:opacity-50"
                             >
                                 {isSavingName ? "Saving..." : "Confirm"}
                             </button>
@@ -225,7 +225,7 @@
                     </div>
                 {:else}
                     <h2
-                        class="text-3xl font-black text-white uppercase tracking-tight mb-2 truncate"
+                        class="text-3xl font-black text-app-text uppercase tracking-tight mb-2 truncate"
                     >
                         {teamStore.value.team?.name}
                     </h2>
@@ -264,7 +264,7 @@
                 <div class="flex items-center gap-2 mb-6">
                     <Trophy size={16} class="text-app-primary" />
                     <h3
-                        class="text-xs font-black uppercase text-white tracking-widest"
+                        class="text-xs font-black uppercase text-app-text tracking-widest"
                     >
                         Career Stats
                     </h3>
@@ -290,7 +290,7 @@
                             class="text-[9px] font-bold text-app-text/30 uppercase block mb-1"
                             >Wins</span
                         >
-                        <span class="text-2xl font-black text-white italic"
+                        <span class="text-2xl font-black text-app-text italic"
                             >{teamStats.wins}</span
                         >
                     </div>
@@ -301,7 +301,7 @@
                             class="text-[9px] font-bold text-app-text/30 uppercase block mb-1"
                             >Podiums</span
                         >
-                        <span class="text-2xl font-black text-white italic"
+                        <span class="text-2xl font-black text-app-text italic"
                             >{teamStats.podiums}</span
                         >
                     </div>
@@ -333,7 +333,7 @@
                         >
                     </div>
                     <div>
-                        <h4 class="text-sm font-black text-white uppercase">
+                        <h4 class="text-sm font-black text-app-text uppercase">
                             {managerStore.profile?.firstName}
                             {managerStore.profile?.lastName}
                         </h4>
@@ -358,11 +358,11 @@
                     class="bg-gradient-to-br from-app-surface to-black border-l-4 border-app-primary border-t border-r border-b border-app-border rounded-2xl p-6 shadow-2xl"
                 >
                     <div class="flex items-center gap-3 mb-6">
-                        <div class="p-2 bg-app-primary text-black rounded-lg">
+                        <div class="p-2 bg-app-primary text-app-primary-foreground rounded-lg">
                             <BarChart3 size={18} />
                         </div>
                         <h3
-                            class="text-sm font-black uppercase text-white tracking-widest"
+                            class="text-sm font-black uppercase text-app-text tracking-widest"
                         >
                             Last Race Debrief
                         </h3>
@@ -374,7 +374,7 @@
 
                     {#if teamStore.value.team?.lastRaceResult}
                         <div
-                            class="bg-black/40 border border-app-border/50 rounded-xl p-4 mb-6 font-mono text-[12px] text-app-text/70 leading-relaxed"
+                            class="bg-app-text/40 border border-app-border/50 rounded-xl p-4 mb-6 font-mono text-[12px] text-app-text/70 leading-relaxed"
                         >
                             {teamStore.value.team.lastRaceResult}
                         </div>
@@ -394,7 +394,7 @@
                     <div class="flex items-center gap-2">
                         <Mail size={16} class="text-app-primary" />
                         <h3
-                            class="text-xs font-black uppercase text-white tracking-[0.2em]"
+                            class="text-xs font-black uppercase text-app-text tracking-[0.2em]"
                         >
                             Official Communications
                         </h3>
@@ -433,7 +433,7 @@
                                     class="flex justify-between items-start mb-3"
                                 >
                                     <h4
-                                        class="font-black text-white uppercase group-hover:text-app-primary transition-colors"
+                                        class="font-black text-app-text uppercase group-hover:text-app-primary transition-colors"
                                     >
                                         {item.title}
                                     </h4>

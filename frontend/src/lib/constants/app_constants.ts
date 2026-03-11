@@ -1,5 +1,5 @@
 /** Maximum number of practice laps allowed per driver in a race weekend. */
-export const MAX_PRACTICE_LAPS_PER_DRIVER = 6;
+export const MAX_PRACTICE_LAPS_PER_DRIVER = 50;
 
 /** Number of race drivers per team. */
 export const DEFAULT_DRIVERS_PER_TEAM = 2;

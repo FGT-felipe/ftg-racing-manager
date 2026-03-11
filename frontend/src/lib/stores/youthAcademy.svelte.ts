@@ -26,71 +26,67 @@ export function createYouthAcademyStore() {
     let loading = $state(true);
     let initializedTeamId: string | null = null;
 
-    function init() {
-        // Use an effect that tracks the teamId specifically
-        $effect(() => {
-            const teamId = teamStore.value.team?.id;
+    let unsubscribeConfig: (() => void) | null = null;
+    let unsubscribeCandidates: (() => void) | null = null;
+    let unsubscribeSelected: (() => void) | null = null;
 
-            // Only proceed if we have a valid teamId and we are in the browser
-            if (!teamId || !browser) {
-                untrack(() => { loading = false; });
-                return;
+    function init(teamId: string | null) {
+        if (!teamId || !browser) {
+            loading = false;
+            return;
+        }
+
+        if (initializedTeamId === teamId) return;
+
+        console.log(`📡 YouthAcademyStore: Initializing for Team ${teamId}`);
+        clear();
+
+        initializedTeamId = teamId;
+        loading = true;
+
+        // Stream config
+        const configRef = doc(db, 'teams', teamId, 'academy', 'config');
+        unsubscribeConfig = onSnapshot(configRef, (snapshot) => {
+            if (snapshot.exists()) {
+                config = snapshot.data();
+            } else {
+                config = null;
             }
-
-            // Guard against re-initializing for the same team
-            if (untrack(() => initializedTeamId === teamId)) return;
-
-            console.log(`📡 YouthAcademyStore: Initializing for Team ${teamId}`);
-
-            untrack(() => {
-                initializedTeamId = teamId;
-                loading = true;
-            });
-
-            // Stream config
-            const configRef = doc(db, 'teams', teamId, 'academy', 'config');
-            const unsubscribeConfig = onSnapshot(configRef, (snapshot) => {
-                untrack(() => {
-                    if (snapshot.exists()) {
-                        config = snapshot.data();
-                    } else {
-                        config = null;
-                    }
-                    loading = false;
-                    console.log('✅ YouthAcademyStore: Config loaded');
-                });
-            });
-
-            // Stream candidates
-            const candidatesRef = collection(db, 'teams', teamId, 'academy', 'config', 'candidates');
-            const unsubscribeCandidates = onSnapshot(candidatesRef, (snapshot) => {
-                untrack(() => {
-                    candidates = snapshot.docs.map(doc => ({
-                        id: doc.id,
-                        ...doc.data()
-                    } as YoungDriver));
-                });
-            });
-
-            // Stream selected
-            const selectedRef = collection(db, 'teams', teamId, 'academy', 'config', 'selected');
-            const unsubscribeSelected = onSnapshot(selectedRef, (snapshot) => {
-                untrack(() => {
-                    selectedDrivers = snapshot.docs.map(doc => ({
-                        id: doc.id,
-                        ...doc.data()
-                    } as YoungDriver));
-                });
-            });
-
-            return () => {
-                console.log(`🧹 YouthAcademyStore: Cleaning up for Team ${teamId}`);
-                unsubscribeConfig();
-                unsubscribeCandidates();
-                unsubscribeSelected();
-                untrack(() => { initializedTeamId = null; });
-            };
+            loading = false;
+            console.log('✅ YouthAcademyStore: Config loaded');
         });
+
+        // Stream candidates
+        const candidatesRef = collection(db, 'teams', teamId, 'academy', 'config', 'candidates');
+        unsubscribeCandidates = onSnapshot(candidatesRef, (snapshot) => {
+            candidates = snapshot.docs.map(doc => ({
+                id: doc.id,
+                ...doc.data()
+            } as YoungDriver));
+        });
+
+        // Stream selected
+        const selectedRef = collection(db, 'teams', teamId, 'academy', 'config', 'selected');
+        unsubscribeSelected = onSnapshot(selectedRef, (snapshot) => {
+            selectedDrivers = snapshot.docs.map(doc => ({
+                id: doc.id,
+                ...doc.data()
+            } as YoungDriver));
+        });
+    }
+
+    function clear() {
+        if (unsubscribeConfig) unsubscribeConfig();
+        if (unsubscribeCandidates) unsubscribeCandidates();
+        if (unsubscribeSelected) unsubscribeSelected();
+        unsubscribeConfig = null;
+        unsubscribeCandidates = null;
+        unsubscribeSelected = null;
+        initializedTeamId = null;
+        config = null;
+        candidates = [];
+        selectedDrivers = [];
+        loading = false;
     }
 
     // Dynamic Getters for product rules
@@ -254,20 +250,63 @@ export function createYouthAcademyStore() {
             });
         },
 
-        async solveAcademyAction(driverId: string, decision: string) {
+        async solveAcademyAction(driverId: string, decision: 'resolve' | 'dismiss') {
             const teamId = teamStore.value.team?.id;
             if (!teamId) return;
 
             const driverRef = doc(db, 'teams', teamId, 'academy', 'config', 'selected', driverId);
+            const driver = selectedDrivers.find(d => d.id === driverId);
 
-            await updateDoc(driverRef, {
+            let message = "The driver successfully completed the requested flow.";
+            let diffs: Record<string, number> = {};
+
+            if (decision === 'resolve') {
+                switch(driver?.pendingActionType) {
+                    case 'SPONSOR_SHOOT':
+                        diffs = { focus: -1, adaptability: 1 };
+                        message = "The sponsor shoot raised adaptability, but cost some focus.";
+                        break;
+                    case 'TECHNICAL_TEST':
+                        diffs = { cornering: 1, fitness: -1 };
+                        message = "Intense technical testing improved cornering at the cost of physical exhaustion.";
+                        break;
+                    case 'MENTOR_REQUEST':
+                        diffs = { consistency: 1, smoothness: 1 };
+                        message = "A mentorship session yielded great improvements in driving technique.";
+                        break;
+                    default:
+                        diffs = { focus: 1 };
+                        message = "The driver successfully completed the requested flow.";
+                }
+            } else if (decision === 'dismiss') {
+                message = "The matter was dismissed and no action was taken.";
+                diffs = { focus: -1 };
+            }
+
+            const updates: any = {
                 pendingAction: false,
-                weeklyEventMessage: `Resolved: ${decision}`
-            });
+                weeklyEventMessage: message,
+                weeklyStatDiffs: diffs
+            };
+
+            if (driver && Object.keys(diffs).length > 0) {
+                const newMin = { ...driver.statRangeMin };
+                const newMax = { ...driver.statRangeMax };
+                
+                for (const [key, value] of Object.entries(diffs)) {
+                    newMin[key] = Math.min(100, Math.max(1, (newMin[key] || 20) + value));
+                    newMax[key] = Math.min(100, Math.max(1, (newMax[key] || 30) + value));
+                    updates[`stats.${key}`] = increment(value);
+                }
+                updates.statRangeMin = newMin;
+                updates.statRangeMax = newMax;
+            }
+
+            await updateDoc(driverRef, updates);
 
             notificationStore.addNotification({
-                title: "Decision Made",
-                message: "Your choice has been recorded.",
+                title: `${driver?.name || 'Driver'} Action`,
+                message: message,
                 type: "INFO"
             });
         },

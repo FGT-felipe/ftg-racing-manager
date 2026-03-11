@@ -28,7 +28,7 @@
     class="flex flex-col items-center justify-center min-h-screen p-6 bg-app-bg text-app-text"
 >
     <div
-        class="max-w-md w-full bg-app-surface border border-white/5 p-8 rounded-2xl shadow-xl flex flex-col gap-6"
+        class="max-w-md w-full bg-app-surface border border-app-border p-8 rounded-2xl shadow-xl flex flex-col gap-6"
     >
         <h1
             class="text-2xl font-heading font-black tracking-widest text-app-primary uppercase"
@@ -44,13 +44,13 @@
                 type="text"
                 bind:value={teamName}
                 placeholder="Team Name"
-                class="w-full bg-black/40 border border-white/10 rounded-xl py-3.5 px-4 text-sm focus:outline-none focus:border-app-primary transition-all transition-colors"
+                class="w-full bg-app-text/40 border border-app-border rounded-xl py-3.5 px-4 text-sm focus:outline-none focus:border-app-primary transition-all transition-colors"
             />
 
             <button
                 onclick={handleCreateTeam}
                 disabled={isCreating || !teamName}
-                class="w-full bg-app-primary text-black rounded-xl py-4 flex items-center justify-center gap-3 font-black tracking-widest text-xs disabled:opacity-50 transition-all hover:brightness-110"
+                class="w-full bg-app-primary text-app-primary-foreground rounded-xl py-4 flex items-center justify-center gap-3 font-black tracking-widest text-xs disabled:opacity-50 transition-all hover:brightness-110"
             >
                 {#if isCreating}
                     <Loader2 size={18} class="animate-spin" />

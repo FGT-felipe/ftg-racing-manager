@@ -1,0 +1,12 @@
+Loading svelte-check in workspace: c:\Users\Felipe Ubidots\Documents\personalprojects\ftg-racing-manager\frontend
+Getting Svelte diagnostics...
+
+c:\Users\Felipe Ubidots\Documents\personalprojects\ftg-racing-manager\frontend\[32msrc\lib\services\staff.svelte.ts[39m:166:43
+[31mError[39m: Property 'contract' does not exist on type 'Driver'. 
+[36m            const driverData = driverDoc.data() as Driver;
+            const endDateStr = driverData.[35mcontract[36m?.endDate;
+            const currentContractEnd = endDateStr ? new Date(endDateStr) : new Date();[39m
+
+====================================
+[31msvelte-check found 1 error and 0 warnings in 1 file
+[39m

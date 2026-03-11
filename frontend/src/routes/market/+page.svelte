@@ -366,7 +366,7 @@
                                 <button
                                     onclick={() => openBidModal(driver)}
                                     disabled={expiring || countdownMap[driver.id] === 'Expired'}
-                                    class="flex items-center gap-1 text-[9px] font-black uppercase tracking-widest bg-green-500 text-white px-3 py-1.5 rounded-lg hover:bg-green-400 transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
+                                    class="flex items-center gap-1 text-[9px] font-black uppercase tracking-widest bg-green-500 text-app-text px-3 py-1.5 rounded-lg hover:bg-green-400 transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
                                 >
                                     <Gavel size={10} /> Bid
                                 </button>
@@ -408,7 +408,7 @@
         {@const isMyBid = d.highestBidderTeamId === myTeamId}
         {@const isMyDriver = d.teamId === myTeamId}
         <div
-            class="fixed inset-0 z-50 flex items-end md:items-center justify-center p-4 bg-black/70 backdrop-blur-sm"
+            class="fixed inset-0 z-50 flex items-end md:items-center justify-center p-4 bg-app-text/70 backdrop-blur-sm"
             transition:fade={{ duration: 150 }}
             role="dialog"
             aria-modal="true"
@@ -487,7 +487,7 @@
                                 <button
                                     onclick={() => openBidModal(d)}
                                     disabled={isExpiringSoon(d)}
-                                    class="w-full py-3 bg-green-500 text-white text-[10px] font-black uppercase tracking-wider rounded-2xl hover:bg-green-400 transition-colors flex items-center justify-center gap-2 disabled:opacity-30"
+                                    class="w-full py-3 bg-green-500 text-app-text text-[10px] font-black uppercase tracking-wider rounded-2xl hover:bg-green-400 transition-colors flex items-center justify-center gap-2 disabled:opacity-30"
                                 >
                                     <Gavel size={14} /> Place Bid
                                 </button>
@@ -531,7 +531,7 @@
     {#if selectedDriver}
         {@const d = selectedDriver}
         {@const minBid = d.currentHighestBid === 0 ? d.marketValue : d.currentHighestBid + 50_000}
-        <div class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm"
+        <div class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-app-text/80 backdrop-blur-sm"
             transition:fade={{ duration: 150 }}
             role="dialog"
             aria-modal="true"
@@ -592,7 +592,7 @@
                     <button
                         onclick={placeBid}
                         disabled={bidLoading || bidAmount > myBudget || bidAmount < minBid}
-                        class="flex-1 py-3 bg-green-500 text-white text-[10px] font-black uppercase tracking-wider rounded-2xl hover:bg-green-400 transition-colors disabled:opacity-30 flex items-center justify-center gap-2"
+                        class="flex-1 py-3 bg-green-500 text-app-text text-[10px] font-black uppercase tracking-wider rounded-2xl hover:bg-green-400 transition-colors disabled:opacity-30 flex items-center justify-center gap-2"
                     >
                         {#if bidLoading}
                             <div class="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>

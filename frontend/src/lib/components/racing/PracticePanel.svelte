@@ -221,8 +221,8 @@
                 <button
                     class="px-3 py-1.5 rounded-lg border text-[10px] font-black uppercase transition-all flex items-center gap-2 {driver?.id ===
                     d.id
-                        ? 'bg-app-primary border-app-primary text-black'
-                        : 'bg-white/5 border-app-border text-app-text/40'}"
+                        ? 'bg-app-primary border-app-primary text-app-primary-foreground'
+                        : 'bg-app-text/5 border-app-border text-app-text/40'}"
                     onclick={() => (activeDriverId = d.id)}
                 >
                     <User size={12} />
@@ -256,13 +256,13 @@
         <div class="lg:col-span-7 space-y-6">
             <!-- Setup Card -->
             <div
-                class="bg-[#121212] border border-white/10 rounded-2xl p-6 relative overflow-hidden shadow-2xl"
+                class="bg-app-surface border border-app-border rounded-2xl p-6 relative overflow-hidden shadow-2xl"
             >
                 <!-- Header with copy buttons -->
                 <div class="flex items-center justify-between mb-8">
                     <div>
                         <h3
-                            class="font-black text-xs text-white uppercase tracking-[0.2em]"
+                            class="font-black text-xs text-app-text uppercase tracking-[0.2em]"
                         >
                             Practice Setup
                         </h3>
@@ -270,7 +270,7 @@
                     <div class="flex gap-2">
                         <button
                             onclick={copyToQualifying}
-                            class="flex items-center gap-1.5 px-3 py-1.5 rounded-md bg-app-primary/10 border border-app-primary/20 text-app-primary hover:bg-app-primary hover:text-black transition-all"
+                            class="flex items-center gap-1.5 px-3 py-1.5 rounded-md bg-app-primary/10 border border-app-primary/20 text-app-primary hover:bg-app-primary hover:text-app-primary-foreground transition-all"
                         >
                             <Timer size={12} />
                             <span class="text-[9px] font-black uppercase"
@@ -279,7 +279,7 @@
                         </button>
                         <button
                             onclick={copyToRace}
-                            class="flex items-center gap-1.5 px-3 py-1.5 rounded-md bg-red-500/10 border border-red-500/20 text-red-500 hover:bg-red-500 hover:text-white transition-all"
+                            class="flex items-center gap-1.5 px-3 py-1.5 rounded-md bg-red-500/10 border border-red-500/20 text-red-500 hover:bg-red-500 hover:text-app-text transition-all"
                         >
                             <Flag size={12} />
                             <span class="text-[9px] font-black uppercase"
@@ -303,7 +303,7 @@
                                         >{item.label}</span
                                     >
                                 </div>
-                                <span class="text-sm font-black text-white"
+                                <span class="text-sm font-black text-app-text"
                                     >{setup[item.field]}</span
                                 >
                             </div>
@@ -312,7 +312,7 @@
                                 min="0"
                                 max="100"
                                 bind:value={setup[item.field]}
-                                class="w-full accent-current h-1.5 bg-white/5 rounded-full appearance-none cursor-pointer {item.color.replace(
+                                class="w-full accent-current h-1.5 bg-app-text/5 rounded-full appearance-none cursor-pointer {item.color.replace(
                                     'text-',
                                     'accent-',
                                 )}"
@@ -324,7 +324,7 @@
                 <!-- Tyres -->
                 <div class="mt-8 space-y-3">
                     <span
-                        class="text-[9px] font-black text-white/40 uppercase tracking-widest"
+                        class="text-[9px] font-black text-app-text/40 uppercase tracking-widest"
                         >Tyre Compound</span
                     >
                     <div class="grid grid-cols-4 gap-3">
@@ -332,8 +332,8 @@
                             <button
                                 class="px-2 py-3 rounded-xl border transition-all flex flex-col items-center gap-2 {setup.tyreCompound ===
                                 tc
-                                    ? 'bg-app-primary border-app-primary text-black'
-                                    : 'bg-white/5 border-white/5 text-white/40 hover:bg-white/10'}"
+                                    ? 'bg-app-primary border-app-primary text-app-primary-foreground'
+                                    : 'bg-app-text/5 border-app-border text-app-text/40 hover:bg-app-text/10'}"
                                 onclick={() => (setup.tyreCompound = tc)}
                             >
                                 <div
@@ -343,7 +343,7 @@
                                         : tc === 'medium'
                                           ? 'bg-yellow-500'
                                           : tc === 'hard'
-                                            ? 'bg-white'
+                                            ? 'bg-app-surface'
                                             : 'bg-blue-500'} shadow-[0_0_10px_rgba(255,255,255,0.2)]"
                                 ></div>
                                 <span
@@ -362,7 +362,7 @@
             >
                 <div class="flex items-center justify-between">
                     <h4
-                        class="text-[10px] font-black text-white/40 uppercase tracking-widest"
+                        class="text-[10px] font-black text-app-text/40 uppercase tracking-widest"
                     >
                         Driving Aggression
                     </h4>
@@ -371,9 +371,9 @@
                             <button
                                 class="w-8 h-8 rounded-lg border flex items-center justify-center transition-all {currentDriverStyle ===
                                 style.id
-                                    ? 'bg-white/10 border-white/20 ' +
+                                    ? 'bg-app-text/10 border-app-border ' +
                                       style.color
-                                    : 'bg-white/5 border-transparent text-white/20 hover:text-white/40'}"
+                                    : 'bg-app-text/5 border-transparent text-app-text/20 hover:text-app-text/40'}"
                                 onclick={() => (currentDriverStyle = style.id)}
                                 title={style.label}
                             >
@@ -384,13 +384,13 @@
                 </div>
 
                 <div class="flex items-center gap-4">
-                    <div class="flex-1 bg-black/20 rounded-xl p-1.5 flex gap-1">
+                    <div class="flex-1 bg-app-text/20 rounded-xl p-1.5 flex gap-1">
                         {#each [1, 3, 5] as laps}
                             <button
                                 class="flex-1 py-1.5 rounded-lg text-[10px] font-black uppercase transition-all {lapsToRun ===
                                 laps
-                                    ? 'bg-white/10 text-white'
-                                    : 'text-white/20 hover:text-white/40'}"
+                                    ? 'bg-app-text/10 text-app-text'
+                                    : 'text-app-text/20 hover:text-app-text/40'}"
                                 onclick={() => (lapsToRun = laps)}
                             >
                                 {laps}
@@ -400,7 +400,7 @@
                     </div>
 
                     <button
-                        class="flex-[2] py-3.5 bg-app-primary text-black font-black uppercase tracking-widest text-xs rounded-xl hover:scale-[1.02] active:scale-95 transition-all disabled:opacity-50 disabled:scale-100 flex items-center justify-center gap-2 shadow-lg shadow-app-primary/20"
+                        class="flex-[2] py-3.5 bg-app-primary text-app-primary-foreground font-black uppercase tracking-widest text-xs rounded-xl hover:scale-[1.02] active:scale-95 transition-all disabled:opacity-50 disabled:scale-100 flex items-center justify-center gap-2 shadow-lg shadow-app-primary/20"
                         disabled={isSimulating || !driver}
                         onclick={runPractice}
                     >
@@ -422,7 +422,7 @@
         <div class="lg:col-span-5 space-y-6">
             <!-- Pit Board -->
             <div
-                class="bg-[#121212] border-l-4 border-app-primary rounded-xl p-5 shadow-xl"
+                class="bg-app-surface border-l-4 border-app-primary rounded-xl p-5 shadow-xl"
             >
                 <div class="flex items-center justify-between mb-4">
                     <span
@@ -435,7 +435,7 @@
                 </div>
                 <div class="space-y-2">
                     <p
-                        class="text-sm font-black italic text-white leading-tight"
+                        class="text-sm font-black italic text-app-text leading-tight"
                     >
                         {#if isSimulating}
                             TRACK STATUS: LIVE SESSION
@@ -445,7 +445,7 @@
                             TRACK STATUS: PITS OPEN
                         {/if}
                     </p>
-                    <p class="text-[10px] font-bold text-white/40 leading-none">
+                    <p class="text-[10px] font-bold text-app-text/40 leading-none">
                         DRV: {driver?.name?.toUpperCase() || "NONE"} • {circuit?.name?.toUpperCase() ||
                             "NO TRACK"}
                     </p>
@@ -460,7 +460,7 @@
                     <div class="flex items-center gap-2">
                         <History size={16} class="text-app-primary" />
                         <h4
-                            class="text-[10px] font-black text-white/40 uppercase tracking-widest"
+                            class="text-[10px] font-black text-app-text/40 uppercase tracking-widest"
                         >
                             Last Outing Result
                         </h4>
@@ -479,7 +479,7 @@
 
                 <div class="flex items-end justify-between">
                     <span
-                        class="text-3xl font-black italic text-white tabular-nums"
+                        class="text-3xl font-black italic text-app-text tabular-nums"
                     >
                         {lastResult
                             ? formatTime(lastResult.lapTime)
@@ -502,11 +502,11 @@
             >
                 <div class="flex border-b border-app-border">
                     <button
-                        class="flex-1 py-3 text-[10px] font-black uppercase tracking-widest border-b-2 border-app-primary text-white bg-white/5"
+                        class="flex-1 py-3 text-[10px] font-black uppercase tracking-widest border-b-2 border-app-primary text-app-text bg-app-text/5"
                         >Feedback</button
                     >
                     <button
-                        class="flex-1 py-3 text-[10px] font-black uppercase tracking-widest text-white/20 hover:text-white/40 transition-all"
+                        class="flex-1 py-3 text-[10px] font-black uppercase tracking-widest text-app-text/20 hover:text-app-text/40 transition-all"
                         >Laps</button
                     >
                 </div>
@@ -517,10 +517,10 @@
                     {#if lastResult}
                         {#each lastResult.driverFeedback as msg}
                             <div
-                                class="p-3 bg-white/5 rounded-lg border-l-2 border-red-500/50"
+                                class="p-3 bg-app-text/5 rounded-lg border-l-2 border-red-500/50"
                             >
                                 <p
-                                    class="text-[11px] italic text-white/70 leading-relaxed font-medium"
+                                    class="text-[11px] italic text-app-text/70 leading-relaxed font-medium"
                                 >
                                     "{msg}"
                                 </p>

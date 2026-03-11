@@ -15,10 +15,12 @@
         AlertTriangle,
         ShieldCheck,
         Save,
+        Activity
     } from "lucide-svelte";
     import { teamStore } from "$lib/stores/team.svelte";
     import { driverStore } from "$lib/stores/driver.svelte";
     import { seasonStore } from "$lib/stores/season.svelte";
+    import { timeService } from "$lib/services/time_service.svelte";
     import {
         type CarSetup,
         TyreCompound,
@@ -173,15 +175,48 @@
     ];
 </script>
 
+{#if timeService.currentStatus === 'qualifying'}
+    <!-- Qualy in Progress Holding View -->
+    <div class="flex flex-col items-center justify-center p-12 text-center min-h-[400px]">
+        <Activity size={64} class="text-[#FFB800] mb-6 animate-pulse" />
+        <h2 class="text-3xl font-black italic text-app-text uppercase tracking-widest mb-4">
+            Qualifying Session in Progress
+        </h2>
+        <p class="text-sm text-app-text/60 max-w-lg mb-8 leading-relaxed">
+            The servers are currently processing the official Qualifying session. 
+            Race setups cannot be modified until the grid is finalized.
+        </p>
+        <div class="flex items-center gap-2 text-[#FFB800] px-4 py-2 bg-[#FFB800]/10 rounded-lg">
+            <Timer size={16} />
+            <span class="text-[10px] font-black uppercase tracking-widest">Awaiting Grid Results...</span>
+        </div>
+    </div>
+{:else if timeService.currentStatus === 'race'}
+    <!-- Race in Progress Holding View -->
+    <div class="flex flex-col items-center justify-center p-12 text-center min-h-[400px]">
+        <Flag size={64} class="text-[#E040FB] mb-6 animate-bounce" />
+        <h2 class="text-3xl font-black italic text-app-text uppercase tracking-widest mb-4">
+            Race Session in Progress
+        </h2>
+        <p class="text-sm text-app-text/60 max-w-lg mb-8 leading-relaxed">
+            The Grand Prix is currently underway! 
+            You can no longer change your strategy. Head over to the Live Timing screen to see the action!
+        </p>
+        <div class="flex items-center gap-2 text-[#E040FB] px-4 py-2 bg-[#E040FB]/10 rounded-lg">
+            <Timer size={16} />
+            <span class="text-[10px] font-black uppercase tracking-widest">Simulating Race...</span>
+        </div>
+    </div>
+{:else}
 <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
     <!-- Initial Setup & Fuel -->
     <div class="lg:col-span-12 space-y-6">
         <div
-            class="bg-[#121212] border border-white/10 rounded-2xl p-6 shadow-xl"
+            class="bg-app-surface border border-app-border rounded-2xl p-6 shadow-xl"
         >
             <div class="flex items-center justify-between mb-8">
                 <h3
-                    class="font-black text-xs text-white uppercase tracking-[0.2em] italic"
+                    class="font-black text-xs text-app-text uppercase tracking-[0.2em] italic"
                 >
                     Race Start Configuration
                 </h3>
@@ -189,7 +224,7 @@
                     class="px-3 py-1 bg-green-500/10 border border-green-500/20 rounded flex items-center gap-2"
                 >
                     <ShieldCheck size={12} class="text-green-500" />
-                    <span class="text-[9px] font-black text-white/60 uppercase"
+                    <span class="text-[9px] font-black text-app-text/60 uppercase"
                         >Validated</span
                     >
                 </div>
@@ -206,7 +241,7 @@
                                 >Initial Fuel Load</span
                             >
                         </div>
-                        <span class="text-xl font-black text-white italic"
+                        <span class="text-xl font-black text-app-text italic"
                             >{strategy.initialFuel} L</span
                         >
                     </div>
@@ -215,10 +250,10 @@
                         min="5"
                         max="100"
                         bind:value={strategy.initialFuel}
-                        class="w-full h-2 bg-white/5 rounded-full appearance-none cursor-pointer accent-cyan-400"
+                        class="w-full h-2 bg-app-text/5 rounded-full appearance-none cursor-pointer accent-cyan-400"
                     />
                     <div
-                        class="flex justify-between text-[9px] font-bold text-white/20 uppercase"
+                        class="flex justify-between text-[9px] font-bold text-app-text/20 uppercase"
                     >
                         <span>Light (Min)</span>
                         <span>Heavy (Full)</span>
@@ -229,7 +264,7 @@
                 <div class="grid grid-cols-2 gap-6">
                     <div class="space-y-4">
                         <span
-                            class="text-[10px] font-black text-white/30 uppercase tracking-widest"
+                            class="text-[10px] font-black text-app-text/30 uppercase tracking-widest"
                         >
                             Start Tyres {driverId && qualyCompounds[driverId]
                                 ? "(Qualy Locked)"
@@ -240,8 +275,8 @@
                                 <div
                                     class="py-2 rounded-lg border text-center text-[9px] font-black transition-all {strategy.tyreCompound ===
                                     tc
-                                        ? 'bg-app-primary border-app-primary text-black'
-                                        : 'bg-white/5 border-white/5 text-white/40'} {driverId &&
+                                        ? 'bg-app-primary border-app-primary text-app-primary-foreground'
+                                        : 'bg-app-text/5 border-app-border text-app-text/40'} {driverId &&
                                     qualyCompounds[driverId] &&
                                     qualyCompounds[driverId] !== tc
                                         ? 'opacity-30'
@@ -254,7 +289,7 @@
                     </div>
                     <div class="space-y-4">
                         <span
-                            class="text-[10px] font-black text-white/30 uppercase tracking-widest"
+                            class="text-[10px] font-black text-app-text/30 uppercase tracking-widest"
                             >Initial Pace</span
                         >
                         <div class="grid grid-cols-2 gap-2">
@@ -262,8 +297,8 @@
                                 <button
                                     class="py-2 rounded-lg border text-[9px] font-black transition-all {strategy.raceStyle ===
                                     style.id
-                                        ? 'bg-app-primary border-app-primary text-black'
-                                        : 'bg-white/5 border-white/5 text-white/40'}"
+                                        ? 'bg-app-primary border-app-primary text-app-primary-foreground'
+                                        : 'bg-app-text/5 border-app-border text-app-text/40'}"
                                     onclick={() =>
                                         (strategy.raceStyle = style.id)}
                                 >
@@ -281,14 +316,14 @@
     <div class="lg:col-span-12 space-y-4">
         <div class="flex items-center justify-between px-2">
             <h3
-                class="font-black text-xs text-white uppercase tracking-[0.2em] italic"
+                class="font-black text-xs text-app-text uppercase tracking-[0.2em] italic"
             >
                 Pit Stop Strategy
             </h3>
             <button
                 onclick={addPitStop}
                 disabled={strategy.pitStops.length >= 4}
-                class="flex items-center gap-2 px-4 py-2 rounded-xl bg-app-primary/10 border border-app-primary/20 text-app-primary hover:bg-app-primary hover:text-black transition-all disabled:opacity-30"
+                class="flex items-center gap-2 px-4 py-2 rounded-xl bg-app-primary/10 border border-app-primary/20 text-app-primary hover:bg-app-primary hover:text-app-primary-foreground transition-all disabled:opacity-30"
             >
                 <Plus size={14} />
                 <span class="text-[10px] font-black uppercase"
@@ -310,18 +345,18 @@
                     <div class="flex items-center justify-between">
                         <div class="flex items-center gap-2">
                             <div
-                                class="w-6 h-6 rounded-lg bg-white/5 flex items-center justify-center text-[10px] font-black"
+                                class="w-6 h-6 rounded-lg bg-app-text/5 flex items-center justify-center text-[10px] font-black"
                             >
                                 #{i + 1}
                             </div>
                             <span
-                                class="text-[10px] font-black uppercase tracking-widest text-white/60"
+                                class="text-[10px] font-black uppercase tracking-widest text-app-text/60"
                                 >Stint Configuration</span
                             >
                         </div>
                         <button
                             onclick={() => removePitStop(i)}
-                            class="text-white/20 hover:text-red-500 transition-colors"
+                            class="text-app-text/20 hover:text-red-500 transition-colors"
                         >
                             <Trash2 size={14} />
                         </button>
@@ -331,7 +366,7 @@
                         <!-- Tyre -->
                         <div class="flex items-center justify-between">
                             <span
-                                class="text-[10px] font-black text-white/30 uppercase"
+                                class="text-[10px] font-black text-app-text/30 uppercase"
                                 >Compound</span
                             >
                             <div class="flex gap-1.5">
@@ -339,8 +374,8 @@
                                     <button
                                         class="w-8 h-8 rounded-lg border flex items-center justify-center text-[9px] font-black transition-all {strategy
                                             .pitStops[i] === tc
-                                            ? 'bg-white/10 border-white/20 text-app-primary'
-                                            : 'bg-white/5 border-transparent text-white/20'}"
+                                            ? 'bg-app-text/10 border-app-border text-app-primary'
+                                            : 'bg-app-text/5 border-transparent text-app-text/20'}"
                                         onclick={() =>
                                             (strategy.pitStops[i] = tc)}
                                     >
@@ -353,10 +388,10 @@
                         <!-- Fuel -->
                         <div class="space-y-2">
                             <div
-                                class="flex justify-between text-[9px] font-black uppercase text-white/40"
+                                class="flex justify-between text-[9px] font-black uppercase text-app-text/40"
                             >
                                 <span>Fuel to Add</span>
-                                <span class="text-white"
+                                <span class="text-app-text"
                                     >{strategy.pitStopFuel[i]} L</span
                                 >
                             </div>
@@ -365,23 +400,23 @@
                                 min="0"
                                 max="80"
                                 bind:value={strategy.pitStopFuel[i]}
-                                class="w-full h-1 bg-white/5 rounded-full appearance-none cursor-pointer accent-white/20"
+                                class="w-full h-1 bg-app-text/5 rounded-full appearance-none cursor-pointer accent-white/20"
                             />
                         </div>
 
                         <!-- Style -->
                         <div class="flex items-center justify-between">
                             <span
-                                class="text-[10px] font-black text-white/30 uppercase"
+                                class="text-[10px] font-black text-app-text/30 uppercase"
                                 >Agression</span
                             >
                             <div class="flex gap-1">
                                 {#each styleConfigs as style}
                                     <button
-                                        class="w-7 h-7 rounded bg-white/5 flex items-center justify-center transition-all {strategy
+                                        class="w-7 h-7 rounded bg-app-text/5 flex items-center justify-center transition-all {strategy
                                             .pitStopStyles[i] === style.id
-                                            ? 'bg-white/10 text-white border border-white/20'
-                                            : 'text-white/20'}"
+                                            ? 'bg-app-text/10 text-app-text border border-app-border'
+                                            : 'text-app-text/20'}"
                                         onclick={() =>
                                             (strategy.pitStopStyles[i] =
                                                 style.id)}
@@ -397,7 +432,7 @@
 
             {#if strategy.pitStops.length === 0}
                 <div
-                    class="border border-dashed border-white/10 rounded-2xl p-10 flex flex-col items-center justify-center text-center opacity-20"
+                    class="border border-dashed border-app-border rounded-2xl p-10 flex flex-col items-center justify-center text-center opacity-20"
                 >
                     <History size={32} class="mb-3" />
                     <p class="text-[10px] font-black uppercase tracking-widest">
@@ -414,7 +449,7 @@
     <!-- Actions -->
     <div class="lg:col-span-12 pt-4">
         <button
-            class="w-full py-5 bg-app-primary text-black font-black uppercase tracking-[0.2em] text-xs rounded-2xl hover:scale-[1.01] active:scale-95 transition-all shadow-xl shadow-app-primary/10 flex items-center justify-center gap-3 disabled:opacity-50"
+            class="w-full py-5 bg-app-primary text-app-primary-foreground font-black uppercase tracking-[0.2em] text-xs rounded-2xl hover:scale-[1.01] active:scale-95 transition-all shadow-xl shadow-app-primary/10 flex items-center justify-center gap-3 disabled:opacity-50"
             disabled={isSaving || !driver}
             onclick={saveStrategy}
         >
@@ -430,3 +465,4 @@
         </button>
     </div>
 </div>
+{/if}

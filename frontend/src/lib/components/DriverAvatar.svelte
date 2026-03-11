@@ -50,7 +50,7 @@
 </script>
 
 <div
-    class="relative overflow-hidden rounded-[2rem] bg-zinc-950 border border-white/5 shadow-2xl {className}"
+    class="relative overflow-hidden rounded-[2rem] bg-app-bg border border-app-border shadow-2xl {className}"
     style={size ? `width: ${size}px; height: ${size}px;` : ""}
 >
     <!-- Driver Portrait -->
