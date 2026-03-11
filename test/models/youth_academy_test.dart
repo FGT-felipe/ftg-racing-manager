@@ -31,7 +31,7 @@ void main() {
         expect(driver.gender, 'M');
         expect(driver.growthPotential, 8);
         expect(driver.status, 'candidate');
-        expect(driver.salary, 100000);
+        expect(driver.salary, 10000);
         expect(driver.contractYears, 1);
       });
 

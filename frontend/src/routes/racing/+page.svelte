@@ -1,29 +1,145 @@
 <script lang="ts">
-    import { Flag } from "lucide-svelte";
+    import {
+        Flag,
+        Trophy,
+        Timer,
+        ChevronRight,
+        LayoutDashboard,
+    } from "lucide-svelte";
+    import RaceStatusHero from "$lib/components/dashboard/RaceStatusHero.svelte";
+    import { teamStore } from "$lib/stores/team.svelte";
+    import { seasonStore } from "$lib/stores/season.svelte";
+    import {
+        timeService,
+        RaceWeekStatus,
+    } from "$lib/services/time_service.svelte";
+
+    // Paddock Panels
+    import GaragePanel from "$lib/components/racing/GaragePanel.svelte";
+    import RaceLivePanel from "$lib/components/racing/RaceLivePanel.svelte";
+    import { driverStore } from "$lib/stores/driver.svelte";
+
+    import { fade } from "svelte/transition";
+
+    $effect(() => {
+        driverStore.init();
+    });
+
+    let weekStatus = $derived(
+        teamStore.value.team?.weekStatus?.globalStatus ||
+            timeService.currentStatus ||
+            "practice",
+    );
+    let nextEvent = $derived(seasonStore.nextEvent);
 </script>
 
 <svelte:head>
-    <title>Racing | FTG Racing Manager</title>
+    <title>Racing Paddock | FTG Racing Manager</title>
 </svelte:head>
 
 <div
-    class="p-6 md:p-8 animate-fade-in w-full max-w-[1200px] mx-auto text-app-text"
+    class="p-4 md:p-8 animate-fade-in w-full max-w-[1400px] mx-auto text-app-text flex flex-col gap-8 pb-32"
 >
-    <div class="flex items-center gap-3 mb-6">
-        <Flag class="text-app-primary" size={32} />
-        <h1 class="text-3xl font-heading font-black tracking-wide uppercase">
-            Racing
-        </h1>
+    <!-- Header/Navigation -->
+    <div
+        class="flex flex-col md:flex-row md:items-center justify-between gap-6"
+    >
+        <div class="flex items-center gap-4">
+            <div
+                class="w-12 h-12 rounded-2xl bg-app-primary flex items-center justify-center text-black shadow-lg shadow-app-primary/20"
+            >
+                <Flag size={28} />
+            </div>
+            <div>
+                <h1
+                    class="text-3xl font-heading font-black tracking-tight uppercase italic leading-none"
+                >
+                    Racing <span class="text-app-primary">Paddock</span>
+                </h1>
+                <div class="flex items-center gap-2 mt-1">
+                    <span
+                        class="text-[10px] font-black uppercase tracking-[0.2em] text-white/40"
+                        >Operation Center</span
+                    >
+                </div>
+            </div>
+        </div>
+
+        {#if nextEvent}
+            <div
+                class="flex items-center gap-6 bg-white/5 border border-white/10 rounded-2xl p-4 md:px-6"
+                in:fade
+            >
+                <div
+                    class="flex flex-col items-end border-r border-white/10 pr-6"
+                >
+                    <span
+                        class="text-[10px] font-black uppercase tracking-widest text-app-primary mb-1"
+                        >Round {(seasonStore.value.season?.calendar.findIndex(
+                            (r) => r.id === nextEvent.id,
+                        ) ?? 0) + 1} of 9</span
+                    >
+                    <span
+                        class="text-2xl font-heading font-black italic uppercase leading-none text-white"
+                    >
+                        {nextEvent.trackName.split(" ")[0]}
+                    </span>
+                </div>
+
+                <div class="flex items-center gap-4">
+                    <div class="text-3xl filter saturate-[0.8] drop-shadow-md">
+                        {nextEvent.flagEmoji || "🏁"}
+                    </div>
+                    <div class="flex flex-col">
+                        <span
+                            class="text-sm font-black text-white leading-tight uppercase italic tabular-nums"
+                        >
+                            {nextEvent.trackName}
+                        </span>
+                        <div class="flex items-center gap-2 mt-1">
+                            <div
+                                class="flex items-center gap-1 text-[10px] font-bold text-white/40 uppercase"
+                            >
+                                <Timer size={12} class="text-app-primary" />
+                                {nextEvent.totalLaps} Laps
+                            </div>
+                            <span class="text-white/10">•</span>
+                            <div
+                                class="flex items-center gap-1 text-[10px] font-bold text-white/40 uppercase"
+                            >
+                                <span class="text-app-primary">
+                                    {#if weekStatus.toLowerCase() === "practice"}
+                                        {nextEvent.weatherPractice}
+                                    {:else if weekStatus.toLowerCase() === "qualifying"}
+                                        {nextEvent.weatherQualifying}
+                                    {:else}
+                                        {nextEvent.weatherRace}
+                                    {/if}
+                                </span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        {/if}
     </div>
 
-    <div
-        class="bg-app-surface border border-app-border rounded-xl p-8 text-app-text/60 text-center shadow-lg"
-    >
-        <p class="font-bold uppercase tracking-wider text-xs">
-            Awaiting Implementation...
-        </p>
-        <p class="mt-2 text-sm">
-            Targeting Weekend Setup and Race Day components.
-        </p>
+    <!-- Dynamic Paddock Content -->
+    <div class="min-h-[500px]">
+        {#if ["practice", "qualifying", "racestrategy"].includes(weekStatus.toLowerCase())}
+            <div in:fade>
+                <GaragePanel currentWeekStatus={weekStatus} />
+            </div>
+        {:else if ["race", "postrace"].includes(weekStatus.toLowerCase())}
+            <div in:fade>
+                <RaceLivePanel />
+            </div>
+        {/if}
     </div>
 </div>
+
+<style>
+    .font-heading {
+        font-family: "Outfit", sans-serif;
+    }
+</style>

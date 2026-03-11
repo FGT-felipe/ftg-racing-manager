@@ -17,6 +17,7 @@
         Mic2,
         Gamepad2,
         Beaker,
+        Flag,
     } from "lucide-svelte";
     import { goto } from "$app/navigation";
     import { fly } from "svelte/transition";
@@ -30,43 +31,88 @@
         [FacilityType.racingSimulator]: Gamepad2,
         [FacilityType.gym]: Dumbbell,
         [FacilityType.rdOffice]: Beaker,
+        raceOperations: Flag,
     };
 
-    const navigationItems = [
-        {
-            id: "office",
+    const facilityConfigs: Record<string, any> = {
+        [FacilityType.teamOffice]: {
             title: "Operations & Office",
             subtitle: "Team Identity & Contracts",
-            icon: Building2,
             color: "text-app-primary",
             bg: "bg-app-primary/5",
             path: "/facilities/office",
-            type: FacilityType.teamOffice,
         },
-        {
-            id: "garage",
-            title: "Engineering & Garage",
-            subtitle: "Performance & Maintenance",
-            icon: Wrench,
+        [FacilityType.garage]: {
+            title: "Engineering",
+            subtitle: "Car Parts & Technical Dev",
             color: "text-blue-400",
             bg: "bg-blue-400/5",
-            path: "/facilities/garage",
-            type: FacilityType.garage,
+            path: "/facilities/engineering",
         },
-    ];
-
-    const facilityBonuses: Record<string, (level: number) => string> = {
-        [FacilityType.teamOffice]: (lvl) => `+${lvl * 5}% Sponsor payout`,
-        [FacilityType.garage]: (lvl) => `+${lvl * 2}% Reliability bonus`,
+        raceOperations: {
+            title: "Race Operations",
+            subtitle: "Weekend Setup & Strategy",
+            color: "text-red-400",
+            bg: "bg-red-400/5",
+            path: "/racing",
+            isVirtual: true,
+        },
+        [FacilityType.pressRoom]: {
+            title: "Press & Media",
+            subtitle: "PR and Sponsorships",
+            color: "text-emerald-400",
+            bg: "bg-emerald-400/5",
+            path: "#",
+        },
+        [FacilityType.scoutingOffice]: {
+            title: "Scouting Office",
+            subtitle: "Driver Talent Search",
+            color: "text-orange-400",
+            bg: "bg-orange-400/5",
+            path: "#",
+        },
+        [FacilityType.racingSimulator]: {
+            title: "Racing Simulator",
+            subtitle: "Driver Training & Data",
+            color: "text-purple-400",
+            bg: "bg-purple-400/5",
+            path: "#",
+        },
+        [FacilityType.gym]: {
+            title: "Physical Gym",
+            subtitle: "Driver Fitness & Health",
+            color: "text-red-400",
+            bg: "bg-red-400/5",
+            path: "#",
+        },
+        [FacilityType.rdOffice]: {
+            title: "R&D Office",
+            subtitle: "Future Tech & Innovation",
+            color: "text-cyan-400",
+            bg: "bg-cyan-400/5",
+            path: "#",
+        },
+        [FacilityType.carMuseum]: {
+            title: "Car Museum",
+            subtitle: "Legacy and History",
+            color: "text-amber-400",
+            bg: "bg-amber-400/5",
+            path: "#",
+        },
     };
 
-    async function handleUpgrade(type: FacilityType) {
-        try {
-            await facilityStore.upgradeFacility(type);
-        } catch (e: any) {
-            alert(e.message);
-        }
-    }
+    // Card order including the virtual split
+    const displayedCardIds = [
+        FacilityType.teamOffice,
+        FacilityType.garage,
+        "raceOperations",
+        FacilityType.pressRoom,
+        FacilityType.scoutingOffice,
+        FacilityType.racingSimulator,
+        FacilityType.gym,
+        FacilityType.rdOffice,
+        FacilityType.carMuseum,
+    ];
 
     let totalMaintenance = $derived(
         Object.values(facilityStore.facilities).reduce(
@@ -142,79 +188,24 @@
 
     <!-- Navigation Grid -->
     <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-16">
-        {#each Object.values(FacilityType) as type, i}
-            {@const facility = facilityStore.facilities[type]}
-            {#if facility && type !== FacilityType.youthAcademy}
-                {@const config = {
-                    [FacilityType.teamOffice]: {
-                        title: "Operations & Office",
-                        subtitle: "Team Identity & Contracts",
-                        color: "text-app-primary",
-                        bg: "bg-app-primary/5",
-                        path: "/facilities/office",
-                    },
-                    [FacilityType.garage]: {
-                        title: "Engineering & Garage",
-                        subtitle: "Performance & Maintenance",
-                        color: "text-blue-400",
-                        bg: "bg-blue-400/5",
-                        path: "/facilities/garage",
-                    },
-                    [FacilityType.pressRoom]: {
-                        title: "Press & Media",
-                        subtitle: "PR and Sponsorships",
-                        color: "text-emerald-400",
-                        bg: "bg-emerald-400/5",
-                        path: "#",
-                    },
-                    [FacilityType.scoutingOffice]: {
-                        title: "Scouting Office",
-                        subtitle: "Driver Talent Search",
-                        color: "text-orange-400",
-                        bg: "bg-orange-400/5",
-                        path: "#",
-                    },
-                    [FacilityType.racingSimulator]: {
-                        title: "Racing Simulator",
-                        subtitle: "Driver Training & Data",
-                        color: "text-purple-400",
-                        bg: "bg-purple-400/5",
-                        path: "#",
-                    },
-                    [FacilityType.gym]: {
-                        title: "Physical Gym",
-                        subtitle: "Driver Fitness & Health",
-                        color: "text-red-400",
-                        bg: "bg-red-400/5",
-                        path: "#",
-                    },
-                    [FacilityType.rdOffice]: {
-                        title: "R&D Office",
-                        subtitle: "Future Tech & Innovation",
-                        color: "text-cyan-400",
-                        bg: "bg-cyan-400/5",
-                        path: "#",
-                    },
-                    [FacilityType.carMuseum]: {
-                        title: "Car Museum",
-                        subtitle: "Legacy and History",
-                        color: "text-amber-400",
-                        bg: "bg-amber-400/5",
-                        path: "#",
-                    },
-                }[type]}
+        {#each displayedCardIds as cardId, i}
+            {@const config = facilityConfigs[cardId]}
+            {#if config}
+                {@const isVirtual = config.isVirtual}
+                {@const facility = isVirtual
+                    ? {
+                          level:
+                              facilityStore.facilities[FacilityType.garage]
+                                  ?.level || 1,
+                      }
+                    : facilityStore.facilities[cardId as FacilityType]}
 
-                {#if config}
+                {#if isVirtual || (facility && cardId !== FacilityType.youthAcademy)}
                     {@const isSoon =
+                        !isVirtual &&
                         facility.level === 0 &&
-                        !["teamOffice", "garage"].includes(type)}
-                    {@const price = facilityStore.getUpgradePrice(
-                        type,
-                        facility.level,
-                    )}
-                    {@const canAfford =
-                        (teamStore.value.team?.budget ?? 0) >= price}
-                    {@const Icon = facilityIcons[type] || Building2}
+                        !["teamOffice", "garage"].includes(cardId as any)}
+                    {@const Icon = facilityIcons[cardId] || Building2}
 
                     <div
                         in:fly={{ y: 20, duration: 400, delay: i * 50 }}
@@ -275,25 +266,22 @@
                                         <div class="flex flex-col">
                                             <span
                                                 class="text-[9px] font-black text-white/20 uppercase tracking-widest"
-                                                >Next Upgrade</span
+                                                >Weekly Maintenance</span
                                             >
                                             <span
-                                                class="text-sm font-black {canAfford
-                                                    ? 'text-white'
-                                                    : 'text-red-500'}"
+                                                class="text-sm font-black text-white"
                                             >
-                                                {price > 0
-                                                    ? `$${(price / 1000000).toFixed(1)}M`
-                                                    : "MAX LEVEL"}
+                                                {#if isVirtual}
+                                                    Included in Garage
+                                                {:else}
+                                                    ${(
+                                                        (facility.level *
+                                                            15000) /
+                                                        1000
+                                                    ).toFixed(0)}k
+                                                {/if}
                                             </span>
                                         </div>
-                                        <button
-                                            onclick={() => handleUpgrade(type)}
-                                            disabled={price === 0 || !canAfford}
-                                            class="px-4 py-2 bg-white/5 hover:bg-app-primary hover:text-black rounded-xl text-[9px] font-black uppercase tracking-widest transition-all disabled:opacity-0"
-                                        >
-                                            Upgrade
-                                        </button>
                                     </div>
 
                                     <div class="flex items-center gap-2">

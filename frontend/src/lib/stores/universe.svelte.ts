@@ -5,6 +5,7 @@ const db = getFirestore();
 
 interface GameUniverse {
     leagues: any[];
+    activeSeasonId?: string;
 }
 
 class UniverseStore {

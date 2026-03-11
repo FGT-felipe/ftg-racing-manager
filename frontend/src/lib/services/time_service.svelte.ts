@@ -6,15 +6,48 @@ export enum RaceWeekStatus {
     POST_RACE = "postRace"
 }
 
+export interface Duration {
+    days: number;
+    hours: number;
+    minutes: number;
+    seconds: number;
+}
+
 class TimeService {
-    // We use a simplified version of the logic from Flutter's TimeService
-    // Assuming the user's local time is what we compare against for now, 
-    // but we can adjust to Bogota (UTC-5) if needed.
+    /**
+     * Gets the current time in Bogota (UTC-5)
+     */
+    get nowBogota(): Date {
+        const now = new Date();
+        // Bogota is UTC-5
+        const utc = now.getTime() + (now.getTimezoneOffset() * 60000);
+        return new Date(utc + (3600000 * -5));
+    }
 
     get currentStatus(): RaceWeekStatus {
-        const now = new Date();
-        const weekday = now.getDay(); // 0=Sun, 1=Mon ... 6=Sat
-        const hour = now.getHours();
+        return this.getRaceWeekStatus(this.nowBogota);
+    }
+
+    /**
+     * In Parc Fermé, setup is locked after Qualifying starts (Saturday 14:00)
+     * until the race is over (Sunday 16:00).
+     */
+    get isSetupLocked(): boolean {
+        const status = this.currentStatus;
+        return (
+            status === RaceWeekStatus.QUALIFYING ||
+            status === RaceWeekStatus.RACE_STRATEGY ||
+            status === RaceWeekStatus.RACE
+        );
+    }
+
+    getWeekDay(date: Date): number {
+        return date.getDay(); // 0=Sun, 1=Mon ... 6=Sat
+    }
+
+    getRaceWeekStatus(date: Date): RaceWeekStatus {
+        const weekday = date.getDay();
+        const hour = date.getHours();
 
         // Monday(1) - Friday(5): Practice
         if (weekday >= 1 && weekday <= 5) {
@@ -28,43 +61,19 @@ class TimeService {
             return RaceWeekStatus.RACE_STRATEGY;
         }
 
-        // Sunday(0) - In JS getDay(), Sunday is 0
+        // Sunday(0)
         if (weekday === 0) {
             if (hour < 14) return RaceWeekStatus.RACE_STRATEGY;
             if (hour >= 14 && hour < 16) return RaceWeekStatus.RACE;
             return RaceWeekStatus.POST_RACE;
         }
 
-        return RaceWeekStatus.PRACTICE;
-    }
-
-    getRaceWeekStatus(now: Date, raceDate: Date | null): RaceWeekStatus {
-        if (!raceDate) return RaceWeekStatus.PRACTICE;
-
-        // Simplified logic: for the race week, we use the weekday/hour logic
-        // If 'now' is not in the same week as 'raceDate', we might need more complex logic.
-        // For the purpose of the dashboard, which shows the NEXT race, we assume we are in the correct week or before it.
-
-        const weekday = now.getDay();
-        const hour = now.getHours();
-
-        if (weekday >= 1 && weekday <= 5) return RaceWeekStatus.PRACTICE;
-        if (weekday === 6) {
-            if (hour < 14) return RaceWeekStatus.PRACTICE;
-            if (hour === 14) return RaceWeekStatus.QUALIFYING;
-            return RaceWeekStatus.RACE_STRATEGY;
-        }
-        if (weekday === 0) {
-            if (hour < 14) return RaceWeekStatus.RACE_STRATEGY;
-            if (hour >= 14 && hour < 16) return RaceWeekStatus.RACE;
-            return RaceWeekStatus.POST_RACE;
-        }
-
+        // Default or Monday 00:00 case
         return RaceWeekStatus.PRACTICE;
     }
 
     getTimeUntil(targetStatus: RaceWeekStatus): Duration | null {
-        const now = new Date();
+        const now = this.nowBogota;
         const weekday = now.getDay();
 
         let target = new Date(now);
@@ -75,15 +84,23 @@ class TimeService {
         switch (targetStatus) {
             case RaceWeekStatus.QUALIFYING:
                 // Saturday 14:00
-                const daysUntilSat = (6 - weekday + 7) % 7;
-                target.setDate(now.getDate() + daysUntilSat);
+                const daysUntilQualy = (6 - weekday + 7) % 7;
+                target.setDate(now.getDate() + daysUntilQualy);
                 target.setHours(14);
+                // If it's Saturday and past 14:00, move to next week
+                if (daysUntilQualy === 0 && now.getHours() >= 14) {
+                    target.setDate(target.getDate() + 7);
+                }
                 break;
             case RaceWeekStatus.RACE:
                 // Sunday 14:00
-                const daysUntilSun = (0 - weekday + 7) % 7;
-                target.setDate(now.getDate() + daysUntilSun);
+                const daysUntilRace = (0 - weekday + 7) % 7;
+                target.setDate(now.getDate() + daysUntilRace);
                 target.setHours(14);
+                // If it's Sunday and past 14:00, move to next week
+                if (daysUntilRace === 0 && now.getHours() >= 14) {
+                    target.setDate(target.getDate() + 7);
+                }
                 break;
             default:
                 return null;
@@ -99,13 +116,54 @@ class TimeService {
             seconds: Math.floor((diff % (1000 * 60)) / 1000)
         };
     }
-}
 
-export interface Duration {
-    days: number;
-    hours: number;
-    minutes: number;
-    seconds: number;
+    getTimeUntilNextEvent(): number {
+        const now = this.nowBogota;
+        const status = this.getRaceWeekStatus(now);
+
+        let target = new Date(now);
+        target.setMinutes(0);
+        target.setSeconds(0);
+        target.setMilliseconds(0);
+
+        const weekday = now.getDay();
+        const hour = now.getHours();
+
+        if (status === RaceWeekStatus.PRACTICE) {
+            // Next is Qualifying (Saturday 14:00)
+            const daysUntil = (6 - weekday + 7) % 7;
+            target.setDate(now.getDate() + daysUntil);
+            target.setHours(14);
+            if (daysUntil === 0 && hour >= 14) target.setDate(target.getDate() + 7);
+        } else if (status === RaceWeekStatus.QUALIFYING) {
+            // Next is Race Strategy (Saturday 15:00)
+            target.setHours(15);
+        } else if (status === RaceWeekStatus.RACE_STRATEGY) {
+            // Next is Race (Sunday 14:00)
+            const daysUntil = (0 - weekday + 7) % 7;
+            target.setDate(now.getDate() + daysUntil);
+            target.setHours(14);
+        } else if (status === RaceWeekStatus.RACE) {
+            // Next is Post Race (Sunday 16:00)
+            target.setHours(16);
+        } else {
+            // Next is Practice (Monday 00:00)
+            const daysUntil = (1 - weekday + 7) % 7;
+            target.setDate(now.getDate() + (daysUntil === 0 ? 7 : daysUntil));
+            target.setHours(0);
+        }
+
+        return Math.max(0, target.getTime() - now.getTime());
+    }
+
+    formatDuration(duration: Duration | null): string {
+        if (!duration) return "00:00:00";
+        const { days, hours, minutes } = duration;
+        if (days > 0) {
+            return `${days}d ${hours}h ${minutes}m`;
+        }
+        return `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}`;
+    }
 }
 
 export const timeService = new TimeService();

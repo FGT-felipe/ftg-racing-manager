@@ -270,3 +270,31 @@ export interface LeagueNotification {
     payload?: Record<string, any> | null;
     isArchived: boolean;
 }
+
+export enum TyreCompound {
+    soft = 'soft',
+    medium = 'medium',
+    hard = 'hard',
+    wet = 'wet'
+}
+
+export enum DriverStyle {
+    defensive = 'defensive',
+    normal = 'normal',
+    offensive = 'offensive',
+    mostRisky = 'mostRisky'
+}
+
+export interface CarSetup {
+    frontWing: number;
+    rearWing: number;
+    suspension: number;
+    gearRatio: number;
+    tyreCompound: TyreCompound;
+    pitStops: TyreCompound[];
+    initialFuel: number;
+    pitStopFuel: number[];
+    qualifyingStyle: DriverStyle;
+    raceStyle: DriverStyle;
+    pitStopStyles: DriverStyle[];
+}

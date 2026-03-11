@@ -153,7 +153,7 @@ class YouthAcademyFactory {
       ),
       status: 'candidate',
       expiresAt: expiresAt,
-      salary: 100000,
+      salary: 10000,
       contractYears: 1,
       statRangeMin: statRangeMin,
       statRangeMax: statRangeMax,

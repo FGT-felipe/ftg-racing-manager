@@ -15,6 +15,7 @@ import { teamStore } from './team.svelte';
 import { managerStore } from './manager.svelte';
 import { notificationStore } from './notifications.svelte';
 import { seasonStore } from './season.svelte';
+import { driverStore } from './driver.svelte';
 import type { YoungDriver } from '$lib/types';
 import { untrack } from 'svelte';
 
@@ -129,7 +130,7 @@ export function createYouthAcademyStore() {
 
             if (!teamId) throw new Error("Team context missing. Please try again.");
 
-            const purchasePrice = 100000;
+            const purchasePrice = 10000;
             const teamRef = doc(db, 'teams', teamId);
             const configRef = doc(db, 'teams', teamId, 'academy', 'config');
 
@@ -138,7 +139,7 @@ export function createYouthAcademyStore() {
                 if (!teamSnap.exists()) throw new Error("Team record not found in database.");
 
                 const data = teamSnap.data();
-                if (!data || (data.budget ?? 0) < purchasePrice) throw new Error(`Insufficient budget. Required: $100,000. Available: $${((data?.budget ?? 0) / 1000).toFixed(0)}k`);
+                if (!data || (data.budget ?? 0) < purchasePrice) throw new Error(`Insufficient budget. Required: $10,000. Available: $${((data?.budget ?? 0) / 1000).toFixed(0)}k`);
                 const budget = data.budget ?? 0;
 
                 transaction.set(configRef, {
@@ -230,7 +231,7 @@ export function createYouthAcademyStore() {
             await runTransaction(db, async (transaction) => {
                 const teamSnap = await transaction.get(teamRef);
                 const data = teamSnap.data();
-                const salary = candidate.salary ?? 100000;
+                const salary = candidate.salary ?? 10000;
                 if (!data || (data.budget ?? 0) < salary) throw new Error("Insufficient budget for hiring");
                 const budget = data.budget ?? 0;
 
@@ -240,7 +241,7 @@ export function createYouthAcademyStore() {
                     selectedAt: serverTimestamp()
                 });
                 transaction.delete(candidateRef);
-                transaction.update(configRef, {
+                transaction.update(config, {
                     scoutsUsedThisSeason: increment(1)
                 });
                 transaction.update(teamRef, { budget: budget - salary });

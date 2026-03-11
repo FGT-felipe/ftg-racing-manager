@@ -3,6 +3,7 @@
     import { teamStore } from "$lib/stores/team.svelte";
     import { managerStore } from "$lib/stores/manager.svelte";
     import { driverStore } from "$lib/stores/driver.svelte";
+    import { timeService } from "$lib/services/time_service.svelte";
     import {
         Wrench,
         Zap,
@@ -12,7 +13,10 @@
         Info,
         ArrowUpCircle,
         History,
+        Lock,
+        Timer,
     } from "lucide-svelte";
+    import { fade } from "svelte/transition";
     import InstructionCard from "$lib/components/layout/InstructionCard.svelte";
     import CarSchematic from "$lib/components/dashboard/CarSchematic.svelte";
     import DriverSmallCard from "$lib/components/dashboard/DriverSmallCard.svelte";
@@ -44,6 +48,7 @@
     };
 
     async function handleUpgrade(partKey: string) {
+        if (timeService.isSetupLocked) return;
         try {
             await carStore.upgradePart(selectedCar, partKey);
         } catch (e: any) {
@@ -68,6 +73,7 @@
     const maxUpgrades = $derived(
         managerStore.profile?.role === "exEngineer" ? 2 : 1,
     );
+    const isLocked = $derived(timeService.isSetupLocked);
 </script>
 
 <svelte:head>
@@ -131,202 +137,218 @@
         {/snippet}
     </InstructionCard>
 
-    <div class="mt-10 grid grid-cols-1 lg:grid-cols-12 gap-8">
-        <!-- Left Column: Car Selector & Schematics -->
-        <div class="lg:col-span-4 space-y-6">
-            <div
-                class="bg-app-surface border border-app-border rounded-2xl p-2 flex gap-1"
-            >
-                <button
-                    class="flex-1 py-3 rounded-xl font-black uppercase tracking-widest text-sm transition-all {selectedCar ===
-                    0
-                        ? 'bg-app-primary text-black'
-                        : 'text-app-text/40 hover:bg-app-text/5'}"
-                    onclick={() => (selectedCar = 0)}
+    <div class="mt-10">
+        <div in:fade class="grid grid-cols-1 lg:grid-cols-12 gap-8">
+            <!-- Left Column: Car Selector & Schematics -->
+            <div class="lg:col-span-4 space-y-6">
+                <div
+                    class="bg-app-surface border border-app-border rounded-2xl p-2 flex gap-1"
                 >
-                    Car A
-                </button>
-                <button
-                    class="flex-1 py-3 rounded-xl font-black uppercase tracking-widest text-sm transition-all {selectedCar ===
-                    1
-                        ? 'bg-app-primary text-black'
-                        : 'text-app-text/40 hover:bg-app-text/5'}"
-                    onclick={() => (selectedCar = 1)}
-                >
-                    Car B
-                </button>
-            </div>
-
-            <div class="space-y-4">
-                <h3
-                    class="text-[10px] font-bold text-app-text/40 uppercase tracking-[0.2em] px-2 flex items-center gap-2"
-                >
-                    <Info size={12} />
-                    Status Analysis
-                </h3>
-                <CarSchematic
-                    stats={currentCarStats}
-                    carLabel={selectedCar === 0 ? "Car A" : "Car B"}
-                />
-
-                {#if selectedCar === 0 && driverStore.carADriver}
-                    <DriverSmallCard
-                        driver={driverStore.carADriver}
-                        carIndex={0}
-                    />
-                {:else if selectedCar === 1 && driverStore.carBDriver}
-                    <DriverSmallCard
-                        driver={driverStore.carBDriver}
-                        carIndex={1}
-                    />
-                {:else}
-                    <div
-                        class="p-4 border border-app-border border-dashed rounded-xl text-center text-app-text/30 text-[10px] font-bold uppercase"
+                    <button
+                        class="flex-1 py-3 rounded-xl font-black uppercase tracking-widest text-sm transition-all {selectedCar ===
+                        0
+                            ? 'bg-app-primary text-black'
+                            : 'text-app-text/40 hover:bg-app-text/5'}"
+                        onclick={() => (selectedCar = 0)}
                     >
-                        No driver assigned to this car
-                    </div>
-                {/if}
-            </div>
-
-            <div
-                class="bg-app-surface border border-app-border rounded-2xl p-5"
-            >
-                <div class="flex items-center gap-2 mb-4">
-                    <History size={16} class="text-app-primary" />
-                    <h3 class="text-xs font-black uppercase text-white">
-                        R&D Policy
-                    </h3>
+                        Car A
+                    </button>
+                    <button
+                        class="flex-1 py-3 rounded-xl font-black uppercase tracking-widest text-sm transition-all {selectedCar ===
+                        1
+                            ? 'bg-app-primary text-black'
+                            : 'text-app-text/40 hover:bg-app-text/5'}"
+                        onclick={() => (selectedCar = 1)}
+                    >
+                        Car B
+                    </button>
                 </div>
-                <ul class="space-y-3">
-                    <li
-                        class="flex items-start gap-2 text-[11px] text-app-text/60"
+
+                <div class="space-y-4">
+                    <h3
+                        class="text-[10px] font-bold text-app-text/40 uppercase tracking-[0.2em] px-2 flex items-center gap-2"
                     >
+                        <Info size={12} />
+                        Status Analysis
+                    </h3>
+                    <CarSchematic
+                        stats={currentCarStats}
+                        carLabel={selectedCar === 0 ? "Car A" : "Car B"}
+                    />
+
+                    {#if selectedCar === 0 && driverStore.carADriver}
+                        <DriverSmallCard
+                            driver={driverStore.carADriver}
+                            carIndex={0}
+                        />
+                    {:else if selectedCar === 1 && driverStore.carBDriver}
+                        <DriverSmallCard
+                            driver={driverStore.carBDriver}
+                            carIndex={1}
+                        />
+                    {:else}
                         <div
-                            class="w-1.5 h-1.5 rounded-full bg-app-primary mt-1 shrink-0"
-                        ></div>
-                        Upgrades are permanent for the current season.
-                    </li>
-                    <li
-                        class="flex items-start gap-2 text-[11px] text-app-text/60"
-                    >
-                        <div
-                            class="w-1.5 h-1.5 rounded-full bg-app-primary mt-1 shrink-0"
-                        ></div>
-                        Upgrade prices increase exponentially (Fibonacci).
-                    </li>
-                    {#if managerStore.profile?.role === "bureaucrat"}
+                            class="p-4 border border-app-border border-dashed rounded-xl text-center text-app-text/30 text-[10px] font-bold uppercase"
+                        >
+                            No driver assigned to this car
+                        </div>
+                    {/if}
+                </div>
+
+                <div
+                    class="bg-app-surface border border-app-border rounded-2xl p-5"
+                >
+                    <div class="flex items-center gap-2 mb-4">
+                        <History size={16} class="text-app-primary" />
+                        <h3 class="text-xs font-black uppercase text-white">
+                            R&D Policy
+                        </h3>
+                    </div>
+                    <ul class="space-y-3">
                         <li
-                            class="flex items-start gap-2 text-[11px] text-red-400"
+                            class="flex items-start gap-2 text-[11px] text-app-text/60"
                         >
                             <div
-                                class="w-1.5 h-1.5 rounded-full bg-red-400 mt-1 shrink-0"
+                                class="w-1.5 h-1.5 rounded-full bg-app-primary mt-1 shrink-0"
                             ></div>
-                            Bureaucrat: 2-week cooldown between upgrades.
+                            Upgrades are permanent for the current season.
                         </li>
-                    {/if}
-                </ul>
-            </div>
-        </div>
-
-        <!-- Right Column: Upgrade Panel -->
-        <div class="lg:col-span-8">
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                {#each Object.keys(partIcons) as partKey}
-                    {@const level = currentCarStats[partKey] || 1}
-                    {@const cost = carStore.getUpgradeCost(level)}
-                    {@const canAfford =
-                        (teamStore.value.team?.budget ?? 0) >= cost}
-                    {@const limitReached = upgradeCount >= maxUpgrades}
-                    {@const PartIcon = partIcons[partKey]}
-
-                    <div
-                        class="bg-app-surface border border-app-border rounded-2xl p-6 flex flex-col justify-between group transition-all hover:border-app-primary/30"
-                    >
-                        <div>
-                            <div class="flex items-center justify-between mb-4">
-                                <div
-                                    class="p-3 bg-app-text/5 rounded-xl {partColors[
-                                        partKey
-                                    ]} group-hover:bg-app-primary/10 transition-colors"
-                                >
-                                    <PartIcon size={24} />
-                                </div>
-                                <div class="text-right">
-                                    <span
-                                        class="text-[10px] font-bold text-app-text/30 uppercase tracking-widest block"
-                                        >Lvl</span
-                                    >
-                                    <span
-                                        class="text-2xl font-black text-white italic"
-                                        >{level}</span
-                                    >
-                                </div>
-                            </div>
-
-                            <h4
-                                class="text-lg font-heading font-black uppercase text-white tracking-tight mb-2"
-                            >
-                                {partKey}
-                            </h4>
-                            <p
-                                class="text-[12px] text-app-text/60 leading-relaxed mb-6"
-                            >
-                                {partDescriptions[partKey]}
-                            </p>
-                        </div>
-
-                        <div class="space-y-4">
+                        <li
+                            class="flex items-start gap-2 text-[11px] text-app-text/60"
+                        >
                             <div
-                                class="flex justify-between items-end border-t border-app-border/50 pt-4"
+                                class="w-1.5 h-1.5 rounded-full bg-app-primary mt-1 shrink-0"
+                            ></div>
+                            Upgrade prices increase exponentially (Fibonacci).
+                        </li>
+                        {#if managerStore.profile?.role === "bureaucrat"}
+                            <li
+                                class="flex items-start gap-2 text-[11px] text-red-400"
                             >
-                                <div class="flex flex-col">
-                                    <span
-                                        class="text-[9px] font-bold text-app-text/30 uppercase tracking-[0.1em]"
-                                        >Next Upgrade</span
+                                <div
+                                    class="w-1.5 h-1.5 rounded-full bg-red-400 mt-1 shrink-0"
+                                ></div>
+                                Bureaucrat: 2-week cooldown between upgrades.
+                            </li>
+                        {/if}
+                    </ul>
+                </div>
+            </div>
+
+            <!-- Right Column: Upgrade Panel -->
+            <div class="lg:col-span-8">
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    {#each Object.keys(partIcons) as partKey}
+                        {@const level = currentCarStats[partKey] || 1}
+                        {@const cost = carStore.getUpgradeCost(level)}
+                        {@const canAfford =
+                            (teamStore.value.team?.budget ?? 0) >= cost}
+                        {@const limitReached = upgradeCount >= maxUpgrades}
+                        {@const PartIcon = partIcons[partKey]}
+
+                        <div
+                            class="bg-app-surface border border-app-border rounded-2xl p-6 flex flex-col justify-between group transition-all hover:border-app-primary/30"
+                        >
+                            <div>
+                                <div
+                                    class="flex items-center justify-between mb-4"
+                                >
+                                    <div
+                                        class="p-3 bg-app-text/5 rounded-xl {partColors[
+                                            partKey
+                                        ]} group-hover:bg-app-primary/10 transition-colors"
                                     >
-                                    <span
-                                        class="text-base font-black {canAfford
-                                            ? 'text-white'
-                                            : 'text-red-400'}"
-                                    >
-                                        {level >= 20
-                                            ? "MAX REACHED"
-                                            : `$${(cost / 1000).toFixed(0)}k`}
-                                    </span>
+                                        <PartIcon size={24} />
+                                    </div>
+                                    <div class="text-right">
+                                        <span
+                                            class="text-[10px] font-bold text-app-text/30 uppercase tracking-widest block"
+                                            >Lvl</span
+                                        >
+                                        <span
+                                            class="text-2xl font-black text-white italic"
+                                            >{level}</span
+                                        >
+                                    </div>
                                 </div>
-                                <div class="text-right">
-                                    <span
-                                        class="text-[9px] font-bold text-app-text/30 uppercase tracking-[0.1em]"
-                                        >Progress</span
-                                    >
-                                    <span
-                                        class="text-base font-black text-app-text/20"
-                                    >
-                                        LVL {level + 1}
-                                    </span>
-                                </div>
+                                <h4
+                                    class="text-lg font-heading font-black uppercase text-white tracking-tight mb-2"
+                                >
+                                    {partKey}
+                                </h4>
+                                <p
+                                    class="text-[12px] text-app-text/60 leading-relaxed mb-6"
+                                >
+                                    {partDescriptions[partKey]}
+                                </p>
                             </div>
 
-                            <button
-                                class="w-full py-3.5 rounded-xl bg-app-primary text-black font-black uppercase tracking-[0.15em] text-xs hover:scale-[1.02] active:scale-95 transition-all disabled:bg-app-border disabled:text-app-text/20 disabled:scale-100"
-                                disabled={level >= 20 ||
-                                    !canAfford ||
-                                    limitReached}
-                                onclick={() => handleUpgrade(partKey)}
-                            >
-                                {#if level >= 20}
-                                    Maximum Level
-                                {:else if !canAfford}
-                                    Insufficient Funds
-                                {:else if limitReached}
-                                    Weekly Limit Reached
+                            <div class="space-y-4">
+                                <div
+                                    class="flex justify-between items-end border-t border-app-border/50 pt-4"
+                                >
+                                    <div class="flex flex-col">
+                                        <span
+                                            class="text-[9px] font-bold text-app-text/30 uppercase tracking-[0.1em]"
+                                            >Next Upgrade</span
+                                        >
+                                        <span
+                                            class="text-base font-black {canAfford
+                                                ? 'text-white'
+                                                : 'text-red-400'}"
+                                        >
+                                            {level >= 20
+                                                ? "MAX REACHED"
+                                                : `$${(cost / 1000).toFixed(0)}k`}
+                                        </span>
+                                    </div>
+                                    <div class="text-right">
+                                        <span
+                                            class="text-[9px] font-bold text-app-text/30 uppercase tracking-[0.1em]"
+                                            >Progress</span
+                                        >
+                                        <span
+                                            class="text-base font-black text-app-text/20"
+                                            >LVL {level + 1}</span
+                                        >
+                                    </div>
+                                </div>
+
+                                {#if isLocked}
+                                    <div
+                                        class="bg-red-500/10 border border-red-500/20 rounded-xl p-4 flex items-center gap-3"
+                                    >
+                                        <Lock size={16} class="text-red-400" />
+                                        <p
+                                            class="text-[10px] font-bold text-red-400 uppercase tracking-widest leading-relaxed"
+                                        >
+                                            Parc Fermé: Engineering Locked until
+                                            after the race.
+                                        </p>
+                                    </div>
                                 {:else}
-                                    Authorize Development
+                                    <button
+                                        class="w-full py-3.5 rounded-xl bg-app-primary text-black font-black uppercase tracking-[0.15em] text-xs hover:scale-[1.02] active:scale-95 transition-all disabled:bg-app-border disabled:text-app-text/20 disabled:scale-100"
+                                        disabled={level >= 20 ||
+                                            !canAfford ||
+                                            limitReached}
+                                        onclick={() => handleUpgrade(partKey)}
+                                    >
+                                        {#if level >= 20}
+                                            Maximum Level
+                                        {:else if !canAfford}
+                                            Insufficient Funds
+                                        {:else if limitReached}
+                                            Weekly Limit Reached
+                                        {:else}
+                                            Authorize Development
+                                        {/if}
+                                    </button>
                                 {/if}
-                            </button>
+                            </div>
                         </div>
-                    </div>
-                {/each}
+                    {/each}
+                </div>
             </div>
         </div>
     </div>

@@ -54,7 +54,7 @@ async function run() {
 
     try {
         await wrapped({});
-        console.log("🎉 postRaceProcessing terminó exitosamente.");
+        console.log("🎉 postRaceProcessing finished successfully.");
     } catch (e) {
         console.error("❌ Error running postRaceProcessing:", e);
     }

@@ -70,10 +70,14 @@
   // Keep Season Store in sync with Team Lifecycle
   $effect(() => {
     const team = teamStore.value.team;
-    if (team?.currentSeasonId) {
-      seasonStore.init(team.currentSeasonId);
-    } else if (!teamStore.value.loading && !team) {
-      seasonStore.clear();
+    const universe = universeStore.value.universe;
+    const seasonId = team?.currentSeasonId || universe?.activeSeasonId;
+
+    if (seasonId) {
+      seasonStore.init(seasonId);
+    } else if (!teamStore.value.loading && !universeStore.value.loading) {
+      seasonStore.init(""); // Will trigger fallback loading state finish
+      if (!team) seasonStore.clear();
     }
   });
 

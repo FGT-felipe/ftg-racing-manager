@@ -12,6 +12,14 @@ export function createTeamStore() {
 
     return {
         init(user: any) {
+            // Support for Playwright/Testing Mocking
+            if (browser && (window as any).__MOCK_TEAM__) {
+                console.log('🧪 MOCK Team Active');
+                currentTeam = (window as any).__MOCK_TEAM__;
+                isLoading = false; // Ensure loading state is false when mocked
+                return;
+            }
+
             if (unsubscribeFirestore) {
                 unsubscribeFirestore();
                 unsubscribeFirestore = null;
