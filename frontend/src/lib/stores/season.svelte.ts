@@ -1,4 +1,4 @@
-import { onSnapshot, doc, getFirestore } from "firebase/firestore";
+import { onSnapshot, doc, getFirestore, collection, query, orderBy, limit } from "firebase/firestore";
 import { teamStore } from "./team.svelte";
 import type { Season, RaceEvent } from "../types";
 import { browser } from "$app/environment";
@@ -44,7 +44,7 @@ class SeasonStore {
         return this.nextRace;
     }
 
-    init(seasonId: string) {
+    init(seasonId?: string) {
         // Support for Playwright/Testing Mocking
         if (browser && (window as any).__MOCK_SEASON__) {
             if (this.value.season !== (window as any).__MOCK_SEASON__) {
@@ -55,52 +55,69 @@ class SeasonStore {
             return;
         }
 
-        if (!seasonId) {
-            this.value.loading = false;
-            this.value.season = null;
-            return;
-        }
-        if (this.currentSeasonId === seasonId) return;
+        if (this.currentSeasonId === (seasonId || "latest")) return;
 
-        console.log(`📡 SeasonStore: Initializing for Season ${seasonId}`);
+        console.log(`📡 SeasonStore: Initializing for Season ${seasonId || "Latest"}`);
         this.clear();
-        this.currentSeasonId = seasonId;
+        this.currentSeasonId = seasonId || "latest";
         this.value.loading = true;
 
-        const seasonRef = doc(db, "seasons", seasonId);
-
-        this.unsubscribe = onSnapshot(
-            seasonRef,
-            (seasonSnap) => {
-                if (seasonSnap.exists()) {
-                    const rawData = seasonSnap.data();
-                    if (rawData.calendar) {
-                        // Ensure dates are parsed from Firestore Timestamps
-                        rawData.calendar = rawData.calendar.map((e: any) => ({
-                            ...e,
-                            date: e.date?.toDate ? e.date.toDate() : (e.date ? new Date(e.date) : null)
-                        }));
+        if (seasonId) {
+            // Fetch specific season by ID
+            const seasonRef = doc(db, "seasons", seasonId);
+            this.unsubscribe = onSnapshot(
+                seasonRef,
+                (seasonSnap) => this.handleSnapshot(seasonSnap),
+                (error) => this.handleError(error)
+            );
+        } else {
+            // Fetch 'active' season via query like Flutter: orderBy startDate desc, limit 1
+            const q = query(collection(db, "seasons"), orderBy("startDate", "desc"), limit(1));
+            this.unsubscribe = onSnapshot(
+                q,
+                (querySnap: any) => {
+                    if (!querySnap.empty) {
+                        this.handleSnapshot(querySnap.docs[0]);
+                    } else {
+                        console.error("❌ SeasonStore: No active season found in query.");
+                        this.value.error = "No active season found.";
+                        this.value.loading = false;
                     }
+                },
+                (error: any) => this.handleError(error)
+            );
+        }
+    }
 
-                    this.value.season = {
-                        id: seasonSnap.id,
-                        ...rawData
-                    } as Season;
-
-                    this.value.loading = false;
-                    console.log(`✅ SeasonStore: Loaded ${this.value.season.id}`);
-                } else {
-                    console.error("❌ SeasonStore: Document not found", seasonId);
-                    this.value.error = "Season document not found.";
-                    this.value.loading = false;
-                }
-            },
-            (error) => {
-                console.error("❌ SeasonStore: Snapshot error:", error);
-                this.value.error = error.message;
-                this.value.loading = false;
+    private handleSnapshot(seasonSnap: any) {
+        if (seasonSnap.exists()) {
+            const rawData = seasonSnap.data();
+            if (rawData.calendar) {
+                // Ensure dates are parsed from Firestore Timestamps
+                rawData.calendar = rawData.calendar.map((e: any) => ({
+                    ...e,
+                    date: e.date?.toDate ? e.date.toDate() : (e.date ? new Date(e.date) : null)
+                }));
             }
-        );
+
+            this.value.season = {
+                id: seasonSnap.id,
+                ...rawData
+            } as Season;
+
+            this.value.loading = false;
+            console.log(`✅ SeasonStore: Loaded ${this.value.season.id}`);
+        } else {
+            console.error("❌ SeasonStore: Document not found", this.currentSeasonId);
+            this.value.error = "Season document not found.";
+            this.value.loading = false;
+        }
+    }
+
+    private handleError(error: any) {
+        console.error("❌ SeasonStore: Snapshot error:", error);
+        this.value.error = error.message;
+        this.value.loading = false;
     }
 
     clear() {

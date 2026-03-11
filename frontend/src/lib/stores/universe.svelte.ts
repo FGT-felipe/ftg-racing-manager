@@ -45,6 +45,11 @@ class UniverseStore {
                 console.error("❌ UniverseStore: Snapshot error:", error);
                 this.value.error = error.message;
                 this.value.loading = false;
+                // Allow re-initialization after auth completes
+                if (this.unsubscribe) {
+                    this.unsubscribe();
+                    this.unsubscribe = null;
+                }
             }
         );
     }

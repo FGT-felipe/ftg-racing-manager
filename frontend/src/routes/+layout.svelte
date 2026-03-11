@@ -81,12 +81,14 @@
     }
   });
 
-  // Initialize Stores
+  // Initialize Stores — gated behind auth to prevent Firestore permission errors
   $effect(() => {
-    notificationStore.init();
-    transactionStore.init();
-    managerStore.init();
-    universeStore.init();
+    if (browser && !authStore.loading && authStore.user) {
+      notificationStore.init();
+      transactionStore.init();
+      managerStore.init();
+      universeStore.init();
+    }
   });
 
   // Refined Routing Logic (Anti-Race Condition)
