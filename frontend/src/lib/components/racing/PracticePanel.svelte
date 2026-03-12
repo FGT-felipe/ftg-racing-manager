@@ -164,6 +164,7 @@
                     setupConfidence: practiceData.lastResult?.setupConfidence || 0,
                     isCrashed: practiceData.lastResult?.isCrashed || false,
                     setupUsed: practiceData.lastResult?.setupUsed || setup,
+                    setupHints: practiceData.lastResult?.setupHints,
                     driverFeedback: practiceData.sessionFeedback || [],
                     tyreFeedback: []
                 };
@@ -417,7 +418,23 @@
                             <div class="flex items-center gap-2 {item.color}"><item.icon size={12} /> {item.label}</div>
                             <span class="text-app-text font-mono">{setup[item.field]}</span>
                         </div>
-                        <input type="range" min="0" max="100" bind:value={setup[item.field]} class="w-full h-1.5 bg-app-text/5 rounded-full accent-emerald-500 cursor-pointer" />
+                        <div class="relative h-6 flex items-center">
+                            {#if lastResult?.setupHints?.[item.field]}
+                                {@const hint = lastResult.setupHints[item.field]}
+                                <div 
+                                    class="absolute h-1.5 bg-[#E040FB]/30 rounded-full blur-[1px] border-x border-[#E040FB]/50 transition-all duration-500"
+                                    style="left: {hint.min}%; width: {hint.max - hint.min}%"
+                                    title="Estimated ideal range"
+                                ></div>
+                            {/if}
+                            <input 
+                                type="range" 
+                                min="0" 
+                                max="100" 
+                                bind:value={setup[item.field]} 
+                                class="w-full h-1 bg-app-text/10 rounded-full accent-emerald-500 cursor-pointer appearance-none hover:bg-app-text/20 transition-all z-10" 
+                            />
+                        </div>
                     </div>
                 {/each}
             </div>

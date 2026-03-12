@@ -3,6 +3,11 @@ import { collection, addDoc, doc, updateDoc, increment, serverTimestamp } from "
 import { type Driver, type Team, type CarSetup } from "../types";
 import { type CircuitProfile } from "./circuit_service.svelte";
 
+export interface SetupHint {
+    min: number;
+    max: number;
+}
+
 export interface PracticeRunResult {
     lapTime: number;
     driverFeedback: string[];
@@ -10,6 +15,12 @@ export interface PracticeRunResult {
     setupConfidence: number;
     setupUsed: CarSetup;
     isCrashed: boolean;
+    setupHints?: {
+        frontWing: SetupHint;
+        rearWing: SetupHint;
+        suspension: SetupHint;
+        gearRatio: SetupHint;
+    };
 }
 
 class PracticeService {
@@ -140,13 +151,38 @@ class PracticeService {
         const totalGap = Math.abs(gapFront) + Math.abs(gapRear) + Math.abs(gapSusp) + Math.abs(gapGear);
         const confidence = Math.max(0, Math.min(1, 1.0 - (totalGap / 100.0)));
 
+        // 8. Setup Hints (Range Indicators)
+        // High adaptability = narrower and more accurate range
+        const generateHint = (idealVal: number) => {
+            const baseWidth = 25; // Maximum width for 0 adaptability
+            const width = Math.max(5, baseWidth * (1.1 - adaptability)); 
+            
+            // Random offset also depends on adaptability (lower adaptability = more error)
+            const maxOffset = (1.0 - adaptability) * 12;
+            const offset = (Math.random() * maxOffset * 2) - maxOffset;
+            
+            const center = idealVal + offset;
+            return {
+                min: Math.max(0, Math.round(center - width / 2)),
+                max: Math.min(100, Math.round(center + width / 2))
+            };
+        };
+
+        const setupHints = {
+            frontWing: generateHint(ideal.frontWing),
+            rearWing: generateHint(ideal.rearWing),
+            suspension: generateHint(ideal.suspension),
+            gearRatio: generateHint(ideal.gearRatio)
+        };
+
         return {
             lapTime: isCrashed ? 999.0 : actualLapTime + (Math.random() - 0.5) * 0.5,
             driverFeedback,
             tyreFeedback,
             setupConfidence: confidence,
             setupUsed: { ...setup },
-            isCrashed
+            isCrashed,
+            setupHints
         };
     }
 
@@ -185,7 +221,8 @@ class PracticeService {
                 lapTime: result.lapTime,
                 setupConfidence: result.setupConfidence,
                 isCrashed: result.isCrashed,
-                setupUsed: setup
+                setupUsed: setup,
+                setupHints: result.setupHints
             }
         };
 
