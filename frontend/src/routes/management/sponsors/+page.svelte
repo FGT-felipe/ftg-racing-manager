@@ -129,12 +129,12 @@
             <div class="lg:col-span-4 flex flex-col gap-8">
                 <header class="flex flex-col gap-2">
                     <h1
-                        class="text-3xl font-heading font-black tracking-tighter uppercase italic text-white"
+                        class="text-3xl font-heading font-black tracking-tighter uppercase italic text-app-text"
                     >
                         Sponsorship <span class="text-app-primary">Slots</span>
                     </h1>
                     <p
-                        class="text-xs font-bold text-white/30 uppercase tracking-[0.2em]"
+                        class="text-xs font-bold text-app-text/30 uppercase tracking-[0.2em]"
                     >
                         Select a part to manage contracts
                     </p>
@@ -148,7 +148,7 @@
                             class="relative flex items-center justify-between p-6 bg-app-surface border transition-all duration-300 rounded-2xl group overflow-hidden
                             {selectedSlot === cfg.slot
                                 ? 'border-app-primary bg-app-primary/5 shadow-[0_0_20px_rgba(197,160,89,0.1)]'
-                                : 'border-white/5 hover:border-white/20'}"
+                                : 'border-app-border hover:border-app-border'}"
                         >
                             <!-- Silhouette BG -->
                             <img
@@ -163,12 +163,12 @@
                                 <span
                                     class="text-[9px] font-black uppercase tracking-[0.25em] {contract
                                         ? cfg.color
-                                        : 'text-white/20'}"
+                                        : 'text-app-text/20'}"
                                 >
                                     {cfg.label}
                                 </span>
                                 <h4
-                                    class="text-sm font-black text-white uppercase tracking-tight"
+                                    class="text-sm font-black text-app-text uppercase tracking-tight"
                                 >
                                     {contract
                                         ? contract.sponsorName
@@ -187,16 +187,16 @@
                                         )}/WK</span
                                     >
                                     <span
-                                        class="text-[8px] font-bold text-white/30 uppercase tracking-widest"
+                                        class="text-[8px] font-bold text-app-text/30 uppercase tracking-widest"
                                         >{contract.racesRemaining} Races Left</span
                                     >
                                 </div>
                             {:else}
                                 <div
-                                    class="relative px-3 py-1 bg-white/5 rounded-full border border-white/5 group-hover:bg-app-primary group-hover:border-app-primary transition-colors"
+                                    class="relative px-3 py-1 bg-app-text/5 rounded-full border border-app-border group-hover:bg-app-primary group-hover:border-app-primary transition-colors"
                                 >
                                     <span
-                                        class="text-[8px] font-black text-white/40 group-hover:text-black uppercase tracking-widest"
+                                        class="text-[8px] font-black text-app-text/40 group-hover:text-black uppercase tracking-widest"
                                         >Manage</span
                                     >
                                 </div>
@@ -231,7 +231,7 @@
             <div class="lg:col-span-8">
                 {#if !selectedSlot}
                     <div
-                        class="flex flex-col items-center justify-center h-full min-h-[500px] border border-white/5 border-dashed rounded-[40px] opacity-20 text-center gap-6"
+                        class="flex flex-col items-center justify-center h-full min-h-[500px] border border-app-border border-dashed rounded-[40px] opacity-20 text-center gap-6"
                     >
                         <Handshake size={64} strokeWidth={1} />
                         <p
@@ -271,7 +271,7 @@
                                         </div>
                                         <div class="flex flex-col gap-2">
                                             <h2
-                                                class="text-5xl font-heading font-black tracking-tighter text-white uppercase italic"
+                                                class="text-5xl font-heading font-black tracking-tighter text-app-text uppercase italic"
                                             >
                                                 {activeContract.sponsorName}
                                             </h2>
@@ -286,11 +286,11 @@
                                         >
                                             <div class="flex flex-col gap-1">
                                                 <span
-                                                    class="text-[9px] font-black text-white/30 uppercase tracking-widest"
+                                                    class="text-[9px] font-black text-app-text/30 uppercase tracking-widest"
                                                     >Weekly Income</span
                                                 >
                                                 <span
-                                                    class="text-3xl font-black text-white italic"
+                                                    class="text-3xl font-black text-app-text italic"
                                                     >{formatCurrency(
                                                         activeContract.weeklyBasePayment,
                                                     )}</span
@@ -298,11 +298,11 @@
                                             </div>
                                             <div class="flex flex-col gap-1">
                                                 <span
-                                                    class="text-[9px] font-black text-white/30 uppercase tracking-widest"
+                                                    class="text-[9px] font-black text-app-text/30 uppercase tracking-widest"
                                                     >Term Remaining</span
                                                 >
                                                 <span
-                                                    class="text-3xl font-black text-white italic"
+                                                    class="text-3xl font-black text-app-text italic"
                                                     >{activeContract.racesRemaining}
                                                     Races</span
                                                 >
@@ -322,11 +322,11 @@
                                 <div class="grid grid-cols-1 gap-4">
                                     {#each offers as offer (offer.id)}
                                         <div
-                                            class="bg-app-surface border border-white/5 rounded-3xl p-8 flex flex-col md:flex-row justify-between gap-8 group hover:border-white/10 transition-all relative overflow-hidden"
+                                            class="bg-app-surface border border-app-border rounded-3xl p-8 flex flex-col md:flex-row justify-between gap-8 group hover:border-app-border transition-all relative overflow-hidden"
                                         >
                                             {#if offer.lockedUntil && new Date(offer.lockedUntil) > new Date()}
                                                 <div
-                                                    class="absolute inset-0 bg-black/60 backdrop-blur-sm z-10 flex flex-col items-center justify-center gap-3"
+                                                    class="absolute inset-0 bg-app-text/60 backdrop-blur-sm z-10 flex flex-col items-center justify-center gap-3"
                                                 >
                                                     <Lock
                                                         size={24}
@@ -353,7 +353,7 @@
                                                         class="flex items-center gap-3"
                                                     >
                                                         <h4
-                                                            class="text-2xl font-black text-white uppercase tracking-tight"
+                                                            class="text-2xl font-black text-app-text uppercase tracking-tight"
                                                         >
                                                             {offer.name}
                                                         </h4>
@@ -365,7 +365,7 @@
                                                         {/if}
                                                     </div>
                                                     <div
-                                                        class="flex items-center gap-4 text-[10px] font-bold text-white/30 uppercase tracking-[0.15em]"
+                                                        class="flex items-center gap-4 text-[10px] font-bold text-app-text/30 uppercase tracking-[0.15em]"
                                                     >
                                                         <div
                                                             class="flex items-center gap-1.5"
@@ -390,7 +390,7 @@
                                                         class="flex flex-col gap-1"
                                                     >
                                                         <span
-                                                            class="text-[9px] font-black text-white/20 uppercase tracking-widest"
+                                                            class="text-[9px] font-black text-app-text/20 uppercase tracking-widest"
                                                             >Signing Bonus</span
                                                         >
                                                         <span
@@ -404,11 +404,11 @@
                                                         class="flex flex-col gap-1"
                                                     >
                                                         <span
-                                                            class="text-[9px] font-black text-white/20 uppercase tracking-widest"
+                                                            class="text-[9px] font-black text-app-text/20 uppercase tracking-widest"
                                                             >Weekly</span
                                                         >
                                                         <span
-                                                            class="text-lg font-black text-white italic"
+                                                            class="text-lg font-black text-app-text italic"
                                                             >{formatCurrency(
                                                                 offer.weeklyBasePayment,
                                                             )}</span
@@ -418,7 +418,7 @@
                                                         class="flex flex-col gap-1 col-span-2 md:col-span-1"
                                                     >
                                                         <span
-                                                            class="text-[9px] font-black text-white/20 uppercase tracking-widest"
+                                                            class="text-[9px] font-black text-app-text/20 uppercase tracking-widest"
                                                             >Incentive: {offer.objectiveDescription}</span
                                                         >
                                                         <span
@@ -432,7 +432,7 @@
                                             </div>
 
                                             <div
-                                                class="flex flex-col justify-center gap-4 min-w-[200px] border-t md:border-t-0 md:border-l border-white/5 pt-6 md:pt-0 md:pl-8"
+                                                class="flex flex-col justify-center gap-4 min-w-[200px] border-t md:border-t-0 md:border-l border-app-border pt-6 md:pt-0 md:pl-8"
                                             >
                                                 {#if isNegotiatingId === offer.id}
                                                     <div
@@ -444,7 +444,7 @@
                                                     </div>
                                                 {:else}
                                                     <span
-                                                        class="text-[9px] font-black text-white/20 uppercase tracking-[0.2em] text-center"
+                                                        class="text-[9px] font-black text-app-text/20 uppercase tracking-[0.2em] text-center"
                                                         >Select Tactic (Attempt {offer.attemptsMade +
                                                             1}/2)</span
                                                     >
@@ -457,7 +457,7 @@
                                                                     offer,
                                                                     "persuasive",
                                                                 )}
-                                                            class="py-2 px-4 rounded-xl border border-white/5 text-[9px] font-black uppercase tracking-widest hover:bg-orange-400/10 hover:border-orange-400/50 hover:text-orange-400 transition-all flex items-center justify-between"
+                                                            class="py-2 px-4 rounded-xl border border-app-border text-[9px] font-black uppercase tracking-widest hover:bg-orange-400/10 hover:border-orange-400/50 hover:text-orange-400 transition-all flex items-center justify-between"
                                                         >
                                                             Persuasive <ArrowRight
                                                                 size={12}
@@ -469,7 +469,7 @@
                                                                     offer,
                                                                     "negotiator",
                                                                 )}
-                                                            class="py-2 px-4 rounded-xl border border-white/5 text-[9px] font-black uppercase tracking-widest hover:bg-app-primary/10 hover:border-app-primary border-app-primary/50 hover:text-app-primary transition-all flex items-center justify-between"
+                                                            class="py-2 px-4 rounded-xl border border-app-border text-[9px] font-black uppercase tracking-widest hover:bg-app-primary/10 hover:border-app-primary border-app-primary/50 hover:text-app-primary transition-all flex items-center justify-between"
                                                         >
                                                             Negotiator <ArrowRight
                                                                 size={12}
@@ -481,7 +481,7 @@
                                                                     offer,
                                                                     "collaborative",
                                                                 )}
-                                                            class="py-2 px-4 rounded-xl border border-white/5 text-[9px] font-black uppercase tracking-widest hover:bg-blue-400/10 hover:border-blue-400/50 hover:text-blue-400 transition-all flex items-center justify-between"
+                                                            class="py-2 px-4 rounded-xl border border-app-border text-[9px] font-black uppercase tracking-widest hover:bg-blue-400/10 hover:border-blue-400/50 hover:text-blue-400 transition-all flex items-center justify-between"
                                                         >
                                                             Collaborative <ArrowRight
                                                                 size={12}
@@ -493,7 +493,7 @@
                                         </div>
                                     {:else}
                                         <div
-                                            class="bg-app-surface border border-white/5 border-dashed rounded-[40px] p-20 flex flex-col items-center justify-center opacity-20 text-center gap-6"
+                                            class="bg-app-surface border border-app-border border-dashed rounded-[40px] p-20 flex flex-col items-center justify-center opacity-20 text-center gap-6"
                                         >
                                             <Handshake
                                                 size={64}

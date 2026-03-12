@@ -31,11 +31,15 @@ export const translations = {
         seasons_plural: "Seasons",
         season_singular: "Season",
         independent: "Independent",
-        dismiss_confirm: "Are you sure you want to dismiss {name}? This will cost a 10% release fee.",
-        market_confirm: "List {name} on the transfer market? This costs a 10% listing fee.",
+        points: "points",
+        dismiss_confirm: "Are you sure you want to dismiss {name}?",
+        release_fee_warning: "This will incur a 10% release fee of {amount}.",
+        market_confirm: "Are you sure you want to list {name} on the transfer market?",
         retirement_alert: "{name} is planning to retire and won't sign new contracts.",
-        renew_confirm: "Renew for 3 seasons? (Cancel for 1 season)",
-        renew_success: "Contract renewed successfully!",
+        renew_confirm: "Do you want to renew the contract for 3 seasons? (Select 'No' for 1 season)",
+        renew_confirm_years: "Renew contract for {years} seasons?",
+        renew_choose_message: "How many seasons would you like to renew for?",
+        renew_success: "Contract successfully renewed",
         error_dismiss: "Error dismissing driver",
         error_market: "Error listing driver",
         error_renew: "Error renewing contract",
@@ -46,7 +50,8 @@ export const translations = {
         current_team: "Current Team",
         previous_team: "Previous Team",
         potential_peak_label: "Potential Peak",
-        academy_sync: "Syncing Academy Network",
+        academy_sync: "Synchronizing Academy...",
+        max_level: "Max Level",
         operational_benefits: "Operational Benefits",
         active_scouting: "Active Scouting",
         scouting_desc: "Scout high-potential prospects every week based on regional availability.",
@@ -91,7 +96,15 @@ export const translations = {
         critical_development_fallback: "Critical development stage reached. Manager decision protocol activated.",
         resolve_flow: "Resolve Flow",
         mark_for_promotion: "Mark for Promotion",
-        release_driver_tooltip: "Release Driver"
+        release_driver_tooltip: "Release Driver",
+        confirm: "Confirm",
+        season_summary: "Season Summary",
+        profile_view: "Profile View",
+        full_career_history: "Full Career History",
+        team_and_series: "Team & Series",
+        status: "Status",
+        total_podiums: "Total Podiums",
+        total_poles: "Total Poles"
     },
     es: {
         career_view: "Vista Profesional",
@@ -122,11 +135,15 @@ export const translations = {
         seasons_plural: "Temporadas",
         season_singular: "Temporada",
         independent: "Independiente",
-        dismiss_confirm: "¿Estás seguro de que quieres despedir a {name}? Esto costará una tasa de rescisión del 10%.",
-        market_confirm: "¿Listar a {name} en el mercado de transferencias? Esto cuesta una tasa del 10%.",
+        points: "puntos",
+        dismiss_confirm: "¿Estás seguro de que quieres despedir a {name}?",
+        release_fee_warning: "Esto incurrirá en una tarifa de rescisión del 10% de {amount}.",
+        market_confirm: "¿Estás seguro de que deseas poner a {name} en el mercado de transferencias?",
         retirement_alert: "{name} planea retirarse y no firmará nuevos contratos.",
-        renew_confirm: "¿Renovar por 3 temporadas? (Cancelar para 1 temporada)",
-        renew_success: "¡Contrato renovado con éxito!",
+        renew_confirm: "¿Deseas renovar el contrato por 3 temporadas? (Selecciona 'No' para 1 temporada)",
+        renew_confirm_years: "¿Renovar contrato por {years} temporadas?",
+        renew_choose_message: "¿Por cuántas temporadas te gustaría renovar?",
+        renew_success: "Contrato renovado con éxito",
         error_dismiss: "Error al despedir al piloto",
         error_market: "Error al listar al piloto",
         error_renew: "Error al renovar el contrato",
@@ -137,7 +154,8 @@ export const translations = {
         current_team: "Equipo Actual",
         previous_team: "Equipo Anterior",
         potential_peak_label: "Pico de Potencial",
-        academy_sync: "Sincronizando Red de la Academia",
+        academy_sync: "Sincronizando la Academia...",
+        max_level: "Nivel Máximo",
         operational_benefits: "Beneficios Operativos",
         active_scouting: "Scouting Activo",
         scouting_desc: "Busca prospectos de alto potencial cada semana según disponibilidad regional.",
@@ -182,7 +200,15 @@ export const translations = {
         critical_development_fallback: "Se ha alcanzado una etapa crítica de desarrollo. Protocolo de decisión del manager activado.",
         resolve_flow: "Resolver Flujo",
         mark_for_promotion: "Marcar para Promoción",
-        release_driver_tooltip: "Liberar Piloto"
+        release_driver_tooltip: "Liberar Piloto",
+        confirm: "Confirmar",
+        season_summary: "Resumen de Temporada",
+        profile_view: "Vista de Perfil",
+        full_career_history: "Historial de Carrera Completo",
+        team_and_series: "Equipo y Serie",
+        status: "Estado",
+        total_podiums: "Total de Podios",
+        total_poles: "Total de Poles"
     }
 };
 
@@ -241,7 +267,10 @@ export function translateAcademyNarrative(message: string | null | undefined): s
         { es: /Continuó su progresión constante en el programa/i, en: "Continued their steady progression in the program" },
         { es: /estuvo distraído por asuntos personales y su enfoque bajó/i, en: "was distracted by personal matters and their focus dropped" },
         { es: /faltó a sesiones de entrenamiento físico/i, en: "missed physical training sessions" },
-        { es: /sufrió un leve incidente perdiendo confianza al frenar/i, en: "suffered a minor incident, losing confidence in braking" }
+        { es: /sufrió un leve incidente perdiendo confianza al frenar/i, en: "suffered a minor incident, losing confidence in braking" },
+        // Fallback para strings quemados antiguos (Beta anterior)
+        { es: /^Resolved:\s*resolve$/i, en: "The driver successfully completed the requested flow." },
+        { es: /^Resolved:\s*dismiss$/i, en: "The matter was dismissed and no further action was required." }
     ];
 
     for (const item of mapping) {

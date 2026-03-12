@@ -25,8 +25,12 @@
         Clock,
         BarChart3,
         Info,
+        TrendingUp,
+        CheckCircle,
+        AlertTriangle,
     } from "lucide-svelte";
     import InstructionCard from "$lib/components/layout/InstructionCard.svelte";
+    import { getRoleById } from "$lib/constants/manager";
 
     let isEditingName = $state(false);
     let newName = $state("");
@@ -54,6 +58,27 @@
         races:
             (driverStore.carADriver?.races || 0) +
             (driverStore.carBDriver?.races || 0),
+    });
+
+    const managerAge = $derived.by(() => {
+        if (!managerStore.profile?.birthDate) return null;
+        try {
+            const birth = new Date(managerStore.profile.birthDate);
+            const now = new Date();
+            let age = now.getFullYear() - birth.getFullYear();
+            const m = now.getMonth() - birth.getMonth();
+            if (m < 0 || (m === 0 && now.getDate() < birth.getDate())) {
+                age--;
+            }
+            return age;
+        } catch (e) {
+            return null;
+        }
+    });
+
+    const managerRole = $derived.by(() => {
+        const bgId = managerStore.profile?.backgroundId || "ex_driver";
+        return getRoleById(bgId);
     });
 
     // Real-time news subscription
@@ -125,7 +150,11 @@
             });
         } catch (e: any) {
             console.error("Sync error:", e);
-            alert("Sync failed: " + e.message);
+            notificationStore.addNotification({
+                title: "Sync Failed",
+                message: "Cloud synchronization encountered an error: " + (e.message || "Internal 500"),
+                type: "ERROR",
+            });
         } finally {
             isSyncing = false;
         }
@@ -200,7 +229,7 @@
                                 id="team-name"
                                 type="text"
                                 bind:value={newName}
-                                class="w-full bg-app-text/5 border border-app-border rounded-xl px-4 py-3 font-black text-white focus:outline-none focus:border-app-primary/50 transition-all"
+                                class="w-full bg-app-text/5 border border-app-border rounded-xl px-4 py-3 font-black text-app-text focus:outline-none focus:border-app-primary/50 transition-all"
                                 placeholder="Enter team name..."
                             />
                         </div>
@@ -208,7 +237,7 @@
                             <button
                                 onclick={handleRename}
                                 disabled={isSavingName}
-                                class="flex-1 py-2.5 bg-app-primary text-black font-black uppercase text-[10px] tracking-widest rounded-lg hover:scale-[1.02] active:scale-95 transition-all disabled:opacity-50"
+                                class="flex-1 py-2.5 bg-app-primary text-app-primary-foreground font-black uppercase text-[10px] tracking-widest rounded-lg hover:scale-[1.02] active:scale-95 transition-all disabled:opacity-50"
                             >
                                 {isSavingName ? "Saving..." : "Confirm"}
                             </button>
@@ -225,7 +254,7 @@
                     </div>
                 {:else}
                     <h2
-                        class="text-3xl font-black text-white uppercase tracking-tight mb-2 truncate"
+                        class="text-3xl font-black text-app-text uppercase tracking-tight mb-2 truncate"
                     >
                         {teamStore.value.team?.name}
                     </h2>
@@ -264,7 +293,7 @@
                 <div class="flex items-center gap-2 mb-6">
                     <Trophy size={16} class="text-app-primary" />
                     <h3
-                        class="text-xs font-black uppercase text-white tracking-widest"
+                        class="text-xs font-black uppercase text-app-text tracking-widest"
                     >
                         Career Stats
                     </h3>
@@ -290,7 +319,7 @@
                             class="text-[9px] font-bold text-app-text/30 uppercase block mb-1"
                             >Wins</span
                         >
-                        <span class="text-2xl font-black text-white italic"
+                        <span class="text-2xl font-black text-app-text italic"
                             >{teamStats.wins}</span
                         >
                     </div>
@@ -301,7 +330,7 @@
                             class="text-[9px] font-bold text-app-text/30 uppercase block mb-1"
                             >Podiums</span
                         >
-                        <span class="text-2xl font-black text-white italic"
+                        <span class="text-2xl font-black text-app-text italic"
                             >{teamStats.podiums}</span
                         >
                     </div>
@@ -320,33 +349,96 @@
                 </div>
             </div>
 
-            <!-- Manager Info -->
             <div
-                class="bg-app-surface border border-app-border rounded-2xl p-6 relative overflow-hidden"
+                class="bg-app-surface border border-app-border rounded-2xl overflow-hidden relative group shadow-lg"
             >
-                <div class="flex items-center gap-4 mb-4">
-                    <div
-                        class="w-12 h-12 rounded-full bg-app-primary/10 border border-app-primary/20 flex items-center justify-center"
-                    >
-                        <span class="text-xl font-black text-app-primary"
-                            >{managerStore.profile?.firstName?.[0] || "M"}</span
+                <div class="p-6 border-b border-app-border bg-app-text/5 flex items-center justify-between">
+                    <div class="flex items-center gap-4">
+                        <div
+                            class="w-16 h-16 rounded-2xl bg-app-primary text-app-primary-foreground border-4 border-app-primary/20 flex items-center justify-center font-heading font-black text-2xl italic shadow-inner shrink-0"
                         >
-                    </div>
-                    <div>
-                        <h4 class="text-sm font-black text-white uppercase">
-                            {managerStore.profile?.firstName}
-                            {managerStore.profile?.lastName}
-                        </h4>
-                        <span
-                            class="text-[10px] font-black text-app-primary uppercase tracking-widest"
-                            >{managerStore.profile?.role}</span
-                        >
+                            {managerStore.profile?.firstName?.[0] || "M"}
+                        </div>
+                        <div class="flex flex-col gap-1 min-w-0">
+                            <h4 class="text-xl font-black text-app-text uppercase tracking-tighter italic truncate leading-none">
+                                {managerStore.profile?.firstName} {managerStore.profile?.lastName}
+                            </h4>
+                            <div class="flex flex-wrap items-center gap-2">
+                                <span class="text-[9px] font-black text-app-primary border border-app-primary/30 uppercase tracking-widest px-2 py-0.5 bg-app-primary/10 rounded">
+                                    {managerRole?.title || managerStore.profile?.role || "Manager"}
+                                </span>
+                                {#if managerAge}
+                                    <span class="text-[9px] font-bold text-app-text/40 uppercase bg-white/5 px-2 py-0.5 rounded border border-white/5">
+                                        {managerAge} Years
+                                    </span>
+                                {/if}
+                                {#if managerStore.profile?.nationality}
+                                    <div class="flex items-center gap-1.5 px-2 py-0.5 bg-white/5 rounded border border-white/5">
+                                        <img 
+                                            src="https://flagcdn.com/w20/{managerStore.profile.nationality.toLowerCase()}.png" 
+                                            alt={managerStore.profile.nationality}
+                                            class="w-3.5 h-2.5 object-cover rounded-[1px]"
+                                            onerror={(e) => (e.currentTarget as HTMLImageElement).style.display = 'none'}
+                                        />
+                                        <span class="text-[9px] font-bold text-app-text/60 uppercase">
+                                            {managerStore.profile.nationality}
+                                        </span>
+                                    </div>
+                                {/if}
+                            </div>
+                        </div>
                     </div>
                 </div>
-                <p class="text-[12px] text-app-text/50 leading-relaxed italic">
-                    "Leading this organization through technical innovation and
-                    strategic excellence."
-                </p>
+
+                <div class="p-6 space-y-6">
+                    <!-- Background Benefits & Drawbacks -->
+                    <div class="space-y-4">
+                        <div class="flex items-center justify-between">
+                            <h5 class="text-[10px] font-black text-app-text/30 uppercase tracking-[0.2em]">Management Edge</h5>
+                            <span class="text-[10px] font-black text-app-primary/40 uppercase italic">{managerRole?.title}</span>
+                        </div>
+                        
+                        <div class="grid grid-cols-1 gap-3">
+                            {#if managerRole?.pros}
+                                {#each managerRole.pros as pro}
+                                    <div class="flex items-start gap-2.5 group/pro">
+                                        <div class="mt-0.5 p-0.5 bg-emerald-500/20 rounded border border-emerald-500/30">
+                                            <CheckCircle size={10} class="text-emerald-400" />
+                                        </div>
+                                        <span class="text-[11px] font-bold text-app-text/80 leading-tight group-hover/pro:text-app-text transition-colors">{pro}</span>
+                                    </div>
+                                {/each}
+                            {/if}
+                            {#if managerRole?.cons}
+                                {#each managerRole.cons as con}
+                                    <div class="flex items-start gap-2.5 group/con">
+                                        <div class="mt-0.5 p-0.5 bg-red-500/20 rounded border border-red-500/30">
+                                            <AlertTriangle size={10} class="text-red-400" />
+                                        </div>
+                                        <span class="text-[11px] font-bold text-app-text/40 leading-tight group-hover/con:text-app-text/60 transition-colors uppercase italic">{con}</span>
+                                    </div>
+                                {/each}
+                            {/if}
+                        </div>
+                    </div>
+
+                    <!-- Market Presence & Reputation -->
+                    <div class="pt-6 border-t border-app-border/40 grid grid-cols-2 gap-4">
+                        <div class="bg-white/[0.02] border border-app-border/40 rounded-2xl p-4 flex flex-col gap-1">
+                            <span class="text-[8px] font-bold text-app-text/20 uppercase tracking-widest">Global Ranking</span>
+                            <span class="text-sm font-black text-app-text uppercase tracking-tight italic">
+                                {managerStore.profile?.reputation && managerStore.profile.reputation > 80 ? "Elite Executive" : "Regional Lead"}
+                            </span>
+                        </div>
+                        <div class="bg-white/[0.02] border border-app-border/40 rounded-2xl p-4 flex flex-col gap-1">
+                            <span class="text-[8px] font-bold text-app-text/20 uppercase tracking-widest">Reputation</span>
+                            <div class="flex items-center justify-between">
+                                <span class="text-xl font-black text-app-text font-mono tracking-tighter">{managerStore.profile?.reputation || 50}</span>
+                                <Trophy size={14} class="text-yellow-400 opacity-50" />
+                            </div>
+                        </div>
+                    </div>
+                </div>
             </div>
         </div>
 
@@ -358,11 +450,11 @@
                     class="bg-gradient-to-br from-app-surface to-black border-l-4 border-app-primary border-t border-r border-b border-app-border rounded-2xl p-6 shadow-2xl"
                 >
                     <div class="flex items-center gap-3 mb-6">
-                        <div class="p-2 bg-app-primary text-black rounded-lg">
+                        <div class="p-2 bg-app-primary text-app-primary-foreground rounded-lg">
                             <BarChart3 size={18} />
                         </div>
                         <h3
-                            class="text-sm font-black uppercase text-white tracking-widest"
+                            class="text-sm font-black uppercase text-app-text tracking-widest"
                         >
                             Last Race Debrief
                         </h3>
@@ -374,7 +466,7 @@
 
                     {#if teamStore.value.team?.lastRaceResult}
                         <div
-                            class="bg-black/40 border border-app-border/50 rounded-xl p-4 mb-6 font-mono text-[12px] text-app-text/70 leading-relaxed"
+                            class="bg-app-text/40 border border-app-border/50 rounded-xl p-4 mb-6 font-mono text-[12px] text-app-text/70 leading-relaxed"
                         >
                             {teamStore.value.team.lastRaceResult}
                         </div>
@@ -394,7 +486,7 @@
                     <div class="flex items-center gap-2">
                         <Mail size={16} class="text-app-primary" />
                         <h3
-                            class="text-xs font-black uppercase text-white tracking-[0.2em]"
+                            class="text-xs font-black uppercase text-app-text tracking-[0.2em]"
                         >
                             Official Communications
                         </h3>
@@ -433,7 +525,7 @@
                                     class="flex justify-between items-start mb-3"
                                 >
                                     <h4
-                                        class="font-black text-white uppercase group-hover:text-app-primary transition-colors"
+                                        class="font-black text-app-text uppercase group-hover:text-app-primary transition-colors"
                                     >
                                         {item.title}
                                     </h4>

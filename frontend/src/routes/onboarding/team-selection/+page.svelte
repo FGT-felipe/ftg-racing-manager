@@ -156,7 +156,7 @@
     }
 </script>
 
-<div class="min-h-screen bg-[#0A0A0B] text-white p-6 md:p-12 overflow-x-hidden">
+<div class="min-h-screen bg-app-bg text-app-text p-6 md:p-12 overflow-x-hidden">
     <div class="max-w-7xl mx-auto flex flex-col gap-12">
         <!-- Header -->
         <header
@@ -177,7 +177,7 @@
                 Select Your <span class="text-app-primary">Command</span>
             </h1>
             <p
-                class="text-white/40 font-bold uppercase tracking-widest text-xs max-w-2xl"
+                class="text-app-text/40 font-bold uppercase tracking-widest text-xs max-w-2xl"
             >
                 Choose an available team to begin your management career.
                 High-tier leagues offer more prestige but demand immediate
@@ -205,7 +205,7 @@
                     >
                         {worldLeague?.name || "World Championship"}
                     </h2>
-                    <div class="h-px flex-1 bg-white/5"></div>
+                    <div class="h-px flex-1 bg-app-text/5"></div>
                 </div>
 
                 <div
@@ -217,7 +217,7 @@
                             in:fly={{ y: 20, duration: 600 }}
                         >
                             <div
-                                class="p-8 bg-white/5 border border-white/10 rounded-[40px] flex flex-col gap-6 transition-all duration-300 group-hover:border-app-primary/50 group-hover:bg-app-primary/5"
+                                class="p-8 bg-app-text/5 border border-app-border rounded-[40px] flex flex-col gap-6 transition-all duration-300 group-hover:border-app-primary/50 group-hover:bg-app-primary/5"
                             >
                                 <div class="flex justify-between items-start">
                                     <h3
@@ -227,7 +227,7 @@
                                     </h3>
                                     {#if !team.isBot}
                                         <div
-                                            class="bg-white/5 px-3 py-1 rounded-full border border-white/10 text-[10px] font-black uppercase tracking-widest text-white/30"
+                                            class="bg-app-text/5 px-3 py-1 rounded-full border border-app-border text-[10px] font-black uppercase tracking-widest text-app-text/30"
                                         >
                                             Occupied
                                         </div>
@@ -244,7 +244,7 @@
                                                 )}</span
                                             >
                                             <span
-                                                class="text-[11px] font-bold text-white/60 uppercase tracking-widest"
+                                                class="text-[11px] font-bold text-app-text/60 uppercase tracking-widest"
                                                 >{driver.name}</span
                                             >
                                         </div>
@@ -252,18 +252,18 @@
                                 </div>
 
                                 <div class="flex items-center gap-4">
-                                    <div class="flex-1 h-px bg-white/5"></div>
+                                    <div class="flex-1 h-px bg-app-text/5"></div>
                                     <CircleDollarSign
                                         size={20}
-                                        class="text-white/20"
+                                        class="text-app-text/20"
                                     />
-                                    <div class="flex-1 h-px bg-white/5"></div>
+                                    <div class="flex-1 h-px bg-app-text/5"></div>
                                 </div>
 
                                 <div class="grid grid-cols-2 gap-4">
                                     <div class="flex flex-col">
                                         <span
-                                            class="text-[10px] font-black text-white/20 uppercase tracking-widest"
+                                            class="text-[10px] font-black text-app-text/20 uppercase tracking-widest"
                                             >Budget</span
                                         >
                                         <span
@@ -273,7 +273,7 @@
                                     </div>
                                     <div class="flex flex-col items-end">
                                         <span
-                                            class="text-[10px] font-black text-white/20 uppercase tracking-widest"
+                                            class="text-[10px] font-black text-app-text/20 uppercase tracking-widest"
                                             >Points</span
                                         >
                                         <span
@@ -291,21 +291,21 @@
                                         class="w-full py-4 bg-app-primary rounded-2xl flex items-center justify-center gap-3 group/btn overflow-hidden relative"
                                     >
                                         <span
-                                            class="font-heading font-black text-xs text-black uppercase tracking-widest italic z-10 transition-transform group-hover/btn:scale-110"
+                                            class="font-heading font-black text-xs text-app-primary-foreground uppercase tracking-widest italic z-10 transition-transform group-hover/btn:scale-110"
                                             >Sign Contract</span
                                         >
                                         <ChevronRight
                                             size={16}
-                                            class="text-black z-10 group-hover/btn:translate-x-1 transition-transform"
+                                            class="text-app-primary-foreground z-10 group-hover/btn:translate-x-1 transition-transform"
                                         />
                                     </button>
                                 {:else}
                                     <div
-                                        class="w-full py-4 bg-white/5 border border-white/5 rounded-2xl flex items-center justify-center gap-3 grayscale opacity-30 cursor-not-allowed"
+                                        class="w-full py-4 bg-app-text/5 border border-app-border rounded-2xl flex items-center justify-center gap-3 grayscale opacity-30 cursor-not-allowed"
                                     >
-                                        <Lock size={16} class="text-white" />
+                                        <Lock size={16} class="text-app-text" />
                                         <span
-                                            class="font-heading font-black text-xs text-white uppercase tracking-widest italic"
+                                            class="font-heading font-black text-xs text-app-text uppercase tracking-widest italic"
                                             >Position Taken</span
                                         >
                                     </div>
@@ -323,9 +323,9 @@
                     : 'opacity-60'}"
             >
                 <div class="flex items-center gap-4">
-                    <Users size={24} class="text-white/40" />
+                    <Users size={24} class="text-app-text/40" />
                     <h2
-                        class="text-2xl font-heading font-black uppercase italic tracking-tight text-white/40"
+                        class="text-2xl font-heading font-black uppercase italic tracking-tight text-app-text/40"
                     >
                         {secondLeague?.name || "Division 2"}
                     </h2>
@@ -340,7 +340,7 @@
                             >
                         </div>
                     {/if}
-                    <div class="h-px flex-1 bg-white/5"></div>
+                    <div class="h-px flex-1 bg-app-text/5"></div>
                 </div>
 
                 <div
@@ -353,17 +353,17 @@
                                 : 'opacity-40'}"
                         >
                             <div
-                                class="p-8 bg-white/5 border border-white/10 rounded-[40px] flex flex-col gap-6"
+                                class="p-8 bg-app-text/5 border border-app-border rounded-[40px] flex flex-col gap-6"
                             >
                                 <div class="flex justify-between items-start">
                                     <h3
-                                        class="font-heading font-black text-2xl uppercase italic tracking-tighter leading-none text-white/40"
+                                        class="font-heading font-black text-2xl uppercase italic tracking-tighter leading-none text-app-text/40"
                                     >
                                         {team.name}
                                     </h3>
                                     {#if !team.isBot}
                                         <div
-                                            class="bg-white/5 px-3 py-1 rounded-full border border-white/10 text-[10px] font-black uppercase tracking-widest text-white/30"
+                                            class="bg-app-text/5 px-3 py-1 rounded-full border border-app-border text-[10px] font-black uppercase tracking-widest text-app-text/30"
                                         >
                                             Occupied
                                         </div>
@@ -382,7 +382,7 @@
                                                 )}</span
                                             >
                                             <span
-                                                class="text-[11px] font-bold text-white uppercase tracking-widest"
+                                                class="text-[11px] font-bold text-app-text uppercase tracking-widest"
                                                 >{driver.name}</span
                                             >
                                         </div>
@@ -397,17 +397,17 @@
                                         class="w-full py-4 bg-app-primary rounded-2xl flex items-center justify-center gap-3 group/btn overflow-hidden relative"
                                     >
                                         <span
-                                            class="font-heading font-black text-xs text-black uppercase tracking-widest italic"
+                                            class="font-heading font-black text-xs text-app-primary-foreground uppercase tracking-widest italic"
                                             >Sign Contract</span
                                         >
                                     </button>
                                 {:else}
                                     <div
-                                        class="flex-1 py-4 flex flex-col items-center justify-center gap-2 border border-white/5 rounded-2xl"
+                                        class="flex-1 py-4 flex flex-col items-center justify-center gap-2 border border-app-border rounded-2xl"
                                     >
-                                        <Lock size={16} class="text-white/20" />
+                                        <Lock size={16} class="text-app-text/20" />
                                         <span
-                                            class="text-[8px] font-black text-white/20 uppercase tracking-widest"
+                                            class="text-[8px] font-black text-app-text/20 uppercase tracking-widest"
                                             >{team.isBot
                                                 ? "Division Restricted"
                                                 : "Position Taken"}</span
@@ -425,7 +425,7 @@
 
 {#if isSubmitting}
     <div
-        class="fixed inset-0 bg-black/80 backdrop-blur-xl z-[100] flex items-center justify-center"
+        class="fixed inset-0 bg-app-bg/80 backdrop-blur-xl z-[100] flex items-center justify-center"
         transition:fade
     >
         <div class="flex flex-col items-center gap-6" in:fly={{ y: 20 }}>
@@ -444,7 +444,7 @@
                     Negotiating Terms
                 </h3>
                 <p
-                    class="text-white/40 font-bold uppercase tracking-widest text-[10px]"
+                    class="text-app-text/40 font-bold uppercase tracking-widest text-[10px]"
                 >
                     Please wait while we finalize your contract...
                 </p>
@@ -457,6 +457,6 @@
     /* Custom refined scrollbar for the page */
     :global(body) {
         scrollbar-width: thin;
-        scrollbar-color: #c5a059 #0a0a0b;
+        scrollbar-color: var(--primary-color) var(--bg-color);
     }
 </style>

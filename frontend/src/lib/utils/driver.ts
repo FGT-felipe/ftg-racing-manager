@@ -67,6 +67,13 @@ export function calculateAcademyMaxStars(driver: YoungDriver): number {
  */
 export function isNearingRetirement(driver: Driver | YoungDriver): boolean {
     if (!driver) return false;
+    // Retiring soon: 35-37
+    return driver.age >= 35 && driver.age < 38;
+}
+
+export function isRetiringNextSeason(driver: Driver | YoungDriver): boolean {
+    if (!driver) return false;
+    // Strict cutoff for renewal: 38+
     return driver.age >= 38;
 }
 

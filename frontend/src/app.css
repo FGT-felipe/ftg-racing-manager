@@ -25,15 +25,17 @@
 @layer base {
   :root {
     /* Light Mode (Deportivo técnico) */
-    --bg-color: #F3F4F6;
+    --bg-color: #F8FAFC;
     --surface-color: #FFFFFF;
-    --text-color: #111827;
-    --primary-color: #3A40B1;
+    --text-color: #0F172A;
+    --primary-color: #312E81;
+    --primary-color-rgb: 49, 46, 129;
     --primary-foreground-color: #FFFFFF;
-    --accent-color: #3B82F6;
-    --success-color: #10B981;
-    --error-color: #EF4444;
-    --border-color: rgba(17, 24, 39, 0.1);
+    --accent-color: #2563EB;
+    --success-color: #059669;
+    --error-color: #DC2626;
+    --border-color: rgba(15, 23, 42, 0.08);
+    --muted-opacity: 0.4;
   }
 
   .dark {
@@ -42,11 +44,13 @@
     --surface-color: #1E1E1E;
     --text-color: #E0E0E0;
     --primary-color: #C5A059;
+    --primary-color-rgb: 197, 160, 89;
     --primary-foreground-color: #000000;
     --accent-color: #D4AF37;
     --success-color: #00C853;
     --error-color: #EF5350;
     --border-color: rgba(197, 160, 89, 0.1);
+    --muted-opacity: 0.3;
   }
 
   body {

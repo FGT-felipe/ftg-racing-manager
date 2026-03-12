@@ -46,7 +46,7 @@
     >
         <div class="flex items-center gap-4">
             <div
-                class="w-12 h-12 rounded-2xl bg-app-primary flex items-center justify-center text-black shadow-lg shadow-app-primary/20"
+                class="w-12 h-12 rounded-2xl bg-app-primary flex items-center justify-center text-app-primary-foreground shadow-lg shadow-app-primary/20"
             >
                 <Flag size={28} />
             </div>
@@ -58,7 +58,7 @@
                 </h1>
                 <div class="flex items-center gap-2 mt-1">
                     <span
-                        class="text-[10px] font-black uppercase tracking-[0.2em] text-white/40"
+                        class="text-[10px] font-black uppercase tracking-[0.2em] text-app-text/40"
                         >Operation Center</span
                     >
                 </div>
@@ -67,11 +67,11 @@
 
         {#if nextEvent}
             <div
-                class="flex items-center gap-6 bg-white/5 border border-white/10 rounded-2xl p-4 md:px-6"
+                class="flex items-center gap-6 bg-app-text/5 border border-app-border rounded-2xl p-4 md:px-6"
                 in:fade
             >
                 <div
-                    class="flex flex-col items-end border-r border-white/10 pr-6"
+                    class="flex flex-col items-end border-r border-app-border pr-6"
                 >
                     <span
                         class="text-[10px] font-black uppercase tracking-widest text-app-primary mb-1"
@@ -80,7 +80,7 @@
                         ) ?? 0) + 1} of 9</span
                     >
                     <span
-                        class="text-2xl font-heading font-black italic uppercase leading-none text-white"
+                        class="text-2xl font-heading font-black italic uppercase leading-none text-app-text"
                     >
                         {nextEvent.trackName.split(" ")[0]}
                     </span>
@@ -92,20 +92,20 @@
                     </div>
                     <div class="flex flex-col">
                         <span
-                            class="text-sm font-black text-white leading-tight uppercase italic tabular-nums"
+                            class="text-sm font-black text-app-text leading-tight uppercase italic tabular-nums"
                         >
                             {nextEvent.trackName}
                         </span>
                         <div class="flex items-center gap-2 mt-1">
                             <div
-                                class="flex items-center gap-1 text-[10px] font-bold text-white/40 uppercase"
+                                class="flex items-center gap-1 text-[10px] font-bold text-app-text/40 uppercase"
                             >
                                 <Timer size={12} class="text-app-primary" />
                                 {nextEvent.totalLaps} Laps
                             </div>
-                            <span class="text-white/10">•</span>
+                            <span class="text-app-text/10">•</span>
                             <div
-                                class="flex items-center gap-1 text-[10px] font-bold text-white/40 uppercase"
+                                class="flex items-center gap-1 text-[10px] font-bold text-app-text/40 uppercase"
                             >
                                 <span class="text-app-primary">
                                     {#if weekStatus.toLowerCase() === "practice"}

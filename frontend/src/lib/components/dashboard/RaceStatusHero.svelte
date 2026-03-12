@@ -133,7 +133,7 @@
 
                 {#if seasonStore.value.loading}
                     <div
-                        class="h-10 w-64 bg-white/5 rounded-lg animate-pulse"
+                        class="h-10 w-64 bg-app-border/20 rounded-lg animate-pulse"
                     ></div>
                 {:else if nextEvent}
                     <div class="flex items-center gap-4">
@@ -141,14 +141,14 @@
                             >{nextEvent.flagEmoji}</span
                         >
                         <h2
-                            class="text-4xl lg:text-5xl font-heading font-black tracking-tighter text-white uppercase italic"
+                            class="text-4xl lg:text-5xl font-heading font-black tracking-tighter text-app-text uppercase italic"
                         >
                             {nextEvent.trackName}
                         </h2>
                     </div>
                 {:else}
                     <h2
-                        class="text-3xl font-heading font-black text-white/20 uppercase"
+                        class="text-3xl font-heading font-black text-app-text/20 uppercase"
                     >
                         No Event Scheduled
                     </h2>
@@ -176,18 +176,18 @@
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <!-- Qualy Timer -->
                     <div
-                        class="bg-black/20 border border-white/5 rounded-2xl p-4 flex flex-col gap-3"
+                        class="bg-app-text/5 border border-app-border rounded-2xl p-4 flex flex-col gap-3"
                     >
                         <div class="flex items-center justify-between">
                             <span
-                                class="text-[9px] font-black tracking-[0.2em] text-white/30 uppercase"
+                                class="text-[9px] font-black tracking-[0.2em] text-app-text/40 uppercase"
                                 >Qualifying</span
                             >
-                            <Trophy size={14} class="text-app-primary/40" />
+                            <Trophy size={14} class="text-app-primary/60" />
                         </div>
                         <div class="flex items-baseline gap-1">
                             <span
-                                class="text-xl font-mono font-black text-white"
+                                class="text-xl font-mono font-black text-app-text"
                                 >{qualyTime.days}d {qualyTime.hours}h {qualyTime.minutes}m
                                 {qualyTime.seconds}s</span
                             >
@@ -196,18 +196,18 @@
 
                     <!-- Race Timer -->
                     <div
-                        class="bg-black/20 border border-white/5 rounded-2xl p-4 flex flex-col gap-3"
+                        class="bg-app-text/5 border border-app-border rounded-2xl p-4 flex flex-col gap-3"
                     >
                         <div class="flex items-center justify-between">
                             <span
-                                class="text-[9px] font-black tracking-[0.2em] text-white/30 uppercase"
+                                class="text-[9px] font-black tracking-[0.2em] text-app-text/40 uppercase"
                                 >Race Day</span
                             >
-                            <Flag size={14} class="text-red-500/40" />
+                            <Flag size={14} class="text-red-500/60" />
                         </div>
                         <div class="flex items-baseline gap-1">
                             <span
-                                class="text-xl font-mono font-black text-white"
+                                class="text-xl font-mono font-black text-app-text"
                                 >{raceTime.days}d {raceTime.hours}h {raceTime.minutes}m
                                 {raceTime.seconds}s</span
                             >
@@ -227,7 +227,7 @@
 
                     <div class="flex flex-col gap-4">
                         <span
-                            class="text-[9px] font-black tracking-[0.3em] text-white/20 uppercase"
+                            class="text-[9px] font-black tracking-[0.3em] text-app-text/30 uppercase"
                             >Forecast</span
                         >
                         <div class="flex items-center gap-6">
@@ -240,16 +240,16 @@
                                 />
                                 <div class="flex flex-col">
                                     <span
-                                        class="text-[8px] font-black text-white/20 uppercase"
+                                        class="text-[8px] font-black text-app-text/40 uppercase"
                                         >Pract.</span
                                     >
                                     <span
-                                        class="text-[10px] font-bold text-white"
+                                        class="text-[10px] font-bold text-app-text"
                                         >{nextEvent.weatherPractice}</span
                                     >
                                 </div>
                             </div>
-                            <div class="w-px h-6 bg-white/5"></div>
+                            <div class="w-px h-6 bg-app-text/5"></div>
                             <div class="flex items-center gap-3">
                                 <QualyIcon
                                     size={18}
@@ -259,16 +259,16 @@
                                 />
                                 <div class="flex flex-col">
                                     <span
-                                        class="text-[8px] font-black text-white/20 uppercase"
+                                        class="text-[8px] font-black text-app-text/40 uppercase"
                                         >Qualy</span
                                     >
                                     <span
-                                        class="text-[10px] font-bold text-white"
+                                        class="text-[10px] font-bold text-app-text"
                                         >{nextEvent.weatherQualifying}</span
                                     >
                                 </div>
                             </div>
-                            <div class="w-px h-6 bg-white/5"></div>
+                            <div class="w-px h-6 bg-app-text/5"></div>
                             <div class="flex items-center gap-3">
                                 <RaceIcon
                                     size={18}
@@ -278,11 +278,11 @@
                                 />
                                 <div class="flex flex-col">
                                     <span
-                                        class="text-[8px] font-black text-white/20 uppercase"
+                                        class="text-[8px] font-black text-app-text/40 uppercase"
                                         >Race</span
                                     >
                                     <span
-                                        class="text-[10px] font-bold text-white"
+                                        class="text-[10px] font-bold text-app-text"
                                         >{nextEvent.weatherRace}</span
                                     >
                                 </div>
@@ -294,7 +294,7 @@
 
             <!-- Right: Circuit Intel & Characteristics -->
             <div
-                class="bg-white/5 border border-white/5 rounded-3xl p-8 flex flex-col gap-6"
+                class="bg-app-text/5 border border-app-border rounded-3xl p-8 flex flex-col gap-6"
             >
                 {#if seasonStore.value.loading}
                     <div
@@ -304,7 +304,7 @@
                             class="w-6 h-6 border-2 border-app-primary border-t-transparent rounded-full animate-spin"
                         ></div>
                         <span
-                            class="text-[10px] font-black uppercase text-white/20"
+                            class="text-[10px] font-black uppercase text-app-text/40"
                             >Loading Intel...</span
                         >
                     </div>
@@ -315,7 +315,7 @@
                             >Circuit Intel</span
                         >
                         <div class="flex items-center gap-2">
-                            <span class="text-[10px] font-bold text-white/40"
+                            <span class="text-[10px] font-bold text-app-text/60"
                                 >{nextEvent.totalLaps} Laps</span
                             >
                         </div>
@@ -323,7 +323,7 @@
 
                     <div class="grid grid-cols-3 gap-6">
                         <div class="flex flex-col gap-2">
-                            <div class="flex items-center gap-2 text-white/60">
+                            <div class="flex items-center gap-2 text-app-text/60">
                                 <Cpu size={14} />
                                 <span
                                     class="text-[8px] font-black uppercase tracking-widest"
@@ -331,7 +331,7 @@
                                 >
                             </div>
                             <div
-                                class="h-1 w-full bg-white/10 rounded-full overflow-hidden"
+                                class="h-1 w-full bg-app-text/10 rounded-full overflow-hidden"
                             >
                                 <div
                                     class="h-full bg-app-primary"
@@ -341,7 +341,7 @@
                             </div>
                         </div>
                         <div class="flex flex-col gap-2">
-                            <div class="flex items-center gap-2 text-white/60">
+                            <div class="flex items-center gap-2 text-app-text/60">
                                 <Zap size={14} />
                                 <span
                                     class="text-[8px] font-black uppercase tracking-widest"
@@ -349,7 +349,7 @@
                                 >
                             </div>
                             <div
-                                class="h-1 w-full bg-white/10 rounded-full overflow-hidden"
+                                class="h-1 w-full bg-app-text/10 rounded-full overflow-hidden"
                             >
                                 <div
                                     class="h-full bg-blue-400"
@@ -359,7 +359,7 @@
                             </div>
                         </div>
                         <div class="flex flex-col gap-2">
-                            <div class="flex items-center gap-2 text-white/60">
+                            <div class="flex items-center gap-2 text-app-text/60">
                                 <Shield size={14} />
                                 <span
                                     class="text-[8px] font-black uppercase tracking-widest"
@@ -367,7 +367,7 @@
                                 >
                             </div>
                             <div
-                                class="h-1 w-full bg-white/10 rounded-full overflow-hidden"
+                                class="h-1 w-full bg-app-text/10 rounded-full overflow-hidden"
                             >
                                 <div
                                     class="h-full bg-green-400"
@@ -379,21 +379,29 @@
                     </div>
 
                     <div
-                        class="flex flex-wrap gap-3 border-t border-white/5 pt-6"
+                        class="flex flex-wrap gap-3 border-t border-app-border pt-6"
                     >
-                        {#each Object.entries(circuitInfo.characteristics) as [key, value]}
+                        {#if circuitInfo.characteristics}
+                            {#each Object.entries(circuitInfo.characteristics).filter(([key]) => key.toLowerCase() !== 'weather') as [key, value]}
+                            {@const tooltip = 
+                                key.toLowerCase().includes('fuel') ? 'Fuel consumption ranges between 1.0 and 1.9 liters per lap.' :
+                                key.toLowerCase().includes('tyre') ? 'Indicates the rate of tire degradation on this surface.' :
+                                key.toLowerCase().includes('elevation') ? 'Significant height changes affecting balance and power.' : null
+                            }
                             <div
-                                class="px-3 py-1.5 bg-white/5 border border-white/5 rounded-lg flex items-center gap-2"
+                                class="px-3 py-1.5 bg-app-text/5 border border-app-border rounded-lg flex items-center gap-2 cursor-help group/item"
+                                title={tooltip}
                             >
                                 <span
-                                    class="text-[8px] font-black text-white/20 uppercase tracking-tighter"
+                                    class="text-[8px] font-black text-app-text/40 uppercase tracking-tighter group-hover/item:text-app-primary transition-colors"
                                     >{key}</span
                                 >
-                                <span class="text-[9px] font-bold text-white"
+                                <span class="text-[9px] font-bold text-app-text"
                                     >{value}</span
                                 >
                             </div>
-                        {/each}
+                            {/each}
+                        {/if}
                     </div>
                 {:else}
                     <div

@@ -86,12 +86,12 @@
 
                 <div class="max-w-md space-y-2">
                     <h3
-                        class="font-black text-2xl uppercase italic text-white tracking-tight"
+                        class="font-black text-2xl uppercase italic text-app-text tracking-tight"
                     >
                         Qualifying in Progress
                     </h3>
                     <p
-                        class="text-white/40 text-sm font-medium leading-relaxed"
+                        class="text-app-text/40 text-sm font-medium leading-relaxed"
                     >
                         The session is currently running. Technical delegates
                         are processing initial lap data. Please wait for the
@@ -100,14 +100,14 @@
                 </div>
 
                 <div
-                    class="px-8 py-5 bg-black/30 rounded-2xl border border-white/5 flex flex-col items-center min-w-[200px]"
+                    class="px-8 py-5 bg-app-text/30 rounded-2xl border border-app-border flex flex-col items-center min-w-[200px]"
                 >
                     <span
                         class="text-[10px] font-black text-app-primary uppercase tracking-[0.2em] mb-2 font-mono"
                         >TIME UNTIL RACE</span
                     >
                     <span
-                        class="text-4xl font-black text-white tabular-nums font-mono italic"
+                        class="text-4xl font-black text-app-text tabular-nums font-mono italic"
                         >{timeLeft}</span
                     >
                 </div>
@@ -120,7 +120,7 @@
                 class="bg-app-surface border border-app-border rounded-2xl overflow-hidden shadow-2xl"
             >
                 <div
-                    class="p-6 border-b border-app-border bg-[#121212] flex items-center justify-between"
+                    class="p-6 border-b border-app-border bg-app-surface flex items-center justify-between"
                 >
                     <div class="flex items-center gap-3">
                         <Trophy size={18} class="text-app-primary" />
@@ -138,22 +138,22 @@
                             class="p-4 flex items-center gap-4 hover:bg-white/[0.02] transition-colors"
                         >
                             <div
-                                class="w-8 h-8 rounded-lg bg-black/40 flex items-center justify-center font-black italic text-xs {i <
+                                class="w-8 h-8 rounded-lg bg-app-text/40 flex items-center justify-center font-black italic text-xs {i <
                                 3
                                     ? 'text-app-primary'
-                                    : 'text-white/20'}"
+                                    : 'text-app-text/20'}"
                             >
                                 {i + 1}
                             </div>
 
                             <div class="flex-1 min-w-0">
                                 <p
-                                    class="text-[13px] font-black text-white truncate uppercase"
+                                    class="text-[13px] font-black text-app-text truncate uppercase"
                                 >
                                     {row.driverName}
                                 </p>
                                 <p
-                                    class="text-[9px] font-bold text-white/30 uppercase tracking-widest"
+                                    class="text-[9px] font-bold text-app-text/30 uppercase tracking-widest"
                                 >
                                     {row.teamName}
                                 </p>

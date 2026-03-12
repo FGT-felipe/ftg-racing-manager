@@ -254,7 +254,7 @@
             <div class="lg:col-span-2 flex flex-col gap-10">
                 <!-- Balance Header Card -->
                 <div
-                    class="relative bg-app-surface border border-white/5 rounded-[40px] p-12 overflow-hidden shadow-2xl"
+                    class="relative bg-app-surface border border-app-border rounded-[40px] p-12 overflow-hidden shadow-2xl"
                 >
                     <!-- Background Glow -->
                     <div
@@ -270,16 +270,16 @@
                             Current Liquid Assets
                         </span>
                         <h2
-                            class="text-6xl lg:text-7xl font-heading font-black tracking-tighter text-white"
+                            class="text-6xl lg:text-7xl font-heading font-black tracking-tighter text-app-text"
                         >
                             {formatCurrency(team.budget)}
                         </h2>
                         <div
-                            class="flex items-center gap-2 px-4 py-2 bg-white/5 rounded-full border border-white/5"
+                            class="flex items-center gap-2 px-4 py-2 bg-app-text/5 rounded-full border border-app-border"
                         >
                             <Wallet size={14} class="text-app-primary" />
                             <span
-                                class="text-[10px] font-bold text-white/40 uppercase tracking-widest"
+                                class="text-[10px] font-bold text-app-text/40 uppercase tracking-widest"
                                 >Global Treasury</span
                             >
                         </div>
@@ -294,7 +294,7 @@
                         >
                             Recent Movements
                         </h3>
-                        <History size={14} class="text-white/20" />
+                        <History size={14} class="text-app-text/20" />
                     </div>
 
                     <div class="flex flex-col gap-3">
@@ -305,7 +305,7 @@
                             )}
                             <div
                                 in:fly={{ x: -20, duration: 400 }}
-                                class="bg-app-surface border border-white/5 rounded-2xl p-5 flex items-center justify-between group hover:border-white/20 transition-all shadow-sm"
+                                class="bg-app-surface border border-app-border rounded-2xl p-5 flex items-center justify-between group hover:border-app-border transition-all shadow-sm"
                             >
                                 <div class="flex items-center gap-5">
                                     <div
@@ -317,12 +317,12 @@
                                     </div>
                                     <div class="flex flex-col gap-0.5">
                                         <h4
-                                            class="text-sm font-bold text-white uppercase tracking-tight"
+                                            class="text-sm font-bold text-app-text uppercase tracking-tight"
                                         >
                                             {tx.description}
                                         </h4>
                                         <span
-                                            class="text-[10px] font-black text-white/20 uppercase tracking-widest"
+                                            class="text-[10px] font-black text-app-text/20 uppercase tracking-widest"
                                         >
                                             {tx.type} • {new Date(
                                                 tx.date,
@@ -348,7 +348,7 @@
                             </div>
                         {:else}
                             <div
-                                class="bg-app-surface/50 border border-white/5 border-dashed rounded-3xl p-16 flex flex-col items-center justify-center opacity-30 text-center gap-4"
+                                class="bg-app-surface/50 border border-app-border border-dashed rounded-3xl p-16 flex flex-col items-center justify-center opacity-30 text-center gap-4"
                             >
                                 <History size={40} strokeWidth={1} />
                                 <p
@@ -373,7 +373,7 @@
                         Financial Run-Rate
                     </h3>
                     <div
-                        class="bg-app-surface border border-white/5 rounded-3xl p-8 flex flex-col gap-8 shadow-xl"
+                        class="bg-app-surface border border-app-border rounded-3xl p-8 flex flex-col gap-8 shadow-xl"
                     >
                         <div class="flex flex-col gap-5">
                             <div class="flex items-center justify-between">
@@ -384,7 +384,7 @@
                                         <TrendingUp size={16} />
                                     </div>
                                     <span
-                                        class="text-[10px] font-bold text-white/60 uppercase tracking-wider"
+                                        class="text-[10px] font-bold text-app-text/60 uppercase tracking-wider"
                                         >Weekly Income</span
                                     >
                                 </div>
@@ -400,7 +400,7 @@
                                         <TrendingDown size={16} />
                                     </div>
                                     <span
-                                        class="text-[10px] font-bold text-white/60 uppercase tracking-wider"
+                                        class="text-[10px] font-bold text-app-text/60 uppercase tracking-wider"
                                         >Weekly Expenses</span
                                     >
                                 </div>
@@ -410,11 +410,11 @@
                                     )}</span
                                 >
                             </div>
-                            <div class="h-px bg-white/5 my-2"></div>
+                            <div class="h-px bg-app-text/5 my-2"></div>
                             <div class="flex items-center justify-between">
                                 <div class="flex items-center gap-3">
                                     <span
-                                        class="text-[10px] font-black text-white uppercase tracking-[0.2em]"
+                                        class="text-[10px] font-black text-app-text uppercase tracking-[0.2em]"
                                         >Net Run-Rate</span
                                     >
                                 </div>
@@ -432,10 +432,10 @@
                         </div>
 
                         <div
-                            class="bg-black/20 rounded-2xl p-6 border border-white/5 flex flex-col gap-4"
+                            class="bg-app-text/20 rounded-2xl p-6 border border-app-border flex flex-col gap-4"
                         >
                             <p
-                                class="text-[10px] font-bold text-white/40 leading-relaxed uppercase tracking-widest"
+                                class="text-[10px] font-bold text-app-text/40 leading-relaxed uppercase tracking-widest"
                             >
                                 CFO PROJECTION: Your team is currently operating
                                 at a {projections.net >= 0
@@ -453,7 +453,7 @@
                                     {#if items.length > 0}
                                         <div class="flex flex-col gap-2">
                                             <span
-                                                class="text-[8px] font-black uppercase tracking-[0.2em] text-white/20"
+                                                class="text-[8px] font-black uppercase tracking-[0.2em] text-app-text/20"
                                             >
                                                 {type === "INCOME"
                                                     ? "Fixed Revenue"
@@ -470,7 +470,7 @@
                                                             class="flex items-center gap-2"
                                                         >
                                                             <div
-                                                                class="text-white/20 group-hover/item:text-app-primary transition-colors"
+                                                                class="text-app-text/20 group-hover/item:text-app-primary transition-colors"
                                                             >
                                                                 {#if ItemIcon}
                                                                     <ItemIcon
@@ -483,7 +483,7 @@
                                                                 {/if}
                                                             </div>
                                                             <span
-                                                                class="text-[10px] font-bold text-white/50 uppercase tracking-tight"
+                                                                class="text-[10px] font-bold text-app-text/50 uppercase tracking-tight"
                                                                 >{item.name}</span
                                                             >
                                                         </div>
@@ -519,7 +519,7 @@
                         Last 7 Days (Historical)
                     </h3>
                     <div
-                        class="bg-app-surface border border-white/5 rounded-3xl p-8 flex flex-col gap-4"
+                        class="bg-app-surface border border-app-border rounded-3xl p-8 flex flex-col gap-4"
                     >
                         {#each Object.entries(historical) as [type, amount]}
                             <div class="flex items-center justify-between">
@@ -530,7 +530,7 @@
                                         ]?.color || 'bg-gray-400'}"
                                     ></div>
                                     <span
-                                        class="text-[10px] font-bold text-white/60 uppercase tracking-widest"
+                                        class="text-[10px] font-bold text-app-text/60 uppercase tracking-widest"
                                         >{categoryMeta[type]?.label ||
                                             type}</span
                                     >
@@ -547,7 +547,7 @@
                             </div>
                         {:else}
                             <p
-                                class="text-[10px] font-bold text-white/20 uppercase text-center py-4"
+                                class="text-[10px] font-bold text-app-text/20 uppercase text-center py-4"
                             >
                                 No recent history
                             </p>
@@ -566,11 +566,11 @@
                     </div>
 
                     <div
-                        class="bg-app-surface border border-white/5 rounded-3xl p-8 flex flex-col gap-8"
+                        class="bg-app-surface border border-app-border rounded-3xl p-8 flex flex-col gap-8"
                     >
                         <div class="flex flex-col gap-2">
                             <p
-                                class="text-[10px] font-bold text-white/40 uppercase tracking-widest"
+                                class="text-[10px] font-bold text-app-text/40 uppercase tracking-widest"
                             >
                                 {transferPercentage}% FOR TRANSFERS
                             </p>
@@ -584,16 +584,16 @@
                                 step="5"
                                 value={transferPercentage}
                                 oninput={handlePercentageChange}
-                                class="w-full h-2 bg-white/5 rounded-lg appearance-none cursor-pointer accent-app-primary"
+                                class="w-full h-2 bg-app-text/5 rounded-lg appearance-none cursor-pointer accent-app-primary"
                             />
                         </div>
 
                         <div
-                            class="grid grid-cols-2 gap-4 pt-4 border-t border-white/5"
+                            class="grid grid-cols-2 gap-4 pt-4 border-t border-app-border"
                         >
                             <div class="flex flex-col gap-1">
                                 <span
-                                    class="text-[9px] font-black text-white/20 uppercase tracking-widest"
+                                    class="text-[9px] font-black text-app-text/20 uppercase tracking-widest"
                                     >Transfer Cap</span
                                 >
                                 <span
@@ -609,11 +609,11 @@
                             </div>
                             <div class="flex flex-col gap-1">
                                 <span
-                                    class="text-[9px] font-black text-white/20 uppercase tracking-widest"
+                                    class="text-[9px] font-black text-app-text/20 uppercase tracking-widest"
                                     >Operational Reserve</span
                                 >
                                 <span
-                                    class="text-xl font-black text-white italic"
+                                    class="text-xl font-black text-app-text italic"
                                 >
                                     {formatCurrency(
                                         Math.floor(

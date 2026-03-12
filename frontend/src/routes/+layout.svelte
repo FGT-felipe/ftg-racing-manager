@@ -81,12 +81,14 @@
     }
   });
 
-  // Initialize Stores
+  // Initialize Stores — gated behind auth to prevent Firestore permission errors
   $effect(() => {
-    notificationStore.init();
-    transactionStore.init();
-    managerStore.init();
-    universeStore.init();
+    if (browser && !authStore.loading && authStore.user) {
+      notificationStore.init();
+      transactionStore.init();
+      managerStore.init();
+      universeStore.init();
+    }
   });
 
   // Refined Routing Logic (Anti-Race Condition)
@@ -178,7 +180,7 @@
       <div class="flex flex-1 overflow-hidden">
         <!-- DESKTOP SIDEBAR (>= 1024px) -->
         <aside
-          class="hidden lg:flex flex-col items-center justify-between w-[94px] h-full bg-app-surface border-r border-white/5 py-6 z-20 shrink-0 transition-colors duration-300"
+          class="hidden lg:flex flex-col items-center justify-between w-[94px] h-full bg-app-surface border-r border-app-border py-6 z-20 shrink-0 transition-colors duration-300"
         >
           <div class="flex flex-col items-center w-full">
             <!-- Navigation Links -->
@@ -250,7 +252,7 @@
 
       <!-- MOBILE BOTTOM NAV (< 1024px) -->
       <nav
-        class="lg:hidden fixed bottom-0 left-0 right-0 h-16 bg-app-surface border-t border-white/5 flex items-center justify-around px-2 z-50 transition-colors duration-300"
+        class="lg:hidden fixed bottom-0 left-0 right-0 h-16 bg-app-surface border-t border-app-border flex items-center justify-around px-2 z-50 transition-colors duration-300"
       >
         {#each navItems as item}
           {@const active = isActive(item.path)}

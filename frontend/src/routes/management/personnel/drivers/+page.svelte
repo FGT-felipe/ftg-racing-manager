@@ -117,12 +117,12 @@
     >
         <div class="flex flex-col gap-3">
             <h1
-                class="text-4xl md:text-5xl font-heading font-black tracking-tighter uppercase italic text-white"
+                class="text-4xl md:text-5xl font-heading font-black tracking-tighter uppercase italic text-app-text"
             >
                 Driver <span class="text-app-primary">Roster</span>
             </h1>
             <p
-                class="text-xs font-bold text-white/30 uppercase tracking-[0.3em]"
+                class="text-xs font-bold text-app-text/30 uppercase tracking-[0.3em]"
             >
                 Contract management and technical performance
             </p>
@@ -132,32 +132,32 @@
             <div class="relative group">
                 <Search
                     size={16}
-                    class="absolute left-4 top-1/2 -translate-y-1/2 text-white/20 group-focus-within:text-app-primary transition-colors"
+                    class="absolute left-4 top-1/2 -translate-y-1/2 text-app-text/20 group-focus-within:text-app-primary transition-colors"
                 />
                 <input
                     type="text"
                     placeholder="Search roster..."
                     bind:value={searchQuery}
-                    class="bg-app-surface border border-white/5 rounded-2xl py-3 pl-12 pr-6 text-sm font-bold text-white outline-none focus:border-app-primary/30 focus:bg-app-primary/5 transition-all w-64"
+                    class="bg-app-surface border border-app-border rounded-2xl py-3 pl-12 pr-6 text-sm font-bold text-app-text outline-none focus:border-app-primary/30 focus:bg-app-primary/5 transition-all w-64"
                 />
             </div>
 
             <div
-                class="flex bg-app-surface border border-white/5 rounded-2xl p-1"
+                class="flex bg-app-surface border border-app-border rounded-2xl p-1"
             >
                 <button
                     onclick={() => (viewMode = "table")}
                     class="p-2 rounded-xl transition-all {viewMode === 'table'
-                        ? 'bg-app-primary text-black'
-                        : 'text-white/40 hover:text-white'}"
+                        ? 'bg-app-primary text-app-primary-foreground'
+                        : 'text-app-text/40 hover:text-app-text'}"
                 >
                     <ListIcon size={18} />
                 </button>
                 <button
                     onclick={() => (viewMode = "grid")}
                     class="p-2 rounded-xl transition-all {viewMode === 'grid'
-                        ? 'bg-app-primary text-black'
-                        : 'text-white/40 hover:text-white'}"
+                        ? 'bg-app-primary text-app-primary-foreground'
+                        : 'text-app-text/40 hover:text-app-text'}"
                 >
                     <LayoutGrid size={18} />
                 </button>
@@ -174,12 +174,12 @@
         </div>
     {:else if viewMode === "table"}
         <div
-            class="bg-app-surface border border-white/5 rounded-[32px] overflow-hidden shadow-2xl"
+            class="bg-app-surface border border-app-border rounded-[32px] overflow-hidden shadow-2xl"
         >
             <table class="w-full text-left border-collapse">
                 <thead>
                     <tr
-                        class="bg-white/5 text-[10px] font-black uppercase tracking-[0.2em] text-white/40"
+                        class="bg-app-text/5 text-[10px] font-black uppercase tracking-[0.2em] text-app-text/40"
                     >
                         <th class="py-6 px-8">Pilot</th>
                         <th class="py-6 px-4">Status</th>
@@ -200,7 +200,7 @@
                             <td class="py-6 px-8">
                                 <div class="flex items-center gap-4">
                                     <div
-                                        class="w-10 h-10 rounded-full bg-white/5 border border-white/10 overflow-hidden flex items-center justify-center p-0.5"
+                                        class="w-10 h-10 rounded-full bg-app-text/5 border border-app-border overflow-hidden flex items-center justify-center p-0.5"
                                     >
                                         <DriverAvatar
                                             id={driver.id}
@@ -210,12 +210,12 @@
                                     </div>
                                     <div class="flex flex-col">
                                         <span
-                                            class="text-sm font-black text-white uppercase tracking-tight group-hover:text-app-primary transition-colors"
+                                            class="text-sm font-black text-app-text uppercase tracking-tight group-hover:text-app-primary transition-colors"
                                         >
                                             {driver.name}
                                         </span>
                                         <span
-                                            class="text-[10px] font-bold text-white/20 uppercase tracking-widest"
+                                            class="text-[10px] font-bold text-app-text/20 uppercase tracking-widest"
                                         >
                                             {getFlagEmoji(driver.countryCode)}
                                             {driver.age}y • CONTRACT: {driver.contractYearsRemaining}y
@@ -254,38 +254,37 @@
                                         size={14}
                                         class="text-green-400"
                                     />
-                                    <span class="text-xs font-black text-white"
+                                    <span class="text-xs font-black text-app-text"
                                         >{driver.stats?.fitness || 50}%</span
                                     >
                                 </div>
                             </td>
                             <td class="py-6 px-4">
-                                <div class="flex items-center gap-1.5">
-                                    {#each (driver.championshipForm || []).slice(-5) as form}
-                                        {@const posRank =
-                                            parseInt(
-                                                form.pos.replace("P", ""),
-                                            ) || 20}
-                                        <div
-                                            class="w-2.5 h-2.5 rounded-full {posRank <=
-                                            3
-                                                ? 'bg-yellow-400'
-                                                : posRank <= 10
-                                                  ? 'bg-green-500'
-                                                  : 'bg-red-500/40'}"
-                                            title="P{posRank}"
-                                        ></div>
-                                    {:else}
-                                        <span class="text-[9px] text-white/10"
-                                            >No data</span
-                                        >
-                                    {/each}
+                                <div class="flex flex-col gap-1">
+                                    <div class="flex items-center gap-2">
+                                        <span class="text-xs font-black text-app-primary italic tabular-nums">
+                                            {driver.seasonPoints} PTS
+                                        </span>
+                                        <div class="flex items-center gap-1 opacity-60">
+                                            {#each (driver.championshipForm || []).slice(-3) as form}
+                                                {@const posRank = parseInt(form.pos.replace("P", "")) || 20}
+                                                <div
+                                                    class="w-2 h-2 rounded-full {posRank <= 3 ? 'bg-yellow-400' : posRank <= 10 ? 'bg-green-500' : 'bg-red-500/40'}"
+                                                    title="P{posRank}"
+                                                ></div>
+                                            {/each}
+                                        </div>
+                                    </div>
+                                    <div class="flex items-center gap-2.5 text-[8px] font-black text-app-text/30 uppercase tracking-widest">
+                                        <span>{driver.seasonWins} Wins</span>
+                                        <span>{driver.seasonPodiums} Podiums</span>
+                                    </div>
                                 </div>
                             </td>
                             <td class="py-6 px-8 text-right">
                                 <button
                                     onclick={() => openDriverDetail(driver)}
-                                    class="px-4 py-2 bg-white/5 border border-white/10 rounded-xl text-[9px] font-black uppercase tracking-widest text-white/60 hover:bg-app-primary hover:text-black hover:border-app-primary transition-all"
+                                    class="px-4 py-2 bg-app-text/5 border border-app-border rounded-xl text-[9px] font-black uppercase tracking-widest text-app-text/60 hover:bg-app-primary hover:text-app-primary-foreground hover:border-app-primary transition-all"
                                 >
                                     Manage
                                 </button>
@@ -302,12 +301,12 @@
                 {@const badge = getStatusBadge(driver)}
                 <div
                     in:fly={{ y: 20, delay: i * 30 }}
-                    class="bg-app-surface border border-white/5 rounded-[32px] p-8 flex flex-col gap-6 group hover:border-app-primary/30 transition-all shadow-xl"
+                    class="bg-app-surface border border-app-border rounded-[32px] p-8 flex flex-col gap-6 group hover:border-app-primary/30 transition-all shadow-xl"
                 >
                     <div class="flex items-center justify-between">
                         <div class="flex items-center gap-4">
                             <div
-                                class="w-14 h-14 rounded-2xl bg-white/5 border border-white/10 overflow-hidden p-1"
+                                class="w-14 h-14 rounded-2xl bg-app-text/5 border border-app-border overflow-hidden p-1"
                             >
                                 <DriverAvatar
                                     id={driver.id}
@@ -317,12 +316,12 @@
                             </div>
                             <div class="flex flex-col">
                                 <h3
-                                    class="text-lg font-black text-white uppercase tracking-tight group-hover:text-app-primary transition-colors"
+                                    class="text-lg font-black text-app-text uppercase tracking-tight group-hover:text-app-primary transition-colors"
                                 >
                                     {driver.name}
                                 </h3>
                                 <span
-                                    class="text-[10px] font-black text-white/20 uppercase tracking-[0.2em]"
+                                    class="text-[10px] font-black text-app-text/20 uppercase tracking-[0.2em]"
                                     >{getFlagEmoji(driver.countryCode)}
                                     {driver.age}Y • {driver.salary
                                         ? formatCurrency(driver.salary)
@@ -342,9 +341,9 @@
                             class="flex flex-col gap-1 items-center p-3 bg-white/[0.02] rounded-2xl"
                         >
                             <span
-                                class="text-[8px] font-black text-white/20 uppercase tracking-widest"
+                                class="text-[8px] font-black text-app-text/20 uppercase tracking-widest"
                                 >Morale</span
-                            >
+                              >
                             <span
                                 class="text-xs font-black {getMoraleColor(
                                     driver.stats?.morale || 50,
@@ -355,10 +354,10 @@
                             class="flex flex-col gap-1 items-center p-3 bg-white/[0.02] rounded-2xl"
                         >
                             <span
-                                class="text-[8px] font-black text-white/20 uppercase tracking-widest"
+                                class="text-[8px] font-black text-app-text/20 uppercase tracking-widest"
                                 >Fitness</span
                             >
-                            <span class="text-xs font-black text-white"
+                            <span class="text-xs font-black text-app-text"
                                 >{driver.stats?.fitness || 50}%</span
                             >
                         </div>
@@ -366,17 +365,24 @@
                             class="flex flex-col gap-1 items-center p-3 bg-white/[0.02] rounded-2xl"
                         >
                             <span
-                                class="text-[8px] font-black text-white/20 uppercase tracking-widest"
-                                >Poles</span
+                                class="text-[8px] font-black text-app-text/20 uppercase tracking-widest"
+                                >Points</span
                             >
-                            <span class="text-xs font-black text-white"
-                                >{driver.poles}</span
+                            <span class="text-xs font-black text-app-primary tabular-nums"
+                                >{driver.seasonPoints}</span
                             >
                         </div>
                     </div>
 
+                    <div class="flex items-center justify-between px-2 text-[10px] font-bold text-app-text/30 uppercase tracking-tighter">
+                        <span>Season Record:</span>
+                        <span class="text-app-text/60">
+                            {driver.seasonWins}W · {driver.seasonPodiums}P · {driver.seasonPoles}L
+                        </span>
+                    </div>
+
                     <div
-                        class="flex items-center justify-between pt-4 border-t border-white/5"
+                        class="flex items-center justify-between pt-4 border-t border-app-border"
                     >
                         <DriverStars {driver} size={12} />
                         <button
@@ -398,7 +404,7 @@
     <div class="mt-12 flex justify-center">
         <a
             href="/market"
-            class="px-10 py-5 bg-white text-black rounded-[32px] font-black text-xs uppercase tracking-[0.3em] shadow-2xl hover:scale-105 transition-all flex items-center gap-3"
+            class="px-10 py-5 bg-app-surface text-black rounded-[32px] font-black text-xs uppercase tracking-[0.3em] shadow-2xl hover:scale-105 transition-all flex items-center gap-3"
         >
             <Plus size={16} strokeWidth={3} /> Scout Driver Market
         </a>

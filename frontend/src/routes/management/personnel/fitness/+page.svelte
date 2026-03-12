@@ -166,7 +166,7 @@
             <div class="lg:col-span-2 flex flex-col gap-10">
                 <!-- Trainer Hero Card -->
                 <div
-                    class="relative bg-app-surface border border-white/5 rounded-[40px] p-10 overflow-hidden shadow-2xl"
+                    class="relative bg-app-surface border border-app-border rounded-[40px] p-10 overflow-hidden shadow-2xl"
                 >
                     <div
                         class="absolute -right-20 -top-20 w-80 h-80 bg-green-400/10 blur-[100px] rounded-full"
@@ -209,7 +209,7 @@
                                     </span>
                                 </div>
                                 <h2
-                                    class="text-4xl font-heading font-black tracking-tighter text-white uppercase italic"
+                                    class="text-4xl font-heading font-black tracking-tighter text-app-text uppercase italic"
                                 >
                                     {trainerName}
                                 </h2>
@@ -220,17 +220,17 @@
                             >
                                 <div class="flex items-center gap-3">
                                     <div
-                                        class="p-2 bg-white/5 rounded-lg text-green-400"
+                                        class="p-2 bg-app-text/5 rounded-lg text-green-400"
                                     >
                                         <TrendingUp size={16} />
                                     </div>
                                     <div class="flex flex-col">
                                         <span
-                                            class="text-[9px] font-black text-white/20 uppercase tracking-widest"
+                                            class="text-[9px] font-black text-app-text/20 uppercase tracking-widest"
                                             >Recovery Bonus</span
                                         >
                                         <span
-                                            class="text-sm font-black text-white"
+                                            class="text-sm font-black text-app-text"
                                             >+{bonusByLevel[trainerLevel]}% /
                                             Week</span
                                         >
@@ -238,17 +238,17 @@
                                 </div>
                                 <div class="flex items-center gap-3">
                                     <div
-                                        class="p-2 bg-white/5 rounded-lg text-yellow-400"
+                                        class="p-2 bg-app-text/5 rounded-lg text-yellow-400"
                                     >
                                         <Wallet size={16} />
                                     </div>
                                     <div class="flex flex-col">
                                         <span
-                                            class="text-[9px] font-black text-white/20 uppercase tracking-widest"
+                                            class="text-[9px] font-black text-app-text/20 uppercase tracking-widest"
                                             >Weekly Salary</span
                                         >
                                         <span
-                                            class="text-sm font-black text-white"
+                                            class="text-sm font-black text-app-text"
                                             >{salaryByLevel[trainerLevel] === 0
                                                 ? "FREE"
                                                 : formatCurrency(
@@ -273,14 +273,14 @@
                     </h3>
 
                     <div
-                        class="bg-app-surface border border-white/5 rounded-[32px] p-8 flex flex-col gap-8"
+                        class="bg-app-surface border border-app-border rounded-[32px] p-8 flex flex-col gap-8"
                     >
                         <div
                             class="flex flex-col md:flex-row md:items-center justify-between gap-6"
                         >
                             <div class="flex flex-col gap-1">
                                 <span
-                                    class="text-[10px] font-black text-white/20 uppercase tracking-widest"
+                                    class="text-[10px] font-black text-app-text/20 uppercase tracking-widest"
                                     >Target Pilot</span
                                 >
                                 <div class="flex items-center gap-3">
@@ -288,7 +288,7 @@
                                         bind:value={selectedPilotId}
                                         disabled={hasTrainedThisWeek ||
                                             isSaving}
-                                        class="bg-app-surface border border-white/10 rounded-xl px-4 py-2 text-sm font-bold text-white outline-none focus:border-app-primary/30 transition-all cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
+                                        class="bg-app-surface border border-app-border rounded-xl px-4 py-2 text-sm font-bold text-app-text outline-none focus:border-app-primary/30 transition-all cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
                                     >
                                         <option value={undefined} disabled
                                             >Select a pilot</option
@@ -359,19 +359,19 @@
                                         team.budget <
                                             upgradeCosts[trainerLevel + 1]}
                                     onclick={() => handleChangeLevel(true)}
-                                    class="p-6 bg-white/5 border border-white/5 rounded-2xl flex flex-col items-center gap-2 hover:border-app-primary transition-all disabled:opacity-20 flex-1"
+                                    class="p-6 bg-app-text/5 border border-app-border rounded-2xl flex flex-col items-center gap-2 hover:border-app-primary transition-all disabled:opacity-20 flex-1"
                                 >
                                     <ArrowUp
                                         size={20}
                                         class="text-app-primary"
                                     />
                                     <span
-                                        class="text-[9px] font-black text-white/40 uppercase tracking-widest"
+                                        class="text-[9px] font-black text-app-text/40 uppercase tracking-widest"
                                         >Upgrade to Level {trainerLevel +
                                             1}</span
                                     >
                                     <span
-                                        class="text-sm font-black text-white italic"
+                                        class="text-sm font-black text-app-text italic"
                                         >{formatCurrency(
                                             upgradeCosts[trainerLevel + 1],
                                         )}</span
@@ -384,16 +384,16 @@
                                     disabled={hasUpgradedThisWeek ||
                                         isUpgrading}
                                     onclick={() => handleChangeLevel(false)}
-                                    class="p-6 bg-white/5 border border-white/5 rounded-2xl flex flex-col items-center gap-2 hover:border-red-400 transition-all disabled:opacity-20 flex-1"
+                                    class="p-6 bg-app-text/5 border border-app-border rounded-2xl flex flex-col items-center gap-2 hover:border-red-400 transition-all disabled:opacity-20 flex-1"
                                 >
                                     <ArrowDown size={20} class="text-red-400" />
                                     <span
-                                        class="text-[9px] font-black text-white/40 uppercase tracking-widest"
+                                        class="text-[9px] font-black text-app-text/40 uppercase tracking-widest"
                                         >Downgrade to Level {trainerLevel -
                                             1}</span
                                     >
                                     <span
-                                        class="text-sm font-black text-white italic"
+                                        class="text-sm font-black text-app-text italic"
                                         >FREE</span
                                     >
                                 </button>
@@ -401,27 +401,27 @@
 
                             {#if trainerLevel === 5}
                                 <div
-                                    class="p-6 bg-black/20 border border-white/5 rounded-2xl flex flex-col items-center justify-center gap-2 text-center"
+                                    class="p-6 bg-app-text/20 border border-app-border rounded-2xl flex flex-col items-center justify-center gap-2 text-center"
                                 >
                                     <span
-                                        class="text-[9px] font-black text-white/20 uppercase tracking-widest"
+                                        class="text-[9px] font-black text-app-text/20 uppercase tracking-widest"
                                         >Staff Status</span
                                     >
                                     <span
-                                        class="text-xs font-bold text-white/60"
+                                        class="text-xs font-bold text-app-text/60"
                                         >Elite Level Reached</span
                                     >
                                 </div>
                             {:else if trainerLevel === 1 && !hasUpgradedThisWeek}
                                 <div
-                                    class="p-6 bg-black/20 border border-white/5 rounded-2xl flex flex-col items-center justify-center gap-2 text-center"
+                                    class="p-6 bg-app-text/20 border border-app-border rounded-2xl flex flex-col items-center justify-center gap-2 text-center"
                                 >
                                     <span
-                                        class="text-[9px] font-black text-white/20 uppercase tracking-widest"
+                                        class="text-[9px] font-black text-app-text/20 uppercase tracking-widest"
                                         >Staff Status</span
                                     >
                                     <span
-                                        class="text-xs font-bold text-white/60"
+                                        class="text-xs font-bold text-app-text/60"
                                         >Ready for Operations</span
                                     >
                                 </div>
@@ -440,7 +440,7 @@
                         Trainer Manual
                     </h3>
                     <div
-                        class="bg-app-surface border border-white/5 rounded-[32px] p-8 flex flex-col gap-6"
+                        class="bg-app-surface border border-app-border rounded-[32px] p-8 flex flex-col gap-6"
                     >
                         <ul class="flex flex-col gap-5">
                             <li class="flex items-start gap-4">
@@ -451,11 +451,11 @@
                                 </div>
                                 <div class="flex flex-col gap-1">
                                     <span
-                                        class="text-[10px] font-black text-white uppercase tracking-widest"
+                                        class="text-[10px] font-black text-app-text uppercase tracking-widest"
                                         >Weekly Recovery</span
                                     >
                                     <p
-                                        class="text-[11px] font-medium text-white/40 leading-relaxed"
+                                        class="text-[11px] font-medium text-app-text/40 leading-relaxed"
                                     >
                                         Higher level trainers provide larger
                                         automatic fitness recovery each week.
@@ -470,11 +470,11 @@
                                 </div>
                                 <div class="flex flex-col gap-1">
                                     <span
-                                        class="text-[10px] font-black text-white uppercase tracking-widest"
+                                        class="text-[10px] font-black text-app-text uppercase tracking-widest"
                                         >Manual Boost</span
                                     >
                                     <p
-                                        class="text-[11px] font-medium text-white/40 leading-relaxed"
+                                        class="text-[11px] font-medium text-app-text/40 leading-relaxed"
                                     >
                                         Perform extra training once per week to
                                         boost the assigned pilot's energy.
@@ -489,11 +489,11 @@
                                 </div>
                                 <div class="flex flex-col gap-1">
                                     <span
-                                        class="text-[10px] font-black text-white uppercase tracking-widest"
+                                        class="text-[10px] font-black text-app-text uppercase tracking-widest"
                                         >Weekly Limit</span
                                     >
                                     <p
-                                        class="text-[11px] font-medium text-white/40 leading-relaxed"
+                                        class="text-[11px] font-medium text-app-text/40 leading-relaxed"
                                     >
                                         You can only upgrade or perform extra
                                         training once per week cycle.

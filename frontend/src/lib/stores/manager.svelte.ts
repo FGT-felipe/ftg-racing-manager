@@ -10,6 +10,11 @@ export interface ManagerProfile {
     role: string;
     reputation: number;
     country: string;
+    nationality: string;
+    gender: string;
+    birthDate: string;
+    backgroundId: string;
+    teamId?: string;
 }
 
 export function createManagerStore() {

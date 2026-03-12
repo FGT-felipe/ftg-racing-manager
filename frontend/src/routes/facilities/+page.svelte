@@ -154,27 +154,27 @@
         </div>
         <div class="flex flex-wrap items-end justify-between gap-6">
             <h1
-                class="text-4xl lg:text-5xl font-heading font-black tracking-tighter uppercase italic text-white mt-1"
+                class="text-4xl lg:text-5xl font-heading font-black tracking-tighter uppercase italic text-app-text mt-1"
             >
                 High <span class="text-app-primary">Headquarters</span>
             </h1>
 
             <div
-                class="flex items-center gap-6 px-6 py-3 bg-app-surface/50 border border-white/5 rounded-2xl backdrop-blur-md"
+                class="flex items-center gap-6 px-6 py-3 bg-app-surface/50 border border-app-border rounded-2xl backdrop-blur-md"
             >
                 <div class="flex flex-col">
                     <span
-                        class="text-[9px] font-black text-white/20 uppercase tracking-widest"
+                        class="text-[9px] font-black text-app-text/20 uppercase tracking-widest"
                         >Available Budget</span
                     >
-                    <span class="text-lg font-black text-white"
+                    <span class="text-lg font-black text-app-text"
                         >{teamStore.formattedBudget}</span
                     >
                 </div>
-                <div class="w-px h-8 bg-white/5"></div>
+                <div class="w-px h-8 bg-app-text/5"></div>
                 <div class="flex flex-col">
                     <span
-                        class="text-[9px] font-black text-white/20 uppercase tracking-widest"
+                        class="text-[9px] font-black text-app-text/20 uppercase tracking-widest"
                         >Manager Role</span
                     >
                     <span
@@ -209,7 +209,7 @@
 
                     <div
                         in:fly={{ y: 20, duration: 400, delay: i * 50 }}
-                        class="group relative bg-app-surface border border-white/5 rounded-3xl p-8 transition-all duration-300 hover:border-app-primary/30 hover:shadow-[0_20px_40px_rgba(0,0,0,0.3)] overflow-hidden {isSoon
+                        class="group relative bg-app-surface border border-app-border rounded-3xl p-8 transition-all duration-300 hover:border-app-primary/30 hover:shadow-[0_20px_40px_rgba(0,0,0,0.3)] overflow-hidden {isSoon
                             ? 'opacity-50 grayscale'
                             : ''}"
                     >
@@ -228,18 +228,18 @@
                                 <div class="flex items-center gap-4">
                                     <div class="text-right">
                                         <span
-                                            class="text-[10px] font-black text-white/20 uppercase tracking-widest block"
+                                            class="text-[10px] font-black text-app-text/20 uppercase tracking-widest block"
                                             >Level</span
                                         >
                                         <span
-                                            class="text-xl font-black text-white italic"
+                                            class="text-xl font-black text-app-text italic"
                                             >{facility.level}</span
                                         >
                                     </div>
                                     {#if !isSoon}
                                         <a
                                             href={config.path}
-                                            class="text-white/10 group-hover:text-app-primary transition-colors"
+                                            class="text-app-text/10 group-hover:text-app-primary transition-colors"
                                         >
                                             <ChevronRight size={24} />
                                         </a>
@@ -249,7 +249,7 @@
 
                             <div class="flex flex-col gap-1">
                                 <h2
-                                    class="text-2xl font-black text-white uppercase tracking-tight group-hover:text-app-primary transition-colors"
+                                    class="text-2xl font-black text-app-text uppercase tracking-tight group-hover:text-app-primary transition-colors"
                                 >
                                     {config.title}
                                 </h2>
@@ -265,11 +265,11 @@
                                     >
                                         <div class="flex flex-col">
                                             <span
-                                                class="text-[9px] font-black text-white/20 uppercase tracking-widest"
+                                                class="text-[9px] font-black text-app-text/20 uppercase tracking-widest"
                                                 >Weekly Maintenance</span
                                             >
                                             <span
-                                                class="text-sm font-black text-white"
+                                                class="text-sm font-black text-app-text"
                                             >
                                                 {#if isVirtual}
                                                     Included in Garage
@@ -293,17 +293,17 @@
                                             ></div>
                                         </div>
                                         <span
-                                            class="text-[9px] font-black tracking-widest text-white/20 group-hover:text-white/40 uppercase"
+                                            class="text-[9px] font-black tracking-widest text-app-text/20 group-hover:text-app-text/40 uppercase"
                                         >
                                             Module Operational
                                         </span>
                                     </div>
                                 {:else}
                                     <div
-                                        class="py-3 text-center border border-white/5 border-dashed rounded-2xl"
+                                        class="py-3 text-center border border-app-border border-dashed rounded-2xl"
                                     >
                                         <span
-                                            class="text-[9px] font-black text-white/10 uppercase tracking-widest"
+                                            class="text-[9px] font-black text-app-text/10 uppercase tracking-widest"
                                             >Coming Soon</span
                                         >
                                     </div>
@@ -318,14 +318,14 @@
 
     <!-- Quick Status Footer -->
     <div
-        class="mt-16 pt-8 border-t border-white/5 flex flex-wrap gap-12 opacity-50"
+        class="mt-16 pt-8 border-t border-app-border flex flex-wrap gap-12 opacity-50"
     >
         <div class="flex flex-col gap-1">
             <span
                 class="text-[9px] font-black uppercase tracking-widest text-app-text/40"
                 >Infrastructure Status</span
             >
-            <span class="text-sm font-bold text-white"
+            <span class="text-sm font-bold text-app-text"
                 >{infrastructureRating}</span
             >
         </div>
@@ -334,7 +334,7 @@
                 class="text-[9px] font-black uppercase tracking-widest text-app-text/40"
                 >Weekly Maintenance</span
             >
-            <span class="text-sm font-bold text-white"
+            <span class="text-sm font-bold text-app-text"
                 >${(totalMaintenance / 1000).toFixed(0)}k
                 <span class="text-[10px] opacity-40">/wk</span></span
             >
@@ -344,7 +344,7 @@
                 class="text-[9px] font-black uppercase tracking-widest text-app-text/40"
                 >Mean Technology Lvl</span
             >
-            <span class="text-sm font-bold text-white"
+            <span class="text-sm font-bold text-app-text"
                 >{avgLevel.toFixed(1)}</span
             >
         </div>

@@ -81,11 +81,11 @@
 
     <header class="flex flex-col gap-3 mb-12">
         <h1
-            class="text-4xl md:text-5xl font-heading font-black tracking-tighter uppercase italic text-white flex items-center gap-4"
+            class="text-4xl md:text-5xl font-heading font-black tracking-tighter uppercase italic text-app-text flex items-center gap-4"
         >
             Personnel <span class="text-app-primary">Hub</span>
         </h1>
-        <p class="text-xs font-bold text-white/30 uppercase tracking-[0.3em]">
+        <p class="text-xs font-bold text-app-text/30 uppercase tracking-[0.3em]">
             Assemble and manage your world-class racing staff
         </p>
     </header>
@@ -95,7 +95,7 @@
             <div in:fly={{ y: 20, delay: i * 50 }} class="relative group">
                 <a
                     href={item.enabled ? item.href : undefined}
-                    class="block relative bg-app-surface border border-white/5 rounded-[32px] p-8 transition-all duration-500 overflow-hidden
+                    class="block relative bg-app-surface border border-app-border rounded-[32px] p-8 transition-all duration-500 overflow-hidden
                     {item.enabled
                         ? 'hover:border-app-primary/40 hover:bg-app-primary/5 hover:-translate-y-2 cursor-pointer'
                         : 'opacity-40 grayscale cursor-not-allowed'}"
@@ -108,13 +108,13 @@
                     <div class="relative flex flex-col gap-6">
                         <div class="flex items-center justify-between">
                             <div
-                                class="p-4 bg-white/5 rounded-2xl border border-white/5 group-hover:border-app-primary/20 transition-all"
+                                class="p-4 bg-app-text/5 rounded-2xl border border-app-border group-hover:border-app-primary/20 transition-all"
                             >
                                 <item.icon
                                     size={28}
                                     class={item.enabled
                                         ? item.color
-                                        : "text-white/20"}
+                                        : "text-app-text/20"}
                                 />
                             </div>
                             {#if !item.enabled}
@@ -128,12 +128,12 @@
 
                         <div class="flex flex-col gap-2">
                             <h3
-                                class="text-xl font-black text-white uppercase tracking-tight group-hover:text-app-primary transition-colors"
+                                class="text-xl font-black text-app-text uppercase tracking-tight group-hover:text-app-primary transition-colors"
                             >
                                 {item.title}
                             </h3>
                             <p
-                                class="text-xs font-medium text-white/40 leading-relaxed"
+                                class="text-xs font-medium text-app-text/40 leading-relaxed"
                             >
                                 {item.description}
                             </p>

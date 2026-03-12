@@ -11,6 +11,8 @@
     import { teamStore } from "$lib/stores/team.svelte";
     import { driverStore } from "$lib/stores/driver.svelte";
     import { timeService } from "$lib/services/time_service.svelte";
+    import { seasonStore } from "$lib/stores/season.svelte";
+    import { circuitService } from "$lib/services/circuit_service.svelte";
     import { fade, slide } from "svelte/transition";
     import DriverAvatar from "$lib/components/DriverAvatar.svelte";
 
@@ -23,6 +25,8 @@
     // Derived states
     let team = $derived(teamStore.value.team);
     let drivers = $derived(driverStore.drivers);
+    let nextEvent = $derived(seasonStore.nextEvent);
+    let circuit = $derived(nextEvent ? circuitService.getCircuitProfile(nextEvent.circuitId) : null);
 
     // UI State
     let selectedDriverId = $state<string | null>(null);
@@ -93,8 +97,8 @@
             <button
                 class="px-4 py-2 rounded-xl border transition-all text-xs font-bold uppercase tracking-widest flex items-center gap-2
                 {isSelected
-                    ? 'bg-app-primary text-black border-app-primary'
-                    : 'bg-black/40 border-app-border text-app-text/60 hover:bg-white/5 hover:border-white/20'}"
+                    ? 'bg-app-primary text-app-primary-foreground border-app-primary'
+                    : 'bg-app-text/40 border-app-border text-app-text/60 hover:bg-app-text/5 hover:border-app-border'}"
                 onclick={() => {
                     selectedDriverId = driver.id;
                     if (driver.role === "Reserve" && activeTab !== "practice") {
@@ -111,7 +115,7 @@
                     />
                     {#if isSelected}
                         <div
-                            class="absolute -top-1 -right-1 w-2 h-2 bg-black rounded-full border border-white/20"
+                            class="absolute -top-1 -right-1 w-2 h-2 bg-app-bg rounded-full border border-app-border"
                         ></div>
                     {/if}
                 </div>
@@ -124,6 +128,50 @@
     </div>
 
     {#if selectedDriver}
+        {#if circuit}
+            <!-- CIRCUIT INTEL WIDGET -->
+            <div
+                class="bg-app-surface border border-app-primary/30 rounded-2xl p-4 flex flex-col md:flex-row gap-4 items-center justify-between shadow-[0_0_15px_rgba(197,160,89,0.1)]"
+            >
+                <div class="flex items-center gap-3 w-full max-w-xs">
+                    <span class="text-3xl drop-shadow-lg">{circuit.flagEmoji}</span>
+                    <div class="min-w-0">
+                        <h4
+                            class="text-[10px] font-black uppercase tracking-[0.2em] text-app-primary"
+                        >
+                            Circuit Intelligence
+                        </h4>
+                        <p class="text-[11px] text-app-text/60 truncate" title={circuit.name}>
+                            {circuit.name}
+                        </p>
+                    </div>
+                </div>
+
+                <div class="flex flex-1 w-full gap-4 items-center justify-end">
+                    {#each [
+                        { label: 'Aero Importance', val: circuit.aeroWeight },
+                        { label: 'Power Importance', val: circuit.powertrainWeight },
+                        { label: 'Chassis Importance', val: circuit.chassisWeight }
+                    ] as stat}
+                        <div class="flex-1 space-y-1.5 max-w-[120px]">
+                            <div
+                                class="flex justify-between text-[9px] font-black uppercase tracking-wider text-app-text/50"
+                            >
+                                <span>{stat.label.split(' ')[0]}</span>
+                                <span>{Math.round(stat.val * 100)}%</span>
+                            </div>
+                            <div class="w-full h-1.5 bg-app-text/5 rounded-full overflow-hidden">
+                                <div
+                                    class="h-full bg-app-primary"
+                                    style="width: {stat.val * 100}%"
+                                ></div>
+                            </div>
+                        </div>
+                    {/each}
+                </div>
+            </div>
+        {/if}
+
         <!-- 2. ACTION CARDS (TABS) -->
         <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
             <!-- Practice Card -->
@@ -131,8 +179,8 @@
                 id="practice-card"
                 class="flex flex-col p-6 rounded-2xl border transition-all text-left group min-h-[160px] justify-between relative overflow-hidden
                 {activeTab === 'practice'
-                    ? 'bg-app-primary text-black border-app-primary shadow-[0_0_30px_rgba(197,160,89,0.3)]'
-                    : 'bg-app-surface border-white/10 hover:border-white/20'}"
+                    ? 'bg-app-primary text-app-primary-foreground border-app-primary shadow-[0_0_30px_rgba(197,160,89,0.3)]'
+                    : 'bg-app-surface border-app-border hover:border-app-border'}"
                 onclick={() => (activeTab = "practice")}
             >
                 <div class="relative z-10">
@@ -152,7 +200,7 @@
                         class="text-xl font-heading font-black uppercase italic {activeTab ===
                         'practice'
                             ? 'text-black'
-                            : 'text-white'}"
+                            : 'text-app-text'}"
                     >
                         PRACTICE <span class="opacity-50">SESSION</span>
                     </h3>
@@ -181,10 +229,10 @@
                 id="qualy-card"
                 class="flex flex-col p-6 rounded-2xl border transition-all text-left relative overflow-hidden min-h-[160px] justify-between
                 {isQualyLocked
-                    ? 'bg-black/50 border-white/5 cursor-not-allowed grayscale'
+                    ? 'bg-app-text/50 border-app-border cursor-not-allowed grayscale'
                     : activeTab === 'qualy'
                       ? 'bg-[#FFB800] text-black border-[#FFB800] shadow-[0_0_30px_rgba(255,184,0,0.3)]'
-                      : 'bg-app-surface border-white/10 hover:border-white/20'}"
+                      : 'bg-app-surface border-app-border hover:border-app-border'}"
                 onclick={() => {
                     if (!isQualyLocked) activeTab = "qualy";
                 }}
@@ -193,7 +241,7 @@
                 <div class="relative z-10">
                     <div
                         class="flex items-center gap-2 mb-3 {isQualyLocked
-                            ? 'text-white/20'
+                            ? 'text-app-text/20'
                             : activeTab === 'qualy'
                               ? 'text-black/60'
                               : 'text-[#FFB800]'}"
@@ -206,10 +254,10 @@
                     </div>
                     <h3
                         class="text-xl font-heading font-black uppercase italic {isQualyLocked
-                            ? 'text-white/20'
+                            ? 'text-app-text/20'
                             : activeTab === 'qualy'
                               ? 'text-black'
-                              : 'text-white'}"
+                              : 'text-app-text'}"
                     >
                         QUALY <span class="opacity-50">PACE</span>
                     </h3>
@@ -217,7 +265,7 @@
 
                 {#if isQualyLocked}
                     <div
-                        class="absolute inset-0 flex flex-col items-center justify-center bg-black/60 z-20 backdrop-blur-[1px] p-4 text-center"
+                        class="absolute inset-0 flex flex-col items-center justify-center bg-app-text/60 z-20 backdrop-blur-[1px] p-4 text-center"
                     >
                         <Lock size={20} class="text-red-500 mb-2" />
                         <span
@@ -252,10 +300,10 @@
                 id="race-card"
                 class="flex flex-col p-6 rounded-2xl border transition-all text-left relative overflow-hidden min-h-[160px] justify-between
                 {isRaceLocked
-                    ? 'bg-black/50 border-white/5 cursor-not-allowed grayscale'
+                    ? 'bg-app-text/50 border-app-border cursor-not-allowed grayscale'
                     : activeTab === 'race'
-                      ? 'bg-[#E040FB] text-white border-[#E040FB] shadow-[0_0_30px_rgba(224,64,251,0.3)]'
-                      : 'bg-app-surface border-white/10 hover:border-white/20'}"
+                      ? 'bg-[#E040FB] text-app-text border-[#E040FB] shadow-[0_0_30px_rgba(224,64,251,0.3)]'
+                      : 'bg-app-surface border-app-border hover:border-app-border'}"
                 onclick={() => {
                     if (!isRaceLocked) activeTab = "race";
                 }}
@@ -264,9 +312,9 @@
                 <div class="relative z-10">
                     <div
                         class="flex items-center gap-2 mb-3 {isRaceLocked
-                            ? 'text-white/20'
+                            ? 'text-app-text/20'
                             : activeTab === 'race'
-                              ? 'text-white/60'
+                              ? 'text-app-text/60'
                               : 'text-[#E040FB]'}"
                     >
                         <Flag size={18} />
@@ -277,8 +325,8 @@
                     </div>
                     <h3
                         class="text-xl font-heading font-black uppercase italic {isRaceLocked
-                            ? 'text-white/20'
-                            : 'text-white'}"
+                            ? 'text-app-text/20'
+                            : 'text-app-text'}"
                     >
                         RACE <span class="opacity-50">STRATEGY</span>
                     </h3>
@@ -286,7 +334,7 @@
 
                 {#if isRaceLocked}
                     <div
-                        class="absolute inset-0 flex flex-col items-center justify-center bg-black/60 z-20 backdrop-blur-[1px] p-4 text-center"
+                        class="absolute inset-0 flex flex-col items-center justify-center bg-app-text/60 z-20 backdrop-blur-[1px] p-4 text-center"
                     >
                         <Lock size={20} class="text-red-500 mb-2" />
                         <span
@@ -301,7 +349,7 @@
                     <div
                         class="text-[10px] font-bold uppercase tracking-widest mt-4 {activeTab ===
                         'race'
-                            ? 'text-white/70'
+                            ? 'text-app-text/70'
                             : 'text-app-text/40'}"
                     >
                         SETUP & PIT STRATEGY
@@ -309,7 +357,7 @@
                 {/if}
                 {#if activeTab === "race"}
                     <div
-                        class="absolute -bottom-2 -right-2 opacity-10 text-white"
+                        class="absolute -bottom-2 -right-2 opacity-10 text-app-text"
                     >
                         <Flag size={80} />
                     </div>

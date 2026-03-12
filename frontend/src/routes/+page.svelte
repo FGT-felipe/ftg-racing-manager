@@ -8,6 +8,7 @@
     import RaceStatusHero from "$lib/components/dashboard/RaceStatusHero.svelte";
     import OfficeNews from "$lib/components/dashboard/OfficeNews.svelte";
     import StandingsCard from "$lib/components/dashboard/StandingsCard.svelte";
+    import PreparationChecklist from "$lib/components/dashboard/PreparationChecklist.svelte";
 
     let teamData = $derived(teamStore.value);
     let team = $derived(teamData.team);
@@ -68,7 +69,7 @@
                 </span>
             </div>
             <h1
-                class="text-4xl lg:text-5xl font-heading font-black tracking-tighter uppercase italic text-white mt-1"
+                class="text-4xl lg:text-5xl font-heading font-black tracking-tighter uppercase italic text-app-text mt-1"
             >
                 {#if nameParts.length > 1}
                     {nameParts[0]}
@@ -90,80 +91,8 @@
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
                     <OfficeNews />
 
-                    <!-- Quick Tasks (Checklist) -->
-                    <section class="flex flex-col gap-6">
-                        <h3
-                            class="text-[10px] font-black uppercase tracking-[0.3em] text-app-primary/40 font-heading px-2"
-                        >
-                            Priority Tasks
-                        </h3>
-                        <div
-                            class="bg-app-surface border border-white/5 rounded-2xl p-8 flex flex-col gap-5"
-                        >
-                            <!-- Item 1: Practice -->
-                            <div class="flex items-center gap-4">
-                                <div
-                                    class="w-5 h-5 rounded-full border flex items-center justify-center shrink-0 transition-all {team
-                                        ?.weekStatus?.practiceCompleted
-                                        ? 'bg-app-primary/10 border-app-primary text-app-primary shadow-[0_0_10px_rgba(197,160,89,0.2)]'
-                                        : 'border-white/10 bg-black/20 text-transparent'}"
-                                >
-                                    <span class="text-[10px] font-black">✓</span
-                                    >
-                                </div>
-                                <span
-                                    class="text-[11px] font-bold tracking-[0.15em] uppercase transition-colors {team
-                                        ?.weekStatus?.practiceCompleted
-                                        ? 'text-app-text'
-                                        : 'text-app-text/30'}"
-                                >
-                                    Practice Program
-                                </span>
-                            </div>
-
-                            <!-- Item 2: Qualifying -->
-                            <div class="flex items-center gap-4">
-                                <div
-                                    class="w-5 h-5 rounded-full border flex items-center justify-center shrink-0 transition-all {team
-                                        ?.weekStatus?.qualifyingCompleted
-                                        ? 'bg-app-primary/10 border-app-primary text-app-primary shadow-[0_0_10px_rgba(197,160,89,0.2)]'
-                                        : 'border-white/10 bg-black/20 text-transparent'}"
-                                >
-                                    <span class="text-[10px] font-black">✓</span
-                                    >
-                                </div>
-                                <span
-                                    class="text-[11px] font-bold tracking-[0.15em] uppercase transition-colors {team
-                                        ?.weekStatus?.qualifyingCompleted
-                                        ? 'text-app-text'
-                                        : 'text-app-text/30'}"
-                                >
-                                    Qualifying Setup
-                                </span>
-                            </div>
-
-                            <!-- Item 3: Race Strategy -->
-                            <div class="flex items-center gap-4">
-                                <div
-                                    class="w-5 h-5 rounded-full border flex items-center justify-center shrink-0 transition-all {team
-                                        ?.weekStatus?.strategySet
-                                        ? 'bg-app-primary/10 border-app-primary text-app-primary shadow-[0_0_10px_rgba(197,160,89,0.2)]'
-                                        : 'border-white/10 bg-black/20 text-transparent'}"
-                                >
-                                    <span class="text-[10px] font-black">✓</span
-                                    >
-                                </div>
-                                <span
-                                    class="text-[11px] font-bold tracking-[0.15em] uppercase transition-colors {team
-                                        ?.weekStatus?.strategySet
-                                        ? 'text-app-text'
-                                        : 'text-app-text/30'}"
-                                >
-                                    Race Strategy
-                                </span>
-                            </div>
-                        </div>
-                    </section>
+                    <!-- Priority Tasks (Dynamic Checklist) -->
+                    <PreparationChecklist />
                 </div>
             </div>
 
@@ -176,15 +105,15 @@
                         Financial Overview
                     </h3>
                     <div
-                        class="bg-app-surface border border-white/5 rounded-2xl p-8 flex flex-col gap-6"
+                        class="bg-app-surface border border-app-border rounded-2xl p-8 flex flex-col gap-6"
                     >
                         <div class="flex items-center justify-between">
                             <div class="flex flex-col gap-1">
                                 <span
-                                    class="text-[9px] font-black text-white/30 uppercase tracking-widest"
+                                    class="text-[9px] font-black text-app-text/30 uppercase tracking-widest"
                                     >Available Budget</span
                                 >
-                                <span class="text-2xl font-black text-white">
+                                <span class="text-2xl font-black text-app-text">
                                     ${((team?.budget || 0) / 1000000).toFixed(
                                         2,
                                     )}M
@@ -198,12 +127,12 @@
                         </div>
 
                         <div
-                            class="flex flex-col gap-4 border-t border-white/5 pt-6"
+                            class="flex flex-col gap-4 border-t border-app-border pt-6"
                         >
                             <div
                                 class="flex items-center justify-between text-[10px] font-bold uppercase tracking-wider"
                             >
-                                <span class="text-white/40"
+                                <span class="text-app-text/40"
                                     >Active Sponsors</span
                                 >
                                 <span class="text-app-primary"
@@ -212,7 +141,7 @@
                                 >
                             </div>
                             <div
-                                class="w-full bg-white/5 h-1.5 rounded-full overflow-hidden"
+                                class="w-full bg-app-text/5 h-1.5 rounded-full overflow-hidden"
                             >
                                 <div
                                     class="bg-app-primary h-full rounded-full transition-all duration-500"
@@ -227,7 +156,7 @@
 
                         <a
                             href="/management"
-                            class="text-center py-3 rounded-lg border border-white/5 text-[10px] font-black uppercase tracking-widest text-white/40 hover:bg-white/5 hover:text-white transition-all mt-2"
+                            class="text-center py-3 rounded-lg border border-app-border text-[10px] font-black uppercase tracking-widest text-app-text/40 hover:bg-app-text/5 hover:text-app-text transition-all mt-2"
                         >
                             Manage Finances
                         </a>

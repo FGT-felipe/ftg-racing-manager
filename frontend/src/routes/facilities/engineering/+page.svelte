@@ -93,7 +93,7 @@
                         class="text-[10px] font-bold text-app-text/40 uppercase tracking-widest"
                         >Available Budget</span
                     >
-                    <span class="text-2xl font-black text-white"
+                    <span class="text-2xl font-black text-app-text"
                         >{teamStore.formattedBudget}</span
                     >
                 </div>
@@ -143,14 +143,14 @@
                 <button
                     class="flex-1 py-3 rounded-xl font-black uppercase tracking-widest text-sm transition-all {selectedCar ===
                     0
-                        ? 'bg-app-primary text-black'
+                        ? 'bg-app-primary text-app-primary-foreground'
                         : 'text-app-text/40 hover:bg-app-text/5'}"
                     onclick={() => (selectedCar = 0)}>Car A</button
                 >
                 <button
                     class="flex-1 py-3 rounded-xl font-black uppercase tracking-widest text-sm transition-all {selectedCar ===
                     1
-                        ? 'bg-app-primary text-black'
+                        ? 'bg-app-primary text-app-primary-foreground'
                         : 'text-app-text/40 hover:bg-app-text/5'}"
                     onclick={() => (selectedCar = 1)}>Car B</button
                 >
@@ -192,7 +192,7 @@
             >
                 <div class="flex items-center gap-2 mb-4">
                     <History size={16} class="text-app-primary" />
-                    <h3 class="text-xs font-black uppercase text-white">
+                    <h3 class="text-xs font-black uppercase text-app-text">
                         R&D Policy
                     </h3>
                 </div>
@@ -256,13 +256,13 @@
                                         >Lvl</span
                                     >
                                     <span
-                                        class="text-2xl font-black text-white italic"
+                                        class="text-2xl font-black text-app-text italic"
                                         >{level}</span
                                     >
                                 </div>
                             </div>
                             <h4
-                                class="text-lg font-heading font-black uppercase text-white tracking-tight mb-2"
+                                class="text-lg font-heading font-black uppercase text-app-text tracking-tight mb-2"
                             >
                                 {partKey}
                             </h4>
@@ -284,7 +284,7 @@
                                     >
                                     <span
                                         class="text-base font-black {canAfford
-                                            ? 'text-white'
+                                            ? 'text-app-text'
                                             : 'text-red-400'}"
                                     >
                                         {level >= 20
@@ -318,7 +318,7 @@
                                 </div>
                             {:else}
                                 <button
-                                    class="w-full py-3.5 rounded-xl bg-app-primary text-black font-black uppercase tracking-[0.15em] text-xs hover:scale-[1.02] active:scale-95 transition-all disabled:bg-app-border disabled:text-app-text/20 disabled:scale-100"
+                                    class="w-full py-3.5 rounded-xl bg-app-primary text-app-primary-foreground font-black uppercase tracking-[0.15em] text-xs hover:scale-[1.02] active:scale-95 transition-all disabled:bg-app-border disabled:text-app-text/20 disabled:scale-100"
                                     disabled={level >= 20 ||
                                         !canAfford ||
                                         limitReached}

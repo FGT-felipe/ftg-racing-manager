@@ -14,6 +14,7 @@
         Sparkles,
     } from "lucide-svelte";
     import { fly, fade } from "svelte/transition";
+    import { MANAGER_ROLES } from "$lib/constants/manager";
 
     let firstName = $state("");
     let lastName = $state("");
@@ -25,61 +26,7 @@
     let selectedRoleId = $state("ex_driver");
     let isSubmitting = $state(false);
 
-    const roles = [
-        {
-            id: "ex_driver",
-            title: "Ex-Driver",
-            desc: "A veteran of the track with deep technical understanding.",
-            icon: Trophy,
-            pros: [
-                "+5 driver feedback for setup",
-                "+2% driver race pace",
-                "+10 driver morale during race",
-                "Unlocks Risky Driver Style",
-            ],
-            cons: [
-                "Drivers salary is 20% higher",
-                "+5% higher risk of race crashes",
-            ],
-        },
-        {
-            id: "business",
-            title: "Business Mogul",
-            desc: "Focused on the bottom line and maximizing revenue.",
-            icon: PieChart,
-            pros: [
-                "+15% better financial sponsorship deals",
-                "-10% facility upgrade costs",
-            ],
-            cons: [
-                "-2% driver race pace",
-                "-10% driver morale if sponsor goals fail",
-            ],
-        },
-        {
-            id: "bureaucrat",
-            title: "Bureaucrat",
-            desc: "Expert in regulations and infrastructure optimization.",
-            icon: Gavel,
-            pros: [
-                "-10% facility purchase and upgrade costs",
-                "+1 extra youth academy driver per level",
-            ],
-            cons: ["Car part upgrade cooldown is 2 weeks (not 1)"],
-        },
-        {
-            id: "engineer",
-            title: "Lead Engineer",
-            desc: "Technical wizard focused on car performance.",
-            icon: Wrench,
-            pros: [
-                "Can upgrade 2 car parts simultaneously",
-                "-10% tyre wear",
-                "+5% Qualifying success probability",
-            ],
-            cons: ["-5% driver XP gain", "Car part upgrades cost double"],
-        },
-    ];
+    const roles = MANAGER_ROLES;
 
     async function handleEstablishCareer() {
         if (!firstName || !lastName || !day || !month || !year) return;
@@ -108,7 +55,7 @@
     }
 </script>
 
-<div class="min-h-screen bg-[#0A0A0B] text-white p-6 md:p-12 overflow-x-hidden">
+<div class="min-h-screen bg-app-bg text-app-text p-6 md:p-12 overflow-x-hidden">
     <div class="max-w-6xl mx-auto flex flex-col gap-12">
         <!-- Header -->
         <header
@@ -129,7 +76,7 @@
                 Create Your <span class="text-app-primary">Manager</span> Profile
             </h1>
             <p
-                class="text-white/40 font-bold uppercase tracking-widest text-xs max-w-2xl"
+                class="text-app-text/40 font-bold uppercase tracking-widest text-xs max-w-2xl"
             >
                 Define your professional background and personal details to
                 begin your journey in the world of professional racing
@@ -144,7 +91,7 @@
                 in:fly={{ x: -20, duration: 600, delay: 200 }}
             >
                 <section
-                    class="bg-white/5 border border-white/10 rounded-3xl p-8 flex flex-col gap-8"
+                    class="bg-app-text/5 border border-app-border rounded-3xl p-8 flex flex-col gap-8"
                 >
                     <div class="flex items-center gap-3 text-app-primary">
                         <Type size={18} />
@@ -159,7 +106,7 @@
                         <div class="flex flex-col gap-2">
                             <label
                                 for="firstName"
-                                class="text-[10px] font-black text-white/30 uppercase tracking-widest"
+                                class="text-[10px] font-black text-app-text/30 uppercase tracking-widest"
                                 >First Name</label
                             >
                             <input
@@ -167,13 +114,13 @@
                                 type="text"
                                 bind:value={firstName}
                                 placeholder="Ayrton"
-                                class="w-full bg-black/40 border border-white/10 rounded-xl px-4 py-3 text-sm focus:border-app-primary outline-none transition-all"
+                                class="w-full bg-app-surface border border-app-border rounded-xl px-4 py-3 text-sm focus:border-app-primary outline-none transition-all"
                             />
                         </div>
                         <div class="flex flex-col gap-2">
                             <label
                                 for="lastName"
-                                class="text-[10px] font-black text-white/30 uppercase tracking-widest"
+                                class="text-[10px] font-black text-app-text/30 uppercase tracking-widest"
                                 >Last Name</label
                             >
                             <input
@@ -181,7 +128,7 @@
                                 type="text"
                                 bind:value={lastName}
                                 placeholder="Senna"
-                                class="w-full bg-black/40 border border-white/10 rounded-xl px-4 py-3 text-sm focus:border-app-primary outline-none transition-all"
+                                class="w-full bg-app-surface border border-app-border rounded-xl px-4 py-3 text-sm focus:border-app-primary outline-none transition-all"
                             />
                         </div>
                     </div>
@@ -189,18 +136,18 @@
                     <div class="flex flex-col gap-2">
                         <label
                             for="nationality"
-                            class="text-[10px] font-black text-white/30 uppercase tracking-widest"
+                            class="text-[10px] font-black text-app-text/30 uppercase tracking-widest"
                             >Nationality</label
                         >
                         <div class="relative">
                             <Globe
                                 size={14}
-                                class="absolute left-4 top-1/2 -translate-y-1/2 text-white/20"
+                                class="absolute left-4 top-1/2 -translate-y-1/2 text-app-text/20"
                             />
                             <select
                                 id="nationality"
                                 bind:value={nationality}
-                                class="w-full bg-black/40 border border-white/10 rounded-xl px-12 py-3 text-sm focus:border-app-primary outline-none appearance-none transition-all"
+                                class="w-full bg-app-surface border border-app-border rounded-xl px-12 py-3 text-sm focus:border-app-primary outline-none appearance-none transition-all"
                             >
                                 <option>Brazil</option>
                                 <option>Argentina</option>
@@ -215,13 +162,13 @@
                     <div class="flex flex-col gap-2">
                         <label
                             for="gender"
-                            class="text-[10px] font-black text-white/30 uppercase tracking-widest"
+                            class="text-[10px] font-black text-app-text/30 uppercase tracking-widest"
                             >Gender Identity</label
                         >
                         <select
                             id="gender"
                             bind:value={gender}
-                            class="w-full bg-black/40 border border-white/10 rounded-xl px-4 py-3 text-sm focus:border-app-primary outline-none appearance-none transition-all"
+                            class="w-full bg-app-surface border border-app-border rounded-xl px-4 py-3 text-sm focus:border-app-primary outline-none appearance-none transition-all"
                         >
                             <option>Male</option>
                             <option>Female</option>
@@ -232,7 +179,7 @@
                     <div class="flex flex-col gap-2">
                         <label
                             for="dob"
-                            class="text-[10px] font-black text-white/30 uppercase tracking-widest"
+                            class="text-[10px] font-black text-app-text/30 uppercase tracking-widest"
                             >Date of Birth</label
                         >
                         <div class="grid grid-cols-3 gap-2">
@@ -240,19 +187,19 @@
                                 type="number"
                                 bind:value={day}
                                 placeholder="DD"
-                                class="w-full bg-black/40 border border-white/10 rounded-xl px-4 py-3 text-sm text-center outline-none focus:border-app-primary transition-all"
+                                class="w-full bg-app-surface border border-app-border rounded-xl px-4 py-3 text-sm text-center outline-none focus:border-app-primary transition-all"
                             />
                             <input
                                 type="number"
                                 bind:value={month}
                                 placeholder="MM"
-                                class="w-full bg-black/40 border border-white/10 rounded-xl px-4 py-3 text-sm text-center outline-none focus:border-app-primary transition-all"
+                                class="w-full bg-app-surface border border-app-border rounded-xl px-4 py-3 text-sm text-center outline-none focus:border-app-primary transition-all"
                             />
                             <input
                                 type="number"
                                 bind:value={year}
                                 placeholder="YYYY"
-                                class="w-full bg-black/40 border border-white/10 rounded-xl px-4 py-3 text-sm text-center outline-none focus:border-app-primary transition-all"
+                                class="w-full bg-app-surface border border-app-border rounded-xl px-4 py-3 text-sm text-center outline-none focus:border-app-primary transition-all"
                             />
                         </div>
                     </div>
@@ -278,20 +225,20 @@
                         {#each roles as role}
                             <button
                                 onclick={() => (selectedRoleId = role.id)}
-                                class="flex flex-col items-start gap-4 p-6 bg-white/5 border transition-all duration-300 rounded-[32px] text-left group
+                                class="flex flex-col items-start gap-4 p-6 bg-app-text/5 border transition-all duration-300 rounded-[32px] text-left group
                                 {selectedRoleId === role.id
                                     ? 'border-app-primary bg-app-primary/5 shadow-2xl'
-                                    : 'border-white/5 hover:border-white/20'}"
+                                    : 'border-app-border hover:border-app-border'}"
                             >
                                 <div class="flex items-center gap-4">
                                     <div
-                                        class="p-3 rounded-2xl bg-white/5 group-hover:bg-app-primary/20 transition-colors"
+                                        class="p-3 rounded-2xl bg-app-text/5 group-hover:bg-app-primary/20 transition-colors"
                                     >
                                         <role.icon
                                             size={24}
                                             class={selectedRoleId === role.id
                                                 ? "text-app-primary"
-                                                : "text-white/40"}
+                                                : "text-app-text/40"}
                                         />
                                     </div>
                                     <div class="flex flex-col">
@@ -301,7 +248,7 @@
                                             {role.title}
                                         </h3>
                                         <p
-                                            class="text-[10px] text-white/40 font-bold uppercase tracking-wider"
+                                            class="text-[10px] text-app-text/40 font-bold uppercase tracking-wider"
                                         >
                                             {role.desc}
                                         </p>
@@ -343,13 +290,13 @@
 
                 <!-- Footer Summary & Submit -->
                 <footer
-                    class="flex flex-col md:flex-row items-center justify-between gap-8 pt-8 border-t border-white/5 mt-4"
+                    class="flex flex-col md:flex-row items-center justify-between gap-8 pt-8 border-t border-app-border mt-4"
                 >
                     <div
                         class="flex flex-col gap-1 max-w-md text-center md:text-left"
                     >
                         <p
-                            class="text-xs font-bold text-white/30 uppercase tracking-widest italic leading-relaxed"
+                            class="text-xs font-bold text-app-text/30 uppercase tracking-widest italic leading-relaxed"
                         >
                             "The first step towards greatness is choosing the
                             path that defines you. Your background will
@@ -369,20 +316,20 @@
                     >
                         {#if isSubmitting}
                             <div
-                                class="w-5 h-5 border-2 border-black border-t-transparent rounded-full animate-spin"
+                                class="w-5 h-5 border-2 border-app-primary-foreground border-t-transparent rounded-full animate-spin"
                             ></div>
                             <span
-                                class="font-heading font-black text-black text-sm uppercase tracking-widest italic"
+                                class="font-heading font-black text-app-primary-foreground text-sm uppercase tracking-widest italic"
                                 >Wait...</span
                             >
                         {:else}
                             <span
-                                class="font-heading font-black text-black text-sm uppercase tracking-widest italic"
+                                class="font-heading font-black text-app-primary-foreground text-sm uppercase tracking-widest italic"
                                 >Establish Career</span
                             >
                             <ChevronRight
                                 size={18}
-                                class="text-black group-hover:translate-x-1 transition-transform"
+                                class="text-app-primary-foreground group-hover:translate-x-1 transition-transform"
                             />
                         {/if}
                     </button>
@@ -396,16 +343,16 @@
     /* Custom refined scrollbar for the page */
     :global(body) {
         scrollbar-width: thin;
-        scrollbar-color: #c5a059 #0a0a0b;
+        scrollbar-color: var(--primary-color) var(--bg-color);
     }
     :global(::-webkit-scrollbar) {
         width: 8px;
     }
     :global(::-webkit-scrollbar-track) {
-        background: #0a0a0b;
+        background: var(--bg-color);
     }
     :global(::-webkit-scrollbar-thumb) {
-        background: #c5a059;
+        background: var(--primary-color);
         border-radius: 20px;
     }
 </style>

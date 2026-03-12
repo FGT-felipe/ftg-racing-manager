@@ -36,7 +36,7 @@
 
         <div class="flex-grow">
             <h2
-                class="text-xl font-heading font-black tracking-tight uppercase text-white mb-2"
+                class="text-xl font-heading font-black tracking-tight uppercase text-app-text mb-2"
             >
                 {title}
             </h2>
