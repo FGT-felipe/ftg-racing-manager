@@ -14,9 +14,9 @@ export function createTeamStore() {
         init(user: any) {
             // Support for Playwright/Testing Mocking
             if (browser && (window as any).__MOCK_TEAM__) {
-                console.log('🧪 MOCK Team Active');
+                console.log('[TeamStore] Initialization: Mock data detected and applied.');
                 currentTeam = (window as any).__MOCK_TEAM__;
-                isLoading = false; // Ensure loading state is false when mocked
+                isLoading = false; 
                 return;
             }
 
@@ -50,10 +50,12 @@ export function createTeamStore() {
                     if (!snapshot.empty) {
                         const doc = snapshot.docs[0];
                         const data = doc.data();
+                        console.log(`[TeamStore] RAW DATA [${doc.id}]:`, JSON.stringify(data));
 
                         currentTeam = {
                             id: doc.id,
                             name: data.name,
+                            leagueId: data.leagueId,
                             budget: data.budget,
                             prestige: data.prestige,
                             currentSeasonId: data.currentSeasonId,
@@ -61,15 +63,19 @@ export function createTeamStore() {
                             ...data
                         } as Team;
 
-                        console.log(`Equipo encontrado: ${currentTeam.name}`);
+                        console.log('[TeamStore] Snapshot update: active team data synchronized.', { 
+                            id: currentTeam.id, 
+                            name: currentTeam.name,
+                            leagueId: currentTeam.leagueId
+                        });
                     } else {
                         currentTeam = null;
-                        console.log(`ERROR: No hay equipo en Firestore para el UID: ${user.uid}`);
+                        console.error('[TeamStore] Snapshot update error: No team document found for authenticated manager UID:', user.uid);
                     }
                     isLoading = false;
                 },
                 (error) => {
-                    console.error('Error fetching team:', error);
+                    console.error('[TeamStore] Snapshot subscription failed:', error);
                     isLoading = false;
                 }
             );

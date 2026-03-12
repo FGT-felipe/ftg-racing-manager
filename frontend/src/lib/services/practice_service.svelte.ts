@@ -8,6 +8,7 @@ export interface PracticeRunResult {
     driverFeedback: string[];
     tyreFeedback: string[];
     setupConfidence: number;
+    setupUsed: CarSetup;
     isCrashed: boolean;
 }
 
@@ -114,12 +115,13 @@ class PracticeService {
             driverFeedback,
             tyreFeedback,
             setupConfidence: confidence,
+            setupUsed: { ...setup },
             isCrashed
         };
     }
 
-    async savePracticeRun(teamId: string, driverId: string, result: PracticeRunResult, setup: CarSetup) {
-        const teamRef = doc(db, "teams", teamId);
+    async savePracticeRun(team: Team, driverId: string, result: PracticeRunResult, setup: CarSetup, sessionId?: string) {
+        const teamRef = doc(db, "teams", team.id);
         const resultsRef = collection(teamRef, "practice_results");
 
         await addDoc(resultsRef, {
@@ -134,8 +136,45 @@ class PracticeService {
 
         const practiceLapsPath = `weekStatus.practiceLaps.${driverId}`;
         const practiceSetupPath = `weekStatus.driverSetups.${driverId}.practice`;
+        const driverSetup = team.weekStatus?.driverSetups?.[driverId]?.practice || {};
+        const currentBest = driverSetup.bestLapTime || 9999;
+        const isNewBest = result.lapTime < currentBest && !result.isCrashed;
 
-        await updateDoc(teamRef, {
+        // Update central practice session for standings across all users
+        if (sessionId) {
+            const sessionRef = doc(db, "practice_sessions", sessionId);
+            const centralUpdates: any = {};
+            
+            // Only update if it's a new best or we don't have data yet
+            if (isNewBest || !driverSetup.bestLapTime) {
+                const { setDoc } = await import("firebase/firestore");
+                await setDoc(sessionRef, {
+                    driverResults: {
+                        [driverId]: {
+                            bestLapTime: result.lapTime,
+                            bestLapTyre: setup.tyreCompound,
+                            laps: (driverSetup.laps || 0) + 1,
+                            teamName: team.name,
+                            driverName: team.weekStatus?.driverSetups?.[driverId]?.driverName || driverId
+                        }
+                    },
+                    lastUpdated: serverTimestamp()
+                }, { merge: true });
+            } else {
+                // Just increment lap count in central doc if not a new best
+                const { setDoc } = await import("firebase/firestore");
+                await setDoc(sessionRef, {
+                    driverResults: {
+                        [driverId]: {
+                            laps: (driverSetup.laps || 0) + 1
+                        }
+                    },
+                    lastUpdated: serverTimestamp()
+                }, { merge: true });
+            }
+        }
+
+        const updates: any = {
             [practiceLapsPath]: increment(1),
             [`${practiceSetupPath}.frontWing`]: setup.frontWing,
             [`${practiceSetupPath}.rearWing`]: setup.rearWing,
@@ -143,7 +182,14 @@ class PracticeService {
             [`${practiceSetupPath}.gearRatio`]: setup.gearRatio,
             [`${practiceSetupPath}.tyreCompound`]: setup.tyreCompound,
             [`${practiceSetupPath}.laps`]: increment(1)
-        });
+        };
+
+        if (isNewBest) {
+            updates[`${practiceSetupPath}.bestLapTime`] = result.lapTime;
+            updates[`${practiceSetupPath}.bestLapTyre`] = setup.tyreCompound;
+        }
+
+        await updateDoc(teamRef, updates);
     }
 }
 

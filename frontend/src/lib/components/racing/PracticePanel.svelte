@@ -13,6 +13,7 @@
     } from "$lib/services/practice_service.svelte";
     import { MAX_PRACTICE_LAPS_PER_DRIVER, PRACTICE_SESSION_COST } from "$lib/constants/app_constants";
     import { seasonStore } from "$lib/stores/season.svelte";
+    import { universeStore } from "$lib/stores/universe.svelte";
     import { circuitService } from "$lib/services/circuit_service.svelte";
     import {
         type CarSetup,
@@ -59,7 +60,8 @@
     let isSimulating = $state(false);
     let lastResult = $state<PracticeRunResult | null>(null);
     let lapsToRun = $state(1);
-    let competitorTimes = $state<Array<{ teamName: string; driverName: string; time: number }>>([]);
+    let competitorTimes = $state<Array<{ teamName: string; driverName: string; time: number | null; tyre: string | null; totalLaps: number; driverId: string }>>([]);
+    let telemetryTab = $state<'history' | 'standings'>('history');
 
     // Derived states
     const teamDrivers = $derived(driverStore.drivers);
@@ -136,19 +138,111 @@
         return enriched.reverse();
     });
 
-    // Initialization & Persistence
+    const globalStandings = $derived.by(() => {
+        if (competitorTimes.length === 0) return [];
+        
+        const leaderTime = competitorTimes.find(c => c.time !== null)?.time || null;
+        return competitorTimes.map((s, idx) => ({
+            ...s,
+            position: idx + 1,
+            gap: (s.time !== null && leaderTime !== null) ? s.time - leaderTime : null
+        }));
+    });
+
+    $effect(() => {
+        if (globalStandings.length > 0) {
+            console.log('[PracticePanel] UI Standings data synchronized. Entries:', globalStandings.length);
+        } else {
+            console.log('[PracticePanel] UI Standings data is currently empty.');
+        }
+    });
+
+    // Reactivity check for store synchronization
+    $effect(() => {
+        const team = teamStore.value.team;
+        const uniLoading = universeStore.value.loading;
+        const teamLoading = teamStore.value.loading;
+        const seasonLoading = seasonStore.value.loading;
+        const season = seasonStore.value.season;
+        
+        const lId = team?.leagueId;
+        const sId = team?.currentSeasonId;
+        const tId = team?.id;
+
+        console.log('[PracticePanel] Data synchronization check:', { 
+            hasTeam: !!team, 
+            teamLoading, 
+            uniLoading,
+            seasonLoading,
+            hasSeason: !!season,
+            teamId: tId, 
+            leagueId: lId, 
+            seasonId: sId 
+        });
+
+        if (team && !teamLoading && !uniLoading && !seasonLoading) {
+            console.log('[PracticePanel] All stores synced. Triggering refreshStandings.');
+            refreshStandings();
+        }
+    });
+
     onMount(() => {
         if (teamStore.value.team?.id) {
             setupStore.init(teamStore.value.team.id);
         }
-        if (teamStore.value.team?.currentSeasonId) {
-            raceService.getCompetitorPracticeTimes(teamStore.value.team.currentSeasonId).then(times => {
-                competitorTimes = times;
-            });
+        // Force an initial refresh if stores are already ready
+        if (teamStore.value.team && !teamStore.value.loading && !universeStore.value.loading && !seasonStore.value.loading) {
+            refreshStandings();
         }
     });
 
-    // Restore setup from weekStatus or history when driver changes
+    async function refreshStandings() {
+        const team = teamStore.value.team;
+        const season = seasonStore.value.season;
+        const event = nextEvent;
+
+        if (!team || !season || !event) {
+            console.log('[PracticePanel] refreshStandings: Aborting.', { 
+                hasTeam: !!team, 
+                hasSeason: !!season, 
+                hasEvent: !!event 
+            });
+            return;
+        }
+
+        // 1. Determine ALL team IDs in the current league (needed for the driver query)
+        const league = universeStore.getLeagueByTeamId(team.id);
+        const teamIds = league?.teams?.map((t: any) => t.id) || [];
+        const teamNames: Record<string, string> = {};
+        league?.teams?.forEach((t: any) => {
+            teamNames[t.id] = t.name;
+        });
+
+        console.log('[PracticePanel] refreshStandings: Preparation:', {
+            leagueName: league?.name,
+            teamIdsCount: teamIds.length,
+            teamIds: teamIds
+        });
+
+        if (teamIds.length === 0) {
+            console.warn('[PracticePanel] refreshStandings: No teams found in league. Standing down.');
+            return;
+        }
+
+        // 2. Format Session ID (matches race results pattern)
+        const sessionId = `${season.id}_${event.id}`;
+        
+        console.log('[PracticePanel] refreshStandings: Fetching for session:', sessionId, 'with teamIds:', teamIds);
+
+        const times = await raceService.getCompetitorPracticeTimes(sessionId, teamIds, teamNames);
+        console.log(`[PracticePanel] refreshStandings: Received ${times.length} entries.`);
+        if (times.length > 0) {
+            console.table(times.slice(0, 5));
+        }
+        competitorTimes = times;
+    }
+
+    // Restore setup and lastResult from weekStatus or history when driver changes
     $effect(() => {
         if (driverId) {
             untrack(() => {
@@ -156,11 +250,26 @@
                 if (team?.weekStatus?.driverSetups?.[driverId]?.practice) {
                     const savedSetup = team.weekStatus.driverSetups[driverId].practice;
                     setup = { ...setup, ...savedSetup };
+                    
+                    // Initialize lastResult from saved best lap for Pit Board persistence
+                    if (savedSetup.bestLapTime) {
+                        lastResult = {
+                            lapTime: savedSetup.bestLapTime,
+                            driverFeedback: [],
+                            tyreFeedback: [],
+                            setupConfidence: savedSetup.setupConfidence || 0.5,
+                            setupUsed: { ...setup },
+                            isCrashed: false
+                        };
+                    } else {
+                        lastResult = null;
+                    }
                 } else {
                     const hist = setupStore.getHistoryByDriver(driverId);
                     if (hist.length > 0) {
                         setup = { ...setup, ...hist[0].setupUsed };
                     }
+                    lastResult = null;
                 }
             });
         }
@@ -176,6 +285,7 @@
                     driverFeedback: latest.feedback || [],
                     tyreFeedback: [],
                     setupConfidence: latest.setupConfidence,
+                    setupUsed: latest.setupUsed,
                     isCrashed: !!latest.isCrashed
                 };
             }
@@ -252,12 +362,18 @@
                 );
                 lastResult = result;
 
+                const sessionId = `${seasonStore.value.season?.id}_${nextEvent?.id}`;
+
                 await practiceService.savePracticeRun(
-                    team.id,
+                    teamStore.value.team!,
                     currentDriver.id,
                     result,
                     setupToRun,
+                    sessionId
                 );
+
+                // Refresh global standings after a run
+                await refreshStandings();
 
                 // Wait for visual feedback
                 await new Promise((r) => setTimeout(r, 600));
@@ -466,22 +582,64 @@
         </div>
     </div>
 
-    <!-- RIGHT: Telemetry & Rivals (5 Cols) -->
+    <!-- RIGHT: Telemetry & Standings (5 Cols) -->
     <div class="lg:col-span-5 space-y-5">
-        <!-- RIVAL TIMES CARD -->
+        <!-- GLOBAL LEADERBOARD CARD -->
         <div class="bg-app-surface border border-app-border rounded-xl p-4 shadow-xl">
             <div class="flex items-center justify-between mb-4">
-                <span class="text-[10px] font-black text-app-primary uppercase tracking-widest italic">{t('rival_best_times')}</span>
+                <span class="text-[10px] font-black text-app-primary uppercase tracking-widest italic">{t('standings')}</span>
                 <div class="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></div>
             </div>
-            <div class="space-y-2 max-h-[120px] overflow-y-auto no-scrollbar">
-                {#if competitorTimes.length === 0}
-                    <p class="text-[10px] text-app-text/20 italic">{t('waiting_competitors')}</p>
+            
+            <div class="grid grid-cols-12 gap-2 px-1 mb-2 text-[8px] font-black uppercase text-app-text/20 tracking-tighter">
+                <div class="col-span-1">#</div>
+                <div class="col-span-4 text-left">{t('driver')}</div>
+                <div class="col-span-3 text-right">{t('best_lap')}</div>
+                <div class="col-span-2 text-right">{t('total_laps')}</div>
+                <div class="col-span-2 text-right">{t('gap')}</div>
+            </div>
+
+            <div class="space-y-1.5 max-h-[260px] overflow-y-auto custom-scrollbar pr-1">
+                {#if globalStandings.length === 0}
+                    <p class="text-[10px] text-app-text/20 italic p-4 text-center">{t('waiting_competitors')}</p>
                 {:else}
-                    {#each competitorTimes as comp, i}
-                        <div class="flex justify-between items-center bg-app-text/5 px-3 py-1.5 rounded-lg border border-transparent hover:border-app-primary/20 transition-all">
-                            <span class="text-[9px] font-bold text-app-text/60">P{i+1} {comp.teamName} <span class="opacity-30">({comp.driverName})</span></span>
-                            <span class="text-[11px] font-black text-app-text font-mono">{formatTime(comp.time)}</span>
+                    {#each globalStandings as s}
+                        {@const isPlayerDriver = teamDrivers.some(d => d.id === s.driverId)}
+                        {@const hasTime = s.time !== null}
+                        {@const isLeader = s.position === 1 && hasTime}
+                        <div class="grid grid-cols-12 gap-2 px-2 py-2 rounded-lg border transition-all items-center 
+                            {isLeader ? 'bg-app-primary border-app-primary text-black' : 
+                            isPlayerDriver ? (hasTime ? 'bg-app-primary/10 border-app-primary/30' : 'bg-app-primary/5 border-app-primary/10 opacity-70') : 
+                            (hasTime ? 'bg-app-text/2 border-transparent' : 'bg-app-text/2 border-transparent opacity-40 grayscale')}">
+                            
+                            <div class="col-span-1 text-[9px] font-black {isLeader ? 'text-black' : (s.position <= 3 && hasTime ? 'text-app-primary' : 'text-app-text/30')}">P{s.position}</div>
+                            
+                            <div class="col-span-4 flex flex-col min-w-0">
+                                <span class="text-[9px] font-bold truncate {isLeader ? 'text-black' : 'text-app-text'}">{s.driverName}</span>
+                                <span class="text-[7px] font-black uppercase {isLeader ? 'text-black/50' : 'opacity-30'} truncate">{s.teamName}</span>
+                            </div>
+                            
+                            <div class="col-span-3 text-right flex items-center justify-end gap-2">
+                                <span class="text-[10px] font-black font-mono {isLeader ? 'text-black' : 'text-app-text'}">{hasTime ? formatTime(s.time!) : '--:--.---'}</span>
+                                {#if s.tyre}
+                                    <div class="w-4 h-4 rounded-full border flex items-center justify-center text-[8px] font-black 
+                                        {s.tyre === 'soft' ? 'bg-red-500 border-red-700 text-white' : 
+                                         s.tyre === 'medium' ? 'bg-yellow-500 border-yellow-700 text-black' : 
+                                         s.tyre === 'hard' ? 'bg-white border-gray-300 text-black' : 
+                                         'bg-blue-500 border-blue-700 text-white'} {isLeader ? 'ring-1 ring-black/20' : ''}"
+                                         title={s.tyre.toUpperCase()}>
+                                        {s.tyre[0].toUpperCase()}
+                                    </div>
+                                {:else}
+                                    <div class="w-4 h-4 rounded-full border border-app-text/10 bg-app-text/5"></div>
+                                {/if}
+                            </div>
+                            
+                            <div class="col-span-2 text-right text-[9px] font-black {isLeader ? 'text-black/40' : 'text-app-text/40'}">{s.totalLaps}</div>
+                            
+                            <div class="col-span-2 text-right text-[8px] font-black {isLeader || (s.gap === 0 && hasTime) ? 'text-black' : 'text-app-text/30'} font-mono">
+                                {s.gap === null ? '--' : s.gap === 0 ? 'LEADER' : `+${s.gap.toFixed(3)}`}
+                            </div>
                         </div>
                     {/each}
                 {/if}
@@ -498,7 +656,18 @@
             </div>
             <div class="flex items-end justify-between">
                 <div class="space-y-1">
-                    <p class="text-[20px] font-black italic text-app-text font-mono leading-none">{lastResult ? formatTime(lastResult.lapTime) : "--:--.---"}</p>
+                    <div class="flex items-center gap-3">
+                        <p class="text-[20px] font-black italic text-app-text font-mono leading-none">{lastResult ? formatTime(lastResult.lapTime) : "--:--.---"}</p>
+                        {#if lastResult?.setupUsed?.tyreCompound}
+                            <div class="w-5 h-5 rounded-full border flex items-center justify-center text-[10px] font-black 
+                                {lastResult.setupUsed.tyreCompound === 'soft' ? 'bg-red-500 border-red-700 text-white' : 
+                                 lastResult.setupUsed.tyreCompound === 'medium' ? 'bg-yellow-500 border-yellow-700 text-black' : 
+                                 lastResult.setupUsed.tyreCompound === 'hard' ? 'bg-white border-gray-300 text-black' : 
+                                 'bg-blue-500 border-blue-700 text-white'} shadow-sm">
+                                {lastResult.setupUsed.tyreCompound[0].toUpperCase()}
+                            </div>
+                        {/if}
+                    </div>
                     <p class="text-[9px] font-bold text-app-text/30 uppercase tracking-tighter">
                         {t('last_outing_result')} {#if lastResult}• <span class="{getConfidenceColor(lastResult.setupConfidence)}">{t('confidence_label')} {(lastResult.setupConfidence*100).toFixed(0)}%</span>{/if}
                     </p>
@@ -509,7 +678,7 @@
             </div>
         </div>
 
-        <!-- UNIFIED HISTORY & FEEDBACK -->
+        <!-- UNIFIED HISTORY -->
         <div class="bg-app-surface border border-app-border rounded-2xl flex flex-col h-[400px] shadow-2xl overflow-hidden">
             <div class="bg-app-text/2 border-b border-app-border px-4 py-3">
                 <h3 class="text-[10px] font-black text-app-primary uppercase tracking-[0.2em]">{t('lap_history')}</h3>
@@ -530,6 +699,15 @@
                                         <div class="flex items-center gap-2">
                                             <span class="text-[9px] font-black text-app-primary uppercase">{t('lap_number', { n: (lap as any).lapIndex })}</span>
                                             <span class="text-[13px] font-black font-mono {lap.lapTime === bestTime && !lap.isCrashed ? 'text-[#E040FB]' : 'text-app-text'}">{formatTime(lap.lapTime)}</span>
+                                            {#if lap.setupUsed?.tyreCompound}
+                                                <div class="w-3.5 h-3.5 rounded-full border flex items-center justify-center text-[7px] font-black 
+                                                    {lap.setupUsed.tyreCompound === 'soft' ? 'bg-red-500 border-red-700 text-white' : 
+                                                     lap.setupUsed.tyreCompound === 'medium' ? 'bg-yellow-500 border-yellow-700 text-black' : 
+                                                     lap.setupUsed.tyreCompound === 'hard' ? 'bg-white border-gray-300 text-black' : 
+                                                     'bg-blue-500 border-blue-700 text-white'}">
+                                                    {lap.setupUsed.tyreCompound[0].toUpperCase()}
+                                                </div>
+                                            {/if}
                                             {#if lap.isCrashed}<span class="text-[8px] bg-red-500 px-1 rounded font-black text-white">DNF</span>{/if}
                                         </div>
                                         <div class="flex items-center gap-1.5 opacity-40">

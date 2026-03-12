@@ -28,6 +28,7 @@ export const translations = {
         total_wins: "Total Wins",
         championships: "Championships",
         poles: "Poles",
+        driver: "Driver",
         seasons_plural: "Seasons",
         season_singular: "Season",
         independent: "Independent",
@@ -152,6 +153,11 @@ export const translations = {
         practice_fee_description: "Track access fee for {name}",
         session_label: "Session",
         balance_good: "Balance feels great, no complaints.",
+        standings: "Standings",
+        pos: "Pos",
+        gap: "Gap",
+        best_lap: "Best Lap",
+        total_laps: "Laps",
     },
     es: {
         career_view: "Vista Profesional",
@@ -179,6 +185,7 @@ export const translations = {
         total_wins: "Total Victorias",
         championships: "Campeonatos",
         poles: "Poles",
+        driver: "Piloto",
         seasons_plural: "Temporadas",
         season_singular: "Temporada",
         independent: "Independiente",
@@ -303,6 +310,11 @@ export const translations = {
         practice_fee_description: "Cuota de acceso a pista para {name}",
         session_label: "Sesión",
         balance_good: "El equilibrio es excelente, sin quejas.",
+        standings: "Posiciones",
+        pos: "Pos",
+        gap: "Gap",
+        best_lap: "Mejor Vuelta",
+        total_laps: "Vueltas",
     }
 };
 

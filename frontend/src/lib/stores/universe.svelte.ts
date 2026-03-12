@@ -24,7 +24,7 @@ class UniverseStore {
     init() {
         if (this.unsubscribe) return;
 
-        console.log("📡 UniverseStore: Initializing...");
+        console.log("[UniverseStore] Initializing: Setting up Firestore snapshot listener for 'game_universe_v1'.");
         this.value.loading = true;
 
         const universeRef = doc(db, "universe", "game_universe_v1");
@@ -33,16 +33,22 @@ class UniverseStore {
             universeRef,
             (snap) => {
                 if (snap.exists()) {
-                    this.value.universe = snap.data() as GameUniverse;
+                    const data = snap.data();
+                    console.log("[UniverseStore] RAW DATA:", JSON.stringify(data));
+                    this.value.universe = data as GameUniverse;
                     this.value.loading = false;
-                    console.log("✅ UniverseStore: Loaded");
+                    console.log("[UniverseStore] Snapshot update: Universe loaded successfully.", {
+                        leaguesCount: this.value.universe?.leagues?.length || 0,
+                        activeSeasonId: this.value.universe?.activeSeasonId
+                    });
                 } else {
+                    console.error("[UniverseStore] Snapshot update: Universe document not found in Firestore.");
                     this.value.error = "Universe document not found.";
                     this.value.loading = false;
                 }
             },
             (error) => {
-                console.error("❌ UniverseStore: Snapshot error:", error);
+                console.error("[UniverseStore] Snapshot subscription failed:", error);
                 this.value.error = error.message;
                 this.value.loading = false;
                 // Allow re-initialization after auth completes
@@ -56,9 +62,11 @@ class UniverseStore {
 
     getLeagueByTeamId(teamId: string) {
         if (!this.value.universe) return null;
-        return this.value.universe.leagues.find(l =>
+        const league = this.value.universe.leagues.find(l =>
             l.teams.some((t: any) => t.id === teamId)
         );
+        console.log(`[UniverseStore] getLeagueByTeamId searching for ${teamId}: ${league ? 'Found ' + league.name : 'NOT FOUND'}`);
+        return league;
     }
 
     getTeamStanding(teamId: string) {
