@@ -17,7 +17,6 @@
         Trophy,
         MessageSquare,
         Mail,
-        RefreshCw,
         Edit3,
         Check,
         X,
@@ -36,7 +35,6 @@
     let newName = $state("");
     let isSavingName = $state(false);
     let news = $state<any[]>([]);
-    let isSyncing = $state(false);
 
     // Initialize driver store for stats aggregation
     driverStore.init();
@@ -134,31 +132,6 @@
         }
     }
 
-    async function handleSync() {
-        isSyncing = true;
-        try {
-            const { getFunctions, httpsCallable } = await import(
-                "firebase/functions"
-            );
-            const functions = getFunctions();
-            const megaFix = httpsCallable(functions, "megaFixDebriefs");
-            await megaFix();
-            notificationStore.addNotification({
-                title: "Data Synchronized",
-                message: "Cloud records have been reconciled with local state.",
-                type: "SUCCESS",
-            });
-        } catch (e: any) {
-            console.error("Sync error:", e);
-            notificationStore.addNotification({
-                title: "Sync Failed",
-                message: "Cloud synchronization encountered an error: " + (e.message || "Internal 500"),
-                type: "ERROR",
-            });
-        } finally {
-            isSyncing = false;
-        }
-    }
 
     function formatDate(date: Date) {
         return (
@@ -491,17 +464,14 @@
                             Official Communications
                         </h3>
                     </div>
-                    <button
-                        onclick={handleSync}
-                        disabled={isSyncing}
-                        class="flex items-center gap-2 px-3 py-1.5 bg-app-primary/10 border border-app-primary/20 rounded-full text-[10px] font-black text-app-primary uppercase hover:bg-app-primary/20 transition-all disabled:opacity-50"
-                    >
-                        <RefreshCw
-                            size={12}
-                            class={isSyncing ? "animate-spin" : ""}
-                        />
-                        {isSyncing ? "Synchronizing..." : "Sincronizar"}
-                    </button>
+                    <div class="flex items-center gap-2">
+                        <Mail size={16} class="text-app-primary" />
+                        <h3
+                            class="text-xs font-black uppercase text-app-text tracking-[0.2em]"
+                        >
+                            Official Communications
+                        </h3>
+                    </div>
                 </div>
 
                 <div class="space-y-3">
