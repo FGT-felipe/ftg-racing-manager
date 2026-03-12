@@ -90,6 +90,7 @@
         { key: "cornering", label: "Cornering" },
         { key: "smoothness", label: "Smoothness" },
         { key: "overtaking", label: "Overtaking" },
+        { key: "defending", label: "Defending" },
         { key: "consistency", label: "Consistency" },
         { key: "adaptability", label: "Adaptability" },
     ];
@@ -101,15 +102,27 @@
         { key: "morale", label: "Morale", icon: Smile },
     ];
 
-    function getStatColor(value: number) {
-        if (value >= 75) return "bg-green-400";
-        if (value >= 50) return "bg-yellow-400";
+    function getStatColor(value: number, isPercentage = false) {
+        if (isPercentage) {
+            if (value >= 75) return "bg-green-400";
+            if (value >= 50) return "bg-yellow-400";
+            return "bg-red-400";
+        }
+        // 1-20 scale
+        if (value >= 15) return "bg-green-400";
+        if (value >= 10) return "bg-yellow-400";
         return "bg-red-400";
     }
 
-    function getStatTextColor(value: number) {
-        if (value >= 75) return "text-green-400";
-        if (value >= 50) return "text-yellow-400";
+    function getStatTextColor(value: number, isPercentage = false) {
+        if (isPercentage) {
+            if (value >= 75) return "text-green-400";
+            if (value >= 50) return "text-yellow-400";
+            return "text-red-400";
+        }
+        // 1-20 scale
+        if (value >= 15) return "text-green-400";
+        if (value >= 10) return "text-yellow-400";
         return "text-red-400";
     }
 
@@ -556,7 +569,7 @@
                             <div class="grid grid-cols-1 gap-6">
                                 {#each DRIVING_STATS as stat}
                                     {@const val =
-                                        driver.stats?.[stat.key] || 50}
+                                        driver.stats?.[stat.key] || 10}
                                     <div class="flex flex-col gap-2 group">
                                         <div
                                             class="flex items-center justify-between"
@@ -578,7 +591,7 @@
                                                 class="h-full transition-all duration-1000 ease-out {getStatColor(
                                                     val,
                                                 )}"
-                                                style="width: {val}%"
+                                                style="width: {(val / 20) * 100}%"
                                             ></div>
                                         </div>
                                     </div>
@@ -595,8 +608,9 @@
                             </h3>
                             <div class="grid grid-cols-2 gap-4">
                                 {#each MENTAL_STATS as stat}
+                                    {@const isPercentage = stat.key === "morale" || stat.key === "fitness"}
                                     {@const val =
-                                        driver.stats?.[stat.key] || 50}
+                                        driver.stats?.[stat.key] || (isPercentage ? 70 : 10)}
                                     <div
                                         class="bg-app-text/5 border border-app-border rounded-2xl p-4 flex flex-col gap-3 group hover:border-app-border transition-all"
                                     >
@@ -610,7 +624,8 @@
                                             <span
                                                 class="text-xs font-heading font-black {getStatTextColor(
                                                     val,
-                                                )}">{val}%</span
+                                                    isPercentage,
+                                                )}">{val}{isPercentage ? "%" : ""}</span
                                             >
                                         </div>
                                         <span
@@ -623,8 +638,9 @@
                                             <div
                                                 class="h-full transition-all duration-1000 ease-out {getStatColor(
                                                     val,
+                                                    isPercentage,
                                                 )}"
-                                                style="width: {val}%"
+                                                style="width: {isPercentage ? val : (val / 20) * 100}%"
                                             ></div>
                                         </div>
                                     </div>

@@ -70,18 +70,26 @@
         return { label: "Rookie", color: "text-app-text/40 border-app-border" };
     }
 
-    function getStatColor(val: number): string {
-        if (val >= 80) return "bg-yellow-500";
-        if (val >= 60) return "bg-blue-400";
-        if (val >= 40) return "bg-green-400";
-        return "bg-app-text/20";
+    function getStatColor(val: number, isPercentage = false): string {
+        if (isPercentage) {
+            if (val >= 75) return "bg-green-400";
+            if (val >= 50) return "bg-yellow-400";
+            return "bg-red-400";
+        }
+        if (val >= 15) return "bg-green-400";
+        if (val >= 10) return "bg-yellow-400";
+        return "bg-red-400";
     }
 
-    function getStatLabel(val: number): string {
-        if (val >= 80) return "text-yellow-500";
-        if (val >= 60) return "text-blue-400";
-        if (val >= 40) return "text-green-400";
-        return "text-app-text/40";
+    function getStatLabel(val: number, isPercentage = false): string {
+        if (isPercentage) {
+            if (val >= 75) return "text-green-400";
+            if (val >= 50) return "text-yellow-400";
+            return "text-red-400";
+        }
+        if (val >= 15) return "text-green-400";
+        if (val >= 10) return "text-yellow-400";
+        return "text-red-400";
     }
 
     function updateCountdowns() {
@@ -403,9 +411,9 @@
 <!-- ──── Driver Detail Sheet ───────────────────────────────────────────────────── -->
 {#if selectedDriver && !showBidModal}
     {@const d = selectedDriver}
-    {@const lvl = getLevelInfo(d.currentStars)}
-    {@const isMyBid = d.highestBidderTeamId === myTeamId}
-    {@const isMyDriver = d.teamId === myTeamId}
+    {@const lvl = getLevelInfo(d?.currentStars || 1)}
+    {@const isMyBid = d?.highestBidderTeamId === myTeamId}
+    {@const isMyDriver = d?.teamId === myTeamId}
     <div
         class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/95 backdrop-blur-md"
         transition:fade={{ duration: 200 }}
@@ -529,16 +537,17 @@
 
                     <div class="grid grid-cols-1 sm:grid-cols-2 gap-x-12 gap-y-8">
                         {#each STAT_KEYS as key}
-                            {@const val = (d.stats?.[key] ?? 50)}
+                            {@const isPercentage = key === "fitness" || key === "morale"}
+                            {@const val = (d.stats?.[key] ?? (isPercentage ? 70 : 10))}
                             <div class="flex flex-col gap-3 group">
                                 <div class="flex items-center justify-between">
                                     <span class="text-[10px] font-black text-app-text/40 uppercase tracking-widest group-hover:text-app-text/60 transition-colors">{key}</span>
-                                    <span class="text-sm font-black font-mono {getStatLabel(val)}">{val}</span>
+                                    <span class="text-sm font-black font-mono {getStatLabel(val, isPercentage)}">{val}{isPercentage ? '%' : ''}</span>
                                 </div>
                                 <div class="h-1.5 w-full bg-app-text/5 rounded-full overflow-hidden p-[1px]">
                                     <div
-                                        class="h-full rounded-full transition-all duration-1000 ease-out {getStatColor(val)}"
-                                        style="width: {val}%"
+                                        class="h-full rounded-full transition-all duration-1000 ease-out {getStatColor(val, isPercentage)}"
+                                        style="width: {isPercentage ? val : (val / 20) * 100}%"
                                     >
                                         <div class="w-full h-full bg-gradient-to-r from-white/20 to-transparent"></div>
                                     </div>
@@ -571,8 +580,8 @@
 
 <!-- ──── Bid Modal ─────────────────────────────────────────────────────────────── -->
 {#if showBidModal && selectedDriver}
-    {#if selectedDriver}
-        {@const d = selectedDriver}
+    {@const d = selectedDriver}
+    {#if d}
         {@const minBid = d.currentHighestBid === 0 ? d.marketValue : d.currentHighestBid + 50_000}
         <div class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/95 backdrop-blur-md"
             transition:fade={{ duration: 150 }}

@@ -46,17 +46,18 @@ class PracticeService {
         const driverFeedback: string[] = [];
         const tyreFeedback: string[] = [];
 
-        const adaptability = (driver.stats.adaptability || 50) / 100.0;
+        const feedbackStat = (driver.stats.feedback || 10) / 20.0;
         
         // Helper to add feedback with quality check
         const addFeedback = (specific: string, vague: string, gap: number) => {
-            // High adaptability drivers give feedback sooner and more accurately
-            const threshold = 12 - (adaptability * 10); // Range: 2 to 12
+            // High feedback drivers give feedback sooner and more accurately
+            // Threshold for gap: 12 (0 skill) to 2 (max skill) in 0-100 setup space
+            const threshold = 12 - (feedbackStat * 10); 
             if (Math.abs(gap) > threshold) {
                 // Clarity: High skill gives technical info, low skill gives vague hints
-                if (adaptability > 0.75) {
+                if (feedbackStat > 0.75) {
                     driverFeedback.push(specific);
-                } else if (adaptability > 0.4) {
+                } else if (feedbackStat > 0.4) {
                     // Mid-skill: 50/50 chance of being specific or vague
                     driverFeedback.push(Math.random() > 0.5 ? specific : vague);
                 } else {
@@ -113,9 +114,10 @@ class PracticeService {
         const weightedStat = (aeroVal * circuit.aeroWeight) + (powerVal * circuit.powertrainWeight) + (chassisVal * circuit.chassisWeight);
         const carPerformanceFactor = 1.0 - ((weightedStat / 20.0) * 0.25);
 
-        const braking = (driver.stats.braking || 50) / 100.0;
-        const cornering = (driver.stats.cornering || 50) / 100.0;
-        const focusVal = (driver.stats.focus || 50) / 100.0;
+        const braking = (driver.stats.braking || 10) / 20.0;
+        const cornering = (driver.stats.cornering || 10) / 20.0;
+        const focusVal = (driver.stats.focus || 10) / 20.0;
+        const adaptability = (driver.stats.adaptability || 10) / 20.0;
         const morale = (driver.stats.morale || 70) / 100.0;
 
         let driverFactor = 1.0 - (braking * 0.02 + cornering * 0.025 + adaptability * 0.015 + focusVal * 0.01 + (morale - 0.5) * 0.01);
@@ -154,11 +156,11 @@ class PracticeService {
         // 8. Setup Hints (Range Indicators)
         // High adaptability = narrower and more accurate range
         const generateHint = (idealVal: number) => {
-            const baseWidth = 25; // Maximum width for 0 adaptability
-            const width = Math.max(5, baseWidth * (1.1 - adaptability)); 
+            const baseWidth = 25; // Maximum width for 0 feedback
+            const width = Math.max(5, baseWidth * (1.1 - feedbackStat)); 
             
-            // Random offset also depends on adaptability (lower adaptability = more error)
-            const maxOffset = (1.0 - adaptability) * 12;
+            // Random offset also depends on feedback skill (lower skill = more error)
+            const maxOffset = (1.0 - feedbackStat) * 12;
             const offset = (Math.random() * maxOffset * 2) - maxOffset;
             
             const center = idealVal + offset;

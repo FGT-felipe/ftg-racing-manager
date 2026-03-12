@@ -310,8 +310,10 @@ export function createYouthAcademyStore() {
                 const newMax = { ...driver.statRangeMax };
                 
                 for (const [key, value] of Object.entries(diffs)) {
-                    newMin[key] = Math.min(100, Math.max(1, (newMin[key] || 20) + value));
-                    newMax[key] = Math.min(100, Math.max(1, (newMax[key] || 30) + value));
+                    const isPercentage = key === 'fitness' || key === 'morale';
+                    const maxVal = isPercentage ? 100 : 20;
+                    newMin[key] = Math.min(maxVal, Math.max(1, (newMin[key] || (isPercentage ? 70 : 8)) + value));
+                    newMax[key] = Math.min(maxVal, Math.max(1, (newMax[key] || (isPercentage ? 80 : 10)) + value));
                     updates[`stats.${key}`] = increment(value);
                 }
                 updates.statRangeMin = newMin;

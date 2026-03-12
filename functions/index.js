@@ -244,10 +244,10 @@ const SimEngine = {
     const carFactor = 1.0 - ((w / 20.0) * 0.25);
 
     // Driver contribution
-    const brk = (driverStats.braking || 50) / 100.0;
-    const crn = (driverStats.cornering || 50) / 100.0;
-    const foc = (driverStats.focus || 50) / 100.0;
-    const adp = (driverStats.adaptability || 50) / 100.0;
+    const brk = (driverStats.braking || 10) / 20.0;
+    const crn = (driverStats.cornering || 10) / 20.0;
+    const foc = (driverStats.focus || 10) / 20.0;
+    const adp = (driverStats.adaptability || 10) / 20.0;
     let df = 1.0 - (brk * 0.02 + crn * 0.025 + (foc - 0.5) * 0.01);
 
     const isWet = (p.weather || "").toLowerCase().includes("rain") || (p.weather || "").toLowerCase().includes("wet");
@@ -620,8 +620,8 @@ function generateAcademyCandidate(academyLevel, countryCode, gender) {
   const actualMinMax = Math.max(currentStars, minMaxStars);
   const maxStars = actualMinMax + (Math.random() * (maxMaxStars - actualMinMax));
 
-  const baseSkill = Math.min(Math.max(Math.round(currentStars * 20), 10), 80);
-  const maxSkill = Math.min(Math.max(Math.round(maxStars * 20), baseSkill), 100);
+  const baseSkill = Math.min(Math.max(Math.round(currentStars * 4), 2), 16);
+  const maxSkill = Math.min(Math.max(Math.round(maxStars * 4), baseSkill), 20);
   const growthPotential = maxSkill - baseSkill;
 
   const statRangeMin = {};
@@ -632,11 +632,20 @@ function generateAcademyCandidate(academyLevel, countryCode, gender) {
   ];
 
   for (const statKey of ALL_STATS) {
-    const variance = Math.floor(Math.random() * 4);
-    const minVal = Math.min(Math.max(baseSkill - 2 + variance, 1), 100);
-    const maxVal = Math.min(Math.max(baseSkill + growthPotential + variance, minVal), 100);
-    statRangeMin[statKey] = minVal;
-    statRangeMax[statKey] = maxVal;
+    if (statKey === "fitness") {
+      // Fitness (Forma) is a 0-100 percentage
+      const minVal = 80 + Math.floor(Math.random() * 20);
+      const maxVal = 100;
+      statRangeMin[statKey] = minVal;
+      statRangeMax[statKey] = maxVal;
+    } else {
+      const variance = Math.floor(Math.random() * 2);
+      // Ensure min/max are strictly within 1-20
+      const minVal = Math.min(Math.max(Math.round(baseSkill - 1 + variance), 1), 20);
+      const maxVal = Math.min(Math.max(Math.round(baseSkill + growthPotential + variance), minVal), 20);
+      statRangeMin[statKey] = minVal;
+      statRangeMax[statKey] = maxVal;
+    }
   }
 
   // Common names for basic generation
@@ -1671,8 +1680,8 @@ exports.postRaceProcessing = onSchedule({
             const statDiffs = {};
             let eventMsg = "";
 
-            if (curWeekly >= 100) {
-              curWeekly -= 100;
+            if (curWeekly >= 500) { // Slower growth for 1-20 scale
+              curWeekly -= 500;
               applyBaseGrowth = true;
             }
 
@@ -1687,8 +1696,8 @@ exports.postRaceProcessing = onSchedule({
               updates.growthPotential = Math.max((yDriver.growthPotential || 5) - 1, 1);
 
               const statsObj = yDriver.stats || {
-                cornering: 30, braking: 30, consistency: 30, smoothness: 30,
-                adaptability: 30, overtaking: 30, focus: 30, fitness: 30,
+                cornering: 6, braking: 6, consistency: 6, smoothness: 6,
+                adaptability: 6, overtaking: 6, focus: 6, fitness: 6,
               };
 
               // Select a random stat to boost significantly or 2 stats slightly
@@ -1738,13 +1747,14 @@ exports.postRaceProcessing = onSchedule({
             }
 
             // Specialization Trigger logic
-            if (!yDriver.specialty && yDriver.baseSkill >= 40) {
+            if (!yDriver.specialty && yDriver.baseSkill >= 8) {
               // If they have a very high specific stat, they might get a specialty
               const s = yDriver.stats || {};
-              if (s.adaptability >= 55) updates.specialty = "Rainmaster";
-              else if (s.smoothness >= 55) updates.specialty = "Tyre Whisperer";
-              else if (s.braking >= 55) updates.specialty = "Late Braker";
-              else if (s.overtaking >= 55) updates.specialty = "Defensive Minister";
+              // Thresholds based on 1-20 scale (11/20 = 55%)
+              if (s.adaptability >= 11) updates.specialty = "Rainmaster";
+              else if (s.smoothness >= 11) updates.specialty = "Tyre Whisperer";
+              else if (s.braking >= 11) updates.specialty = "Late Braker";
+              else if (s.overtaking >= 11) updates.specialty = "Defensive Minister";
             }
 
             updates.weeklyStatDiffs = statDiffs;
@@ -1826,7 +1836,7 @@ exports.postRaceProcessing = onSchedule({
                     role: "Reserve", // Default to reserve
                     specialty: yData.specialty || null,
                     stats: yData.stats || {},
-                    potential: Math.min(5, Math.max(1, Math.round((yData.baseSkill + yData.growthPotential) / 20))),
+                    potential: Math.min(5, Math.max(1, Math.round((yData.baseSkill + yData.growthPotential) / 4))),
                     races: 0,
                     wins: 0,
                     podiums: 0,

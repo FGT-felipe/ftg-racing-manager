@@ -859,12 +859,7 @@
                                                 <!-- Base Range Indicator -->
                                                 <div
                                                     class="absolute h-full bg-app-text/10 rounded-full opacity-50"
-                                                    style="left: {driver
-                                                        .statRangeMin?.[key] ??
-                                                        0}%; right: {100 -
-                                                        (driver.statRangeMax?.[
-                                                            key
-                                                        ] ?? 100)}%"
+                                                    style="left: {(driver.statRangeMin?.[key] || 0) * 5}%; right: {100 - (driver.statRangeMax?.[key] || 20) * 5}%"
                                                 ></div>
                                                 <!-- Current Fill Progress -->
                                                 <div
@@ -873,26 +868,13 @@
                                                             ? 'bg-emerald-400 shadow-[0_0_12px_rgba(52,211,153,0.5)]' 
                                                             : 'bg-red-400 shadow-[0_0_12px_rgba(248,113,113,0.5)]')
                                                         : 'bg-app-text/40'} rounded-full transition-all duration-1000 ease-out"
-                                                    style="width: {driver
-                                                        .statRangeMin?.[key] ??
-                                                        0}%"
+                                                    style="width: {(driver.statRangeMin?.[key] || 0) * 5}%"
                                                 ></div>
 
                                                 {#if driver.trainingProgress}
                                                     <div
                                                         class="absolute h-full w-1.5 bg-app-text/30 blur-[1px] rounded-full transition-all duration-1000"
-                                                        style="left: {Math.min(
-                                                            98,
-                                                            (driver
-                                                                .statRangeMin?.[
-                                                                key
-                                                            ] ?? 0) +
-                                                                driver
-                                                                    .trainingProgress[
-                                                                    key
-                                                                ] /
-                                                                    2,
-                                                        )}%"
+                                                        style="left: {((driver.statRangeMin?.[key] || 0) + (driver.trainingProgress?.[key] || 0) / 2) * 5}%"
                                                     ></div>
                                                 {/if}
                                             </div>
