@@ -12,6 +12,7 @@
   --color-app-success: var(--success-color);
   --color-app-error: var(--error-color);
   --color-app-danger: var(--error-color);
+  --color-app-fastest: var(--fastest-color);
   /* Compatibility alias */
   --color-app-border: var(--border-color);
 
@@ -34,6 +35,7 @@
     --accent-color: #2563EB;
     --success-color: #059669;
     --error-color: #DC2626;
+    --fastest-color: #E040FB;
     --border-color: rgba(15, 23, 42, 0.08);
     --muted-opacity: 0.4;
   }
@@ -49,6 +51,7 @@
     --accent-color: #D4AF37;
     --success-color: #00C853;
     --error-color: #EF5350;
+    --fastest-color: #E040FB;
     --border-color: rgba(197, 160, 89, 0.1);
     --muted-opacity: 0.3;
   }

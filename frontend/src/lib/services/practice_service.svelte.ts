@@ -132,10 +132,17 @@ class PracticeService {
             timestamp: serverTimestamp()
         });
 
-        // Update team weekStatus for laps taken
-        const updatePath = `weekStatus.practiceLaps.${driverId}`;
+        const practiceLapsPath = `weekStatus.practiceLaps.${driverId}`;
+        const practiceSetupPath = `weekStatus.driverSetups.${driverId}.practice`;
+
         await updateDoc(teamRef, {
-            [updatePath]: increment(1)
+            [practiceLapsPath]: increment(1),
+            [`${practiceSetupPath}.frontWing`]: setup.frontWing,
+            [`${practiceSetupPath}.rearWing`]: setup.rearWing,
+            [`${practiceSetupPath}.suspension`]: setup.suspension,
+            [`${practiceSetupPath}.gearRatio`]: setup.gearRatio,
+            [`${practiceSetupPath}.tyreCompound`]: setup.tyreCompound,
+            [`${practiceSetupPath}.laps`]: increment(1)
         });
     }
 }

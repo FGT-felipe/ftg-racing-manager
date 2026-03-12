@@ -1,13 +1,17 @@
 <script lang="ts">
     import { db } from "$lib/firebase/config";
-    import { doc, updateDoc, increment } from "firebase/firestore";
+    import { doc, updateDoc, increment, addDoc, collection, serverTimestamp } from "firebase/firestore";
     import { teamStore } from "$lib/stores/team.svelte";
     import { driverStore } from "$lib/stores/driver.svelte";
-    import { setupStore } from "$lib/stores/setup.svelte";
+    import { setupStore, type PracticeHistoryItem } from "$lib/stores/setup.svelte";
     import {
         raceService,
     } from "$lib/services/race_service.svelte";
-    import { MAX_PRACTICE_LAPS_PER_DRIVER } from "$lib/constants/app_constants";
+    import {
+        practiceService,
+        type PracticeRunResult,
+    } from "$lib/services/practice_service.svelte";
+    import { MAX_PRACTICE_LAPS_PER_DRIVER, PRACTICE_SESSION_COST } from "$lib/constants/app_constants";
     import { seasonStore } from "$lib/stores/season.svelte";
     import { circuitService } from "$lib/services/circuit_service.svelte";
     import {
@@ -47,10 +51,14 @@
 
     let currentDriverStyle = $state<DriverStyle>(DriverStyle.normal);
     let isSimulating = $state(false);
-    let lastResult = $state<any>(null);
+    let lastResult = $state<PracticeRunResult | null>(null);
     let lapsToRun = $state(1);
-    
-    let competitorTimes = $state<Array<{teamName: string, driverName: string, time: number}>>([]);
+    let pitBoardMessages = $state<string[]>([]);
+    let sessionLapTimes = $state<number[]>([]);
+
+    let competitorTimes = $state<
+        Array<{ teamName: string; driverName: string; time: number }>
+    >([]);
 
     const teamDrivers = $derived(driverStore.drivers);
     const driver = $derived(teamDrivers.find((d: any) => d.id === driverId));
@@ -61,6 +69,64 @@
             ? circuitService.getCircuitProfile(nextEvent.circuitId)
             : null,
     );
+
+    const practiceHistory = $derived(
+        driver ? setupStore.getHistoryByDriver(driver.id) : [],
+    );
+
+    const legacyPracticeRuns = $derived(() => {
+        const team = teamStore.value.team;
+        if (!driver || !team?.weekStatus?.driverSetups) return [];
+        const driverSetup = team.weekStatus.driverSetups[driver.id] || {};
+        return driverSetup.practiceRuns || [];
+    });
+
+    const combinedHistory = $derived(() => {
+        const base = practiceHistory as PracticeHistoryItem[];
+        if (!driver) return base;
+
+        const legacy: PracticeHistoryItem[] = legacyPracticeRuns.map(
+            (run: any, idx: number) => ({
+                id: `legacy-${idx}`,
+                driverId: driver.id,
+                lapTime: run.time,
+                setupUsed: run.setupUsed,
+                feedback: [],
+                setupConfidence: 0,
+                isCrashed: !!run.isCrashed,
+                timestamp: null,
+            }),
+        );
+
+        return [...base, ...legacy];
+    });
+
+    const enrichedHistory = $derived(() => {
+        if (!driver || !circuit || !teamStore.value.team) return combinedHistory;
+
+        return (combinedHistory as PracticeHistoryItem[]).map((entry) => {
+            if (entry.feedback && entry.feedback.length > 0) return entry;
+            if (!entry.setupUsed) return entry;
+
+            const sim = practiceService.simulatePracticeRun(
+                circuit,
+                teamStore.value.team,
+                driver,
+                entry.setupUsed,
+                nextEvent?.weatherPractice || "Sunny",
+            );
+
+            return {
+                ...entry,
+                feedback: sim.driverFeedback.concat(sim.tyreFeedback),
+                setupConfidence: sim.setupConfidence,
+                isCrashed:
+                    entry.isCrashed !== undefined
+                        ? entry.isCrashed
+                        : sim.isCrashed,
+            };
+        });
+    });
 
     // Watch for driver changes to load their history setup
     $effect(() => {
@@ -76,11 +142,19 @@
     });
 
     onMount(() => {
+        if (teamStore.value.team?.id) {
+            setupStore.init(teamStore.value.team.id);
+        }
+
         // Fetch competitor times
         if (teamStore.value.team?.currentSeasonId) {
-            raceService.getCompetitorPracticeTimes(teamStore.value.team.currentSeasonId).then(times => {
-                competitorTimes = times;
-            });
+            raceService
+                .getCompetitorPracticeTimes(
+                    teamStore.value.team.currentSeasonId,
+                )
+                .then((times) => {
+                    competitorTimes = times;
+                });
         }
     });
 
@@ -88,22 +162,62 @@
         if (!driver || !circuit || !teamStore.value.team) return;
 
         isSimulating = true;
+        sessionLapTimes = [];
 
-        // Cost: $3,000 per run of practice
-        const cost = 3000;
-        if (teamStore.value.team.budget < cost) {
-            alert("Insufficient funds for practice runs. Cost is $3,000.");
-            isSimulating = false;
-            return;
+        const team = teamStore.value.team;
+        if (!team) return;
+
+        // One-time cost check: $10,000 per driver per weekend
+        const weekStatus = team.weekStatus || {};
+        const practicePaid = weekStatus.practicePaid || {};
+        const hasPaid = practicePaid[driver.id];
+
+        if (!hasPaid) {
+            if (team.budget < PRACTICE_SESSION_COST) {
+                alert("Insufficient funds for practice runs. Cost is $10,000.");
+                isSimulating = false;
+                return;
+            }
+
+            // Pay the fee
+            try {
+                const teamRef = doc(db, "teams", team.id);
+                const txRef = collection(db, "teams", team.id, "transactions");
+
+                await updateDoc(teamRef, {
+                    budget: team.budget - PRACTICE_SESSION_COST,
+                    [`weekStatus.practicePaid.${driver.id}`]: true
+                });
+
+                await addDoc(txRef, {
+                    description: `Track access fee for ${driver.name}`,
+                    amount: -PRACTICE_SESSION_COST,
+                    date: serverTimestamp(),
+                    type: "PRACTICE"
+                });
+            } catch (err) {
+                console.error("Error paying practice fee:", err);
+                alert("Error processing payment.");
+                isSimulating = false;
+                return;
+            }
         }
 
         // Check maximum laps limit
-        const currentSetupsCheck = teamStore.value.team.weekStatus?.driverSetups || {};
-        const driverSetupCheck = currentSetupsCheck[driver.id] || {};
-        const currentLaps = driverSetupCheck.practice?.laps || 0;
-        
+        const practiceLapsMap = weekStatus.practiceLaps || {};
+        const driverSetupsMap = weekStatus.driverSetups || {};
+        const driverSetupCheck = driverSetupsMap[driver.id] || {};
+        const legacyLaps = practiceLapsMap[driver.id] || 0;
+        const driverSetupLaps = driverSetupCheck.practice?.laps || 0;
+        const currentLaps = Math.max(legacyLaps, driverSetupLaps);
+
         if (currentLaps + lapsToRun > MAX_PRACTICE_LAPS_PER_DRIVER) {
-            alert(`Practice aborted. Maximum of ${MAX_PRACTICE_LAPS_PER_DRIVER} laps per weekend. You have ${Math.max(0, MAX_PRACTICE_LAPS_PER_DRIVER - currentLaps)} laps remaining.`);
+            alert(
+                `Practice aborted. Maximum of ${MAX_PRACTICE_LAPS_PER_DRIVER} laps per weekend. You have ${Math.max(
+                    0,
+                    MAX_PRACTICE_LAPS_PER_DRIVER - currentLaps,
+                )} laps remaining.`,
+            );
             isSimulating = false;
             return;
         }
@@ -111,43 +225,75 @@
         // Apply selected style to the setup for this run
         const setupToRun = { ...setup, qualifyingStyle: currentDriverStyle };
 
+        pitBoardMessages = [
+            `${driver.name} heads out for ${lapsToRun} ${
+                lapsToRun === 1 ? "lap" : "laps"
+            }.`,
+            ...pitBoardMessages,
+        ].slice(0, 30);
+
         try {
             // Simulate laps iteratively for visual
             for (let i = 0; i < lapsToRun; i++) {
-                // Get team stats mapping
-                const carIndex = teamDrivers.findIndex((d: any) => d.id === driver.id);
-                const carStats: any = teamStore.value.team.carStats?.[String(carIndex)] || { aero: 1, powertrain: 1, chassis: 1 };
-                
-                const result = raceService.simulatePracticeRun(
+                const result = practiceService.simulatePracticeRun(
+                    circuit,
+                    teamStore.value.team,
                     driver,
                     setupToRun,
-                    circuit,
-                    carStats,
-                    nextEvent?.weatherPractice || "Sunny"
+                    nextEvent?.weatherPractice || "Sunny",
                 );
-                
-                // Formulate fallback feedback
-                const feedbackMsgs = [];
-                if (result.isCrashed) feedbackMsgs.push("Crashed the car!");
-                else {
-                    const ideal = circuit.idealSetup;
-                    const gapSusp = Math.abs(setupToRun.suspension - ideal.suspension);
-                    if (gapSusp > 10) feedbackMsgs.push("The car feels very unbalanced in the corners.");
-                    else feedbackMsgs.push("Suspension feels solid.");
+
+                lastResult = result;
+
+                // Pit board narrative
+                const storedHistory = driver
+                    ? setupStore.getHistoryByDriver(driver.id)
+                    : [];
+
+                const nonCrashHistoryTimes = storedHistory
+                    .filter((h) => !h.isCrashed)
+                    .map((h) => h.lapTime);
+
+                const previousBest =
+                    nonCrashHistoryTimes.length > 0
+                        ? Math.min(...nonCrashHistoryTimes, ...sessionLapTimes)
+                        : sessionLapTimes.length > 0
+                            ? Math.min(...sessionLapTimes)
+                            : null;
+
+                let suffix = "";
+                if (result.isCrashed) {
+                    suffix = " - CRASH";
+                } else if (
+                    previousBest === null ||
+                    result.lapTime < previousBest
+                ) {
+                    suffix = " - NEW PERSONAL BEST";
                 }
 
-                lastResult = {
-                    ...result,
-                    setupConfidence: result.isCrashed ? 0 : 0.5 + (Math.random() * 0.4),
-                    driverFeedback: feedbackMsgs
-                };
+                pitBoardMessages = [
+                    `${driver.name} - Lap ${i + 1}: ${formatTime(
+                        result.lapTime,
+                    )}${suffix}`,
+                    ...pitBoardMessages,
+                ].slice(0, 30);
 
-                // Save run logic
+                sessionLapTimes = [...sessionLapTimes, result.lapTime];
+
+                await practiceService.savePracticeRun(
+                    teamStore.value.team.id,
+                    driver.id,
+                    result,
+                    setupToRun,
+                );
+
+                // Also maintain per-driver practiceRuns history used by competitor benchmarks
                 const teamRef = doc(db, "teams", teamStore.value.team.id);
-                const currentSetups = teamStore.value.team.weekStatus?.driverSetups || {};
+                const currentSetups =
+                    teamStore.value.team.weekStatus?.driverSetups || {};
                 const driverSetup = currentSetups[driver.id] || {};
                 const practiceRuns = driverSetup.practiceRuns || [];
-                
+
                 practiceRuns.push({
                     time: result.lapTime,
                     setupUsed: setupToRun,
@@ -155,9 +301,8 @@
                 });
 
                 await updateDoc(teamRef, {
-                    [`weekStatus.driverSetups.${driver.id}.practiceRuns`]: practiceRuns,
-                    [`weekStatus.driverSetups.${driver.id}.practice.laps`]: increment(1),
-                    [`weekStatus.driverSetups.${driver.id}.practice`]: setupToRun
+                    [`weekStatus.driverSetups.${driver.id}.practiceRuns`]:
+                        practiceRuns,
                 });
 
                 // Wait for visual feedback
@@ -190,12 +335,18 @@
 
             const driverRef = doc(db, "drivers", driver.id);
             const currentStats = driver.stats || {};
-            const newStamina = Math.max(0, (currentStats.stamina || 100) - staminaCost);
-            const newMorale = Math.max(0, Math.min(100, (currentStats.morale || 100) - moralePenalty));
+            const newStamina = Math.max(
+                0,
+                (currentStats.stamina || 100) - staminaCost,
+            );
+            const newMorale = Math.max(
+                0,
+                Math.min(100, (currentStats.morale || 100) - moralePenalty),
+            );
 
             await updateDoc(driverRef, {
                 "stats.stamina": newStamina,
-                "stats.morale": newMorale
+                "stats.morale": newMorale,
             });
 
         } catch (e) {
@@ -394,7 +545,7 @@
                     </button>
                     <span
                         class="text-[9px] uppercase tracking-widest font-black text-red-400 mt-2"
-                        >-$3,000 Outing Fee</span
+                        >-${PRACTICE_SESSION_COST.toLocaleString()} Outing Fee</span
                     >
                 </div>
             </div>
@@ -403,7 +554,7 @@
 
     <!-- Right Column: Results & Pit Board -->
     <div class="lg:col-span-5 space-y-6">
-        <!-- Competitor Times -->
+        <!-- Competitor Times & Pit Board -->
         <div
             class="bg-app-surface border-l-4 border-app-primary rounded-xl p-5 shadow-xl"
         >
@@ -428,6 +579,32 @@
                         </div>
                     {/each}
                 {/if}
+            </div>
+
+            <div class="mt-4 pt-3 border-t border-app-border/40">
+                <div class="flex items-center justify-between mb-2">
+                    <span
+                        class="text-[10px] font-black text-app-primary uppercase tracking-[0.2em] italic"
+                        >Pit Board</span
+                    >
+                </div>
+                <div
+                    class="max-h-40 overflow-y-auto space-y-2 custom-scrollbar"
+                >
+                    {#if pitBoardMessages.length === 0}
+                        <p class="text-[10px] text-app-text/40 italic">
+                            Awaiting session messages...
+                        </p>
+                    {:else}
+                        {#each pitBoardMessages as msg}
+                            <div
+                                class="text-[10px] text-app-text/70 font-mono tabular-nums"
+                            >
+                                {msg}
+                            </div>
+                        {/each}
+                    {/if}
+                </div>
             </div>
         </div>
 
@@ -472,7 +649,7 @@
             </div>
         </div>
 
-        <!-- Feedback -->
+        <!-- Feedback & History -->
         <div
             class="bg-app-surface border border-app-border rounded-2xl flex flex-col h-[350px]"
         >
@@ -482,43 +659,94 @@
                 >
                     Feedback
                 </div>
+                <div
+                    class="flex-1 py-3 text-center text-[10px] font-black uppercase tracking-widest text-app-text/40 bg-app-surface border-b border-app-border"
+                >
+                    Lap History
+                </div>
             </div>
 
-            <div class="flex-1 overflow-y-auto p-4 space-y-3 custom-scrollbar">
-                {#if lastResult}
-                    {#each lastResult.driverFeedback as msg}
-                        <div
-                            class="p-3 bg-app-text/5 rounded-lg border-l-2 border-app-primary"
-                        >
-                            <p
-                                class="text-[11px] italic text-app-text/70 leading-relaxed font-medium"
+            <div class="flex-1 overflow-y-auto p-4 space-y-4 custom-scrollbar">
+                <!-- Feedback block -->
+                <div class="space-y-3">
+                    {#if lastResult}
+                        {#each lastResult.driverFeedback as msg}
+                            <div
+                                class="p-3 bg-app-text/5 rounded-lg border-l-2 border-app-primary"
                             >
-                                "{msg}"
-                            </p>
-                        </div>
-                    {/each}
-                    {#if lastResult.driverFeedback.length === 0}
+                                <p
+                                    class="text-[11px] italic text-app-text/70 leading-relaxed font-medium"
+                                >
+                                    "{msg}"
+                                </p>
+                            </div>
+                        {/each}
+                        {#if lastResult.driverFeedback.length === 0}
+                            <div
+                                class="p-4 flex flex-col items-center justify-center text-center opacity-30 mt-4"
+                            >
+                                <CheckCircle2 size={32} class="mb-3" />
+                                <p class="text-[10px] font-black uppercase">
+                                    No Issues Reported
+                                </p>
+                            </div>
+                        {/if}
+                    {:else}
                         <div
-                            class="p-4 flex flex-col items-center justify-center text-center opacity-30 mt-10"
+                            class="p-4 flex flex-col items-center justify-center text-center opacity-10 mt-4"
                         >
-                            <CheckCircle2 size={32} class="mb-3" />
-                            <p class="text-[10px] font-black uppercase">
-                                No Issues Reported
+                            <Info size={40} class="mb-3" />
+                            <p
+                                class="text-[10px] font-black uppercase tracking-widest"
+                            >
+                                Awaiting First Run
                             </p>
                         </div>
                     {/if}
-                {:else}
-                    <div
-                        class="p-4 flex flex-col items-center justify-center text-center opacity-10 mt-20"
+                </div>
+
+                <!-- History block -->
+                <div class="pt-2 border-t border-app-border/40 space-y-2">
+                    <h4
+                        class="text-[9px] font-black text-app-text/40 uppercase tracking-widest"
                     >
-                        <Info size={40} class="mb-3" />
-                        <p
-                            class="text-[10px] font-black uppercase tracking-widest"
-                        >
-                            Awaiting First Run
+                        Recent Laps
+                    </h4>
+                    {#if enrichedHistory.length === 0}
+                        <p class="text-[10px] text-app-text/30 italic">
+                            No recorded laps yet for this driver.
                         </p>
-                    </div>
-                {/if}
+                    {:else}
+                        {#each enrichedHistory as entry}
+                            <div
+                                class="flex items-center justify-between text-[11px] px-2 py-1.5 rounded-lg bg-app-text/5"
+                            >
+                                <div class="flex flex-col">
+                                    <span class="font-mono font-black">
+                                        {formatTime(entry.lapTime)}
+                                    </span>
+                                    <span
+                                        class="text-[9px] text-app-text/40 uppercase tracking-widest"
+                                    >
+                                        CONF{" "}
+                                        {Math.round(
+                                            (entry.setupConfidence || 0) * 100,
+                                        )}%
+                                    </span>
+                                </div>
+                                {#if entry.isCrashed}
+                                    <span class="text-[9px] text-red-400">
+                                        CRASH
+                                    </span>
+                                {:else}
+                                    <span class="text-[9px] text-app-text/40">
+                                        {entry.feedback[0] || "Clean lap"}
+                                    </span>
+                                {/if}
+                            </div>
+                        {/each}
+                    {/if}
+                </div>
             </div>
         </div>
     </div>

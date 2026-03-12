@@ -9,3 +9,6 @@ export const BOGOTA_TIMEZONE = 'America/Bogota';
 
 /** Weekly academy wage per trainee (USD). */
 export const ACADEMY_TRAINEE_WEEKLY_WAGE = 10_000;
+
+/** One-time cost to start practice for a driver in a race weekend. */
+export const PRACTICE_SESSION_COST = 10_000;
