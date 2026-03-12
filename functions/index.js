@@ -133,6 +133,76 @@ const DEFAULT_SETUP = {
   pitStopFuel: [50.0],
 };
 
+/**
+ * Generates a debrief for a team after a race.
+ * @param {string} tid - Team ID.
+ * @param {Array} drivers - List of driver objects for the team.
+ * @param {Object} rData - Race data.
+ * @param {Object} rEvent - Race event from season calendar.
+ * @return {Promise<void>}
+ */
+async function generateTeamDebrief(tid, drivers, rData, rEvent) {
+  if (!drivers || drivers.length === 0) return;
+
+  const dnfs = rData.dnfs || (rData.results && rData.results.dnfs) || [];
+  const setupsMap = rData.setups || {};
+  const circuit = getCircuit(rEvent.circuitId);
+
+  // Reconstruct sorted list if we only have positions map
+  const positions = rData.finalPositions || (rData.results && rData.results.finalPositions) || {};
+
+  const teamResults = drivers.map((d) => {
+    const posInt = positions[d.id];
+    const isDnf = dnfs.includes(d.id);
+    return {
+      id: d.id,
+      name: d.name,
+      pos: isDnf ? "DNF" : `P${posInt}`,
+      posInt: posInt || 21,
+      pts: !isDnf && (posInt - 1) < POINT_SYSTEM.length ? POINT_SYSTEM[posInt - 1] : 0,
+      isDnf,
+    };
+  }).sort((a, b) => a.posInt - b.posInt);
+
+  const lines = teamResults.map((d) => `${d.name}: ${d.pos} (+${d.pts} pts)`).join("\n");
+  let debrief = "";
+  const p1 = teamResults[0];
+  const p2 = teamResults[1];
+
+  if (p1 && p2) {
+    const avgPos = (p1.isDnf ? 20 : p1.posInt) + (p2.isDnf ? 20 : p2.posInt);
+    if (avgPos <= 10) debrief = "Excellent weekend! Both drivers brought home solid points. The strategy was spot on.";
+    else if (p1.isDnf || p2.isDnf) debrief = "A tough one. Any DNF really hurts our championship chances. We need to look at reliability and driver focus.";
+    else if (avgPos >= 30) debrief = "Disappointing result. We are severely lacking pace. You should check if the car updates are being effective or if the drivers need more training.";
+    else debrief = "A mediocre performance. We finished roughly where we expected, but to move up the grid we need more aggressive car development.";
+
+    const su1 = setupsMap[p1.id] || DEFAULT_SETUP;
+    const ideal = circuit.idealSetup;
+    const gap = Math.abs((su1.frontWing || 50) - (ideal.frontWing || 50)) + Math.abs((su1.suspension || 50) - (ideal.suspension || 50));
+    if (gap > 20) debrief += "\n\nNote: The drivers complained about the car's balance. It seems our current Setup is quite far from the track's ideal requirements.";
+    else if (gap < 5) debrief += "\n\nNote: The setup was very close to perfect! The drivers felt confident in the corners.";
+  } else if (p1) {
+    debrief = `${p1.name}: ${p1.pos}. We need both cars on track to maximize results.`;
+  } else {
+    debrief = "No analysis available for this team.";
+  }
+
+  // 1. Update Team Document (Main debrief card)
+  await db.collection("teams").doc(tid).set({
+    lastRaceDebrief: debrief,
+    lastRaceResult: lines,
+  }, { merge: true });
+
+  // 2. Add News entry (Aligned with UI collection 'news')
+  await db.collection("teams").doc(tid).collection("news").add({
+    title: `Race Summary: ${rEvent.trackName}`,
+    message: `${lines}\n\nANALYSIS:\n${debrief}`,
+    type: "RACE_RESULT",
+    timestamp: admin.firestore.FieldValue.serverTimestamp(),
+    isRead: false,
+  });
+}
+
 // ─────────────────────────────────────────────
 // SIMULATION ENGINE
 // ─────────────────────────────────────────────
@@ -1490,6 +1560,12 @@ exports.postRaceProcessing = onSchedule({
       }
 
       // Reset weekStatus, unlock, and process WEEKLY ECONOMY
+      const sId = rd.seasonId || rDoc.id.split("_")[0];
+      const eId = rd.eventId || rDoc.id.split("_")[1];
+      const sDoc = await db.collection("seasons").doc(sId).get();
+      const season = sDoc.data();
+      const rEvent = season ? (season.calendar || []).find((e) => e.id === eId) : null;
+
       for (const tid of teamIdsSet) {
         // Read current weekStatus to preserve Bureaucrat cooldown
         const tDoc = await db.collection("teams").doc(tid).get();
@@ -1497,6 +1573,15 @@ exports.postRaceProcessing = onSchedule({
         const tRef = db.collection("teams").doc(tid);
 
         const teamData = tDoc.data();
+
+        // --- NEW: Generate Race Analysis Debrief ---
+        const driversSnap = await db.collection("drivers").where("teamId", "==", tid).get();
+        const drivers = driversSnap.docs.map((doc) => ({ ...doc.data(), id: doc.id }));
+        if (rEvent) {
+          await generateTeamDebrief(tid, drivers, rd, rEvent);
+        }
+        // -------------------------------------------
+
         const curWs = teamData.weekStatus || {};
         let cooldown = curWs.upgradeCooldownWeeksLeft || 0;
         if (cooldown > 0) cooldown--; // Decrement each week
@@ -2089,6 +2174,8 @@ exports.resolveTransferMarket = onSchedule({
 });
 
 exports.megaFixDebriefs = onCall({
+  cors: true,
+  invoker: "public",
   memory: "1GiB",
   timeoutSeconds: 540,
 }, async (request) => {
@@ -2139,90 +2226,16 @@ exports.megaFixDebriefs = onCall({
       }
 
       const rData = rSnap.data();
-      // Use direct fields if results object is missing (common in some versions)
-      const positions = rData.finalPositions || (rData.results && rData.results.finalPositions);
-      const sorted = rData.results && rData.results.sorted;
-      const dnfs = rData.dnfs || (rData.results && rData.results.dnfs) || [];
-
-      if (!positions && !sorted) {
-        logger.warn(`No results in race doc ${raceDocId}`);
-        continue;
-      }
-
-      // Reconstruct sorted list if we only have positions map
-      let sortedList = sorted;
-      if (!sortedList && positions) {
-        sortedList = Object.entries(positions)
-          .sort(([, a], [, b]) => a - b)
-          .map(([id]) => id);
-      }
-
-      if (!sortedList || sortedList.length === 0) {
-        logger.warn(`Could not determine finishing order for ${raceDocId}`);
-        continue;
-      }
-
-      const setupsMap = rData.setups || {};
+      const driversInRace = driversMap; // Reusing the map fetched earlier
+      
       const teamGrp = {};
-
-      sortedList.forEach((did, i) => {
-        const d = driversMap[did];
-        if (!d || !d.teamId) return;
+      Object.values(driversInRace).forEach(d => {
         if (!teamGrp[d.teamId]) teamGrp[d.teamId] = [];
-        const isDnf = dnfs.includes(did);
-        const posInt = i + 1;
-        teamGrp[d.teamId].push({
-          id: did,
-          name: d.name,
-          pos: isDnf ? "DNF" : `P${posInt}`,
-          posInt: posInt,
-          pts: !isDnf && i < POINT_SYSTEM.length ? POINT_SYSTEM[i] : 0,
-          isDnf,
-        });
+        teamGrp[d.teamId].push(d);
       });
 
-      const circuit = getCircuit(rEvent.circuitId);
       for (const tid of Object.keys(teamGrp)) {
-        const drivers = teamGrp[tid] || [];
-        if (drivers.length === 0) continue;
-
-        const lines = drivers.map((d) => `${d.name}: ${d.pos} (+${d.pts} pts)`).join("\n");
-        let debrief = "";
-        const p1 = drivers[0];
-        const p2 = drivers[1];
-
-        if (p1 && p2) {
-          const avgPos = (p1.isDnf ? 20 : p1.posInt) + (p2.isDnf ? 20 : p2.posInt);
-          if (avgPos <= 10) debrief = "Excellent weekend! Both drivers brought home solid points. The strategy was spot on.";
-          else if (p1.isDnf || p2.isDnf) debrief = "A tough one. Any DNF really hurts our championship chances. We need to look at reliability and driver focus.";
-          else if (avgPos >= 30) debrief = "Disappointing result. We are severely lacking pace. You should check if the car updates are being effective or if the drivers need more training.";
-          else debrief = "A mediocre performance. We finished roughly where we expected, but to move up the grid we need more aggressive car development.";
-
-          const su1 = setupsMap[p1.id] || DEFAULT_SETUP;
-          const ideal = circuit.idealSetup;
-          const gap = Math.abs((su1.frontWing || 50) - (ideal.frontWing || 50)) + Math.abs((su1.suspension || 50) - (ideal.suspension || 50));
-          if (gap > 20) debrief += "\n\nNote: The drivers complained about the car's balance. It seems our current Setup is quite far from the track's ideal requirements.";
-          else if (gap < 5) debrief += "\n\nNote: The setup was very close to perfect! The drivers felt confident in the corners.";
-        } else if (p1) {
-          debrief = `${p1.name}: ${p1.pos}. We need both cars on track to maximize results.`;
-        } else {
-          debrief = "No analysis available for this team.";
-        }
-
-        // 1. Update Team Document (Main debrief card)
-        await db.collection("teams").doc(tid).set({
-          lastRaceDebrief: debrief,
-          lastRaceResult: lines,
-        }, { merge: true });
-
-        // 2. Add News entry (Aligned with UI collection 'news')
-        await db.collection("teams").doc(tid).collection("news").add({
-          title: `Race Summary: ${rEvent.trackName}`,
-          message: `${lines}\n\nANALYSIS:\n${debrief}`,
-          type: "RACE_RESULT",
-          timestamp: admin.firestore.FieldValue.serverTimestamp(),
-          isRead: false
-        });
+        await generateTeamDebrief(tid, teamGrp[tid], rData, rEvent);
         totalUpdated++;
       }
     }
@@ -2235,6 +2248,8 @@ exports.megaFixDebriefs = onCall({
 });
 
 exports.forceFixGBA = onCall({
+  cors: true,
+  invoker: "public",
   timeoutSeconds: 120,
 }, async (request) => {
   logger.info("=== FORCE FIX GBA START ===");
@@ -2305,6 +2320,7 @@ exports.forceFixGBA = onCall({
  */
 exports.restoreDriversHistory = onCall({
   cors: true,
+  invoker: "public",
   memory: "512MiB",
   timeoutSeconds: 540,
 }, async (request) => {
