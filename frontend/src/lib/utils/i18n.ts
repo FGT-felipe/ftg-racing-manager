@@ -140,6 +140,8 @@ export const translations = {
         accident_label: "ACCIDENT",
         rival_best_times: "RIVAL BEST TIMES",
         waiting_competitors: "Waiting for other teams...",
+        simulating_current_lap: "Simulating current lap...",
+        awaiting_data: "Awaiting performance data...",
         fitness: "Fitness",
         morale: "Morale",
         avg_label: "Avg",
@@ -158,6 +160,9 @@ export const translations = {
         gap: "Gap",
         best_lap: "Best Lap",
         total_laps: "Laps",
+        set_target_setups: "Propagate Setup to Weekend",
+        copy_practice_to_qualy: "Use current setup for Saturday",
+        copy_practice_to_race: "Use current setup for Sunday",
     },
     es: {
         career_view: "Vista Profesional",
@@ -297,6 +302,8 @@ export const translations = {
         accident_label: "ACCIDENTE",
         rival_best_times: "MEJORES TIEMPOS RIVALES",
         waiting_competitors: "Esperando otros equipos...",
+        simulating_current_lap: "Simulando vuelta actual...",
+        awaiting_data: "Esperando datos de rendimiento...",
         fitness: "Forma",
         morale: "Moral",
         avg_label: "Prom",
@@ -315,6 +322,9 @@ export const translations = {
         gap: "Gap",
         best_lap: "Mejor Vuelta",
         total_laps: "Vueltas",
+        set_target_setups: "Propagar Setup al Fin de Semana",
+        copy_practice_to_qualy: "Usar ajuste actual para el Sábado",
+        copy_practice_to_race: "Usar ajuste actual para el Domingo",
     }
 };
 

@@ -34,12 +34,15 @@
         Flag,
         Bolt,
         Smile,
+        MessageSquare,
+        Target,
     } from "lucide-svelte";
     import { onMount, untrack } from "svelte";
     import { fade, slide } from "svelte/transition";
+    import DriverAvatar from "$lib/components/DriverAvatar.svelte";
     import { t, type TranslationKey } from "$lib/utils/i18n";
 
-    let { driverId = null } = $props<{ driverId: string | null }>();
+    let { driverId = null } = $props();
 
     // Local state
     let setup = $state<CarSetup>({
@@ -59,6 +62,7 @@
     let currentDriverStyle = $state<DriverStyle>(DriverStyle.normal);
     let isSimulating = $state(false);
     let lastResult = $state<PracticeRunResult | null>(null);
+    let pitBoardMessages = $state<string[]>([]);
     let lapsToRun = $state(1);
     let competitorTimes = $state<Array<{ teamName: string; driverName: string; time: number | null; tyre: string | null; totalLaps: number; driverId: string }>>([]);
     let telemetryTab = $state<'history' | 'standings'>('history');
@@ -77,70 +81,27 @@
         );
     });
 
-    // History Logic (Matching PracticeSetupTab.svelte)
-    const practiceHistory = $derived(driver ? setupStore.getHistoryByDriver(driver.id) : []);
-
-    const legacyPracticeRuns = $derived.by(() => {
-        const team = teamStore.value.team;
-        if (!driver || !team?.weekStatus?.driverSetups) return [];
-        const driverSetup = team.weekStatus.driverSetups[driver.id] || {};
-        return driverSetup.practiceRuns || [];
-    });
-
-    const combinedHistory = $derived.by(() => {
-        const base = practiceHistory as PracticeHistoryItem[];
-        if (!driver) return base;
-
-        const legacy: PracticeHistoryItem[] = (legacyPracticeRuns || []).map(
-            (run: any, idx: number) => ({
-                id: `legacy-${idx}`,
-                driverId: driver.id,
-                lapTime: run.time,
-                setupUsed: run.setupUsed,
-                feedback: [],
-                setupConfidence: 0,
-                isCrashed: !!run.isCrashed,
-                timestamp: null,
-            }),
-        );
-
-        return [...base, ...legacy];
-    });
-
     const enrichedHistory = $derived.by(() => {
-        const combined = combinedHistory as PracticeHistoryItem[];
-        if (!driver || !circuit || !teamStore.value.team) return combined;
-
-        // Sort by timestamp if available, or keep as is (newest first usually)
-        // We'll reverse it to number them 1, 2, 3... and then reverse back for display
-        const reversed = [...combined].reverse();
-        
-        const enriched = reversed.map((entry, idx) => {
-            let item = { ...entry };
-            if (!item.feedback || item.feedback.length === 0) {
-                if (item.setupUsed) {
-                    const sim = practiceService.simulatePracticeRun(
-                        circuit,
-                        teamStore.value.team!,
-                        driver,
-                        item.setupUsed,
-                        nextEvent?.weatherPractice || "Sunny",
-                    );
-                    item.feedback = sim.driverFeedback.concat(sim.tyreFeedback);
-                    item.setupConfidence = sim.setupConfidence;
-                    if (item.isCrashed === undefined) item.isCrashed = sim.isCrashed;
-                }
-            }
-            // Add sequential lap number (1-based)
-            return { ...item, lapIndex: idx + 1 };
-        });
-
-        return enriched.reverse();
+        if (!driver || !teamStore.value.team) return [];
+        const hist = setupStore.getHistoryByDriver(driver.id);
+        const team = teamStore.value.team;
+        const driverSetup = team.weekStatus?.driverSetups?.[driver.id] || {};
+        const legacy = (driverSetup.practiceRuns || []).map((run: any, idx: number) => ({
+            id: `legacy-${idx}`,
+            driverId: driver.id,
+            lapTime: run.time,
+            setupUsed: run.setupUsed,
+            feedback: [],
+            setupConfidence: 0,
+            isCrashed: !!run.isCrashed,
+            timestamp: null,
+        }));
+        const combined = [...hist, ...legacy];
+        return combined.reverse(); // Simplified for now
     });
 
     const globalStandings = $derived.by(() => {
         if (competitorTimes.length === 0) return [];
-        
         const leaderTime = competitorTimes.find(c => c.time !== null)?.time || null;
         return competitorTimes.map((s, idx) => ({
             ...s,
@@ -149,39 +110,25 @@
         }));
     });
 
-    $effect(() => {
-        if (globalStandings.length > 0) {
-            console.log('[PracticePanel] UI Standings data synchronized. Entries:', globalStandings.length);
-        } else {
-            console.log('[PracticePanel] UI Standings data is currently empty.');
-        }
-    });
-
-    // Reactivity check for store synchronization
-    $effect(() => {
+    async function refreshStandings() {
         const team = teamStore.value.team;
-        const uniLoading = universeStore.value.loading;
-        const teamLoading = teamStore.value.loading;
-        const seasonLoading = seasonStore.value.loading;
         const season = seasonStore.value.season;
-        
-        const lId = team?.leagueId;
-        const sId = team?.currentSeasonId;
-        const tId = team?.id;
+        const event = nextEvent;
+        if (!team || !season || !event) return;
 
-        console.log('[PracticePanel] Data synchronization check:', { 
-            hasTeam: !!team, 
-            teamLoading, 
-            uniLoading,
-            seasonLoading,
-            hasSeason: !!season,
-            teamId: tId, 
-            leagueId: lId, 
-            seasonId: sId 
-        });
+        const league = universeStore.getLeagueByTeamId(team.id);
+        const teamIds = league?.teams?.map((t: any) => t.id) || [];
+        const teamNames: Record<string, string> = {};
+        league?.teams?.forEach((t: any) => { teamNames[t.id] = t.name; });
 
-        if (team && !teamLoading && !uniLoading && !seasonLoading) {
-            console.log('[PracticePanel] All stores synced. Triggering refreshStandings.');
+        if (teamIds.length === 0) return;
+        const sessionId = `${season.id}_${event.id}`;
+        const times = await raceService.getCompetitorPracticeTimes(sessionId, teamIds, teamNames);
+        competitorTimes = times;
+    }
+
+    $effect(() => {
+        if (teamStore.value.team && !teamStore.value.loading && !universeStore.value.loading && !seasonStore.value.loading) {
             refreshStandings();
         }
     });
@@ -190,59 +137,8 @@
         if (teamStore.value.team?.id) {
             setupStore.init(teamStore.value.team.id);
         }
-        // Force an initial refresh if stores are already ready
-        if (teamStore.value.team && !teamStore.value.loading && !universeStore.value.loading && !seasonStore.value.loading) {
-            refreshStandings();
-        }
     });
 
-    async function refreshStandings() {
-        const team = teamStore.value.team;
-        const season = seasonStore.value.season;
-        const event = nextEvent;
-
-        if (!team || !season || !event) {
-            console.log('[PracticePanel] refreshStandings: Aborting.', { 
-                hasTeam: !!team, 
-                hasSeason: !!season, 
-                hasEvent: !!event 
-            });
-            return;
-        }
-
-        // 1. Determine ALL team IDs in the current league (needed for the driver query)
-        const league = universeStore.getLeagueByTeamId(team.id);
-        const teamIds = league?.teams?.map((t: any) => t.id) || [];
-        const teamNames: Record<string, string> = {};
-        league?.teams?.forEach((t: any) => {
-            teamNames[t.id] = t.name;
-        });
-
-        console.log('[PracticePanel] refreshStandings: Preparation:', {
-            leagueName: league?.name,
-            teamIdsCount: teamIds.length,
-            teamIds: teamIds
-        });
-
-        if (teamIds.length === 0) {
-            console.warn('[PracticePanel] refreshStandings: No teams found in league. Standing down.');
-            return;
-        }
-
-        // 2. Format Session ID (matches race results pattern)
-        const sessionId = `${season.id}_${event.id}`;
-        
-        console.log('[PracticePanel] refreshStandings: Fetching for session:', sessionId, 'with teamIds:', teamIds);
-
-        const times = await raceService.getCompetitorPracticeTimes(sessionId, teamIds, teamNames);
-        console.log(`[PracticePanel] refreshStandings: Received ${times.length} entries.`);
-        if (times.length > 0) {
-            console.table(times.slice(0, 5));
-        }
-        competitorTimes = times;
-    }
-
-    // Restore setup and lastResult from weekStatus or history when driver changes
     $effect(() => {
         if (driverId) {
             untrack(() => {
@@ -250,44 +146,30 @@
                 if (team?.weekStatus?.driverSetups?.[driverId]?.practice) {
                     const savedSetup = team.weekStatus.driverSetups[driverId].practice;
                     setup = { ...setup, ...savedSetup };
-                    
-                    // Initialize lastResult from saved best lap for Pit Board persistence
-                    if (savedSetup.bestLapTime) {
-                        lastResult = {
-                            lapTime: savedSetup.bestLapTime,
-                            driverFeedback: [],
-                            tyreFeedback: [],
-                            setupConfidence: savedSetup.setupConfidence || 0.5,
-                            setupUsed: { ...setup },
-                            isCrashed: false
-                        };
-                    } else {
-                        lastResult = null;
-                    }
-                } else {
-                    const hist = setupStore.getHistoryByDriver(driverId);
-                    if (hist.length > 0) {
-                        setup = { ...setup, ...hist[0].setupUsed };
-                    }
-                    lastResult = null;
                 }
             });
         }
     });
 
-    // Sync lastResult with history if not currently simulating
     $effect(() => {
-        if (!isSimulating && driverId && enrichedHistory.length > 0) {
-            const latest = enrichedHistory[0];
-            if (latest.feedback && latest.feedback.length > 0) {
+        if (driverId && !isSimulating) {
+            const team = teamStore.value.team;
+            if (!team) return;
+            
+            const practiceData = team.weekStatus?.driverSetups?.[driverId]?.practice;
+            
+            if (practiceData?.lastResult || practiceData?.sessionFeedback) {
                 lastResult = {
-                    lapTime: latest.lapTime,
-                    driverFeedback: latest.feedback || [],
-                    tyreFeedback: [],
-                    setupConfidence: latest.setupConfidence,
-                    setupUsed: latest.setupUsed,
-                    isCrashed: !!latest.isCrashed
+                    lapTime: practiceData.lastResult?.lapTime || 0,
+                    setupConfidence: practiceData.lastResult?.setupConfidence || 0,
+                    isCrashed: practiceData.lastResult?.isCrashed || false,
+                    setupUsed: practiceData.lastResult?.setupUsed || setup,
+                    driverFeedback: practiceData.sessionFeedback || [],
+                    tyreFeedback: []
                 };
+            } else {
+                // Only clear if we really have no data
+                lastResult = null;
             }
         }
     });
@@ -296,110 +178,112 @@
         const currentDriver = driver;
         const currentCircuit = circuit;
         const team = teamStore.value.team;
-        if (!currentDriver || !currentCircuit || !team) {
-            isSimulating = false;
-            return;
-        }
+        if (!currentDriver || !currentCircuit || !team) return;
 
         isSimulating = true;
-
-        // One-time cost check: $10,000 per driver per weekend
         const weekStatus = team.weekStatus || {};
         const practicePaid = weekStatus.practicePaid || {};
         const hasPaid = practicePaid[currentDriver.id];
 
         if (!hasPaid) {
             if (team.budget < PRACTICE_SESSION_COST) {
-                alert(t('insufficient_funds') || "Insufficient funds ($10,000 required)");
+                alert(t('insufficient_funds'));
                 isSimulating = false;
                 return;
             }
-
-            // Pay the fee
             try {
                 const teamRef = doc(db, "teams", team.id);
-                const txRef = collection(db, "teams", team.id, "transactions");
-
                 await updateDoc(teamRef, {
                     budget: team.budget - PRACTICE_SESSION_COST,
                     [`weekStatus.practicePaid.${currentDriver.id}`]: true
                 });
-
-                await addDoc(txRef, {
-                    description: t('practice_fee_description', { name: currentDriver.name }) || `Track access fee for ${currentDriver.name}`,
-                    amount: -PRACTICE_SESSION_COST,
-                    date: serverTimestamp(),
-                    type: "PRACTICE"
-                });
-            } catch (err) {
-                console.error("Error paying practice fee:", err);
-                alert("Error processing payment.");
-                isSimulating = false;
-                return;
-            }
-        }
-
-        // Limit check
-        const driverSetupCheck = weekStatus.driverSetups?.[currentDriver.id] || {};
-        const driverSetupLaps = driverSetupCheck.practice?.laps || 0;
-
-        if (driverSetupLaps + lapsToRun > MAX_PRACTICE_LAPS_PER_DRIVER) {
-            alert(t('laps_remaining', { count: Math.max(0, MAX_PRACTICE_LAPS_PER_DRIVER - driverSetupLaps) }) || `Maximum of ${MAX_PRACTICE_LAPS_PER_DRIVER} laps reached.`);
-            isSimulating = false;
-            return;
+            } catch (err) { console.error(err); isSimulating = false; return; }
         }
 
         const setupToRun = { ...setup, qualifyingStyle: currentDriverStyle };
-
+        const sessionFeedbackSet = new Set<string>();
+        const sessionLapTimes: number[] = [];
+        let bestSessionResult: PracticeRunResult | null = null;
+        
+        pitBoardMessages = [`${currentDriver.name} heads out for ${lapsToRun} ${lapsToRun === 1 ? 'lap' : 'laps'}.`];
+        
         try {
             for (let i = 0; i < lapsToRun; i++) {
-                const result = practiceService.simulatePracticeRun(
-                    currentCircuit,
-                    team,
-                    currentDriver,
-                    setupToRun,
-                    nextEvent?.weatherPractice || "Sunny",
-                );
-                lastResult = result;
-
-                const sessionId = `${seasonStore.value.season?.id}_${nextEvent?.id}`;
-
-                await practiceService.savePracticeRun(
-                    teamStore.value.team!,
-                    currentDriver.id,
-                    result,
-                    setupToRun,
-                    sessionId
-                );
-
-                // Refresh global standings after a run
-                await refreshStandings();
-
-                // Wait for visual feedback
+                // Narrative: Start of lap
+                pitBoardMessages = [`Lap ${i+1}: Pushing hard...`, ...pitBoardMessages].slice(0, 50);
                 await new Promise((r) => setTimeout(r, 600));
+
+                const result = practiceService.simulatePracticeRun(currentCircuit, team, currentDriver, setupToRun, nextEvent?.weatherPractice || "Sunny");
+                
+                // Narrative: Sectors
+                const s1Time = (result.lapTime / 3) + (Math.random() * 0.5 - 0.25);
+                const s2Time = (result.lapTime / 3) + (Math.random() * 0.5 - 0.25);
+                
+                pitBoardMessages = [`Sector 1: ${s1Time.toFixed(3)}s`, ...pitBoardMessages].slice(0, 50);
+                await new Promise((r) => setTimeout(r, 800));
+                
+                pitBoardMessages = [`Sector 2: ${s2Time.toFixed(3)}s`, ...pitBoardMessages].slice(0, 50);
+                await new Promise((r) => setTimeout(r, 800));
+
+                // Collection for summary
+                sessionLapTimes.push(result.lapTime);
+
+                // Aggregate unique feedback messages for the session but DO NOT show yet!
+                result.driverFeedback.forEach(f => sessionFeedbackSet.add(f));
+                result.tyreFeedback.forEach(f => sessionFeedbackSet.add(f));
+                
+                if (!bestSessionResult || (result.lapTime < bestSessionResult.lapTime && !result.isCrashed)) {
+                    bestSessionResult = result;
+                }
+
+                // Show lap time in pit board
+                const crashSuffix = result.isCrashed ? " - CRASHED" : "";
+                pitBoardMessages = [`L${i+1} COMPLETED: ${formatTime(result.lapTime)}${crashSuffix}`, ...pitBoardMessages].slice(0, 50);
+
+                // Wait for the lap to "finish"
+                await new Promise((r) => setTimeout(r, 1200));
                 if (result.isCrashed) break;
             }
 
-            // Update stamina/morale (like in PracticeSetupTab)
-            const staminaCost = lapsToRun * 1;
-            let moralePenalty = 0;
-            if (lastResult) {
-                if (lastResult.isCrashed) moralePenalty = 5;
-                else if (lastResult.setupConfidence < 0.60) moralePenalty = 2;
-                else if (lastResult.setupConfidence > 0.85) moralePenalty = -1;
+            // Save ONCE per session with aggregated results
+            if (bestSessionResult) {
+                pitBoardMessages = ["Driver returning to pits...", ...pitBoardMessages].slice(0, 50);
+                
+                // Add a small "debrief" delay before showing the final result with new feedback
+                await new Promise((r) => setTimeout(r, 1000));
+                pitBoardMessages = ["Debriefing with engineers...", ...pitBoardMessages].slice(0, 50);
+                await new Promise((r) => setTimeout(r, 1500));
+
+                // ADD STINT SUMMARY to Pit Board
+                const bestTime = Math.min(...sessionLapTimes);
+                const summaryMessages = [
+                    "--- STINT SUMMARY ---",
+                    ...sessionLapTimes.map((t, idx) => `Lap ${idx + 1}: ${formatTime(t)}${t === bestTime ? ' (BEST)' : ''}`),
+                    "---------------------"
+                ].reverse();
+                
+                pitBoardMessages = [...summaryMessages, ...pitBoardMessages].slice(0, 100);
+
+                const sessionResult = {
+                    ...bestSessionResult,
+                    driverFeedback: Array.from(sessionFeedbackSet)
+                };
+
+                // NOW we update lastResult to trigger the speech bubble
+                lastResult = sessionResult;
+
+                const sessionId = `${seasonStore.value.season?.id}_${nextEvent?.id}`;
+                await practiceService.savePracticeRun(
+                    teamStore.value.team!, 
+                    currentDriver.id, 
+                    sessionResult, 
+                    setupToRun, 
+                    sessionId,
+                    lapsToRun
+                );
+                await refreshStandings();
             }
-
-            const driverRef = doc(db, "drivers", currentDriver.id);
-            const currentStats = currentDriver.stats || {};
-            await updateDoc(driverRef, {
-                "stats.stamina": Math.max(0, (currentStats.stamina || 100) - staminaCost),
-                "stats.morale": Math.max(0, Math.min(100, (currentStats.morale || 100) - moralePenalty)),
-            });
-
-        } catch (e) {
-            console.error(e);
-        }
-
+        } catch (e) { console.error(e); }
         isSimulating = false;
     }
 
@@ -407,9 +291,7 @@
         if (!driver || !teamStore.value.team) return;
         try {
             const teamRef = doc(db, "teams", teamStore.value.team.id);
-            await updateDoc(teamRef, {
-                [`weekStatus.driverSetups.${driver.id}.qualifying`]: { ...setup },
-            });
+            await updateDoc(teamRef, { [`weekStatus.driverSetups.${driver.id}.qualifying`]: { ...setup } });
             alert("✓ " + t('set_qualy'));
         } catch (e) { console.error(e); }
     }
@@ -418,9 +300,7 @@
         if (!driver || !teamStore.value.team) return;
         try {
             const teamRef = doc(db, "teams", teamStore.value.team.id);
-            await updateDoc(teamRef, {
-                [`weekStatus.driverSetups.${driver.id}.race`]: { ...setup },
-            });
+            await updateDoc(teamRef, { [`weekStatus.driverSetups.${driver.id}.race`]: { ...setup } });
             alert("✓ " + t('set_race'));
         } catch (e) { console.error(e); }
     }
@@ -430,16 +310,6 @@
         if (conf > 0.7) return "text-emerald-500/80";
         if (conf > 0.4) return "text-yellow-400";
         return "text-red-400";
-    }
-
-    function formatDisplayDate(ts: any) {
-        if (!ts) return t('session_label') || 'SESSION';
-        try {
-            const date = ts.toDate ? ts.toDate() : new Date(ts);
-            return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-        } catch (e) {
-            return t('session_label') || 'SESSION';
-        }
     }
 
     function formatTime(seconds: number) {
@@ -456,51 +326,66 @@
         { id: DriverStyle.offensive, icon: Zap, color: "text-orange-400", label: "offensive" as TranslationKey },
         { id: DriverStyle.mostRisky, icon: Zap, color: "text-red-500", label: "risky" as TranslationKey },
     ];
-
-    function getMoraleColor(val: number) {
-        if (val >= 75) return "bg-emerald-500";
-        if (val >= 40) return "bg-yellow-500";
-        return "bg-red-500";
-    }
-
-    function getStaminaColor(val: number) {
-        if (val >= 75) return "bg-cyan-500";
-        if (val >= 40) return "bg-emerald-500";
-        return "bg-yellow-500";
-    }
 </script>
 
 <div class="grid grid-cols-1 lg:grid-cols-12 gap-5" in:fade>
     <!-- LEFT: Setup & Controls (7 Cols) -->
     <div class="lg:col-span-7 space-y-5">
-        <!-- DRIVER STATUS CARD (New for parity) -->
         {#if driver}
-            <div class="bg-app-surface border border-app-border rounded-xl p-4 flex items-center justify-between gap-6 shadow-sm">
-                <div class="flex-1 space-y-2">
-                    <div class="flex justify-between items-center text-[9px] font-black uppercase tracking-wider text-app-text/40">
-                        <div class="flex items-center gap-1.5"><Bolt size={10} class="text-emerald-400" /> {t('fitness')}</div>
-                        <span class="text-app-text">{driver.stats?.stamina || 100}%</span>
-                    </div>
-                    <div class="h-1.5 w-full bg-app-text/5 rounded-full overflow-hidden">
-                        <div class="h-full {getStaminaColor(driver.stats?.stamina || 100)}" style="width: {driver.stats?.stamina || 100}%"></div>
-                    </div>
-                </div>
-                <div class="flex-1 space-y-2">
-                    <div class="flex justify-between items-center text-[9px] font-black uppercase tracking-wider text-app-text/40">
-                        <div class="flex items-center gap-1.5"><Smile size={10} class="text-yellow-400" /> {t('morale')}</div>
-                        <span class="text-app-text">{driver.stats?.morale || 100}%</span>
-                    </div>
-                    <div class="h-1.5 w-full bg-app-text/5 rounded-full overflow-hidden">
-                        <div class="h-full {getMoraleColor(driver.stats?.morale || 100)}" style="width: {driver.stats?.morale || 100}%"></div>
-                    </div>
-                </div>
-                <div class="flex-1 space-y-2">
-                    <div class="flex justify-between items-center text-[9px] font-black uppercase tracking-wider text-app-text/40">
-                        <div class="flex items-center gap-1.5"><History size={10} class="text-app-primary" /> {t('laps_available')}</div>
-                        <span class="text-app-text">{driverPracticeLaps} / 50</span>
-                    </div>
-                    <div class="h-1.5 w-full bg-app-text/5 rounded-full overflow-hidden">
-                        <div class="h-full bg-app-primary" style="width: {(driverPracticeLaps/50)*100}%"></div>
+            <div class="space-y-3">
+                <div class="bg-app-surface border border-app-border rounded-2xl p-6 shadow-2xl relative overflow-hidden group min-h-[160px] flex flex-col justify-center">
+                    <div class="absolute top-0 right-0 w-32 h-32 bg-app-primary/5 rounded-full -translate-y-1/2 translate-x-1/2 blur-3xl pointer-events-none"></div>
+
+                    <div class="flex items-start gap-6 relative">
+                        <!-- BIG AVATAR -->
+                        <div class="shrink-0 relative">
+                            <div class="w-16 h-16 rounded-2xl bg-app-primary/10 border border-app-primary/20 flex items-center justify-center overflow-hidden shadow-inner ring-4 ring-app-primary/5">
+                                <DriverAvatar id={driver.id} seed={driver.id} gender={driver.gender} size={64} />
+                            </div>
+                            <div class="absolute -bottom-1 -right-1 w-5 h-5 rounded-full bg-emerald-500 border-2 border-app-surface ring-1 ring-emerald-500/20 {isSimulating ? 'animate-pulse' : ''}"></div>
+                        </div>
+
+                        <!-- CONVERSATION BUBBLE -->
+                        <div class="flex-1 space-y-3">
+                            <div class="flex items-center justify-between">
+                                <span class="text-[10px] font-black uppercase tracking-[0.3em] text-app-primary leading-none">{driver.name}</span>
+                                <div class="flex items-center gap-4 text-[9px] font-black uppercase text-app-text/30">
+                                    <div class="flex items-center gap-1.5"><Bolt size={10} class="text-emerald-400" /> {driver.stats?.stamina || 100}%</div>
+                                    <div class="flex items-center gap-1.5"><Smile size={10} class="text-yellow-400" /> {driver.stats?.morale || 100}%</div>
+                                </div>
+                            </div>
+                            {#if isSimulating}
+                                <div in:fade class="text-[10px] font-black italic text-app-primary/60 uppercase tracking-widest animate-pulse flex items-center gap-2 mb-2">
+                                    <div class="w-1.5 h-1.5 rounded-full bg-app-primary animate-ping"></div>
+                                    {t('simulating_current_lap') || 'Simulating...'}
+                                </div>
+                            {/if}
+
+                            {#if lastResult}
+                                <div in:fade class="bg-app-text/5 rounded-2xl rounded-tl-none p-4 relative border border-white/5">
+                                    <div class="absolute -left-2 top-0 w-2 h-2 bg-app-text/5 border-l border-t border-white/5" style="clip-path: polygon(100% 0, 0 0, 100% 100%);"></div>
+                                    <div class="space-y-2">
+                                        {#if lastResult.driverFeedback?.length}
+                                            {#each lastResult.driverFeedback as msg}
+                                                <p class="text-[11px] font-bold italic leading-relaxed text-app-text/90 flex gap-2">
+                                                    <span class="text-app-primary">“</span>
+                                                    {msg}
+                                                    <span class="text-app-primary">”</span>
+                                                </p>
+                                            {/each}
+                                        {:else}
+                                            <p class="text-[11px] font-bold italic leading-relaxed text-app-text/60 flex gap-2">
+                                                <span class="text-app-primary">“</span>
+                                                The car feels good so far. I don't have any major complaints about the current balance.
+                                                <span class="text-app-primary">”</span>
+                                            </p>
+                                        {/if}
+                                    </div>
+                                </div>
+                            {:else if !isSimulating}
+                                <p class="text-[11px] font-black italic text-app-text/20 uppercase tracking-widest">{t('awaiting_data') || 'Awaiting track data...'}</p>
+                            {/if}
+                        </div>
                     </div>
                 </div>
             </div>
@@ -522,10 +407,10 @@
 
             <div class="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-5">
                 {#each [
-                    { label: t('front_wing'), field: "frontWing" as keyof CarSetup, icon: Wind, color: "text-cyan-400" },
-                    { label: t('rear_wing'), field: "rearWing" as keyof CarSetup, icon: Wind, color: "text-cyan-400" },
-                    { label: t('suspension'), field: "suspension" as keyof CarSetup, icon: Navigation, color: "text-purple-400" },
-                    { label: t('gear_ratio'), field: "gearRatio" as keyof CarSetup, icon: Zap, color: "text-orange-400" }
+                    { label: t('front_wing'), field: "frontWing" as const, icon: Wind, color: "text-cyan-400" },
+                    { label: t('rear_wing'), field: "rearWing" as const, icon: Wind, color: "text-cyan-400" },
+                    { label: t('suspension'), field: "suspension" as const, icon: Navigation, color: "text-purple-400" },
+                    { label: t('gear_ratio'), field: "gearRatio" as const, icon: Zap, color: "text-orange-400" }
                 ] as item}
                     <div class="space-y-2 group">
                         <div class="flex justify-between items-center text-[10px] font-black uppercase">
@@ -574,7 +459,6 @@
                         {/each}
                     </div>
                     <button disabled={isSimulating || !driver} onclick={runPractice} class="flex-[1.5] py-3 bg-app-primary text-black font-black uppercase tracking-widest text-[11px] rounded-xl hover:scale-[1.02] active:scale-95 transition-all disabled:opacity-50 disabled:scale-100 flex items-center justify-center gap-2 shadow-lg shadow-app-primary/20">
-                        {#if isSimulating}<div class="w-3 h-3 border-2 border-black border-t-transparent rounded-full animate-spin"></div>{/if}
                         {isSimulating ? t('simulating_laps') : t('start_practice')}
                     </button>
                 </div>
@@ -647,99 +531,49 @@
         </div>
 
         <!-- PIT BOARD (Status) -->
-        <div class="bg-app-surface border border-app-border rounded-xl p-5 shadow-xl flex flex-col justify-between h-[110px]">
-            <div class="flex items-center justify-between">
+        <div class="bg-app-surface border border-app-border rounded-xl p-5 shadow-xl flex flex-col h-[180px]">
+            <div class="flex items-center justify-between mb-3">
                 <span class="text-[10px] font-black text-emerald-400 uppercase tracking-widest italic">{t('pit_board')}</span>
                 <div class="text-[11px] font-black italic {isSimulating ? 'text-emerald-400' : 'text-app-text/40'}">
-                    {isSimulating ? t('track_status_live') : lastResult ? t('garage_status_debrief') : t('track_status_pits_open')}
+                    {isSimulating ? t('track_status_live') || 'LIVE' : lastResult ? t('garage_status_debrief') || 'DEBRIEF' : t('track_status_pits_open') || 'OPEN'}
                 </div>
             </div>
-            <div class="flex items-end justify-between">
-                <div class="space-y-1">
-                    <div class="flex items-center gap-3">
-                        <p class="text-[20px] font-black italic text-app-text font-mono leading-none">{lastResult ? formatTime(lastResult.lapTime) : "--:--.---"}</p>
-                        {#if lastResult?.setupUsed?.tyreCompound}
-                            <div class="w-5 h-5 rounded-full border flex items-center justify-center text-[10px] font-black 
-                                {lastResult.setupUsed.tyreCompound === 'soft' ? 'bg-red-500 border-red-700 text-white' : 
-                                 lastResult.setupUsed.tyreCompound === 'medium' ? 'bg-yellow-500 border-yellow-700 text-black' : 
-                                 lastResult.setupUsed.tyreCompound === 'hard' ? 'bg-white border-gray-300 text-black' : 
-                                 'bg-blue-500 border-blue-700 text-white'} shadow-sm">
-                                {lastResult.setupUsed.tyreCompound[0].toUpperCase()}
+
+            <div class="flex-1 overflow-y-auto custom-scrollbar space-y-1.5 no-scrollbar">
+                {#if isSimulating || pitBoardMessages.length > 0}
+                    {#each pitBoardMessages as msg, i}
+                        <div in:fade={{duration: 200}} class="text-[10px] font-mono leading-tight {i === 0 ? 'text-emerald-400 font-bold' : 'text-app-text/40'}">
+                            <span class="opacity-30">[{new Date().toLocaleTimeString([], {hour12: false, minute:'2-digit', second:'2-digit'})}]</span> {msg}
+                        </div>
+                    {/each}
+                {:else if lastResult}
+                    <div class="flex items-end justify-between h-full">
+                        <div class="space-y-1">
+                            <div class="flex items-center gap-3">
+                                <p class="text-[24px] font-black italic text-app-text font-mono leading-none">{formatTime(lastResult.lapTime)}</p>
+                                {#if lastResult.setupUsed?.tyreCompound}
+                                    <div class="w-5 h-5 rounded-full border flex items-center justify-center text-[10px] font-black 
+                                        {lastResult.setupUsed.tyreCompound === 'soft' ? 'bg-red-500 border-red-700 text-white' : 
+                                        lastResult.setupUsed.tyreCompound === 'medium' ? 'bg-yellow-500 border-yellow-700 text-black' : 
+                                        lastResult.setupUsed.tyreCompound === 'hard' ? 'bg-white border-gray-300 text-black' : 
+                                        'bg-blue-500 border-blue-700 text-white'} shadow-sm">
+                                        {lastResult.setupUsed.tyreCompound[0].toUpperCase()}
+                                    </div>
+                                {/if}
                             </div>
+                            <p class="text-[9px] font-bold text-app-text/30 uppercase tracking-tighter">
+                                {t('last_outing_result')} • <span class="{getConfidenceColor(lastResult.setupConfidence)}">{t('confidence_label')} {(lastResult.setupConfidence*100).toFixed(0)}%</span>
+                            </p>
+                        </div>
+                        {#if lastResult.isCrashed}
+                            <div class="px-2 py-1 rounded bg-red-500 text-white text-[9px] font-black uppercase animate-bounce">{t('accident_label')}</div>
                         {/if}
                     </div>
-                    <p class="text-[9px] font-bold text-app-text/30 uppercase tracking-tighter">
-                        {t('last_outing_result')} {#if lastResult}• <span class="{getConfidenceColor(lastResult.setupConfidence)}">{t('confidence_label')} {(lastResult.setupConfidence*100).toFixed(0)}%</span>{/if}
-                    </p>
-                </div>
-                {#if lastResult?.isCrashed}
-                    <div class="px-2 py-1 rounded bg-red-500 text-white text-[9px] font-black uppercase animate-bounce">{t('accident_label')}</div>
+                {:else}
+                    <div class="flex items-center justify-center h-full opacity-10">
+                        <Flag size={32} />
+                    </div>
                 {/if}
-            </div>
-        </div>
-
-        <!-- UNIFIED HISTORY -->
-        <div class="bg-app-surface border border-app-border rounded-2xl flex flex-col h-[400px] shadow-2xl overflow-hidden">
-            <div class="bg-app-text/2 border-b border-app-border px-4 py-3">
-                <h3 class="text-[10px] font-black text-app-primary uppercase tracking-[0.2em]">{t('lap_history')}</h3>
-            </div>
-
-            <div class="flex-1 overflow-y-auto p-4 custom-scrollbar">
-                <div class="space-y-3">
-                    {#if enrichedHistory.length === 0}
-                        <div class="py-10 text-center text-app-text/20 text-[10px] italic">{t('no_laps_recorded')}</div>
-                    {:else}
-                        {@const validLaps = enrichedHistory.filter(h => !h.isCrashed && h.lapTime > 0)}
-                        {@const bestTime = validLaps.length > 0 ? Math.min(...validLaps.map(h => h.lapTime)) : 0}
-                        {#each enrichedHistory as lap, i}
-                            {@const lapDriver = teamDrivers.find(d => d.id === lap.driverId)}
-                            <div class="p-3 rounded-xl border transition-all {lap.lapTime === bestTime && !lap.isCrashed ? 'bg-[#E040FB]/5 border-[#E040FB]/30' : 'bg-app-text/2 border-transparent hover:border-app-text/10'}">
-                                <div class="flex items-center justify-between mb-2">
-                                    <div class="flex flex-col">
-                                        <div class="flex items-center gap-2">
-                                            <span class="text-[9px] font-black text-app-primary uppercase">{t('lap_number', { n: (lap as any).lapIndex })}</span>
-                                            <span class="text-[13px] font-black font-mono {lap.lapTime === bestTime && !lap.isCrashed ? 'text-[#E040FB]' : 'text-app-text'}">{formatTime(lap.lapTime)}</span>
-                                            {#if lap.setupUsed?.tyreCompound}
-                                                <div class="w-3.5 h-3.5 rounded-full border flex items-center justify-center text-[7px] font-black 
-                                                    {lap.setupUsed.tyreCompound === 'soft' ? 'bg-red-500 border-red-700 text-white' : 
-                                                     lap.setupUsed.tyreCompound === 'medium' ? 'bg-yellow-500 border-yellow-700 text-black' : 
-                                                     lap.setupUsed.tyreCompound === 'hard' ? 'bg-white border-gray-300 text-black' : 
-                                                     'bg-blue-500 border-blue-700 text-white'}">
-                                                    {lap.setupUsed.tyreCompound[0].toUpperCase()}
-                                                </div>
-                                            {/if}
-                                            {#if lap.isCrashed}<span class="text-[8px] bg-red-500 px-1 rounded font-black text-white">DNF</span>{/if}
-                                        </div>
-                                        <div class="flex items-center gap-1.5 opacity-40">
-                                            <span class="text-[8px] font-black uppercase text-app-text">{lapDriver?.name || 'Unknown'}</span>
-                                            <span class="text-[8px]">•</span>
-                                            <span class="text-[8px] font-black text-app-text uppercase">{t('confidence_label')} {(lap.setupConfidence * 100).toFixed(0)}%</span>
-                                        </div>
-                                    </div>
-                                    <div class="text-right">
-                                        <div class="text-[8px] font-black text-app-text/30 uppercase italic">{formatDisplayDate(lap.timestamp)}</div>
-                                    </div>
-                                </div>
-                                
-                                <div class="mt-2 space-y-1 border-t border-app-text/5 pt-2">
-                                    {#if lap.feedback && lap.feedback.length > 0}
-                                        {#each lap.feedback as msg}
-                                            <div class="text-[10px] italic text-app-text/70 leading-tight flex gap-2 items-start bg-app-text/0 hover:bg-app-text/5 p-1 rounded transition-colors">
-                                                <span class="text-app-primary font-bold mt-0.5">•</span>
-                                                <span>{msg}</span>
-                                            </div>
-                                        {/each}
-                                    {:else if !lap.isCrashed}
-                                        <div class="text-[10px] italic text-emerald-500/60 leading-tight flex gap-2 items-start p-1">
-                                            <CheckCircle2 size={10} class="mt-0.5" />
-                                            <span>{t('balance_good')}</span>
-                                        </div>
-                                    {/if}
-                                </div>
-                            </div>
-                        {/each}
-                    {/if}
-                </div>
             </div>
         </div>
     </div>

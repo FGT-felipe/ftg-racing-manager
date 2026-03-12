@@ -92,55 +92,45 @@
 
 <div class="flex flex-col gap-6" in:fade>
     {#if circuit}
-        <!-- CIRCUIT INTEL WIDGET (Moved up) -->
-        <div
-            class="bg-app-surface border border-app-primary/30 rounded-2xl p-4 flex flex-col md:flex-row gap-4 items-center justify-between shadow-[0_0_15px_rgba(197,160,89,0.1)]"
-        >
-            <div class="flex items-center gap-3 w-full max-w-xs">
-                <span class="text-3xl drop-shadow-lg">{circuit.flagEmoji}</span>
-                <div class="min-w-0">
-                    <h4
-                        class="text-[10px] font-black uppercase tracking-[0.2em] text-app-primary"
-                    >
-                        Circuit Intelligence
-                    </h4>
-                    <p class="text-[11px] text-app-text/60 truncate" title={circuit.name}>
-                        {circuit.name}
-                    </p>
+        <!-- CIRCUIT INTEL WIDGET (Premium & Compact) -->
+        <div class="bg-app-surface ring-1 ring-app-primary/20 rounded-2xl p-4 flex flex-col md:flex-row gap-6 items-center shadow-2xl relative overflow-hidden group">
+            <div class="absolute inset-0 bg-gradient-to-r from-app-primary/5 to-transparent pointer-events-none"></div>
+            
+            <div class="flex items-center gap-4 w-full md:w-auto shrink-0 relative">
+                <div class="w-12 h-12 rounded-xl bg-app-primary/10 flex items-center justify-center text-3xl shadow-inner border border-app-primary/20">
+                    {circuit.flagEmoji}
+                </div>
+                <div>
+                    <h4 class="text-[9px] font-black uppercase tracking-[0.3em] text-app-primary leading-none mb-1">Circuit Intel</h4>
+                    <p class="text-sm font-black italic text-app-text tracking-tight uppercase truncate max-w-[180px]">{circuit.name}</p>
                 </div>
             </div>
 
-            <div class="flex flex-wrap flex-1 w-full gap-4 items-center justify-end">
+            <div class="flex flex-wrap flex-1 w-full gap-6 items-center md:justify-end relative">
                 {#each [
-                    { label: 'Aero', val: circuit.aeroWeight },
-                    { label: 'Power', val: circuit.powertrainWeight },
-                    { label: 'Chassis', val: circuit.chassisWeight }
+                    { label: 'Aero', val: circuit.aeroWeight, color: 'text-cyan-400' },
+                    { label: 'Power', val: circuit.powertrainWeight, color: 'text-orange-400' },
+                    { label: 'Chassis', val: circuit.chassisWeight, color: 'text-purple-400' }
                 ] as stat}
-                    <div class="flex-1 min-w-[80px] space-y-1.5 max-w-[100px]">
-                        <div
-                            class="flex justify-between text-[9px] font-black uppercase tracking-wider text-app-text/50"
-                        >
+                    <div class="flex-1 min-w-[70px] max-w-[90px] space-y-1.5">
+                        <div class="flex justify-between text-[8px] font-black uppercase tracking-widest opacity-40">
                             <span>{stat.label}</span>
-                            <span>{Math.round(stat.val * 100)}%</span>
+                            <span class={stat.color}>{Math.round(stat.val * 100)}%</span>
                         </div>
-                        <div class="w-full h-1 bg-app-text/5 rounded-full overflow-hidden">
-                            <div
-                                class="h-full bg-app-primary"
-                                style="width: {stat.val * 100}%"
-                            ></div>
+                        <div class="w-full h-1 bg-white/5 rounded-full overflow-hidden">
+                            <div class="h-full bg-current {stat.color.replace('text-', 'bg-')}" style="width: {stat.val * 100}%"></div>
                         </div>
                     </div>
                 {/each}
 
-                <!-- NEW: Tyre & Fuel Info -->
-                <div class="flex gap-4 border-l border-app-border/30 pl-4">
+                <div class="flex gap-4 border-l border-white/10 pl-6 shrink-0">
                     <div class="flex flex-col">
-                        <span class="text-[8px] font-black uppercase tracking-widest text-app-text/30">{t('tyre_wear')}</span>
-                        <span class="text-[10px] font-bold text-app-text/80">{circuit.characteristics['Tyre Wear'] || 'Normal'}</span>
+                        <span class="text-[7px] font-black uppercase tracking-[0.2em] opacity-30 mb-0.5">{t('tyre_wear')}</span>
+                        <span class="text-[10px] font-black text-app-text/90 uppercase">{circuit.characteristics['Tyre Wear'] || 'Normal'}</span>
                     </div>
                     <div class="flex flex-col">
-                        <span class="text-[8px] font-black uppercase tracking-widest text-app-text/30">{t('fuel_consumption')}</span>
-                        <span class="text-[10px] font-bold text-app-text/80">{circuit.characteristics['Fuel Consumption'] || 'Normal'}</span>
+                        <span class="text-[7px] font-black uppercase tracking-[0.2em] opacity-30 mb-0.5">{t('fuel_consumption')}</span>
+                        <span class="text-[10px] font-black text-app-text/90 uppercase">{circuit.characteristics['Fuel Consumption'] || 'Normal'}</span>
                     </div>
                 </div>
             </div>

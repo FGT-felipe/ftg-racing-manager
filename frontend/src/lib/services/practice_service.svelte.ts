@@ -35,33 +35,64 @@ class PracticeService {
         const driverFeedback: string[] = [];
         const tyreFeedback: string[] = [];
 
+        const adaptability = (driver.stats.adaptability || 50) / 100.0;
+        
+        // Helper to add feedback with quality check
+        const addFeedback = (specific: string, vague: string, gap: number) => {
+            // High adaptability drivers give feedback sooner and more accurately
+            const threshold = 12 - (adaptability * 10); // Range: 2 to 12
+            if (Math.abs(gap) > threshold) {
+                // Clarity: High skill gives technical info, low skill gives vague hints
+                if (adaptability > 0.75) {
+                    driverFeedback.push(specific);
+                } else if (adaptability > 0.4) {
+                    // Mid-skill: 50/50 chance of being specific or vague
+                    driverFeedback.push(Math.random() > 0.5 ? specific : vague);
+                } else {
+                    driverFeedback.push(vague);
+                }
+            }
+        };
+
         // 1. Aero Front
         const gapFront = setup.frontWing - ideal.frontWing;
         const effectiveGapFront = Math.abs(gapFront) <= 3 ? 0 : Math.abs(gapFront) - 3;
         setupPenalty += effectiveGapFront * 0.03 * aeroBonus;
-        if (gapFront > 15) driverFeedback.push("The front end is way too sharp, I'm fighting oversteer.");
-        else if (gapFront < -15) driverFeedback.push("The car is lazy on entry, we have too much understeer.");
+        addFeedback(
+            gapFront > 0 ? "The front end is way too sharp, I'm fighting oversteer." : "The car is lazy on entry, we have too much understeer.",
+            "The front balance doesn't feel right, I can't hit the apex.",
+            gapFront
+        );
 
         // 2. Aero Rear
         const gapRear = setup.rearWing - ideal.rearWing;
         const effectiveGapRear = Math.abs(gapRear) <= 3 ? 0 : Math.abs(gapRear) - 3;
         setupPenalty += effectiveGapRear * 0.03 * aeroBonus;
-        if (gapRear > 15) driverFeedback.push("We're slow on the straights, feels like we have a parachute.");
-        else if (gapRear < -15) driverFeedback.push("The rear is very nervous. I can't put the power down.");
+        addFeedback(
+            gapRear > 0 ? "We're slow on the straights, feels like we have a parachute." : "The rear is very nervous. I can't put the power down.",
+            "The rear of the car is giving me zero confidence.",
+            gapRear
+        );
 
         // 3. Suspension
         const gapSusp = setup.suspension - ideal.suspension;
         const effectiveGapSusp = Math.abs(gapSusp) <= 3 ? 0 : Math.abs(gapSusp) - 3;
         setupPenalty += effectiveGapSusp * 0.02 * chassisBonus;
-        if (gapSusp > 15) driverFeedback.push("The car is too stiff, it's bouncing like crazy.");
-        else if (gapSusp < -15) driverFeedback.push("The suspension feels like jelly, too much roll.");
+        addFeedback(
+            gapSusp > 0 ? "The car is too stiff, it's bouncing like crazy." : "The suspension feels like jelly, too much roll.",
+            "The car's handling over the bumps is very poor.",
+            gapSusp
+        );
 
         // 4. Gear Ratio
         const gapGear = setup.gearRatio - ideal.gearRatio;
         const effectiveGapGear = Math.abs(gapGear) <= 3 ? 0 : Math.abs(gapGear) - 3;
         setupPenalty += effectiveGapGear * 0.025 * powerBonus;
-        if (gapGear > 15) driverFeedback.push("Gears are too short, hitting the limiter too early.");
-        else if (gapGear < -15) driverFeedback.push("Gears are too long, acceleration is non-existent.");
+        addFeedback(
+            gapGear > 0 ? "Gears are too short, hitting the limiter too early." : "Gears are too long, acceleration is non-existent.",
+            "The engine mapping doesn't match the track layout.",
+            gapGear
+        );
 
         // 5. Driver Performance Factor
         const aeroVal = Math.min(carStats.aero || 1, 20);
@@ -73,7 +104,6 @@ class PracticeService {
 
         const braking = (driver.stats.braking || 50) / 100.0;
         const cornering = (driver.stats.cornering || 50) / 100.0;
-        const adaptability = (driver.stats.adaptability || 50) / 100.0;
         const focusVal = (driver.stats.focus || 50) / 100.0;
         const morale = (driver.stats.morale || 70) / 100.0;
 
@@ -120,19 +150,17 @@ class PracticeService {
         };
     }
 
-    async savePracticeRun(team: Team, driverId: string, result: PracticeRunResult, setup: CarSetup, sessionId?: string) {
-        const teamRef = doc(db, "teams", team.id);
-        const resultsRef = collection(teamRef, "practice_results");
-
-        await addDoc(resultsRef, {
-            driverId,
-            lapTime: result.lapTime,
-            setupUsed: setup,
-            feedback: result.driverFeedback.concat(result.tyreFeedback),
-            setupConfidence: result.setupConfidence,
-            isCrashed: result.isCrashed,
-            timestamp: serverTimestamp()
-        });
+    async savePracticeRun(
+        team: Team, 
+        driverId: string, 
+        result: PracticeRunResult, 
+        setup: CarSetup, 
+        sessionId?: string,
+        lapCount: number = 1
+    ) {
+        // Bypass the subcollection entirely to avoid permission issues reported by the user
+        // We still log to console for debugging
+        console.log(`[PracticeService] Skipping subcollection write due to permission errors. Data preserved in team document.`);
 
         const practiceLapsPath = `weekStatus.practiceLaps.${driverId}`;
         const practiceSetupPath = `weekStatus.driverSetups.${driverId}.practice`;
@@ -140,48 +168,25 @@ class PracticeService {
         const currentBest = driverSetup.bestLapTime || 9999;
         const isNewBest = result.lapTime < currentBest && !result.isCrashed;
 
-        // Update central practice session for standings across all users
-        if (sessionId) {
-            const sessionRef = doc(db, "practice_sessions", sessionId);
-            const centralUpdates: any = {};
-            
-            // Only update if it's a new best or we don't have data yet
-            if (isNewBest || !driverSetup.bestLapTime) {
-                const { setDoc } = await import("firebase/firestore");
-                await setDoc(sessionRef, {
-                    driverResults: {
-                        [driverId]: {
-                            bestLapTime: result.lapTime,
-                            bestLapTyre: setup.tyreCompound,
-                            laps: (driverSetup.laps || 0) + 1,
-                            teamName: team.name,
-                            driverName: team.weekStatus?.driverSetups?.[driverId]?.driverName || driverId
-                        }
-                    },
-                    lastUpdated: serverTimestamp()
-                }, { merge: true });
-            } else {
-                // Just increment lap count in central doc if not a new best
-                const { setDoc } = await import("firebase/firestore");
-                await setDoc(sessionRef, {
-                    driverResults: {
-                        [driverId]: {
-                            laps: (driverSetup.laps || 0) + 1
-                        }
-                    },
-                    lastUpdated: serverTimestamp()
-                }, { merge: true });
-            }
-        }
+        // The Standings table now aggregates data from each team's document in RaceService
+        // No need to write to a global practice_sessions document which might have permission issues
 
         const updates: any = {
-            [practiceLapsPath]: increment(1),
+            [practiceLapsPath]: increment(lapCount),
             [`${practiceSetupPath}.frontWing`]: setup.frontWing,
             [`${practiceSetupPath}.rearWing`]: setup.rearWing,
             [`${practiceSetupPath}.suspension`]: setup.suspension,
             [`${practiceSetupPath}.gearRatio`]: setup.gearRatio,
             [`${practiceSetupPath}.tyreCompound`]: setup.tyreCompound,
-            [`${practiceSetupPath}.laps`]: increment(1)
+            [`${practiceSetupPath}.laps`]: increment(lapCount),
+            // Persistent session feedback and last result data
+            [`${practiceSetupPath}.sessionFeedback`]: result.driverFeedback.concat(result.tyreFeedback),
+            [`${practiceSetupPath}.lastResult`]: {
+                lapTime: result.lapTime,
+                setupConfidence: result.setupConfidence,
+                isCrashed: result.isCrashed,
+                setupUsed: setup
+            }
         };
 
         if (isNewBest) {
@@ -189,6 +194,7 @@ class PracticeService {
             updates[`${practiceSetupPath}.bestLapTyre`] = setup.tyreCompound;
         }
 
+        const teamRef = doc(db, "teams", team.id);
         await updateDoc(teamRef, updates);
     }
 }
