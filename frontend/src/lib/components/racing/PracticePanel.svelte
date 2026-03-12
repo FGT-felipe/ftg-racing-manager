@@ -1,14 +1,19 @@
 <script lang="ts">
     import { db } from "$lib/firebase/config";
-    import { doc, updateDoc } from "firebase/firestore";
+    import { doc, updateDoc, addDoc, collection, serverTimestamp } from "firebase/firestore";
     import { teamStore } from "$lib/stores/team.svelte";
     import { driverStore } from "$lib/stores/driver.svelte";
-    import { setupStore } from "$lib/stores/setup.svelte";
+    import { setupStore, type PracticeHistoryItem } from "$lib/stores/setup.svelte";
+    import {
+        raceService,
+    } from "$lib/services/race_service.svelte";
     import {
         practiceService,
         type PracticeRunResult,
     } from "$lib/services/practice_service.svelte";
+    import { MAX_PRACTICE_LAPS_PER_DRIVER, PRACTICE_SESSION_COST } from "$lib/constants/app_constants";
     import { seasonStore } from "$lib/stores/season.svelte";
+    import { universeStore } from "$lib/stores/universe.svelte";
     import { circuitService } from "$lib/services/circuit_service.svelte";
     import {
         type CarSetup,
@@ -21,25 +26,25 @@
         Zap,
         Wind,
         Navigation,
-        ShieldCheck,
-        Gauge,
         AlertTriangle,
         CheckCircle2,
         History,
-        Trash2,
-        ChevronRight,
-        Copy,
-        Flag,
         Info,
-        Lock,
-        User,
+        ChevronRight,
+        Flag,
+        Bolt,
+        Smile,
+        MessageSquare,
+        Target,
     } from "lucide-svelte";
-    import { onMount } from "svelte";
-    import { fade, slide, fly } from "svelte/transition";
+    import { onMount, untrack } from "svelte";
+    import { fade, slide } from "svelte/transition";
+    import DriverAvatar from "$lib/components/DriverAvatar.svelte";
+    import { t, type TranslationKey } from "$lib/utils/i18n";
 
-    let { carIndex = 0 } = $props();
+    let { driverId = null } = $props();
 
-    // Local state for sliders and additional fields
+    // Local state
     let setup = $state<CarSetup>({
         frontWing: 50,
         rearWing: 50,
@@ -57,120 +62,253 @@
     let currentDriverStyle = $state<DriverStyle>(DriverStyle.normal);
     let isSimulating = $state(false);
     let lastResult = $state<PracticeRunResult | null>(null);
+    let pitBoardMessages = $state<string[]>([]);
     let lapsToRun = $state(1);
-    let activeDriverId = $state<string | null>(null);
+    let competitorTimes = $state<Array<{ teamName: string; driverName: string; time: number | null; tyre: string | null; totalLaps: number; driverId: string }>>([]);
+    let telemetryTab = $state<'history' | 'standings'>('history');
 
+    // Derived states
     const teamDrivers = $derived(driverStore.drivers);
-    const driver = $derived(
-        teamDrivers.find((d: Driver) => d.id === activeDriverId) ||
-            (carIndex === 0 ? driverStore.carADriver : driverStore.carBDriver),
-    );
-
+    const driver = $derived(teamDrivers.find((d: any) => d.id === driverId));
     const nextEvent = $derived(seasonStore.nextEvent);
-    const circuit = $derived(
-        nextEvent
-            ? circuitService.getCircuitProfile(nextEvent.circuitId)
-            : null,
-    );
-    const history = $derived(
-        driver ? setupStore.getHistoryByDriver(driver.id) : [],
-    );
+    const circuit = $derived(nextEvent ? circuitService.getCircuitProfile(nextEvent.circuitId) : null);
+    
+    const driverPracticeLaps = $derived.by(() => {
+        if (!driverId) return 0;
+        return (
+            teamStore.value.team?.weekStatus?.driverSetups?.[driverId]
+                ?.practice?.laps || 0
+        );
+    });
+
+    const enrichedHistory = $derived.by(() => {
+        if (!driver || !teamStore.value.team) return [];
+        const hist = setupStore.getHistoryByDriver(driver.id);
+        const team = teamStore.value.team;
+        const driverSetup = team.weekStatus?.driverSetups?.[driver.id] || {};
+        const legacy = (driverSetup.practiceRuns || []).map((run: any, idx: number) => ({
+            id: `legacy-${idx}`,
+            driverId: driver.id,
+            lapTime: run.time,
+            setupUsed: run.setupUsed,
+            feedback: [],
+            setupConfidence: 0,
+            isCrashed: !!run.isCrashed,
+            timestamp: null,
+        }));
+        const combined = [...hist, ...legacy];
+        return combined.reverse(); // Simplified for now
+    });
+
+    const globalStandings = $derived.by(() => {
+        if (competitorTimes.length === 0) return [];
+        const leaderTime = competitorTimes.find(c => c.time !== null)?.time || null;
+        return competitorTimes.map((s, idx) => ({
+            ...s,
+            position: idx + 1,
+            gap: (s.time !== null && leaderTime !== null) ? s.time - leaderTime : null
+        }));
+    });
+
+    async function refreshStandings() {
+        const team = teamStore.value.team;
+        const season = seasonStore.value.season;
+        const event = nextEvent;
+        if (!team || !season || !event) return;
+
+        const league = universeStore.getLeagueByTeamId(team.id);
+        const teamIds = league?.teams?.map((t: any) => t.id) || [];
+        const teamNames: Record<string, string> = {};
+        league?.teams?.forEach((t: any) => { teamNames[t.id] = t.name; });
+
+        if (teamIds.length === 0) return;
+        const sessionId = `${season.id}_${event.id}`;
+        const times = await raceService.getCompetitorPracticeTimes(sessionId, teamIds, teamNames);
+        competitorTimes = times;
+    }
+
+    $effect(() => {
+        if (teamStore.value.team && !teamStore.value.loading && !universeStore.value.loading && !seasonStore.value.loading) {
+            refreshStandings();
+        }
+    });
 
     onMount(() => {
         if (teamStore.value.team?.id) {
             setupStore.init(teamStore.value.team.id);
         }
+    });
 
-        // Default to the driver assigned to this car
-        const initialDriver =
-            carIndex === 0 ? driverStore.carADriver : driverStore.carBDriver;
-        if (initialDriver) activeDriverId = initialDriver.id;
+    $effect(() => {
+        if (driverId) {
+            untrack(() => {
+                const team = teamStore.value.team;
+                if (team?.weekStatus?.driverSetups?.[driverId]?.practice) {
+                    const savedSetup = team.weekStatus.driverSetups[driverId].practice;
+                    setup = { ...setup, ...savedSetup };
+                }
+            });
+        }
+    });
 
-        // Load latest setup from history if available
-        if (history.length > 0) {
-            const lastSetup = history[0].setupUsed;
-            setup = { ...setup, ...lastSetup };
+    $effect(() => {
+        if (driverId && !isSimulating) {
+            const team = teamStore.value.team;
+            if (!team) return;
+            
+            const practiceData = team.weekStatus?.driverSetups?.[driverId]?.practice;
+            
+            if (practiceData?.lastResult || practiceData?.sessionFeedback) {
+                lastResult = {
+                    lapTime: practiceData.lastResult?.lapTime || 0,
+                    setupConfidence: practiceData.lastResult?.setupConfidence || 0,
+                    isCrashed: practiceData.lastResult?.isCrashed || false,
+                    setupUsed: practiceData.lastResult?.setupUsed || setup,
+                    setupHints: practiceData.lastResult?.setupHints,
+                    driverFeedback: practiceData.sessionFeedback || [],
+                    tyreFeedback: []
+                };
+            } else {
+                // Only clear if we really have no data
+                lastResult = null;
+            }
         }
     });
 
     async function runPractice() {
-        if (!driver || !circuit || !teamStore.value.team) return;
+        const currentDriver = driver;
+        const currentCircuit = circuit;
+        const team = teamStore.value.team;
+        if (!currentDriver || !currentCircuit || !team) return;
 
         isSimulating = true;
+        const weekStatus = team.weekStatus || {};
+        const practicePaid = weekStatus.practicePaid || {};
+        const hasPaid = practicePaid[currentDriver.id];
 
-        // Cost: $3,000 per lap
-        const cost = 3000 * lapsToRun;
-        if (teamStore.value.team.budget < cost) {
-            alert("Insufficient funds for practice runs.");
-            isSimulating = false;
-            return;
+        if (!hasPaid) {
+            if (team.budget < PRACTICE_SESSION_COST) {
+                alert(t('insufficient_funds'));
+                isSimulating = false;
+                return;
+            }
+            try {
+                const teamRef = doc(db, "teams", team.id);
+                await updateDoc(teamRef, {
+                    budget: team.budget - PRACTICE_SESSION_COST,
+                    [`weekStatus.practicePaid.${currentDriver.id}`]: true
+                });
+            } catch (err) { console.error(err); isSimulating = false; return; }
         }
 
-        // Apply selected style to the setup for this run
         const setupToRun = { ...setup, qualifyingStyle: currentDriverStyle };
+        const sessionFeedbackSet = new Set<string>();
+        const sessionLapTimes: number[] = [];
+        let bestSessionResult: PracticeRunResult | null = null;
+        
+        pitBoardMessages = [`${currentDriver.name} heads out for ${lapsToRun} ${lapsToRun === 1 ? 'lap' : 'laps'}.`];
+        
+        try {
+            for (let i = 0; i < lapsToRun; i++) {
+                // Narrative: Start of lap
+                pitBoardMessages = [`Lap ${i+1}: Pushing hard...`, ...pitBoardMessages].slice(0, 50);
+                await new Promise((r) => setTimeout(r, 600));
 
-        // Simulate laps
-        for (let i = 0; i < lapsToRun; i++) {
-            const result = practiceService.simulatePracticeRun(
-                circuit,
-                teamStore.value.team,
-                driver,
-                setupToRun,
-            );
-            lastResult = result;
-            await practiceService.savePracticeRun(
-                teamStore.value.team.id,
-                driver.id,
-                result,
-                setupToRun,
-            );
+                const result = practiceService.simulatePracticeRun(currentCircuit, team, currentDriver, setupToRun, nextEvent?.weatherPractice || "Sunny");
+                
+                // Narrative: Sectors
+                const s1Time = (result.lapTime / 3) + (Math.random() * 0.5 - 0.25);
+                const s2Time = (result.lapTime / 3) + (Math.random() * 0.5 - 0.25);
+                
+                pitBoardMessages = [`Sector 1: ${s1Time.toFixed(3)}s`, ...pitBoardMessages].slice(0, 50);
+                await new Promise((r) => setTimeout(r, 800));
+                
+                pitBoardMessages = [`Sector 2: ${s2Time.toFixed(3)}s`, ...pitBoardMessages].slice(0, 50);
+                await new Promise((r) => setTimeout(r, 800));
 
-            // Wait for visual feedback
-            await new Promise((r) => setTimeout(r, 800));
-        }
+                // Collection for summary
+                sessionLapTimes.push(result.lapTime);
 
+                // Aggregate unique feedback messages for the session but DO NOT show yet!
+                result.driverFeedback.forEach(f => sessionFeedbackSet.add(f));
+                result.tyreFeedback.forEach(f => sessionFeedbackSet.add(f));
+                
+                if (!bestSessionResult || (result.lapTime < bestSessionResult.lapTime && !result.isCrashed)) {
+                    bestSessionResult = result;
+                }
+
+                // Show lap time in pit board
+                const crashSuffix = result.isCrashed ? " - CRASHED" : "";
+                pitBoardMessages = [`L${i+1} COMPLETED: ${formatTime(result.lapTime)}${crashSuffix}`, ...pitBoardMessages].slice(0, 50);
+
+                // Wait for the lap to "finish"
+                await new Promise((r) => setTimeout(r, 1200));
+                if (result.isCrashed) break;
+            }
+
+            // Save ONCE per session with aggregated results
+            if (bestSessionResult) {
+                pitBoardMessages = ["Driver returning to pits...", ...pitBoardMessages].slice(0, 50);
+                
+                // Add a small "debrief" delay before showing the final result with new feedback
+                await new Promise((r) => setTimeout(r, 1000));
+                pitBoardMessages = ["Debriefing with engineers...", ...pitBoardMessages].slice(0, 50);
+                await new Promise((r) => setTimeout(r, 1500));
+
+                // ADD STINT SUMMARY to Pit Board
+                const bestTime = Math.min(...sessionLapTimes);
+                const summaryMessages = [
+                    "--- STINT SUMMARY ---",
+                    ...sessionLapTimes.map((t, idx) => `Lap ${idx + 1}: ${formatTime(t)}${t === bestTime ? ' (BEST)' : ''}`),
+                    "---------------------"
+                ].reverse();
+                
+                pitBoardMessages = [...summaryMessages, ...pitBoardMessages].slice(0, 100);
+
+                const sessionResult = {
+                    ...bestSessionResult,
+                    driverFeedback: Array.from(sessionFeedbackSet)
+                };
+
+                // NOW we update lastResult to trigger the speech bubble
+                lastResult = sessionResult;
+
+                const sessionId = `${seasonStore.value.season?.id}_${nextEvent?.id}`;
+                await practiceService.savePracticeRun(
+                    teamStore.value.team!, 
+                    currentDriver.id, 
+                    sessionResult, 
+                    setupToRun, 
+                    sessionId,
+                    lapsToRun
+                );
+                await refreshStandings();
+            }
+        } catch (e) { console.error(e); }
         isSimulating = false;
     }
 
     async function copyToQualifying() {
         if (!driver || !teamStore.value.team) return;
-
         try {
             const teamRef = doc(db, "teams", teamStore.value.team.id);
-            const path = `weekStatus.driverSetups.${driver.id}.qualifying`;
-
-            await updateDoc(teamRef, {
-                [path]: { ...setup },
-            });
-
-            alert(`✓ Practice setup copied to Qualifying for ${driver.name}`);
-        } catch (e) {
-            console.error("Error copying setup:", e);
-            alert("Error copying setup to Qualifying.");
-        }
+            await updateDoc(teamRef, { [`weekStatus.driverSetups.${driver.id}.qualifying`]: { ...setup } });
+            alert("✓ " + t('set_qualy'));
+        } catch (e) { console.error(e); }
     }
 
     async function copyToRace() {
         if (!driver || !teamStore.value.team) return;
-
         try {
             const teamRef = doc(db, "teams", teamStore.value.team.id);
-            const path = `weekStatus.driverSetups.${driver.id}.race`;
-
-            await updateDoc(teamRef, {
-                [path]: { ...setup },
-            });
-
-            alert(`✓ Practice setup copied to Race for ${driver.name}`);
-        } catch (e) {
-            console.error("Error copying setup:", e);
-            alert("Error copying setup to Race.");
-        }
+            await updateDoc(teamRef, { [`weekStatus.driverSetups.${driver.id}.race`]: { ...setup } });
+            alert("✓ " + t('set_race'));
+        } catch (e) { console.error(e); }
     }
 
     function getConfidenceColor(conf: number) {
-        if (conf > 0.9) return "text-green-500";
-        if (conf > 0.7) return "text-emerald-400";
+        if (conf > 0.9) return "text-emerald-400";
+        if (conf > 0.7) return "text-emerald-500/80";
         if (conf > 0.4) return "text-yellow-400";
         return "text-red-400";
     }
@@ -179,403 +317,289 @@
         if (seconds >= 999) return "DNF";
         const mins = Math.floor(seconds / 60);
         const secs = (seconds % 60).toFixed(3);
-        return `${mins}:${secs.padStart(6, "0")}`;
+        const parts = secs.split('.');
+        return `${mins}:${parts[0].padStart(2, '0')}.${parts[1]}`;
     }
 
     const styleConfigs = [
-        {
-            id: DriverStyle.defensive,
-            icon: ChevronRight,
-            color: "text-blue-400",
-            label: "Defensive",
-        },
-        {
-            id: DriverStyle.normal,
-            icon: Zap,
-            color: "text-green-400",
-            label: "Normal",
-        },
-        {
-            id: DriverStyle.offensive,
-            icon: Zap,
-            color: "text-orange-400",
-            label: "Offensive",
-        },
-        {
-            id: DriverStyle.mostRisky,
-            icon: Zap,
-            color: "text-red-500",
-            label: "Risky",
-        },
+        { id: DriverStyle.defensive, icon: ChevronRight, color: "text-blue-400", label: "defensive" as TranslationKey },
+        { id: DriverStyle.normal, icon: Zap, color: "text-emerald-400", label: "normal" as TranslationKey },
+        { id: DriverStyle.offensive, icon: Zap, color: "text-orange-400", label: "offensive" as TranslationKey },
+        { id: DriverStyle.mostRisky, icon: Zap, color: "text-red-500", label: "risky" as TranslationKey },
     ];
 </script>
 
-<div class="space-y-6">
-    <!-- Top Bar: Driver Selector & Circuit Intel -->
-    <div class="grid grid-cols-1 lg:grid-cols-2 gap-4">
-        <!-- Driver Selector -->
-        <div
-            class="bg-app-surface border border-app-border rounded-xl p-4 flex flex-wrap gap-2"
-        >
-            {#each teamDrivers as d}
-                <button
-                    class="px-3 py-1.5 rounded-lg border text-[10px] font-black uppercase transition-all flex items-center gap-2 {driver?.id ===
-                    d.id
-                        ? 'bg-app-primary border-app-primary text-app-primary-foreground'
-                        : 'bg-app-text/5 border-app-border text-app-text/40'}"
-                    onclick={() => (activeDriverId = d.id)}
-                >
-                    <User size={12} />
-                    {d.name}
-                </button>
-            {/each}
-        </div>
+<div class="grid grid-cols-1 lg:grid-cols-12 gap-5" in:fade>
+    <!-- LEFT: Setup & Controls (7 Cols) -->
+    <div class="lg:col-span-7 space-y-5">
+        {#if driver}
+            <div class="space-y-3">
+                <div class="bg-app-surface border border-app-border rounded-2xl p-6 shadow-2xl relative overflow-hidden group min-h-[160px] flex flex-col justify-center">
+                    <div class="absolute top-0 right-0 w-32 h-32 bg-app-primary/5 rounded-full -translate-y-1/2 translate-x-1/2 blur-3xl pointer-events-none"></div>
 
-        <!-- Circuit Intel -->
-        <div
-            class="bg-app-surface border border-app-border rounded-xl p-4 flex items-center overflow-x-auto gap-2 no-scrollbar"
-        >
-            {#if circuit && circuit.characteristics}
-                {#each Object.entries(circuit.characteristics).filter(([key]) => key.toLowerCase() !== 'weather') as [key, val]}
-                    {@const tooltip = 
-                        key.toLowerCase().includes('fuel') ? 'Fuel consumption ranges between 1.0 and 1.9 liters per lap.' :
-                        key.toLowerCase().includes('tyre') ? 'Indicates the rate of tire degradation on this surface.' :
-                        key.toLowerCase().includes('elevation') ? 'Significant height changes affecting balance and power.' : null
-                    }
-                    <div
-                        class="px-3 py-1.5 rounded-lg bg-blue-500/10 border border-blue-500/20 whitespace-nowrap cursor-help group/item"
-                        title={tooltip}
-                    >
-                        <span
-                            class="text-[9px] font-black text-blue-400 uppercase tracking-tighter group-hover/item:text-blue-300 transition-colors"
-                            >{key}: {val}</span
-                        >
-                    </div>
-                {/each}
-            {/if}
-        </div>
-    </div>
-
-    <!-- Main Content Grid -->
-    <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
-        <!-- Left Column: Controls -->
-        <div class="lg:col-span-7 space-y-6">
-            <!-- Setup Card -->
-            <div
-                class="bg-app-surface border border-app-border rounded-2xl p-6 relative overflow-hidden shadow-2xl"
-            >
-                <!-- Header with copy buttons -->
-                <div class="flex items-center justify-between mb-8">
-                    <div>
-                        <h3
-                            class="font-black text-xs text-app-text uppercase tracking-[0.2em]"
-                        >
-                            Practice Setup
-                        </h3>
-                    </div>
-                    <div class="flex gap-2">
-                        <button
-                            onclick={copyToQualifying}
-                            class="flex items-center gap-1.5 px-3 py-1.5 rounded-md bg-app-primary/10 border border-app-primary/20 text-app-primary hover:bg-app-primary hover:text-app-primary-foreground transition-all"
-                        >
-                            <Timer size={12} />
-                            <span class="text-[9px] font-black uppercase"
-                                >Set Qualy</span
-                            >
-                        </button>
-                        <button
-                            onclick={copyToRace}
-                            class="flex items-center gap-1.5 px-3 py-1.5 rounded-md bg-red-500/10 border border-red-500/20 text-red-500 hover:bg-red-500 hover:text-app-text transition-all"
-                        >
-                            <Flag size={12} />
-                            <span class="text-[9px] font-black uppercase"
-                                >Set Race</span
-                            >
-                        </button>
-                    </div>
-                </div>
-
-                <!-- Sliders -->
-                <div class="space-y-6">
-                    {#each [{ label: "Front Wing", field: "frontWing" as keyof CarSetup, icon: Wind, color: "text-cyan-400" }, { label: "Rear Wing", field: "rearWing" as keyof CarSetup, icon: Wind, color: "text-cyan-400" }, { label: "Suspension", field: "suspension" as keyof CarSetup, icon: Navigation, color: "text-purple-400" }, { label: "Gear Ratio", field: "gearRatio" as keyof CarSetup, icon: Zap, color: "text-orange-400" }] as item}
-                        <div class="space-y-3">
-                            <div class="flex justify-between items-center px-1">
-                                <div
-                                    class="flex items-center gap-2 {item.color}"
-                                >
-                                    <item.icon size={14} />
-                                    <span
-                                        class="text-[10px] font-black uppercase tracking-widest"
-                                        >{item.label}</span
-                                    >
-                                </div>
-                                <span class="text-sm font-black text-app-text"
-                                    >{setup[item.field]}</span
-                                >
+                    <div class="flex items-start gap-6 relative">
+                        <!-- BIG AVATAR -->
+                        <div class="shrink-0 relative">
+                            <div class="w-16 h-16 rounded-2xl bg-app-primary/10 border border-app-primary/20 flex items-center justify-center overflow-hidden shadow-inner ring-4 ring-app-primary/5">
+                                <DriverAvatar id={driver.id} seed={driver.id} gender={driver.gender} size={64} />
                             </div>
-                            <input
-                                type="range"
-                                min="0"
-                                max="100"
-                                bind:value={setup[item.field]}
-                                class="w-full accent-current h-1.5 bg-app-text/5 rounded-full appearance-none cursor-pointer {item.color.replace(
-                                    'text-',
-                                    'accent-',
-                                )}"
-                            />
+                            <div class="absolute -bottom-1 -right-1 w-5 h-5 rounded-full bg-emerald-500 border-2 border-app-surface ring-1 ring-emerald-500/20 {isSimulating ? 'animate-pulse' : ''}"></div>
                         </div>
-                    {/each}
-                </div>
 
-                <!-- Tyres -->
-                <div class="mt-8 space-y-3">
-                    <span
-                        class="text-[9px] font-black text-app-text/40 uppercase tracking-widest"
-                        >Tyre Compound</span
-                    >
-                    <div class="grid grid-cols-4 gap-3">
-                        {#each [TyreCompound.soft, TyreCompound.medium, TyreCompound.hard, TyreCompound.wet] as tc}
-                            <button
-                                class="px-2 py-3 rounded-xl border transition-all flex flex-col items-center gap-2 {setup.tyreCompound ===
-                                tc
-                                    ? 'bg-app-primary border-app-primary text-app-primary-foreground'
-                                    : 'bg-app-text/5 border-app-border text-app-text/40 hover:bg-app-text/10'}"
-                                onclick={() => (setup.tyreCompound = tc)}
-                            >
-                                <div
-                                    class="w-2.5 h-2.5 rounded-full {tc ===
-                                    'soft'
-                                        ? 'bg-red-500'
-                                        : tc === 'medium'
-                                          ? 'bg-yellow-500'
-                                          : tc === 'hard'
-                                            ? 'bg-app-surface'
-                                            : 'bg-blue-500'} shadow-[0_0_10px_rgba(255,255,255,0.2)]"
-                                ></div>
-                                <span
-                                    class="text-[9px] font-black uppercase tracking-tighter"
-                                    >{tc}</span
-                                >
-                            </button>
-                        {/each}
+                        <!-- CONVERSATION BUBBLE -->
+                        <div class="flex-1 space-y-3">
+                            <div class="flex items-center justify-between">
+                                <span class="text-[10px] font-black uppercase tracking-[0.3em] text-app-primary leading-none">{driver.name}</span>
+                                <div class="flex items-center gap-4 text-[9px] font-black uppercase text-app-text/30">
+                                    <div class="flex items-center gap-1.5"><Bolt size={10} class="text-emerald-400" /> {driver.stats?.stamina || 100}%</div>
+                                    <div class="flex items-center gap-1.5"><Smile size={10} class="text-yellow-400" /> {driver.stats?.morale || 100}%</div>
+                                </div>
+                            </div>
+                            {#if isSimulating}
+                                <div in:fade class="text-[10px] font-black italic text-app-primary/60 uppercase tracking-widest animate-pulse flex items-center gap-2 mb-2">
+                                    <div class="w-1.5 h-1.5 rounded-full bg-app-primary animate-ping"></div>
+                                    {t('simulating_current_lap') || 'Simulating...'}
+                                </div>
+                            {/if}
+
+                            {#if lastResult}
+                                <div in:fade class="bg-app-text/5 rounded-2xl rounded-tl-none p-4 relative border border-white/5">
+                                    <div class="absolute -left-2 top-0 w-2 h-2 bg-app-text/5 border-l border-t border-white/5" style="clip-path: polygon(100% 0, 0 0, 100% 100%);"></div>
+                                    <div class="space-y-2">
+                                        {#if lastResult.driverFeedback?.length}
+                                            {#each lastResult.driverFeedback as msg}
+                                                <p class="text-[11px] font-bold italic leading-relaxed text-app-text/90 flex gap-2">
+                                                    <span class="text-app-primary">“</span>
+                                                    {msg}
+                                                    <span class="text-app-primary">”</span>
+                                                </p>
+                                            {/each}
+                                        {:else}
+                                            <p class="text-[11px] font-bold italic leading-relaxed text-app-text/60 flex gap-2">
+                                                <span class="text-app-primary">“</span>
+                                                The car feels good so far. I don't have any major complaints about the current balance.
+                                                <span class="text-app-primary">”</span>
+                                            </p>
+                                        {/if}
+                                    </div>
+                                </div>
+                            {:else if !isSimulating}
+                                <p class="text-[11px] font-black italic text-app-text/20 uppercase tracking-widest">{t('awaiting_data') || 'Awaiting track data...'}</p>
+                            {/if}
+                        </div>
                     </div>
                 </div>
             </div>
+        {/if}
 
-            <!-- Driver Style & Lap Selection -->
-            <div
-                class="bg-app-surface border border-app-border rounded-2xl p-6 space-y-6"
-            >
-                <div class="flex items-center justify-between">
-                    <h4
-                        class="text-[10px] font-black text-app-text/40 uppercase tracking-widest"
-                    >
-                        Driving Aggression
-                    </h4>
-                    <div class="flex gap-1.5">
-                        {#each styleConfigs as style}
-                            <button
-                                class="w-8 h-8 rounded-lg border flex items-center justify-center transition-all {currentDriverStyle ===
-                                style.id
-                                    ? 'bg-app-text/10 border-app-border ' +
-                                      style.color
-                                    : 'bg-app-text/5 border-transparent text-app-text/20 hover:text-app-text/40'}"
-                                onclick={() => (currentDriverStyle = style.id)}
-                                title={style.label}
-                            >
-                                <style.icon size={14} />
-                            </button>
-                        {/each}
-                    </div>
+        <!-- SETUP CARD -->
+        <div class="bg-app-surface border border-app-border rounded-2xl p-5 shadow-xl relative overflow-hidden">
+            <div class="flex items-center justify-between mb-6">
+                <h3 class="font-black text-[10px] text-app-text/60 uppercase tracking-[0.2em]">{t('practice_setup')}</h3>
+                <div class="flex gap-2">
+                    <button onclick={copyToQualifying} class="px-3 py-1.5 rounded-lg border border-app-primary/20 bg-app-primary/5 text-app-primary text-[9px] font-black uppercase hover:bg-app-primary hover:text-black transition-all flex items-center gap-1.5">
+                        <Timer size={12} /> {t('set_qualy')}
+                    </button>
+                    <button onclick={copyToRace} class="px-3 py-1.5 rounded-lg border border-[#E040FB]/20 bg-[#E040FB]/5 text-[#E040FB] text-[9px] font-black uppercase hover:bg-[#E040FB] hover:text-white transition-all flex items-center gap-1.5">
+                        <Flag size={12} /> {t('set_race')}
+                    </button>
                 </div>
+            </div>
 
-                <div class="flex items-center gap-4">
-                    <div class="flex-1 bg-app-text/20 rounded-xl p-1.5 flex gap-1">
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-5">
+                {#each [
+                    { label: t('front_wing'), field: "frontWing" as const, icon: Wind, color: "text-cyan-400" },
+                    { label: t('rear_wing'), field: "rearWing" as const, icon: Wind, color: "text-cyan-400" },
+                    { label: t('suspension'), field: "suspension" as const, icon: Navigation, color: "text-purple-400" },
+                    { label: t('gear_ratio'), field: "gearRatio" as const, icon: Zap, color: "text-orange-400" }
+                ] as item}
+                    <div class="space-y-2 group">
+                        <div class="flex justify-between items-center text-[10px] font-black uppercase">
+                            <div class="flex items-center gap-2 {item.color}"><item.icon size={12} /> {item.label}</div>
+                            <span class="text-app-text font-mono">{setup[item.field]}</span>
+                        </div>
+                        <div class="relative h-6 flex items-center">
+                            {#if lastResult?.setupHints?.[item.field]}
+                                {@const hint = lastResult.setupHints[item.field]}
+                                <div 
+                                    class="absolute h-1.5 bg-[#E040FB]/30 rounded-full blur-[1px] border-x border-[#E040FB]/50 transition-all duration-500"
+                                    style="left: {hint.min}%; width: {hint.max - hint.min}%"
+                                    title="Estimated ideal range"
+                                ></div>
+                            {/if}
+                            <input 
+                                type="range" 
+                                min="0" 
+                                max="100" 
+                                bind:value={setup[item.field]} 
+                                class="w-full h-1 bg-app-text/10 rounded-full accent-emerald-500 cursor-pointer appearance-none hover:bg-app-text/20 transition-all z-10" 
+                            />
+                        </div>
+                    </div>
+                {/each}
+            </div>
+
+            <div class="mt-8 space-y-3">
+                <span class="text-[9px] font-black text-app-text/30 uppercase tracking-widest">{t('tyre_compound')}</span>
+                <div class="grid grid-cols-4 gap-2">
+                    {#each [TyreCompound.soft, TyreCompound.medium, TyreCompound.hard, TyreCompound.wet] as tc}
+                        <button onclick={() => (setup.tyreCompound = tc)} class="py-2.5 rounded-xl border text-[9px] font-black uppercase transition-all flex flex-col items-center gap-1.5 {setup.tyreCompound === tc ? 'bg-app-primary border-app-primary text-black' : 'bg-app-text/5 border-app-border text-app-text/30 hover:bg-app-text/10'}">
+                            <div class="w-2 h-2 rounded-full {tc === 'soft' ? 'bg-red-500' : tc === 'medium' ? 'bg-yellow-500' : tc === 'hard' ? 'bg-white' : 'bg-blue-500'} shadow-sm"></div>
+                            {tc}
+                        </button>
+                    {/each}
+                </div>
+            </div>
+        </div>
+
+        <!-- AGGRESSION & ACTION -->
+        <div class="bg-app-surface border border-app-border rounded-2xl p-5 flex flex-col md:flex-row gap-6 items-center shadow-xl">
+            <div class="flex-1 w-full space-y-3">
+                <h4 class="text-[9px] font-black text-app-text/30 uppercase tracking-widest">{t('driving_aggression')}</h4>
+                <div class="flex gap-2">
+                    {#each styleConfigs as style}
+                        <button onclick={() => (currentDriverStyle = style.id)} class="flex-1 py-3 rounded-xl border flex items-center justify-center transition-all {currentDriverStyle === style.id ? 'bg-emerald-500/10 border-emerald-500/50 ' + style.color : 'bg-app-text/5 border-transparent text-app-text/20 hover:text-app-text/40'}" title={t(style.label)}>
+                            <style.icon size={16} />
+                        </button>
+                    {/each}
+                </div>
+            </div>
+            
+            <div class="flex-1 w-full space-y-3">
+                <h4 class="text-[9px] font-black text-app-text/30 uppercase tracking-widest">{t('laps')}</h4>
+                <div class="flex gap-2">
+                    <div class="flex-1 bg-app-text/5 rounded-xl p-1 flex gap-1">
                         {#each [1, 3, 5] as laps}
-                            <button
-                                class="flex-1 py-1.5 rounded-lg text-[10px] font-black uppercase transition-all {lapsToRun ===
-                                laps
-                                    ? 'bg-app-text/10 text-app-text'
-                                    : 'text-app-text/20 hover:text-app-text/40'}"
-                                onclick={() => (lapsToRun = laps)}
-                            >
+                            <button onclick={() => (lapsToRun = laps)} class="flex-1 py-2 rounded-lg text-[10px] font-black uppercase transition-all {lapsToRun === laps ? 'bg-emerald-500 text-black' : 'text-app-text/30 hover:text-app-text/50'}">
                                 {laps}
-                                {laps === 1 ? "Lap" : "Laps"}
                             </button>
                         {/each}
                     </div>
-
-                    <button
-                        class="flex-[2] py-3.5 bg-app-primary text-app-primary-foreground font-black uppercase tracking-widest text-xs rounded-xl hover:scale-[1.02] active:scale-95 transition-all disabled:opacity-50 disabled:scale-100 flex items-center justify-center gap-2 shadow-lg shadow-app-primary/20"
-                        disabled={isSimulating || !driver}
-                        onclick={runPractice}
-                    >
-                        {#if isSimulating}
-                            <div
-                                class="w-4 h-4 border-2 border-black border-t-transparent rounded-full animate-spin"
-                            ></div>
-                            Simulation Active
-                        {:else}
-                            <Timer size={16} />
-                            Start Practice
-                        {/if}
+                    <button disabled={isSimulating || !driver} onclick={runPractice} class="flex-[1.5] py-3 bg-app-primary text-black font-black uppercase tracking-widest text-[11px] rounded-xl hover:scale-[1.02] active:scale-95 transition-all disabled:opacity-50 disabled:scale-100 flex items-center justify-center gap-2 shadow-lg shadow-app-primary/20">
+                        {isSimulating ? t('simulating_laps') : t('start_practice')}
                     </button>
                 </div>
             </div>
         </div>
+    </div>
 
-        <!-- Right Column: Results & Pit Board -->
-        <div class="lg:col-span-5 space-y-6">
-            <!-- Pit Board -->
-            <div
-                class="bg-app-surface border-l-4 border-app-primary rounded-xl p-5 shadow-xl"
-            >
-                <div class="flex items-center justify-between mb-4">
-                    <span
-                        class="text-[10px] font-black text-app-primary uppercase tracking-[0.2em] italic"
-                        >Pit Board</span
-                    >
-                    <div
-                        class="w-2 h-2 rounded-full bg-app-primary animate-pulse"
-                    ></div>
-                </div>
-                <div class="space-y-2">
-                    <p
-                        class="text-sm font-black italic text-app-text leading-tight"
-                    >
-                        {#if isSimulating}
-                            TRACK STATUS: LIVE SESSION
-                        {:else if lastResult}
-                            GARAGE STATUS: DEBRIEFING
-                        {:else}
-                            TRACK STATUS: PITS OPEN
-                        {/if}
-                    </p>
-                    <p class="text-[10px] font-bold text-app-text/40 leading-none">
-                        DRV: {driver?.name?.toUpperCase() || "NONE"} • {circuit?.name?.toUpperCase() ||
-                            "NO TRACK"}
-                    </p>
-                </div>
+    <!-- RIGHT: Telemetry & Standings (5 Cols) -->
+    <div class="lg:col-span-5 space-y-5">
+        <!-- GLOBAL LEADERBOARD CARD -->
+        <div class="bg-app-surface border border-app-border rounded-xl p-4 shadow-xl">
+            <div class="flex items-center justify-between mb-4">
+                <span class="text-[10px] font-black text-app-primary uppercase tracking-widest italic">{t('standings')}</span>
+                <div class="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></div>
+            </div>
+            
+            <div class="grid grid-cols-12 gap-2 px-1 mb-2 text-[8px] font-black uppercase text-app-text/20 tracking-tighter">
+                <div class="col-span-1">#</div>
+                <div class="col-span-4 text-left">{t('driver')}</div>
+                <div class="col-span-3 text-right">{t('best_lap')}</div>
+                <div class="col-span-2 text-right">{t('total_laps')}</div>
+                <div class="col-span-2 text-right">{t('gap')}</div>
             </div>
 
-            <!-- Last Lap Card -->
-            <div
-                class="bg-app-surface border border-app-border rounded-2xl p-6 flex flex-col gap-4"
-            >
-                <div class="flex items-center justify-between">
-                    <div class="flex items-center gap-2">
-                        <History size={16} class="text-app-primary" />
-                        <h4
-                            class="text-[10px] font-black text-app-text/40 uppercase tracking-widest"
-                        >
-                            Last Outing Result
-                        </h4>
-                    </div>
-                    {#if lastResult}
-                        <span
-                            class="text-[9px] font-black {getConfidenceColor(
-                                lastResult.setupConfidence,
-                            )}"
-                        >
-                            {(lastResult.setupConfidence * 100).toFixed(0)}%
-                            CONF
-                        </span>
-                    {/if}
-                </div>
-
-                <div class="flex items-end justify-between">
-                    <span
-                        class="text-3xl font-black italic text-app-text tabular-nums"
-                    >
-                        {lastResult
-                            ? formatTime(lastResult.lapTime)
-                            : "0:00.000"}
-                    </span>
-                    {#if lastResult?.isCrashed}
-                        <div
-                            class="flex items-center gap-1.5 px-2 py-1 rounded bg-red-500/20 text-red-500 text-[9px] font-black uppercase"
-                        >
-                            <AlertTriangle size={10} />
-                            Accident
+            <div class="space-y-1.5 max-h-[260px] overflow-y-auto custom-scrollbar pr-1">
+                {#if globalStandings.length === 0}
+                    <p class="text-[10px] text-app-text/20 italic p-4 text-center">{t('waiting_competitors')}</p>
+                {:else}
+                    {#each globalStandings as s}
+                        {@const isPlayerDriver = teamDrivers.some(d => d.id === s.driverId)}
+                        {@const hasTime = s.time !== null}
+                        {@const isLeader = s.position === 1 && hasTime}
+                        <div class="grid grid-cols-12 gap-2 px-2 py-2 rounded-lg border transition-all items-center 
+                            {isLeader ? 'bg-app-primary border-app-primary text-black' : 
+                            isPlayerDriver ? (hasTime ? 'bg-app-primary/10 border-app-primary/30' : 'bg-app-primary/5 border-app-primary/10 opacity-70') : 
+                            (hasTime ? 'bg-app-text/2 border-transparent' : 'bg-app-text/2 border-transparent opacity-40 grayscale')}">
+                            
+                            <div class="col-span-1 text-[9px] font-black {isLeader ? 'text-black' : (s.position <= 3 && hasTime ? 'text-app-primary' : 'text-app-text/30')}">P{s.position}</div>
+                            
+                            <div class="col-span-4 flex flex-col min-w-0">
+                                <span class="text-[9px] font-bold truncate {isLeader ? 'text-black' : 'text-app-text'}">{s.driverName}</span>
+                                <span class="text-[7px] font-black uppercase {isLeader ? 'text-black/50' : 'opacity-30'} truncate">{s.teamName}</span>
+                            </div>
+                            
+                            <div class="col-span-3 text-right flex items-center justify-end gap-2">
+                                <span class="text-[10px] font-black font-mono {isLeader ? 'text-black' : 'text-app-text'}">{hasTime ? formatTime(s.time!) : '--:--.---'}</span>
+                                {#if s.tyre}
+                                    <div class="w-4 h-4 rounded-full border flex items-center justify-center text-[8px] font-black 
+                                        {s.tyre === 'soft' ? 'bg-red-500 border-red-700 text-white' : 
+                                         s.tyre === 'medium' ? 'bg-yellow-500 border-yellow-700 text-black' : 
+                                         s.tyre === 'hard' ? 'bg-white border-gray-300 text-black' : 
+                                         'bg-blue-500 border-blue-700 text-white'} {isLeader ? 'ring-1 ring-black/20' : ''}"
+                                         title={s.tyre.toUpperCase()}>
+                                        {s.tyre[0].toUpperCase()}
+                                    </div>
+                                {:else}
+                                    <div class="w-4 h-4 rounded-full border border-app-text/10 bg-app-text/5"></div>
+                                {/if}
+                            </div>
+                            
+                            <div class="col-span-2 text-right text-[9px] font-black {isLeader ? 'text-black/40' : 'text-app-text/40'}">{s.totalLaps}</div>
+                            
+                            <div class="col-span-2 text-right text-[8px] font-black {isLeader || (s.gap === 0 && hasTime) ? 'text-black' : 'text-app-text/30'} font-mono">
+                                {s.gap === null ? '--' : s.gap === 0 ? 'LEADER' : `+${s.gap.toFixed(3)}`}
+                            </div>
                         </div>
-                    {/if}
+                    {/each}
+                {/if}
+            </div>
+        </div>
+
+        <!-- PIT BOARD (Status) -->
+        <div class="bg-app-surface border border-app-border rounded-xl p-5 shadow-xl flex flex-col h-[180px]">
+            <div class="flex items-center justify-between mb-3">
+                <span class="text-[10px] font-black text-emerald-400 uppercase tracking-widest italic">{t('pit_board')}</span>
+                <div class="text-[11px] font-black italic {isSimulating ? 'text-emerald-400' : 'text-app-text/40'}">
+                    {isSimulating ? t('track_status_live') || 'LIVE' : lastResult ? t('garage_status_debrief') || 'DEBRIEF' : t('track_status_pits_open') || 'OPEN'}
                 </div>
             </div>
 
-            <!-- Feedback & History Tabs (Consolidated) -->
-            <div
-                class="bg-app-surface border border-app-border rounded-2xl flex flex-col h-[400px]"
-            >
-                <div class="flex border-b border-app-border">
-                    <button
-                        class="flex-1 py-3 text-[10px] font-black uppercase tracking-widest border-b-2 border-app-primary text-app-text bg-app-text/5"
-                        >Feedback</button
-                    >
-                    <button
-                        class="flex-1 py-3 text-[10px] font-black uppercase tracking-widest text-app-text/20 hover:text-app-text/40 transition-all"
-                        >Laps</button
-                    >
-                </div>
-
-                <div
-                    class="flex-1 overflow-y-auto p-4 space-y-3 custom-scrollbar"
-                >
-                    {#if lastResult}
-                        {#each lastResult.driverFeedback as msg}
-                            <div
-                                class="p-3 bg-app-text/5 rounded-lg border-l-2 border-red-500/50"
-                            >
-                                <p
-                                    class="text-[11px] italic text-app-text/70 leading-relaxed font-medium"
-                                >
-                                    "{msg}"
-                                </p>
+            <div class="flex-1 overflow-y-auto custom-scrollbar space-y-1.5 no-scrollbar">
+                {#if isSimulating || pitBoardMessages.length > 0}
+                    {#each pitBoardMessages as msg, i}
+                        <div in:fade={{duration: 200}} class="text-[10px] font-mono leading-tight {i === 0 ? 'text-emerald-400 font-bold' : 'text-app-text/40'}">
+                            <span class="opacity-30">[{new Date().toLocaleTimeString([], {hour12: false, minute:'2-digit', second:'2-digit'})}]</span> {msg}
+                        </div>
+                    {/each}
+                {:else if lastResult}
+                    <div class="flex items-end justify-between h-full">
+                        <div class="space-y-1">
+                            <div class="flex items-center gap-3">
+                                <p class="text-[24px] font-black italic text-app-text font-mono leading-none">{formatTime(lastResult.lapTime)}</p>
+                                {#if lastResult.setupUsed?.tyreCompound}
+                                    <div class="w-5 h-5 rounded-full border flex items-center justify-center text-[10px] font-black 
+                                        {lastResult.setupUsed.tyreCompound === 'soft' ? 'bg-red-500 border-red-700 text-white' : 
+                                        lastResult.setupUsed.tyreCompound === 'medium' ? 'bg-yellow-500 border-yellow-700 text-black' : 
+                                        lastResult.setupUsed.tyreCompound === 'hard' ? 'bg-white border-gray-300 text-black' : 
+                                        'bg-blue-500 border-blue-700 text-white'} shadow-sm">
+                                        {lastResult.setupUsed.tyreCompound[0].toUpperCase()}
+                                    </div>
+                                {/if}
                             </div>
-                        {/each}
-                        {#if lastResult.driverFeedback.length === 0}
-                            <div
-                                class="p-4 flex flex-col items-center justify-center text-center opacity-30 mt-10"
-                            >
-                                <CheckCircle2 size={32} class="mb-3" />
-                                <p class="text-[10px] font-black uppercase">
-                                    No Issues Reported
-                                </p>
-                            </div>
-                        {/if}
-                    {:else}
-                        <div
-                            class="p-4 flex flex-col items-center justify-center text-center opacity-10 mt-20"
-                        >
-                            <Info size={40} class="mb-3" />
-                            <p
-                                class="text-[10px] font-black uppercase tracking-widest"
-                            >
-                                Awaiting First Run
+                            <p class="text-[9px] font-bold text-app-text/30 uppercase tracking-tighter">
+                                {t('last_outing_result')} • <span class="{getConfidenceColor(lastResult.setupConfidence)}">{t('confidence_label')} {(lastResult.setupConfidence*100).toFixed(0)}%</span>
                             </p>
                         </div>
-                    {/if}
-                </div>
+                        {#if lastResult.isCrashed}
+                            <div class="px-2 py-1 rounded bg-red-500 text-white text-[9px] font-black uppercase animate-bounce">{t('accident_label')}</div>
+                        {/if}
+                    </div>
+                {:else}
+                    <div class="flex items-center justify-center h-full opacity-10">
+                        <Flag size={32} />
+                    </div>
+                {/if}
             </div>
         </div>
     </div>
 </div>
 
 <style>
-    .custom-scrollbar::-webkit-scrollbar {
-        width: 4px;
-    }
-    .custom-scrollbar::-webkit-scrollbar-track {
-        background: rgba(255, 255, 255, 0.05);
-    }
-    .custom-scrollbar::-webkit-scrollbar-thumb {
-        background: rgba(197, 160, 89, 0.2);
-        border-radius: 10px;
-    }
-    .no-scrollbar::-webkit-scrollbar {
-        display: none;
-    }
-    .no-scrollbar {
-        -ms-overflow-style: none;
-        scrollbar-width: none;
-    }
+    .custom-scrollbar::-webkit-scrollbar { width: 3px; }
+    .custom-scrollbar::-webkit-scrollbar-track { background: transparent; }
+    .custom-scrollbar::-webkit-scrollbar-thumb { background: rgba(197, 160, 89, 0.2); border-radius: 10px; }
+    .no-scrollbar::-webkit-scrollbar { display: none; }
+    .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
 </style>

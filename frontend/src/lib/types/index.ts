@@ -96,6 +96,7 @@ export interface ActiveContract {
 
 export interface Team {
     id: string;
+    leagueId?: string | null;
     name: string;
     managerId?: string | null;
     isBot: boolean;

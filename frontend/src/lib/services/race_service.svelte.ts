@@ -1,6 +1,6 @@
 import { db, functions } from '$lib/firebase/config';
 import { httpsCallable } from 'firebase/functions';
-import { doc, getDoc, collection, query, where, getDocs, orderBy, limit } from 'firebase/firestore';
+import { doc, getDoc, collection, query, where, getDocs, orderBy, limit, documentId } from 'firebase/firestore';
 import type { Driver } from '$lib/types';
 import { MAX_PRACTICE_LAPS_PER_DRIVER } from '$lib/constants/app_constants';
 
@@ -94,41 +94,82 @@ export function createRaceService() {
             return { lapTime: crashed ? 999.0 : lap, isCrashed: crashed };
         },
 
-        /**
+         /**
          * Fetches other competitor run times from the same league to display as a benchmark.
          * Useful for the GaragePanel.
          */
-         async getCompetitorPracticeTimes(seasonId: string, limitCount: number = 5): Promise<Array<{teamName: string, driverName: string, time: number}>> {
+        async getCompetitorPracticeTimes(sessionId: string, teamIds?: string[], teamNames?: Record<string, string>): Promise<Array<{teamName: string, driverName: string, time: number | null, tyre: string | null, totalLaps: number, driverId: string}>> {
             try {
-                // To keep it simple, we could query teams that have submitted setups
-                // For now we'll fetch teams from the current season and extract best times
-                const teamsSnap = await getDocs(collection(db, 'teams'));
-                const competitors: Array<{teamName: string, driverName: string, time: number}> = [];
+                console.log(`[RaceService] getCompetitorPracticeTimes: Redesigned Fetch with Fallback. Session: ${sessionId}`);
+                
+                if (!teamIds || teamIds.length === 0) {
+                    console.warn('[RaceService] getCompetitorPracticeTimes: Aborting. No teamIds provided.');
+                    return [];
+                }
 
-                teamsSnap.forEach(doc => {
-                    const data = doc.data();
-                    if (data.currentSeasonId === seasonId && data.weekStatus && data.weekStatus.driverSetups) {
-                        const setups = data.weekStatus.driverSetups;
-                        for (const driverId in setups) {
-                            const ds = setups[driverId];
-                            if (ds.practiceRuns && ds.practiceRuns.length > 0) {
-                                // Find best time
-                                const bestTime = Math.min(...ds.practiceRuns.map((r: any) => r.time));
-                                if (bestTime < 900) {
-                                    competitors.push({
-                                        teamName: data.name || 'Unknown',
-                                        driverName: driverId.substring(0, 8), // Basic fallback
-                                        time: bestTime
-                                    });
-                                }
-                            }
-                        }
-                    }
+                // 1. Fetch ALL drivers in the league
+                console.log(`[RaceService] Fetching all drivers for ${teamIds.length} teams.`);
+                const driversQ = query(
+                    collection(db, 'drivers'),
+                    where('teamId', 'in', teamIds)
+                );
+                const driversSnap = await getDocs(driversQ);
+                console.log(`[RaceService] Drivers found: ${driversSnap.size}`);
+
+                // 2. Fetch ALL teams in the league (for fallback data)
+                console.log(`[RaceService] Fetching all teams for fallback data.`);
+                const teamsQ = query(
+                    collection(db, 'teams'),
+                    where(documentId(), 'in', teamIds)
+                );
+                const teamsSnap = await getDocs(teamsQ);
+                const teamsMap = new Map<string, any>();
+                teamsSnap.forEach(tDoc => teamsMap.set(tDoc.id, tDoc.data()));
+
+                // 3. Fetch central practice session data
+                const sessionRef = doc(db, 'practice_sessions', sessionId);
+                const sessionSnap = await getDoc(sessionRef);
+                const sessionData = sessionSnap.exists() ? sessionSnap.data() : { driverResults: {} };
+                const driverResults = sessionData.driverResults || {};
+
+                const competitors: Array<{teamName: string, driverName: string, time: number | null, tyre: string | null, totalLaps: number, driverId: string}> = [];
+
+                // 4. Merge data
+                driversSnap.forEach(driverDoc => {
+                    const dId = driverDoc.id;
+                    const d = driverDoc.data();
+                    const teamData = teamsMap.get(d.teamId);
+                    
+                    // Priority 1: Central session data
+                    // Priority 2: Team-specific weekStatus data (fallback)
+                    const centralResult = driverResults[dId] || {};
+                    const teamPracticeData = teamData?.weekStatus?.driverSetups?.[dId]?.practice || {};
+
+                    const bestTime = centralResult.bestLapTime || teamPracticeData.bestLapTime || null;
+                    const bestTyre = centralResult.bestLapTyre || teamPracticeData.bestLapTyre || null;
+                    const laps = Math.max(centralResult.laps || 0, teamPracticeData.laps || 0);
+
+                    competitors.push({
+                        teamName: teamNames?.[d.teamId] || d.teamName || teamData?.name || `Team ${d.teamId.substring(0, 5)}`,
+                        driverName: d.name || 'Unknown Driver',
+                        driverId: dId,
+                        time: bestTime,
+                        tyre: bestTyre,
+                        totalLaps: laps
+                    });
                 });
 
-                // Sort by time
-                competitors.sort((a, b) => a.time - b.time);
-                return competitors.slice(0, limitCount);
+                console.log(`[RaceService] Map complete. Total participants: ${competitors.length}`);
+
+                // Sort: Drivers with times first (by time), then drivers without times alphabetically
+                competitors.sort((a, b) => {
+                    if (a.time === null && b.time === null) return a.driverName.localeCompare(b.driverName);
+                    if (a.time === null) return 1;
+                    if (b.time === null) return -1;
+                    return a.time - b.time;
+                });
+                
+                return competitors;
 
             } catch (e) {
                 console.error("Failed to fetch competitor times", e);

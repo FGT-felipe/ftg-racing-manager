@@ -37,7 +37,7 @@
         }
         if (count === 0) return 1;
         const avg = sum / count;
-        let stars = Math.ceil(avg / 20);
+        let stars = Math.ceil(avg / 4.0);
         return Math.min(Math.max(stars, 1), driver.potential);
     });
 </script>

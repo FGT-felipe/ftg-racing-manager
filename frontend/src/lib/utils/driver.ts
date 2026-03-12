@@ -2,28 +2,27 @@ import type { Driver, YoungDriver } from '../types';
 
 /**
  * Calculates current stars for regular professional drivers.
- * Rule: ceil(averageDrivingStats / 20.0).clamp(1, 5), capped at potential.
+ * Rule: ceil(averageDrivingStats / 4.0).clamp(1, 5), capped at potential.
  */
 export function calculateCurrentStars(driver: Driver): number {
     if (!driver || !driver.stats) return 1;
 
-    const drivingStats = [
-        driver.stats.cornering || 1,
-        driver.stats.braking || 1,
-        driver.stats.consistency || 1,
-        driver.stats.smoothness || 1,
-        driver.stats.adaptability || 1,
-        driver.stats.overtaking || 1,
+    const stats = [
+        driver.stats.braking || 10,
+        driver.stats.cornering || 10,
+        driver.stats.smoothness || 10,
+        driver.stats.overtaking || 10,
+        driver.stats.consistency || 10,
+        driver.stats.adaptability || 10
     ];
+    
+    const avg = stats.reduce((a, b) => a + b, 0) / stats.length;
 
-    const avg = drivingStats.reduce((a, b) => a + b, 0) / drivingStats.length;
-
-    // Formula: ceil(avg / 20)
-    let stars = Math.ceil(avg / 20);
+    // 1-20 scale: 20/4 = 5 stars
+    let stars = Math.ceil(avg / 4.0);
 
     // Constraints
-    if (stars < 1) stars = 1;
-    if (stars > 5) stars = 5;
+    stars = Math.max(1, Math.min(5, stars));
 
     // Cap at potential
     const pot = driver.potential || 5;
@@ -42,24 +41,22 @@ export function calculateMaxStars(driver: Driver): number {
 
 /**
  * Academy Drivers: Current Skill Stars
- * Formula: round(baseSkill / 20.0).clamp(1, 5)
+ * Formula: round(baseSkill / 4.0).clamp(1, 5)
  */
-export function calculateAcademyCurrentStars(driver: YoungDriver): number {
-    if (!driver) return 1;
-    const base = driver.baseSkill || 0;
-    let stars = Math.round(base / 20);
-    return Math.min(Math.max(stars, 1), 5);
+export function calculateAcademyCurrentStars(candidate: any): number {
+    const baseSkill = candidate.baseSkill || 10;
+    let stars = Math.round(baseSkill / 4.0);
+    return Math.max(1, Math.min(5, stars));
 }
 
 /**
  * Academy Drivers: Potential Stars
- * Formula: round((baseSkill + growthPotential) / 20.0).clamp(1, 5)
+ * Formula: round(maxSkill / 4.0).clamp(1, 5)
  */
-export function calculateAcademyMaxStars(driver: YoungDriver): number {
-    if (!driver) return 1;
-    const peak = (driver.baseSkill || 0) + (driver.growthPotential || 0);
-    let stars = Math.round(peak / 20);
-    return Math.min(Math.max(stars, 1), 5);
+export function calculateAcademyMaxStars(candidate: any): number {
+    const maxSkill = candidate.maxSkill || 10;
+    let stars = Math.round(maxSkill / 4.0);
+    return Math.max(1, Math.min(5, stars));
 }
 
 /**
