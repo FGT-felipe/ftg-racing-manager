@@ -402,128 +402,171 @@
 
 <!-- ──── Driver Detail Sheet ───────────────────────────────────────────────────── -->
 {#if selectedDriver && !showBidModal}
-    {#if selectedDriver}
-        {@const d = selectedDriver}
-        {@const lvl = getLevelInfo(d.currentStars)}
-        {@const isMyBid = d.highestBidderTeamId === myTeamId}
-        {@const isMyDriver = d.teamId === myTeamId}
+    {@const d = selectedDriver}
+    {@const lvl = getLevelInfo(d.currentStars)}
+    {@const isMyBid = d.highestBidderTeamId === myTeamId}
+    {@const isMyDriver = d.teamId === myTeamId}
+    <div
+        class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/95 backdrop-blur-md"
+        transition:fade={{ duration: 200 }}
+        role="dialog"
+        aria-modal="true"
+        tabindex="-1"
+        onclick={(e) => { if (e.target === e.currentTarget) selectedDriver = null; }}
+        onkeydown={(e) => { if (e.key === 'Escape') selectedDriver = null; }}
+    >
         <div
-            class="fixed inset-0 z-50 flex items-end md:items-center justify-center p-4 bg-app-text/70 backdrop-blur-sm"
-            transition:fade={{ duration: 150 }}
-            role="dialog"
-            aria-modal="true"
-            tabindex="-1"
-            onclick={(e) => { if (e.target === e.currentTarget) selectedDriver = null; }}
-            onkeydown={(e) => { if (e.key === 'Escape') selectedDriver = null; }}
+            class="bg-[#121216] border border-app-border rounded-[32px] w-full max-w-5xl overflow-hidden shadow-[0_0_50px_rgba(0,0,0,0.5)] relative"
+            in:fly={{ y: 30, duration: 400 }}
         >
-            <div
-                class="bg-app-surface border border-app-border rounded-3xl w-full max-w-4xl max-h-[85vh] overflow-y-auto"
-                in:fly={{ y: 30, duration: 250 }}
+            <!-- Close -->
+            <button
+                onclick={() => selectedDriver = null}
+                class="absolute top-6 right-6 p-2 bg-white/5 rounded-full text-app-text/40 hover:text-app-text hover:bg-white/10 transition-all z-20"
             >
-                <!-- Close -->
-                <button
-                    onclick={() => selectedDriver = null}
-                    class="absolute top-4 right-4 p-2 bg-app-text/5 rounded-full text-app-text/40 hover:text-app-text hover:bg-app-text/10 transition-colors z-10"
-                >
-                    <X size={18} />
-                </button>
+                <X size={20} />
+            </button>
 
-                <div class="p-8">
-                    <div class="flex flex-col md:flex-row gap-8">
-                        <!-- Column 1: Identity + Contract -->
-                        <div class="flex flex-col gap-6 md:w-56 flex-shrink-0">
-                            <div class="flex items-start gap-4">
-                                <div class="w-20 h-20 rounded-full overflow-hidden border-2 border-app-primary/30 flex-shrink-0">
-                                    <DriverAvatar id={d.id} gender={d.gender ?? 'male'} class="w-full h-full" />
-                                </div>
-                                <div>
-                                    <span class="text-[8px] font-black border px-2 py-0.5 rounded-md {lvl.color}">{lvl.label}</span>
-                                    <h2 class="text-xl font-black text-app-text uppercase italic mt-2 leading-none">{d.name}</h2>
-                                    <p class="text-xs text-yellow-500 font-bold mt-1">Age {d.age}</p>
-                                </div>
-                            </div>
-
-                            <div class="flex gap-1">
-                                {#each Array(5) as _, si}
-                                    <span class="text-xl {si < d.currentStars ? 'text-blue-400' : si < d.potential ? 'text-yellow-400/40' : 'text-app-text/10'}">★</span>
-                                {/each}
-                            </div>
-
-                            <div class="bg-app-text/[0.03] border border-app-border rounded-2xl p-4 flex flex-col gap-3">
-                                <span class="text-[8px] font-black uppercase tracking-widest text-app-text/40">Contract Details</span>
-                                {#each [
-                                    ["Role", d.role ?? "—"],
-                                    ["Salary", formatCurrency(d.salary)],
-                                    ["Buyout", formatCurrency(d.salary * 5)],
-                                    ["Remaining", `${d.contractYearsRemaining} season(s)`],
-                                ] as [label, value]}
-                                    <div class="flex items-center justify-between text-[10px]">
-                                        <span class="text-app-text/40 font-bold">{label}</span>
-                                        <span class="font-black text-app-text">{value}</span>
-                                    </div>
-                                {/each}
-                                <div class="h-px bg-app-border my-1"></div>
-                                <div>
-                                    <span class="text-[8px] uppercase tracking-widest text-app-text/30 font-black">Market Value</span>
-                                    <p class="text-2xl font-black text-app-text font-mono mt-1">{formatCurrency(d.marketValue)}</p>
+            <div class="flex flex-col md:flex-row h-full max-h-[85vh]">
+                <!-- Column 1: Identity + Contract -->
+                <div class="flex-none w-full md:w-[380px] p-8 md:p-12 border-b md:border-b-0 md:border-r border-app-border overflow-y-auto custom-scrollbar">
+                    <div class="flex items-start gap-6 mb-8">
+                        <div class="w-24 h-24 rounded-full overflow-hidden border-4 border-app-primary/20 flex-shrink-0 p-1 bg-white/5">
+                            <DriverAvatar id={d.id} gender={d.gender ?? 'male'} class="w-full h-full rounded-full" />
+                        </div>
+                        <div class="flex flex-col gap-2">
+                            <span class="text-[9px] font-black border px-2 py-0.5 rounded-md w-fit {lvl.color} uppercase tracking-widest">{lvl.label}</span>
+                            <h2 class="text-3xl font-black text-app-text uppercase italic leading-none tracking-tighter">{d.name}</h2>
+                            <div class="flex items-center gap-2">
+                                <span class="text-xs font-black text-app-text/40 uppercase tracking-widest">{d.age}Y</span>
+                                <div class="flex gap-0.5">
+                                    {#each Array(5) as _, si}
+                                        <span class="text-xs {si < d.currentStars ? 'text-blue-400' : si < d.potential ? 'text-yellow-400/30' : 'text-app-text/5'}">★</span>
+                                    {/each}
                                 </div>
                             </div>
+                        </div>
+                    </div>
 
+                    <div class="space-y-6">
+                        <div class="bg-white/[0.02] border border-app-border rounded-3xl p-6 space-y-4">
+                            <h4 class="text-[10px] font-black uppercase tracking-[0.2em] text-app-text/20">Contract Status</h4>
+                            <div class="grid grid-cols-2 gap-4">
+                                <div class="flex flex-col gap-1">
+                                    <span class="text-[9px] font-bold text-app-text/40 uppercase">Role</span>
+                                    <span class="text-xs font-black text-app-text uppercase">{d.role ?? "DRIVER"}</span>
+                                </div>
+                                <div class="flex flex-col gap-1 text-right">
+                                    <span class="text-[9px] font-bold text-app-text/40 uppercase">Salary</span>
+                                    <span class="text-xs font-black text-green-400">{formatCurrency(d.salary)}/WK</span>
+                                </div>
+                                <div class="flex flex-col gap-1">
+                                    <span class="text-[9px] font-bold text-app-text/40 uppercase">Remaining</span>
+                                    <span class="text-xs font-black text-app-text uppercase">{d.contractYearsRemaining} Season(s)</span>
+                                </div>
+                                <div class="flex flex-col gap-1 text-right">
+                                    <span class="text-[9px] font-bold text-app-text/40 uppercase">Market Value</span>
+                                    <span class="text-xs font-black text-app-text uppercase">{formatCurrency(d.marketValue)}</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="bg-app-primary/5 border border-app-primary/10 rounded-3xl p-6">
+                            <div class="flex items-center justify-between mb-4">
+                                <span class="text-[10px] font-black uppercase tracking-[0.2em] text-app-primary/40">Current Bidding</span>
+                                <Gavel size={14} class="text-app-primary/40" />
+                            </div>
+                            <div class="flex flex-col gap-1">
+                                <span class="text-3xl font-black text-app-text font-mono italic">
+                                    {d.currentHighestBid > 0 ? formatCurrency(d.currentHighestBid) : "No Bids"}
+                                </span>
+                                <span class="text-[9px] font-bold text-app-text/30 uppercase tracking-widest">
+                                    {d.currentHighestBid > 0 ? "Highest Active Bid" : "Starting Price"}
+                                </span>
+                            </div>
+                        </div>
+
+                        <div class="pt-2">
                             {#if isMyDriver}
-                                <button onclick={() => cancelTransfer(d)} class="w-full py-3 border border-red-500/40 text-red-400 text-[10px] font-black uppercase tracking-wider rounded-2xl hover:bg-red-500/10 transition-colors">
-                                    Cancel Transfer
+                                <button onclick={() => cancelTransfer(d)} class="w-full py-4 bg-red-500/10 border border-red-500/20 text-red-400 text-[10px] font-black uppercase tracking-widest rounded-2xl hover:bg-red-500 hover:text-black transition-all">
+                                    Cancel Transfer listing
                                 </button>
                             {:else if isMyBid}
                                 <div class="flex flex-col gap-3">
-                                    <div class="flex items-center gap-2 bg-green-400/10 border border-green-400/20 rounded-2xl p-3">
-                                        <CheckCircle size={14} class="text-green-400" />
-                                        <span class="text-[9px] font-black text-green-500 uppercase">You have the highest bid</span>
+                                    <div class="flex items-center justify-center gap-2 py-4 bg-green-500/10 border border-green-500/20 rounded-2xl">
+                                        <CheckCircle size={16} class="text-green-500" />
+                                        <span class="text-[10px] font-black text-green-500 uppercase tracking-widest">Highest Bidder</span>
                                     </div>
-                                    <button onclick={() => cancelBid(d)} disabled={cancellingBidIds.has(d.id)} class="w-full py-3 border border-red-500/40 text-red-400 text-[10px] font-black uppercase tracking-wider rounded-2xl hover:bg-red-500/10 transition-colors disabled:opacity-40">
-                                        {cancellingBidIds.has(d.id) ? 'Cancelling...' : 'Cancel Bid'}
+                                    <button onclick={() => cancelBid(d)} disabled={cancellingBidIds.has(d.id)} class="w-full py-3 text-red-400/40 text-[9px] font-bold uppercase tracking-widest hover:text-red-400 transition-colors disabled:opacity-40">
+                                        {cancellingBidIds.has(d.id) ? 'Processing...' : 'Cancel active bid'}
                                     </button>
                                 </div>
                             {:else}
                                 <button
                                     onclick={() => openBidModal(d)}
                                     disabled={isExpiringSoon(d)}
-                                    class="w-full py-3 bg-green-500 text-app-text text-[10px] font-black uppercase tracking-wider rounded-2xl hover:bg-green-400 transition-colors flex items-center justify-center gap-2 disabled:opacity-30"
+                                    class="w-full py-4 bg-app-primary text-app-primary-foreground text-[11px] font-black uppercase tracking-[0.2em] rounded-2xl hover:bg-app-primary/90 transition-all shadow-[0_10px_20px_rgba(197,160,89,0.2)] flex items-center justify-center gap-3 disabled:opacity-30"
                                 >
-                                    <Gavel size={14} /> Place Bid
+                                    <Gavel size={16} /> Place Bid
                                 </button>
                             {/if}
                         </div>
+                    </div>
+                </div>
 
-                        <!-- Column 2: Stats Bars -->
-                        <div class="flex-1">
-                            <div class="flex items-center justify-between mb-6">
-                                <span class="text-[8px] font-black uppercase tracking-widest text-app-text/30">Driver Stats</span>
-                                <span class="text-[8px] border border-yellow-400/30 text-yellow-600 px-2 py-0.5 rounded-md font-black uppercase">Transfer Market</span>
-                            </div>
-                            <div class="grid grid-cols-1 sm:grid-cols-2 gap-x-8 gap-y-4">
-                                {#each STAT_KEYS as key}
-                                    {@const rawVal = (d.stats?.[key] ?? 0)}
-                                    {@const displayVal = Math.round(rawVal / 5)}
-                                    <div class="flex flex-col gap-1.5">
-                                        <div class="flex items-center justify-between text-[9px]">
-                                            <span class="font-black uppercase tracking-widest text-app-text/40">{key}</span>
-                                            <span class="font-black font-mono {getStatLabel(rawVal)}">{displayVal}</span>
-                                        </div>
-                                        <div class="h-1 w-full bg-app-text/10 rounded-full overflow-hidden">
-                                            <div
-                                                class="h-full rounded-full {getStatColor(rawVal)} transition-all"
-                                                style="width: {Math.min(rawVal, 100)}%"
-                                            ></div>
-                                        </div>
+                <!-- Column 2: Stats & Details -->
+                <div class="flex-1 p-8 md:p-12 bg-white/[0.01] overflow-y-auto custom-scrollbar">
+                    <div class="flex items-center justify-between mb-10">
+                        <div class="flex flex-col gap-1">
+                            <h3 class="text-xs font-black text-app-text uppercase tracking-[0.3em]">Performance Profile</h3>
+                            <span class="text-[9px] font-bold text-app-text/20 uppercase tracking-widest">Official scouting report • Season 2026</span>
+                        </div>
+                        <div class="bg-app-text/5 px-4 py-2 rounded-xl border border-app-border">
+                             <span class="text-[10px] font-black text-app-text/40 uppercase tracking-widest">Status: </span>
+                             <span class="text-[10px] font-black text-yellow-500 uppercase tracking-widest">Active Listing</span>
+                        </div>
+                    </div>
+
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-x-12 gap-y-8">
+                        {#each STAT_KEYS as key}
+                            {@const val = (d.stats?.[key] ?? 50)}
+                            <div class="flex flex-col gap-3 group">
+                                <div class="flex items-center justify-between">
+                                    <span class="text-[10px] font-black text-app-text/40 uppercase tracking-widest group-hover:text-app-text/60 transition-colors">{key}</span>
+                                    <span class="text-sm font-black font-mono {getStatLabel(val)}">{val}</span>
+                                </div>
+                                <div class="h-1.5 w-full bg-app-text/5 rounded-full overflow-hidden p-[1px]">
+                                    <div
+                                        class="h-full rounded-full transition-all duration-1000 ease-out {getStatColor(val)}"
+                                        style="width: {val}%"
+                                    >
+                                        <div class="w-full h-full bg-gradient-to-r from-white/20 to-transparent"></div>
                                     </div>
-                                {/each}
+                                </div>
                             </div>
+                        {/each}
+                    </div>
+
+                    <div class="mt-16 p-8 bg-white/[0.02] border border-app-border rounded-[32px] flex flex-col md:flex-row items-center gap-8">
+                        <div class="flex-1 space-y-2">
+                             <h4 class="text-sm font-black text-app-text uppercase italic">Scouting Summary</h4>
+                             <p class="text-xs text-app-text/40 leading-relaxed">
+                                 A {lvl.label.toLowerCase()} talent with significant potential in {STAT_KEYS[Math.floor(Math.random() * STAT_KEYS.length)]}. 
+                                 Currently testing the waters of the {d.role || 'driver'} market.
+                             </p>
+                        </div>
+                        <div class="w-px h-12 bg-app-border hidden md:block"></div>
+                        <div class="flex flex-col items-center md:items-end gap-1">
+                            <span class="text-[9px] font-black text-app-text/20 uppercase tracking-widest">Time Remaining</span>
+                            <span class="text-2xl font-black font-mono {isExpiringSoon(d) ? 'text-red-500 animate-pulse' : 'text-app-text'}">
+                                {countdownMap[d.id] ?? "—"}
+                            </span>
                         </div>
                     </div>
                 </div>
             </div>
         </div>
-    {/if}
+    </div>
 {/if}
 
 <!-- ──── Bid Modal ─────────────────────────────────────────────────────────────── -->
@@ -531,7 +574,7 @@
     {#if selectedDriver}
         {@const d = selectedDriver}
         {@const minBid = d.currentHighestBid === 0 ? d.marketValue : d.currentHighestBid + 50_000}
-        <div class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-app-text/80 backdrop-blur-sm"
+        <div class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/95 backdrop-blur-md"
             transition:fade={{ duration: 150 }}
             role="dialog"
             aria-modal="true"
@@ -539,7 +582,9 @@
             onclick={(e) => { if (e.target === e.currentTarget) showBidModal = false; }}
             onkeydown={(e) => { if (e.key === 'Escape') showBidModal = false; }}
         >
-            <div class="bg-app-surface border border-app-border rounded-3xl w-full max-w-md p-8" in:fly={{ y: 20, duration: 200 }}>
+            <div class="bg-[#1a1a1e] border border-app-border rounded-3xl w-full max-w-md p-8 shadow-2xl relative overflow-hidden" in:fly={{ y: 20, duration: 200 }}>
+                <!-- Decorative Glow -->
+                <div class="absolute -top-24 -right-24 w-48 h-48 bg-app-primary/10 blur-3xl rounded-full"></div>
                 <div class="flex items-center justify-between mb-6">
                     <h3 class="text-lg font-black text-app-text uppercase italic">Place Transfer Bid</h3>
                     <button onclick={() => showBidModal = false} class="text-app-text/40 hover:text-app-text transition-colors"><X size={18} /></button>

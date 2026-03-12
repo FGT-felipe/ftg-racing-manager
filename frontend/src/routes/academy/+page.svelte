@@ -870,9 +870,9 @@
                                                 <div
                                                     class="absolute h-full {driver.weeklyStatDiffs?.[key] 
                                                         ? (driver.weeklyStatDiffs[key] > 0 
-                                                            ? 'bg-emerald-500 shadow-[0_0_12px_rgba(16,185,129,0.4)]' 
-                                                            : 'bg-red-500 shadow-[0_0_12px_rgba(239,68,68,0.4)]')
-                                                        : 'bg-zinc-500'} rounded-full transition-all duration-1000 ease-out"
+                                                            ? 'bg-emerald-400 shadow-[0_0_12px_rgba(52,211,153,0.5)]' 
+                                                            : 'bg-red-400 shadow-[0_0_12px_rgba(248,113,113,0.5)]')
+                                                        : 'bg-app-text/40'} rounded-full transition-all duration-1000 ease-out"
                                                     style="width: {driver
                                                         .statRangeMin?.[key] ??
                                                         0}%"
@@ -923,8 +923,8 @@
                                                 <div class="flex flex-wrap gap-2 mt-1">
                                                     {#each Object.entries(driver.weeklyStatDiffs) as [stat, diffValue]}
                                                         {@const diff = diffValue as number}
-                                                        <span class="text-[10px] px-2 py-0.5 rounded-md font-black {diff > 0 ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20' : 'bg-red-500/10 text-red-400 border border-red-500/20'} uppercase tracking-widest">
-                                                            {diff > 0 ? '+' : ''}{diff} {stat}
+                                                        <span class="text-[9px] px-2 py-0.5 rounded-lg font-black {diff > 0 ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30' : 'bg-red-500/20 text-red-400 border border-red-500/30'} uppercase tracking-widest italic">
+                                                            {diff > 0 ? '+' : ''}{diff} {t(stat as any) || stat}
                                                         </span>
                                                     {/each}
                                                 </div>

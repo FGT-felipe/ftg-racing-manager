@@ -26,6 +26,8 @@
         BarChart3,
         Info,
         TrendingUp,
+        CheckCircle,
+        AlertTriangle,
     } from "lucide-svelte";
     import InstructionCard from "$lib/components/layout/InstructionCard.svelte";
     import { getRoleById } from "$lib/constants/manager";
@@ -148,7 +150,11 @@
             });
         } catch (e: any) {
             console.error("Sync error:", e);
-            alert("Sync failed: " + e.message);
+            notificationStore.addNotification({
+                title: "Sync Failed",
+                message: "Cloud synchronization encountered an error: " + (e.message || "Internal 500"),
+                type: "ERROR",
+            });
         } finally {
             isSyncing = false;
         }
@@ -346,84 +352,92 @@
             <div
                 class="bg-app-surface border border-app-border rounded-2xl overflow-hidden relative group shadow-lg"
             >
-                <div class="p-6 border-b border-app-border bg-app-text/5 flex items-center gap-4">
-                    <div
-                        class="w-14 h-14 rounded-full bg-app-primary text-app-primary-foreground border-4 border-app-primary/20 flex items-center justify-center font-heading font-black text-2xl italic"
-                    >
-                        {managerStore.profile?.firstName?.[0] || "M"}
-                    </div>
-                    <div>
-                        <h4 class="text-lg font-black text-app-text uppercase tracking-tight">
-                            {managerStore.profile?.firstName} {managerStore.profile?.lastName}
-                        </h4>
-                        <div class="flex items-center gap-2">
-                            <span class="text-[9px] font-black text-app-primary uppercase tracking-widest px-2 py-0.5 bg-app-primary/10 rounded">
-                                {managerRole?.title || managerStore.profile?.role || "Manager"}
-                            </span>
-                            {#if managerStore.profile?.nationality}
-                                <span class="text-[9px] font-bold text-app-text/40 uppercase">
-                                    {managerStore.profile.nationality}
+                <div class="p-6 border-b border-app-border bg-app-text/5 flex items-center justify-between">
+                    <div class="flex items-center gap-4">
+                        <div
+                            class="w-16 h-16 rounded-2xl bg-app-primary text-app-primary-foreground border-4 border-app-primary/20 flex items-center justify-center font-heading font-black text-2xl italic shadow-inner shrink-0"
+                        >
+                            {managerStore.profile?.firstName?.[0] || "M"}
+                        </div>
+                        <div class="flex flex-col gap-1 min-w-0">
+                            <h4 class="text-xl font-black text-app-text uppercase tracking-tighter italic truncate leading-none">
+                                {managerStore.profile?.firstName} {managerStore.profile?.lastName}
+                            </h4>
+                            <div class="flex flex-wrap items-center gap-2">
+                                <span class="text-[9px] font-black text-app-primary border border-app-primary/30 uppercase tracking-widest px-2 py-0.5 bg-app-primary/10 rounded">
+                                    {managerRole?.title || managerStore.profile?.role || "Manager"}
                                 </span>
-                            {/if}
+                                {#if managerAge}
+                                    <span class="text-[9px] font-bold text-app-text/40 uppercase bg-white/5 px-2 py-0.5 rounded border border-white/5">
+                                        {managerAge} Years
+                                    </span>
+                                {/if}
+                                {#if managerStore.profile?.nationality}
+                                    <div class="flex items-center gap-1.5 px-2 py-0.5 bg-white/5 rounded border border-white/5">
+                                        <img 
+                                            src="https://flagcdn.com/w20/{managerStore.profile.nationality.toLowerCase()}.png" 
+                                            alt={managerStore.profile.nationality}
+                                            class="w-3.5 h-2.5 object-cover rounded-[1px]"
+                                            onerror={(e) => (e.currentTarget as HTMLImageElement).style.display = 'none'}
+                                        />
+                                        <span class="text-[9px] font-bold text-app-text/60 uppercase">
+                                            {managerStore.profile.nationality}
+                                        </span>
+                                    </div>
+                                {/if}
+                            </div>
                         </div>
                     </div>
                 </div>
 
                 <div class="p-6 space-y-6">
-                    <!-- Bio/Rep Row -->
-                    <div class="grid grid-cols-2 gap-4">
-                        <div class="flex flex-col gap-1">
-                            <span class="text-[9px] font-bold text-app-text/30 uppercase tracking-widest">Reputation</span>
-                            <div class="flex items-center gap-2">
-                                <span class="text-xl font-black text-app-text">{managerStore.profile?.reputation || 50}</span>
-                                <div class="h-1.5 flex-1 bg-app-text/5 rounded-full overflow-hidden">
-                                    <div class="h-full bg-app-primary" style="width: {managerStore.profile?.reputation || 50}%"></div>
-                                </div>
-                            </div>
+                    <!-- Background Benefits & Drawbacks -->
+                    <div class="space-y-4">
+                        <div class="flex items-center justify-between">
+                            <h5 class="text-[10px] font-black text-app-text/30 uppercase tracking-[0.2em]">Management Edge</h5>
+                            <span class="text-[10px] font-black text-app-primary/40 uppercase italic">{managerRole?.title}</span>
                         </div>
-                        <div class="flex flex-col gap-1">
-                            <span class="text-[9px] font-bold text-app-text/30 uppercase tracking-widest">Age</span>
-                            <span class="text-xl font-black text-app-text">{managerAge || "--"} YRS</span>
+                        
+                        <div class="grid grid-cols-1 gap-3">
+                            {#if managerRole?.pros}
+                                {#each managerRole.pros as pro}
+                                    <div class="flex items-start gap-2.5 group/pro">
+                                        <div class="mt-0.5 p-0.5 bg-emerald-500/20 rounded border border-emerald-500/30">
+                                            <CheckCircle size={10} class="text-emerald-400" />
+                                        </div>
+                                        <span class="text-[11px] font-bold text-app-text/80 leading-tight group-hover/pro:text-app-text transition-colors">{pro}</span>
+                                    </div>
+                                {/each}
+                            {/if}
+                            {#if managerRole?.cons}
+                                {#each managerRole.cons as con}
+                                    <div class="flex items-start gap-2.5 group/con">
+                                        <div class="mt-0.5 p-0.5 bg-red-500/20 rounded border border-red-500/30">
+                                            <AlertTriangle size={10} class="text-red-400" />
+                                        </div>
+                                        <span class="text-[11px] font-bold text-app-text/40 leading-tight group-hover/con:text-app-text/60 transition-colors uppercase italic">{con}</span>
+                                    </div>
+                                {/each}
+                            {/if}
                         </div>
                     </div>
 
-                    <!-- Role Description -->
-                    <p class="text-[12px] text-app-text/50 leading-relaxed italic border-l-2 border-app-primary/20 pl-4 py-1">
-                        "{managerRole?.desc || "Leading this organization through technical innovation and strategic excellence."}"
-                    </p>
-
-                    <!-- Perks & Drawbacks -->
-                    {#if managerRole}
-                        <div class="space-y-4 pt-2">
-                            <div class="space-y-2">
-                                <h5 class="text-[8px] font-black text-green-400 uppercase tracking-widest flex items-center gap-2">
-                                    <TrendingUp size={10} /> Strategic Advantages
-                                </h5>
-                                <div class="grid grid-cols-1 gap-1">
-                                    {#each managerRole.pros as pro}
-                                        <div class="text-[10px] font-bold text-app-text/60 flex items-center gap-2">
-                                            <div class="w-1 h-1 rounded-full bg-green-400"></div>
-                                            {pro}
-                                        </div>
-                                    {/each}
-                                </div>
-                            </div>
-
-                            <div class="space-y-2 opacity-60">
-                                <h5 class="text-[8px] font-black text-red-400 uppercase tracking-widest flex items-center gap-2">
-                                    <X size={10} /> Operational Challenges
-                                </h5>
-                                <div class="grid grid-cols-1 gap-1">
-                                    {#each managerRole.cons as con}
-                                        <div class="text-[10px] font-bold text-app-text/40 flex items-center gap-2">
-                                            <div class="w-1 h-1 rounded-full bg-red-400"></div>
-                                            {con}
-                                        </div>
-                                    {/each}
-                                </div>
+                    <!-- Market Presence & Reputation -->
+                    <div class="pt-6 border-t border-app-border/40 grid grid-cols-2 gap-4">
+                        <div class="bg-white/[0.02] border border-app-border/40 rounded-2xl p-4 flex flex-col gap-1">
+                            <span class="text-[8px] font-bold text-app-text/20 uppercase tracking-widest">Global Ranking</span>
+                            <span class="text-sm font-black text-app-text uppercase tracking-tight italic">
+                                {managerStore.profile?.reputation && managerStore.profile.reputation > 80 ? "Elite Executive" : "Regional Lead"}
+                            </span>
+                        </div>
+                        <div class="bg-white/[0.02] border border-app-border/40 rounded-2xl p-4 flex flex-col gap-1">
+                            <span class="text-[8px] font-bold text-app-text/20 uppercase tracking-widest">Reputation</span>
+                            <div class="flex items-center justify-between">
+                                <span class="text-xl font-black text-app-text font-mono tracking-tighter">{managerStore.profile?.reputation || 50}</span>
+                                <Trophy size={14} class="text-yellow-400 opacity-50" />
                             </div>
                         </div>
-                    {/if}
+                    </div>
                 </div>
             </div>
         </div>

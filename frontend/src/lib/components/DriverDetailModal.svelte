@@ -9,8 +9,6 @@
     import { staffService } from "$lib/services/staff.svelte";
     import {
         X,
-        Trophy,
-        Star,
         Activity,
         Smile,
         TrendingUp,
@@ -20,6 +18,7 @@
         Trash2,
         ShoppingBag,
         History,
+        RotateCcw,
     } from "lucide-svelte";
     import { fade, fly } from "svelte/transition";
     import DriverAvatar from "./DriverAvatar.svelte";
@@ -32,6 +31,7 @@
     } from "$lib/utils/driver";
     import { t } from "$lib/utils/i18n";
     import { getTitleInfo } from "$lib/constants/titles";
+    import ConfirmationModal from "./ui/ConfirmationModal.svelte";
 
     interface Props {
         driver: Driver;
@@ -46,6 +46,31 @@
     let isFlipped = $state(false);
     let showStatusTooltip = $state(false);
     let isProcessing = $state(false);
+
+    // Confirmation Modal State
+    let confirmConfig = $state<{
+        isOpen: boolean;
+        title: string;
+        message: string;
+        confirmLabel?: string;
+        cancelLabel?: string;
+        type?: "danger" | "warning" | "info" | "success";
+        onConfirm: () => void;
+        onCancel?: () => void;
+    }>({
+        isOpen: false,
+        title: "",
+        message: "",
+        onConfirm: () => {},
+    });
+
+    function showConfirm(config: Omit<typeof confirmConfig, "isOpen">) {
+        confirmConfig = { ...config, isOpen: true };
+    }
+
+    function closeConfirm() {
+        confirmConfig = { ...confirmConfig, isOpen: false };
+    }
 
     function formatCurrency(value: number) {
         return new Intl.NumberFormat("en-US", {
@@ -89,35 +114,60 @@
     }
 
     async function handleDismiss() {
-        if (!confirm(t("dismiss_confirm", { name: driver.name }))) return;
-
-        if (!team) return;
-        isProcessing = true;
-        try {
-            await staffService.dismissDriver(team.id, driver);
-            onRefresh?.();
-            onClose();
-        } catch (e) {
-            alert(e instanceof Error ? e.message : t("error_dismiss"));
-        } finally {
-            isProcessing = false;
-        }
+        const releaseFee = driver.salary * 12 * 0.1; // 10% fee
+        showConfirm({
+            title: t("dismiss"),
+            message: `${t("dismiss_confirm", { name: driver.name })} ${t("release_fee_warning", { amount: formatCurrency(releaseFee) })}`,
+            confirmLabel: t("dismiss"),
+            type: "danger",
+            onConfirm: async () => {
+                if (!team) return;
+                isProcessing = true;
+                closeConfirm();
+                try {
+                    await staffService.dismissDriver(team.id, driver);
+                    onRefresh?.();
+                    onClose();
+                } catch (e) {
+                    showConfirm({
+                        title: "Error",
+                        message: e instanceof Error ? e.message : t("error_dismiss"),
+                        type: "danger",
+                        onConfirm: closeConfirm
+                    });
+                } finally {
+                    isProcessing = false;
+                }
+            }
+        });
     }
 
     async function handleListOnMarket() {
-        if (!confirm(t("market_confirm", { name: driver.name }))) return;
-
-        if (!team) return;
-        isProcessing = true;
-        try {
-            await staffService.listDriverOnMarket(team.id, driver);
-            onRefresh?.();
-            onClose();
-        } catch (e) {
-            alert(e instanceof Error ? e.message : t("error_market"));
-        } finally {
-            isProcessing = false;
-        }
+        showConfirm({
+            title: t("transfer"),
+            message: t("market_confirm", { name: driver.name }),
+            confirmLabel: t("confirm"),
+            type: "warning",
+            onConfirm: async () => {
+                if (!team) return;
+                isProcessing = true;
+                closeConfirm();
+                try {
+                    await staffService.listDriverOnMarket(team.id, driver);
+                    onRefresh?.();
+                    onClose();
+                } catch (e) {
+                    showConfirm({
+                        title: "Error",
+                        message: e instanceof Error ? e.message : t("error_market"),
+                        type: "danger",
+                        onConfirm: closeConfirm
+                    });
+                } finally {
+                    isProcessing = false;
+                }
+            }
+        });
     }
 
     async function handleRenew() {
@@ -125,27 +175,49 @@
 
         // Block if retiring next season (38+)
         if (isRetiringNextSeason(driver)) {
-            alert(t("retirement_alert", { name: driver.name }));
+            showConfirm({
+                title: "Retirement",
+                message: t("retirement_alert", { name: driver.name }),
+                type: "info",
+                onConfirm: closeConfirm
+            });
             return;
         }
 
-        // Warning if nearing retirement (35-37)
-        if (isNearingRetirement(driver) && !window.confirm(t("retirement_alert", { name: driver.name }) + "\n\nDo you want to proceed anyway?")) {
-            return;
-        }
+        // Renewal logic
+        const startRenewal = (years: number) => {
+            showConfirm({
+                title: t("renew_contract"),
+                message: t("renew_confirm_years", { years }),
+                confirmLabel: t("confirm"),
+                onConfirm: async () => {
+                    isProcessing = true;
+                    closeConfirm();
+                    try {
+                        await staffService.renewContract(team.id!, driver.id, years);
+                        onRefresh?.();
+                    } catch (e) {
+                        showConfirm({
+                            title: "Error",
+                            message: e instanceof Error ? e.message : t("error_renew"),
+                            type: "danger",
+                            onConfirm: closeConfirm
+                        });
+                    } finally {
+                        isProcessing = false;
+                    }
+                }
+            });
+        };
 
-        const years = window.confirm(t("renew_confirm")) ? 3 : 1;
-
-        isProcessing = true;
-        try {
-            await staffService.renewContract(team.id, driver.id, years);
-            onRefresh?.();
-            alert(t("renew_success"));
-        } catch (e) {
-            alert(e instanceof Error ? e.message : t("error_renew"));
-        } finally {
-            isProcessing = false;
-        }
+        showConfirm({
+            title: t("renew_contract"),
+            message: t("renew_choose_message"),
+            confirmLabel: "3 Seasons",
+            cancelLabel: "1 Season",
+            onConfirm: () => startRenewal(3),
+            onCancel: () => startRenewal(1)
+        });
     }
 
     // Mock history generation matching Flutter logic
@@ -185,8 +257,8 @@
                 year,
                 team:
                     i === 0
-                        ? team?.name || t("current_team")
-                        : t("previous_team"),
+                        ? team?.name || t("current_team") || "Current Organization"
+                        : "International Series", 
                 races: yearRaces,
                 podiums: yearPodiums,
                 wins: yearWins,
@@ -210,7 +282,7 @@
     >
         <!-- Backdrop -->
         <button
-            class="absolute inset-0 bg-app-text/80 backdrop-blur-sm cursor-default w-full h-full border-none"
+            class="absolute inset-0 bg-black/90 backdrop-blur-md cursor-default w-full h-full border-none"
             onclick={onClose}
             aria-label="Close modal"
         ></button>
@@ -227,7 +299,7 @@
             >
                 <!-- FRONT SIDE -->
                 <div
-                    class="card-front absolute inset-0 bg-[#121216] border border-app-border rounded-[32px] overflow-hidden shadow-2xl flex flex-col md:flex-row backface-hidden [transform:rotateY(0deg)]"
+                    class="card-front absolute inset-0 bg-app-surface border border-app-border rounded-[32px] overflow-hidden shadow-2xl flex flex-col md:flex-row backface-hidden [transform:rotateY(0deg)]"
                 >
                     <!-- Close Button -->
                     <button
@@ -339,7 +411,7 @@
 
                         <!-- Contract Card -->
                         <div
-                            class="bg-white/[0.02] border border-app-border rounded-3xl p-6 flex flex-col gap-4"
+                            class="bg-app-text/5 border border-app-border rounded-3xl p-6 flex flex-col gap-4"
                         >
                             <h3
                                 class="text-[10px] font-black text-app-text/20 uppercase tracking-[0.2em]"
@@ -402,13 +474,19 @@
                         <div class="flex flex-col gap-3">
                             <div class="flex gap-4">
                                 <button
-                                    class="flex-1 flex items-center justify-center gap-3 px-6 py-4 bg-app-primary/10 border border-app-primary/20 rounded-2xl text-app-primary text-[10px] font-black uppercase tracking-widest hover:bg-app-primary hover:text-app-primary-foreground transition-all disabled:opacity-50"
+                                    class="flex-1 flex items-center justify-center gap-3 px-6 py-4 bg-app-primary/10 border border-app-primary/20 rounded-2xl text-app-primary text-[10px] font-black uppercase tracking-widest hover:bg-app-primary hover:text-app-primary-foreground transition-all disabled:opacity-20 disabled:grayscale disabled:cursor-not-allowed"
                                     onclick={handleRenew}
                                     disabled={isProcessing || isRetiringNextSeason(driver)}
                                 >
                                     <RefreshCw size={16} />
-                                    {isRetiringNextSeason(driver) ? "Retiring Soon" : t("renew_contract")}
+                                    {t("renew_contract")}
                                 </button>
+                                {#if isNearingRetirement(driver)}
+                                    <div class="flex items-center gap-2 px-4 py-2 bg-amber-500/10 border border-amber-500/20 rounded-xl text-amber-500 text-[10px] font-black uppercase tracking-widest animate-pulse">
+                                        <Info size={14} />
+                                        {isRetiringNextSeason(driver) ? "Final Season" : "Retiring Soon"}
+                                    </div>
+                                {/if}
                             </div>
                             <div class="flex gap-4">
                                 <button
@@ -433,78 +511,39 @@
                             </div>
                         </div>
 
-                        <!-- Recent Highlights / Championship Form -->
+                        <!-- Championship Form -->
                         <div class="flex flex-col gap-4">
-                            <h3
-                                class="text-[10px] font-black text-app-text/20 uppercase tracking-[0.2em]"
-                            >
+                            <h3 class="text-[10px] font-black text-app-text/20 uppercase tracking-[0.2em]">
                                 {t("championship_form")}
                             </h3>
-
-                            <!-- Season Summary Stats -->
-                            <div class="grid grid-cols-4 gap-2 mb-2">
-                                <div class="bg-app-primary/5 border border-app-primary/10 rounded-xl p-2 flex flex-col items-center">
-                                    <span class="text-[7px] font-black text-app-primary uppercase">{t("races")}</span>
-                                    <span class="text-xs font-black text-app-text tabular-nums">{driver.seasonRaces || 0}</span>
+                            <div class="grid grid-cols-2 gap-3">
+                                <div class="flex flex-col gap-0.5 px-4 py-3 bg-app-text/5 border border-app-border rounded-2xl">
+                                    <span class="text-[9px] font-bold text-app-text/30 uppercase tracking-widest">{t("races")}</span>
+                                    <span class="text-xl font-black text-app-text tabular-nums">{driver.seasonRaces || 0}</span>
                                 </div>
-                                <div class="bg-app-primary/5 border border-app-primary/10 rounded-xl p-2 flex flex-col items-center">
-                                    <span class="text-[7px] font-black text-app-primary uppercase">{t("wins")}</span>
-                                    <span class="text-xs font-black text-app-text tabular-nums">{driver.seasonWins || 0}</span>
+                                <div class="flex flex-col gap-0.5 px-4 py-3 bg-app-text/5 border border-app-border rounded-2xl">
+                                    <span class="text-[9px] font-bold text-app-text/30 uppercase tracking-widest">{t("wins")}</span>
+                                    <span class="text-xl font-black text-app-primary tabular-nums">{driver.seasonWins || 0}</span>
                                 </div>
-                                <div class="bg-app-primary/5 border border-app-primary/10 rounded-xl p-2 flex flex-col items-center">
-                                    <span class="text-[7px] font-black text-app-primary uppercase">{t("podiums")}</span>
-                                    <span class="text-xs font-black text-app-text tabular-nums">{driver.seasonPodiums || 0}</span>
+                                <div class="flex flex-col gap-0.5 px-4 py-3 bg-app-text/5 border border-app-border rounded-2xl">
+                                    <span class="text-[9px] font-bold text-app-text/30 uppercase tracking-widest">{t("podiums")}</span>
+                                    <span class="text-xl font-black text-yellow-400 tabular-nums">{driver.seasonPodiums || 0}</span>
                                 </div>
-                                <div class="bg-app-primary/5 border border-app-primary/10 rounded-xl p-2 flex flex-col items-center">
-                                    <span class="text-[7px] font-black text-app-primary uppercase">{t("poles")}</span>
-                                    <span class="text-xs font-black text-app-text tabular-nums">{driver.seasonPoles || 0}</span>
+                                <div class="flex flex-col gap-0.5 px-4 py-3 bg-app-text/5 border border-app-border rounded-2xl">
+                                    <span class="text-[9px] font-bold text-app-text/30 uppercase tracking-widest">{t("poles")}</span>
+                                    <span class="text-xl font-black text-blue-400 tabular-nums">{driver.seasonPoles || 0}</span>
                                 </div>
-                            </div>
-                            <div class="grid grid-cols-5 gap-2">
-                                {#each Array(5) as _, i}
-                                    {@const item = driver.championshipForm?.[i]}
-                                    <div
-                                        class="bg-white/[0.03] border border-app-border rounded-xl p-3 flex flex-col items-center gap-1"
-                                    >
-                                        {#if item}
-                                            <span
-                                                class="text-[8px] font-black text-app-text/40 uppercase truncate w-full text-center"
-                                                >{item.event.substring(
-                                                    0,
-                                                    3,
-                                                )}</span
-                                            >
-                                            <span
-                                                class="text-sm font-black {item.pos.includes(
-                                                    'P1',
-                                                )
-                                                    ? 'text-app-primary'
-                                                    : 'text-app-text'}"
-                                                >{item.pos}</span
-                                            >
-                                            <span
-                                                class="text-[8px] font-bold text-zinc-600"
-                                                >+{item.pts} pts</span
-                                            >
-                                        {:else}
-                                            <span
-                                                class="text-[8px] font-black text-app-text/40 uppercase"
-                                                >--</span
-                                            >
-                                            <span
-                                                class="text-sm font-black text-zinc-700"
-                                                >--</span
-                                            >
-                                        {/if}
-                                    </div>
-                                {/each}
+                                <div class="col-span-2 flex flex-col gap-0.5 px-4 py-3 bg-app-primary/5 border border-app-primary/20 rounded-2xl">
+                                    <span class="text-[9px] font-bold text-app-primary/50 uppercase tracking-widest">Points</span>
+                                    <span class="text-xl font-black text-app-primary tabular-nums">{driver.seasonPoints || 0} PTS</span>
+                                </div>
                             </div>
                         </div>
                     </div>
 
                     <!-- Column 2: Performance Stats -->
                     <div
-                        class="flex-1 p-8 md:p-12 bg-white/[0.01] flex flex-col gap-10 overflow-y-auto custom-scrollbar"
+                        class="flex-1 p-8 md:p-12 bg-app-text/5 flex flex-col gap-10 overflow-y-auto custom-scrollbar"
                     >
                         <!-- Driving Skills -->
                         <div class="flex flex-col gap-6">
@@ -559,7 +598,7 @@
                                     {@const val =
                                         driver.stats?.[stat.key] || 50}
                                     <div
-                                        class="bg-white/[0.03] border border-app-border rounded-2xl p-4 flex flex-col gap-3 group hover:border-app-border transition-all"
+                                        class="bg-app-text/5 border border-app-border rounded-2xl p-4 flex flex-col gap-3 group hover:border-app-border transition-all"
                                     >
                                         <div
                                             class="flex items-center justify-between"
@@ -595,135 +634,124 @@
                     </div>
                 </div>
 
-                <!-- BACK SIDE (HISTORY) -->
-                <div
-                    class="card-back absolute inset-0 bg-[#0a0a0d] border border-app-primary/20 rounded-[32px] overflow-hidden shadow-2xl flex flex-col p-8 md:p-12 backface-hidden [transform:rotateY(180deg)]"
+            <!-- BACK SIDE: CAREER HISTORY -->
+            <div
+                class="card-back absolute inset-0 bg-app-surface border border-app-border rounded-[32px] overflow-hidden shadow-2xl flex flex-col backface-hidden [transform:rotateY(180deg)]"
+            >
+                <!-- Close Button -->
+                <button
+                    class="absolute top-6 right-6 z-10 p-2 rounded-full bg-app-text/5 border border-app-border text-app-text/40 hover:text-app-text hover:bg-app-text/10 transition-all"
+                    onclick={onClose}
                 >
-                    <button
-                        class="absolute top-6 right-6 p-2 rounded-full bg-app-text/5 border border-app-border text-app-text/40 hover:text-app-text hover:bg-app-text/10 transition-all"
-                        onclick={() => (isFlipped = false)}
-                    >
-                        <RefreshCw size={20} />
-                    </button>
+                    <X size={20} />
+                </button>
 
-                    <h2
-                        class="text-3xl font-heading font-black text-app-text uppercase tracking-tighter mb-8 italic"
-                    >
-                        {t("career_history")}
-                    </h2>
+                <!-- Flip Back Button -->
+                <button
+                    class="absolute top-6 right-20 z-10 flex items-center gap-2 px-4 py-2 rounded-full bg-app-primary/10 border border-app-primary/20 text-app-primary text-[10px] font-black uppercase tracking-widest hover:bg-app-primary hover:text-app-primary-foreground transition-all"
+                    onclick={() => (isFlipped = false)}
+                >
+                    <RotateCcw size={14} />
+                    {t("profile_view")}
+                </button>
 
-                    <div class="flex-1 overflow-y-auto custom-scrollbar">
+                <div class="p-12 flex flex-col h-full gap-8">
+                    <div class="flex flex-col gap-2">
+                        <h2 class="text-3xl font-black text-app-text uppercase tracking-tighter italic">
+                            {driver.name}
+                        </h2>
+                        <p class="text-xs font-black text-app-text/30 uppercase tracking-[0.3em]">
+                            {t("full_career_history")}
+                        </p>
+                    </div>
+
+                    <div class="flex-1 overflow-y-auto custom-scrollbar pr-4 font-mono">
                         <table class="w-full text-left">
-                            <thead class="sticky top-0 bg-[#0a0a0d] z-10">
-                                <tr class="border-b border-app-border">
-                                    <th
-                                        class="py-4 text-[10px] font-black text-app-text/30 uppercase tracking-[0.2em]"
-                                        >{t("year")}</th
-                                    >
-                                    <th
-                                        class="py-4 text-[10px] font-black text-app-text/30 uppercase tracking-[0.2em]"
-                                        >{t("team")}</th
-                                    >
-                                    <th
-                                        class="py-4 text-[10px] font-black text-app-text/30 uppercase tracking-[0.2em]"
-                                        >{t("races")}</th
-                                    >
-                                    <th
-                                        class="py-4 text-[10px] font-black text-app-text/30 uppercase tracking-[0.2em]"
-                                        >{t("podiums")}</th
-                                    >
-                                    <th
-                                        class="py-4 text-[10px] font-black text-app-text/30 uppercase tracking-[0.2em]"
-                                        >{t("wins")}</th
-                                    >
+                            <thead class="sticky top-0 bg-app-surface z-10">
+                                <tr class="text-[10px] font-black text-app-text/20 uppercase tracking-[0.2em] border-b border-app-border">
+                                    <th class="py-4 font-black">{t("year")}</th>
+                                    <th class="py-4 font-black">{t("team_and_series")}</th>
+                                    <th class="py-4 font-black text-center">{t("races")}</th>
+                                    <th class="py-4 font-black text-center">{t("wins")}</th>
+                                    <th class="py-4 font-black text-center">{t("podiums")}</th>
+                                    <th class="py-4 font-black text-right">{t("status")}</th>
                                 </tr>
                             </thead>
-                            <tbody class="divide-y divide-white/5">
+                            <tbody class="divide-y divide-app-border/10">
                                 {#each stableHistory as row}
-                                    <tr
-                                        class="hover:bg-white/[0.02] transition-colors"
-                                    >
-                                        <td
-                                            class="py-4 text-sm font-black text-app-text/60"
-                                            >{row.year}</td
-                                        >
-                                        <td
-                                            class="py-4 text-sm font-black text-app-text"
-                                        >
-                                            {row.team}
+                                    <tr class="group hover:bg-app-text/5 transition-colors">
+                                        <td class="py-6 text-sm font-black text-app-text/40 italic">
+                                            {row.year}
+                                        </td>
+                                        <td class="py-6">
+                                            <div class="flex flex-col">
+                                                <span class="text-sm font-black text-app-text uppercase">{row.team}</span>
+                                                <span class="text-[10px] font-bold text-app-text/20 uppercase">International Series</span>
+                                            </div>
+                                        </td>
+                                        <td class="py-6 text-sm font-black text-app-text text-center">{row.races}</td>
+                                        <td class="py-6 text-sm font-black text-app-primary text-center">{row.wins}</td>
+                                        <td class="py-6 text-sm font-black text-yellow-400 text-center">{row.podiums}</td>
+                                        <td class="py-6 text-right">
                                             {#if row.isChampion}
-                                                <span
-                                                    class="ml-2 px-1.5 py-0.5 bg-yellow-400 text-black text-[8px] rounded font-black uppercase tracking-tighter"
-                                                    >{t("champion")}</span
-                                                >
+                                                <span class="px-3 py-1 bg-yellow-400 text-black text-[10px] font-black uppercase rounded-lg shadow-lg shadow-yellow-400/20">
+                                                    Champion
+                                                </span>
+                                            {:else if row.wins > 0}
+                                                <span class="text-[10px] font-black text-app-primary uppercase italic opacity-40 group-hover:opacity-100 transition-opacity">
+                                                    Race Winner
+                                                </span>
+                                            {:else}
+                                                <span class="text-[10px] font-black text-app-text/10 uppercase italic">
+                                                    Active
+                                                </span>
                                             {/if}
                                         </td>
-                                        <td
-                                            class="py-4 text-sm font-black text-app-text/60"
-                                            >{row.races}</td
-                                        >
-                                        <td
-                                            class="py-4 text-sm font-black text-yellow-400"
-                                            >{row.podiums}</td
-                                        >
-                                        <td
-                                            class="py-4 text-sm font-black text-app-primary"
-                                            >{row.wins}</td
-                                        >
                                     </tr>
                                 {/each}
                             </tbody>
                         </table>
                     </div>
 
-                    <div
-                        class="mt-8 pt-8 border-t border-app-border grid grid-cols-2 md:grid-cols-4 gap-8"
-                    >
+                    <div class="pt-8 border-t border-app-border grid grid-cols-4 gap-8">
                         <div class="flex flex-col gap-1">
-                            <span
-                                class="text-[10px] font-bold text-app-text/40 uppercase"
-                                >{t("total_races")}</span
-                            >
-                            <span class="text-2xl font-black text-app-text italic"
-                                >{driver.races}</span
-                            >
+                            <span class="text-[10px] font-bold text-app-text/30 uppercase">{t("total_races")}</span>
+                            <span class="text-2xl font-black text-app-text italic">{driver.races}</span>
                         </div>
                         <div class="flex flex-col gap-1">
-                            <span
-                                class="text-[10px] font-bold text-app-text/40 uppercase"
-                                >{t("total_wins")}</span
-                            >
-                            <span
-                                class="text-2xl font-black text-app-primary italic"
-                                >{driver.wins}</span
-                            >
+                            <span class="text-[10px] font-bold text-app-text/30 uppercase">{t("total_wins")}</span>
+                            <span class="text-2xl font-black text-app-primary italic">{driver.wins}</span>
                         </div>
                         <div class="flex flex-col gap-1">
-                            <span
-                                class="text-[10px] font-bold text-app-text/40 uppercase"
-                                >{t("championships")}</span
-                            >
-                            <span
-                                class="text-2xl font-black text-yellow-400 italic"
-                                >{driver.championships}</span
-                            >
+                            <span class="text-[10px] font-bold text-app-text/30 uppercase">{t("total_podiums")}</span>
+                            <span class="text-2xl font-black text-yellow-400 italic">{driver.podiums}</span>
                         </div>
                         <div class="flex flex-col gap-1">
-                            <span
-                                class="text-[10px] font-bold text-app-text/40 uppercase"
-                                >{t("poles")}</span
-                            >
-                            <span
-                                class="text-2xl font-black text-blue-400 italic"
-                                >{driver.poles}</span
-                            >
+                            <span class="text-[10px] font-bold text-app-text/30 uppercase">{t("total_poles")}</span>
+                            <span class="text-2xl font-black text-blue-400 italic">{driver.poles}</span>
                         </div>
                     </div>
                 </div>
             </div>
+            <!-- /card-back -->
         </div>
+        <!-- /card-inner -->
     </div>
+    <!-- /perspective-container -->
+</div>
 {/if}
+
+<ConfirmationModal
+    isOpen={confirmConfig.isOpen}
+    title={confirmConfig.title}
+    message={confirmConfig.message}
+    confirmLabel={confirmConfig.confirmLabel}
+    cancelLabel={confirmConfig.cancelLabel}
+    type={confirmConfig.type}
+    isLoading={isProcessing}
+    onConfirm={confirmConfig.onConfirm}
+    onCancel={confirmConfig.onCancel || closeConfirm}
+/>
 
 <style>
     .font-heading {

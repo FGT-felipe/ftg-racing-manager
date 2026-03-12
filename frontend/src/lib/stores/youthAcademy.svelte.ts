@@ -262,7 +262,8 @@ export function createYouthAcademyStore() {
             let diffs: Record<string, number> = {};
 
             if (decision === 'resolve') {
-                switch(driver?.pendingActionType) {
+                const type = driver?.pendingActionType || 'GENERAL';
+                switch(type) {
                     case 'SPONSOR_SHOOT':
                         diffs = { focus: -1, adaptability: 1 };
                         message = "The sponsor shoot raised adaptability, but cost some focus.";
@@ -272,15 +273,29 @@ export function createYouthAcademyStore() {
                         message = "Intense technical testing improved cornering at the cost of physical exhaustion.";
                         break;
                     case 'MENTOR_REQUEST':
-                        diffs = { consistency: 1, smoothness: 1 };
-                        message = "A mentorship session yielded great improvements in driving technique.";
+                        const stats = ['consistency', 'smoothness', 'focus', 'adaptability'];
+                        const randomStat = stats[Math.floor(Math.random() * stats.length)];
+                        diffs = { [randomStat]: 1 };
+                        message = `A mentorship session yielded great improvements in ${randomStat}.`;
+                        break;
+                    case 'MEDIA_TRAINING':
+                        diffs = { focus: 1, adaptability: 1 };
+                        message = "Media training improved both focus and adaptability.";
+                        break;
+                    case 'FITNESS_BOOTCAMP':
+                        diffs = { fitness: 2, focus: -1 };
+                        message = "The intense bootcamp significantly boosted fitness, though the driver is mentally tired.";
                         break;
                     default:
-                        diffs = { focus: 1 };
-                        message = "The driver successfully completed the requested flow.";
+                        // Generic reward based on what the driver needs most? 
+                        // For now just focus + another random stat
+                        const allStats = ['braking', 'cornering', 'smoothness', 'overtaking', 'consistency', 'adaptability', 'focus', 'fitness'];
+                        const secondStat = allStats[Math.floor(Math.random() * allStats.length)];
+                        diffs = { focus: 1, [secondStat]: 1 };
+                        message = "The driver successfully completed the requested flow and gained valuable experience.";
                 }
             } else if (decision === 'dismiss') {
-                message = "The matter was dismissed and no action was taken.";
+                message = "The matter was dismissed. The driver feels ignored.";
                 diffs = { focus: -1 };
             }
 

@@ -478,7 +478,7 @@ async function addPressNews(leagueId, data) {
  */
 async function addOfficeNews(teamId, data) {
   return db.collection("teams").doc(teamId)
-    .collection("notifications").add({
+    .collection("news").add({
       ...data,
       teamId,
       isRead: false,
@@ -2100,7 +2100,9 @@ exports.megaFixDebriefs = onCall({
     // Fetch all drivers once to avoid inside-loop latency
     const dSnap = await db.collection("drivers").get();
     const driversMap = {};
-    dSnap.forEach((doc) => driversMap[doc.id] = { ...doc.data(), id: doc.id });
+    dSnap.forEach((doc) => {
+      driversMap[doc.id] = { ...doc.data(), id: doc.id };
+    });
 
     for (const lDoc of leaguesSnap.docs) {
       const league = lDoc.data();
@@ -2137,22 +2139,45 @@ exports.megaFixDebriefs = onCall({
       }
 
       const rData = rSnap.data();
-      const raceRes = rData.results;
-      if (!raceRes || !raceRes.sorted) {
+      // Use direct fields if results object is missing (common in some versions)
+      const positions = rData.finalPositions || (rData.results && rData.results.finalPositions);
+      const sorted = rData.results && rData.results.sorted;
+      const dnfs = rData.dnfs || (rData.results && rData.results.dnfs) || [];
+
+      if (!positions && !sorted) {
         logger.warn(`No results in race doc ${raceDocId}`);
+        continue;
+      }
+
+      // Reconstruct sorted list if we only have positions map
+      let sortedList = sorted;
+      if (!sortedList && positions) {
+        sortedList = Object.entries(positions)
+          .sort(([, a], [, b]) => a - b)
+          .map(([id]) => id);
+      }
+
+      if (!sortedList || sortedList.length === 0) {
+        logger.warn(`Could not determine finishing order for ${raceDocId}`);
         continue;
       }
 
       const setupsMap = rData.setups || {};
       const teamGrp = {};
-      raceRes.sorted.forEach((did, i) => {
+
+      sortedList.forEach((did, i) => {
         const d = driversMap[did];
         if (!d || !d.teamId) return;
         if (!teamGrp[d.teamId]) teamGrp[d.teamId] = [];
-        const isDnf = (raceRes.dnfs || []).includes(did);
+        const isDnf = dnfs.includes(did);
+        const posInt = i + 1;
         teamGrp[d.teamId].push({
-          id: did, name: d.name, pos: isDnf ? "DNF" : `P${i + 1}`,
-          posInt: i + 1, pts: !isDnf && i < POINT_SYSTEM.length ? POINT_SYSTEM[i] : 0, isDnf,
+          id: did,
+          name: d.name,
+          pos: isDnf ? "DNF" : `P${posInt}`,
+          posInt: posInt,
+          pts: !isDnf && i < POINT_SYSTEM.length ? POINT_SYSTEM[i] : 0,
+          isDnf,
         });
       });
 
@@ -2175,7 +2200,7 @@ exports.megaFixDebriefs = onCall({
 
           const su1 = setupsMap[p1.id] || DEFAULT_SETUP;
           const ideal = circuit.idealSetup;
-          const gap = Math.abs(su1.frontWing - ideal.frontWing) + Math.abs(su1.suspension - ideal.suspension);
+          const gap = Math.abs((su1.frontWing || 50) - (ideal.frontWing || 50)) + Math.abs((su1.suspension || 50) - (ideal.suspension || 50));
           if (gap > 20) debrief += "\n\nNote: The drivers complained about the car's balance. It seems our current Setup is quite far from the track's ideal requirements.";
           else if (gap < 5) debrief += "\n\nNote: The setup was very close to perfect! The drivers felt confident in the corners.";
         } else if (p1) {
@@ -2190,11 +2215,13 @@ exports.megaFixDebriefs = onCall({
           lastRaceResult: lines,
         }, { merge: true });
 
-        // 2. Add News entry
-        await addOfficeNews(tid, {
+        // 2. Add News entry (Aligned with UI collection 'news')
+        await db.collection("teams").doc(tid).collection("news").add({
           title: `Race Summary: ${rEvent.trackName}`,
           message: `${lines}\n\nANALYSIS:\n${debrief}`,
           type: "RACE_RESULT",
+          timestamp: admin.firestore.FieldValue.serverTimestamp(),
+          isRead: false
         });
         totalUpdated++;
       }

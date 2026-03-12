@@ -72,7 +72,7 @@
 
 </script>
 
-<div class="bg-app-surface border border-app-border rounded-3xl p-6 lg:p-8 flex flex-col h-full shadow-2xl relative overflow-hidden group">
+<div class="bg-app-surface border border-app-border rounded-3xl p-6 lg:p-8 flex flex-col h-fit shadow-2xl relative overflow-hidden group">
     <!-- Background glowing accent -->
     <div class="absolute -top-24 -right-24 w-64 h-64 bg-app-primary/5 rounded-full blur-[60px] group-hover:bg-app-primary/10 transition-colors pointer-events-none"></div>
 
