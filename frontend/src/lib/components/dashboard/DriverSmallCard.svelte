@@ -2,7 +2,6 @@
     import type { Driver } from "$lib/types";
     import DriverStars from "$lib/components/DriverStars.svelte";
     import DriverAvatar from "$lib/components/DriverAvatar.svelte";
-    import { getFlagEmoji, getFlagUrl } from "$lib/utils/country";
     import CountryFlag from "$lib/components/ui/CountryFlag.svelte";
 
     let { driver, carIndex } = $props<{

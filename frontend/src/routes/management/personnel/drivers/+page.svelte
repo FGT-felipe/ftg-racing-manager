@@ -83,7 +83,6 @@
         }).format(value);
     }
 
-    import { getFlagEmoji, getFlagUrl } from "$lib/utils/country";
     import CountryFlag from "$lib/components/ui/CountryFlag.svelte";
 </script>
 

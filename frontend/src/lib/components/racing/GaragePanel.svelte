@@ -15,6 +15,7 @@
     import { circuitService } from "$lib/services/circuit_service.svelte";
     import { fade, slide } from "svelte/transition";
     import DriverAvatar from "$lib/components/DriverAvatar.svelte";
+    import CountryFlag from "$lib/components/ui/CountryFlag.svelte";
     import { t } from "$lib/utils/i18n";
 
     import PracticePanel from "./PracticePanel.svelte";
@@ -97,8 +98,8 @@
             <div class="absolute inset-0 bg-gradient-to-r from-app-primary/5 to-transparent pointer-events-none"></div>
             
             <div class="flex items-center gap-4 w-full md:w-auto shrink-0 relative">
-                <div class="w-12 h-12 rounded-xl bg-app-primary/10 flex items-center justify-center text-3xl shadow-inner border border-app-primary/20">
-                    {circuit.flagEmoji}
+                <div class="w-12 h-12 rounded-xl bg-app-primary/10 flex items-center justify-center shadow-inner border border-app-primary/20">
+                    <CountryFlag countryCode={circuit.countryCode} size="sm" />
                 </div>
                 <div>
                     <h4 class="text-[9px] font-black uppercase tracking-[0.3em] text-app-primary leading-none mb-1">Circuit Intel</h4>

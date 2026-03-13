@@ -23,7 +23,6 @@
         type SponsorOffer,
         type ActiveContract,
     } from "$lib/types";
-    import { getFlagEmoji, getFlagUrl } from "$lib/utils/country";
     import CountryFlag from "$lib/components/ui/CountryFlag.svelte";
 
     let team = $derived(teamStore.value.team);

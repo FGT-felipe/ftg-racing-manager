@@ -2,6 +2,7 @@
     import { onMount } from "svelte";
     import { fade, slide } from "svelte/transition";
     import { Timer, Trophy, ChevronRight, User } from "lucide-svelte";
+    import CountryFlag from "$lib/components/ui/CountryFlag.svelte";
     import { seasonStore } from "$lib/stores/season.svelte";
     import { timeService } from "$lib/services/time_service.svelte";
     import { db } from "$lib/firebase/config";
@@ -147,11 +148,14 @@
                             </div>
 
                             <div class="flex-1 min-w-0">
-                                <p
-                                    class="text-[13px] font-black text-app-text truncate uppercase"
-                                >
-                                    {row.driverName}
-                                </p>
+                                <div class="flex items-center gap-2">
+                                    <p
+                                        class="text-[13px] font-black text-app-text truncate uppercase"
+                                    >
+                                        {row.driverName}
+                                    </p>
+                                    <CountryFlag countryCode={row.countryCode} size="xs" />
+                                </div>
                                 <p
                                     class="text-[9px] font-bold text-app-text/30 uppercase tracking-widest"
                                 >

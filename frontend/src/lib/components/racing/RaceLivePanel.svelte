@@ -17,6 +17,7 @@
     import { db } from "$lib/firebase/config";
     import { doc, onSnapshot } from "firebase/firestore";
     import { seasonStore } from "$lib/stores/season.svelte";
+    import CountryFlag from "$lib/components/ui/CountryFlag.svelte";
     import { circuitService } from "$lib/services/circuit_service.svelte";
     import { flip } from "svelte/animate";
 
@@ -183,6 +184,7 @@
                                         >
                                             {row.driverName}
                                         </p>
+                                        <CountryFlag countryCode={row.countryCode} size="xs" />
                                         {#if row.isPitStop}
                                             <span
                                                 class="px-1.5 py-0.5 rounded bg-blue-500/20 text-blue-400 text-[8px] font-black uppercase"

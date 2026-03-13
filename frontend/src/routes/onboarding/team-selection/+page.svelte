@@ -119,7 +119,6 @@
         return `$${(budget / 1000000).toFixed(0)}M`;
     }
 
-    import { getFlagEmoji, getFlagUrl } from "$lib/utils/country";
     import CountryFlag from "$lib/components/ui/CountryFlag.svelte";
 </script>
 

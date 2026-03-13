@@ -32,7 +32,6 @@
     import { t } from "$lib/utils/i18n";
     import { getTitleInfo } from "$lib/constants/titles";
     import ConfirmationModal from "./ui/ConfirmationModal.svelte";
-    import { getFlagEmoji, getFlagUrl } from "$lib/utils/country";
     import CountryFlag from "$lib/components/ui/CountryFlag.svelte";
 
     interface Props {
