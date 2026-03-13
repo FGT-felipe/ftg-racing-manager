@@ -2033,7 +2033,7 @@ exports.scheduledDailyFitnessRecovery = onSchedule({
       const currentFitness = stats.fitness || 50;
 
       if (currentFitness < 100) {
-        const newFitness = Math.min(100, currentFitness + 10);
+        const newFitness = Math.min(100, currentFitness + 1.5);
 
         currentBatch.update(doc.ref, {
           "stats.fitness": newFitness,
