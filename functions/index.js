@@ -611,13 +611,26 @@ async function addPressNews(leagueId, data) {
  * @return {Promise} Firestore write.
  */
 async function addOfficeNews(teamId, data) {
-  return db.collection("teams").doc(teamId)
-    .collection("news").add({
-      ...data,
-      teamId,
-      isRead: false,
-      timestamp: admin.firestore.FieldValue.serverTimestamp(),
-    });
+  const batch = db.batch();
+  
+  // 1. news collection (for Office facility)
+  const newsRef = db.collection("teams").doc(teamId).collection("news").doc();
+  batch.set(newsRef, {
+    ...data,
+    teamId,
+    isRead: false,
+    timestamp: admin.firestore.FieldValue.serverTimestamp(),
+  });
+
+  // 2. notifications collection (for Dashboard / Store)
+  const notifRef = db.collection("teams").doc(teamId).collection("notifications").doc();
+  batch.set(notifRef, {
+    ...data,
+    isRead: false,
+    timestamp: admin.firestore.FieldValue.serverTimestamp(),
+  });
+
+  return batch.commit();
 }
 
 /**

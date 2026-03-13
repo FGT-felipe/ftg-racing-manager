@@ -14,7 +14,7 @@ const adcCredentials = {
     refresh_token: config.tokens.refresh_token,
 };
 
-const adcPath = path.join(__dirname, "_adc_temp_fix.json");
+const adcPath = path.join(__dirname, "_adc_temp_fix_v2.json");
 fs.writeFileSync(adcPath, JSON.stringify(adcCredentials, null, 2));
 
 process.env.GOOGLE_APPLICATION_CREDENTIALS = adcPath;
@@ -36,8 +36,21 @@ const FALLBACK_BONUSES = {
   "nitro_gear": 35000,
 };
 
+const FALLBACK_OBJECTIVES = {
+  "titans_oil": "Finish Top 3",
+  "global_tech": "Both in Points",
+  "zenith_sky": "Race Win",
+  "fast_logistics": "Finish Race",
+  "spark_energy": "Finish Top 10",
+  "eco_pulse": "Finish Top 10",
+  "local_drinks": "Finish Race",
+  "micro_chips": "Finish Top 10",
+  "nitro_gear": "Fastest Lap"
+};
+
 function evaluateObjective(contract, raceData, teamDrivers) {
-  const desc = (contract.objectiveDescription || "").toLowerCase();
+  const rawDesc = contract.objectiveDescription || FALLBACK_OBJECTIVES[contract.sponsorId] || "";
+  const desc = rawDesc.toLowerCase();
   const finalPositions = raceData.finalPositions || {};
   const dnfs = raceData.dnfs || [];
   const fastLapDriver = raceData.fast_lap_driver;
@@ -67,9 +80,8 @@ function evaluateObjective(contract, raceData, teamDrivers) {
 }
 
 async function fixHistoricalBonuses() {
-    console.log("Starting historical bonus correction...");
+    console.log("Starting historical bonus correction V2...");
     
-    // R1 Document ID from previous research
     const raceId = "qRM0nhyt95JGXqgxLtnT_r1";
     const raceSnap = await db.collection("races").doc(raceId).get();
     
@@ -82,7 +94,6 @@ async function fixHistoricalBonuses() {
     const driverIds = Object.keys(rd.finalPositions || {});
     const teamIdsSet = new Set();
 
-    // Map drivers to teams
     const driverTeamMap = {};
     const dSnaps = await db.collection("drivers").get();
     dSnaps.forEach(d => {
@@ -107,10 +118,8 @@ async function fixHistoricalBonuses() {
         const awardedLogs = [];
 
         for (const [slot, contract] of Object.entries(sponsors)) {
-            // We evaluate current sponsors against R1 results. 
-            // Since it's the start of the season, these are likely the same.
             if (evaluateObjective(contract, rd, teamDrivers)) {
-                // Check if already awarded (to avoid double payment)
+                // Check if already awarded
                 const txSnap = await db.collection("teams").doc(tid).collection("transactions")
                     .where("type", "==", "SPONSOR")
                     .where("description", "==", `Sponsor Objective Met: ${contract.sponsorName} (${slot})`)
@@ -118,17 +127,16 @@ async function fixHistoricalBonuses() {
                 
                 if (txSnap.empty) {
                     const bonus = contract.objectiveBonus || FALLBACK_BONUSES[contract.sponsorId] || 0;
+                    const finalDesc = contract.objectiveDescription || FALLBACK_OBJECTIVES[contract.sponsorId] || "Contract Objective";
                     if (bonus > 0) {
                         totalBonus += bonus;
                         awardedLogs.push({
                             slot,
                             name: contract.sponsorName,
                             bonus,
-                            desc: contract.objectiveDescription
+                            desc: finalDesc
                         });
                     }
-                } else {
-                    console.log(`Team ${teamData.name} already received bonus for ${contract.sponsorName} (${slot})`);
                 }
             }
         }
@@ -149,17 +157,29 @@ async function fixHistoricalBonuses() {
                     id: txRef.id,
                     description: `Sponsor Objective Met: ${item.name} (${item.slot})`,
                     amount: item.bonus,
-                    date: new Date().toISOString(),
+                    date: admin.firestore.FieldValue.serverTimestamp(),
                     type: "SPONSOR"
                 });
 
-                const newsRef = tRef.collection("notifications").doc();
-                batch.set(newsRef, {
-                    title: "Sponsor Objective Met (R1 Refresh)",
+                // 1. Notifications (Dashboard)
+                const notifRef = tRef.collection("notifications").doc();
+                batch.set(notifRef, {
+                    title: "Sponsor Objective Met (R1)",
                     message: `Congratulations! We cross-checked R1 and met the ${item.name} objective: "${item.desc}". A bonus of $${item.bonus.toLocaleString()} has been awarded.`,
                     type: "SUCCESS",
                     timestamp: admin.firestore.FieldValue.serverTimestamp(),
                     isRead: false
+                });
+
+                // 2. News (Office Facility)
+                const newsRef = tRef.collection("news").doc();
+                batch.set(newsRef, {
+                    title: "Sponsor Bonus Awarded",
+                    message: `${item.name} has paid the $${item.bonus.toLocaleString()} bonus for meeting the objective in R1.`,
+                    type: "SUCCESS",
+                    timestamp: admin.firestore.FieldValue.serverTimestamp(),
+                    isRead: false,
+                    teamId: tid
                 });
             }
             await batch.commit();
