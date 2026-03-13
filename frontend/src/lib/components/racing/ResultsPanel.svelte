@@ -107,7 +107,9 @@
 
                     lastResults = {
                         ...data,
-                        raceResults: mappedRaceResults
+                        raceResults: mappedRaceResults,
+                        fast_lap_time: data.fast_lap_time,
+                        fast_lap_driver: data.fast_lap_driver
                     };
                 } else {
                     lastResults = data;
@@ -126,8 +128,13 @@
 
     function formatTime(seconds: number) {
         if (!seconds || seconds === 0 || !isFinite(seconds)) return "—";
-        const mins = Math.floor(seconds / 60);
+        const hours = Math.floor(seconds / 3600);
+        const mins = Math.floor((seconds % 3600) / 60);
         const secs = (seconds % 60).toFixed(3);
+        
+        if (hours > 0) {
+            return `${hours}h ${mins}m ${secs}s`;
+        }
         if (mins > 0) {
             return `${mins}:${secs.padStart(6, '0')}`;
         }
@@ -197,8 +204,7 @@
                 const inPoints = lastResults.raceResults?.filter((r: any) => r.teamId === userTeamId && r.position <= 10);
                 isMet = (inPoints?.length >= 2);
             } else if (desc.includes("Fastest Lap")) {
-                const fastestLapSession = Math.min(...(lastResults.raceResults?.map((r: any) => r.bestLapTime || 999999) || [999999]));
-                isMet = lastResults.raceResults?.some((r: any) => r.teamId === userTeamId && r.bestLapTime === fastestLapSession);
+                isMet = lastResults.fast_lap_driver && lastResults.raceResults?.some((r: any) => r.teamId === userTeamId && r.driverId === lastResults.fast_lap_driver);
                 targetPos = 1;
             } else if (desc.includes("Improve Grid")) {
                 const qualyMap = new Map(lastResults.qualifyingResults?.map((r: any, idx: number) => [r.driverId, idx + 1]) || []);
@@ -214,9 +220,9 @@
             } else if (desc.includes("Overtake")) {
                 const qualyMap = new Map(lastResults.qualifyingResults?.map((r: any, idx: number) => [r.driverId, idx + 1]) || []);
                 isMet = lastResults.raceResults?.some((r: any) => {
-                    if (r.teamId !== userTeamId) return false;
                     const qPos = qualyMap.get(r.driverId);
-                    return qPos && (qPos - r.position) >= 3;
+                    if (qPos === undefined) return false;
+                    return ((qPos as number) - (r.position as number)) >= 3;
                 });
                 targetPos = 10;
             }
@@ -225,8 +231,14 @@
         });
     });
 
+    const fastestLapObjective = $derived.by(() => {
+        return sponsorObjectives.find(o => (o.objectiveDescription || "").includes("Fastest Lap"));
+    });
+
+    const ribbonObjectives = $derived(sponsorObjectives.filter(o => !o.objectiveDescription?.includes("Fastest Lap")));
+
     function getRibbonForPos(pos: number, type: 'qualy' | 'race') {
-        return sponsorObjectives.filter(o => o.targetPos === pos && o.type === type);
+        return ribbonObjectives.filter(o => o.targetPos === pos && o.type === type);
     }
 </script>
 
@@ -317,16 +329,37 @@
 
                 <!-- Race Results -->
                 <div class="bg-app-surface border border-app-border rounded-2xl overflow-hidden shadow-2xl">
-                    <div class="p-4 border-b border-app-border bg-app-surface flex items-center gap-3">
-                        <Flag size={16} class="text-red-500" />
-                        <h4 class="font-black text-[10px] uppercase tracking-widest italic">Race Results</h4>
+                    <div class="p-4 border-b border-app-border bg-app-surface flex items-center justify-between">
+                        <div class="flex items-center gap-3">
+                            <Flag size={16} class="text-red-500" />
+                            <h4 class="font-black text-[10px] uppercase tracking-widest italic">Race Results</h4>
+                        </div>
+                        {#if lastResults?.fast_lap_time}
+                            <div class="flex items-center gap-4">
+                                <div class="flex items-center gap-2 px-3 py-1 bg-white/[0.03] border border-white/5 rounded-full">
+                                    <span class="text-[9px] font-bold text-app-text/40 uppercase tracking-tighter">Fastest Lap:</span>
+                                    <span class="text-[10px] font-black text-app-text italic">
+                                        {formatTime(lastResults.fast_lap_time)}
+                                    </span>
+                                    <span class="text-[10px] font-black text-app-primary/60 uppercase text-[8px] truncate max-w-[80px]">
+                                        {(lastResults.raceResults?.find((r: any) => r.driverId === lastResults.fast_lap_driver)?.driverName) || "Unknown"}
+                                    </span>
+                                </div>
+                                {#if fastestLapObjective}
+                                    <div class="flex items-center gap-1.5 px-2 py-0.5 rounded border {fastestLapObjective.isMet ? 'bg-app-success/10 border-app-success/20 text-app-success' : 'bg-app-error/10 border-app-error/20 text-app-error'}">
+                                        <div class="w-1.5 h-1.5 rounded-full {fastestLapObjective.isMet ? 'bg-app-success' : 'bg-app-error'} animate-pulse"></div>
+                                        <span class="text-[8px] font-black uppercase tracking-widest">Objective</span>
+                                    </div>
+                                {/if}
+                            </div>
+                        {/if}
                     </div>
                     <div class="divide-y divide-white/5 max-h-[400px] overflow-y-auto custom-scrollbar">
                         {#if lastResults.raceResults && lastResults.raceResults.length > 0}
                             {#each lastResults.raceResults as row, i}
                                 <div class="p-3 flex items-center gap-4 transition-colors {row.teamId === userTeamId ? 'bg-app-primary/5' : 'hover:bg-white/[0.02]'}">
-                                    <div class="w-6 h-6 rounded bg-app-text/10 flex items-center justify-center font-black italic text-[10px] {i < 3 ? 'text-red-500' : (row.teamId === userTeamId ? 'text-app-primary' : 'text-app-text/20')}">
-                                        {row.isDnf ? 'R' : i + 1}
+                                    <div class="w-6 h-6 rounded bg-app-text/10 flex items-center justify-center font-black italic text-[10px] {row.isDnf ? 'text-red-500' : (i < 3 ? 'text-red-500' : (row.teamId === userTeamId ? 'text-app-primary' : 'text-app-text/20'))}">
+                                        {row.isDnf ? 'DNF' : i + 1}
                                     </div>
                                     <div class="flex-1 min-w-0">
                                         <div class="flex items-center gap-2">
@@ -338,11 +371,15 @@
                                         <p class="text-[8px] font-bold {row.teamId === userTeamId ? 'text-app-primary/60' : 'text-app-text/30'} uppercase tracking-widest">{row.teamName}</p>
                                     </div>
                                     <div class="text-right">
-                                        <p class="text-xs font-black italic text-app-text tabular-nums">{formatGap(row.gapToLeader)}</p>
+                                        <p class="text-xs font-black italic text-app-text tabular-nums">
+                                            {row.isDnf ? 'DNF' : (i === 0 ? formatTime(lastResults.totalTimes?.[row.driverId]) : formatGap(row.gapToLeader))}
+                                        </p>
                                         {#if row.isDnf}
                                             <p class="text-[8px] font-bold text-red-500/50 uppercase italic">Retired</p>
                                         {:else}
-                                            <p class="text-[8px] font-bold text-app-text/30 uppercase tabular-nums">Best: {formatTime(row.lastLapTime || row.bestLapTime)}</p>
+                                            <p class="text-[8px] font-bold text-app-text/30 uppercase tabular-nums">
+                                                {lastResults.fast_lap_driver === row.driverId ? '★ Fastest Lap' : `Best Lap: ${formatTime(row.lastLapTime)}`}
+                                            </p>
                                         {/if}
                                     </div>
                                 </div>

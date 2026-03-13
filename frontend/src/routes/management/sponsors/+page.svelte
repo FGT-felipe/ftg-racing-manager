@@ -17,6 +17,7 @@
         ArrowRight,
     } from "lucide-svelte";
     import { fly, fade } from "svelte/transition";
+    import { t } from "$lib/utils/i18n";
     import {
         SponsorSlot,
         type SponsorOffer,
@@ -89,7 +90,50 @@
         }
     }
 
-    function formatCurrency(amount: number) {
+    const fallbackObjectives: Record<string, string> = {
+        'titans_oil': "Finish Top 3",
+        'global_tech': "Both in Points",
+        'zenith_sky': "Race Win",
+        'fast_logistics': "Finish Top 10",
+        'spark_energy': "Fastest Lap",
+        'eco_pulse': "Finish Race",
+        'local_drinks': "Finish Race",
+        'micro_chips': "Improve Grid",
+        'nitro_gear': "Overtake 3 Cars"
+    };
+
+    const fallbackBonuses: Record<string, number> = {
+        'titans_oil': 250000,
+        'global_tech': 200000,
+        'zenith_sky': 300000,
+        'fast_logistics': 100000,
+        'spark_energy': 120000,
+        'eco_pulse': 80000,
+        'local_drinks': 30000,
+        'micro_chips': 40000,
+        'nitro_gear': 35000
+    };
+
+    function translateObjective(desc: string | undefined | null, sponsorId?: string) {
+        if (!desc && sponsorId) desc = fallbackObjectives[sponsorId];
+        if (!desc) return "";
+        const mapping: Record<string, any> = {
+            "Finish Top 3": "finish_top_3",
+            "Both in Points": "both_in_points",
+            "Race Win": "race_win",
+            "Finish Top 10": "finish_top_10",
+            "Fastest Lap": "fastest_lap",
+            "Finish Race": "finish_race",
+            "Improve Grid": "improve_grid",
+            "Overtake 3 Cars": "overtake_3_cars",
+            "Pole Position": "pole_position"
+        };
+        const key = mapping[desc] || desc;
+        return t(key as any);
+    }
+
+    function formatCurrency(amount: number | undefined | null) {
+        if (amount === undefined || amount === null || isNaN(amount)) return "$0";
         return new Intl.NumberFormat("en-US", {
             style: "currency",
             currency: "USD",
@@ -306,6 +350,23 @@
                                                     >{activeContract.racesRemaining}
                                                     Races</span
                                                 >
+                                            </div>
+                                        </div>
+
+                                        <div class="mt-12 flex flex-col items-center gap-3 w-full">
+                                            <span class="text-[9px] font-black text-app-text/20 uppercase tracking-[0.2em]">Performance Objective</span>
+                                            <div class="flex flex-col md:flex-row items-center gap-4 px-8 py-4 bg-app-primary/5 border border-app-primary/20 rounded-3xl w-full justify-center">
+                                                <div class="flex items-center gap-3">
+                                                    <Trophy size={18} class="text-app-primary" />
+                                                    <span class="text-lg font-black italic text-app-text uppercase tracking-tight">
+                                                        {translateObjective(activeContract.objectiveDescription, activeContract.sponsorId)}
+                                                    </span>
+                                                </div>
+                                                <div class="hidden md:block w-1 h-4 bg-app-primary/20 rounded-full"></div>
+                                                <div class="flex items-center gap-2">
+                                                    <div class="w-2 h-2 rounded-full bg-app-primary animate-pulse"></div>
+                                                    <span class="text-sm font-black text-app-primary italic">{formatCurrency(activeContract.objectiveBonus || fallbackBonuses[activeContract.sponsorId] || 0)} BONUS</span>
+                                                </div>
                                             </div>
                                         </div>
                                     </div>
