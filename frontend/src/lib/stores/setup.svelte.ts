@@ -30,7 +30,7 @@ class SetupStore {
     init(teamId: string) {
         if (this.unsubscribe) return;
 
-        console.log("📡 SetupStore: Initializing for team", teamId);
+        console.debug("📡 SetupStore: Initializing for team", teamId);
         this.value.loading = true;
 
         const resultsRef = collection(db, 'teams', teamId, 'practice_results');

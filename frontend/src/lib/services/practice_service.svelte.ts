@@ -198,7 +198,7 @@ class PracticeService {
     ) {
         // Bypass the subcollection entirely to avoid permission issues reported by the user
         // We still log to console for debugging
-        console.log(`[PracticeService] Skipping subcollection write due to permission errors. Data preserved in team document.`);
+        console.debug(`[PracticeService] Skipping subcollection write due to permission errors. Data preserved in team document.`);
 
         const practiceLapsPath = `weekStatus.practiceLaps.${driverId}`;
         const practiceSetupPath = `weekStatus.driverSetups.${driverId}.practice`;

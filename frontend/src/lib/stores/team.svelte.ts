@@ -14,7 +14,7 @@ export function createTeamStore() {
         init(user: any) {
             // Support for Playwright/Testing Mocking
             if (browser && (window as any).__MOCK_TEAM__) {
-                console.log('[TeamStore] Initialization: Mock data detected and applied.');
+                console.debug('[TeamStore] Initialization: Mock data detected and applied.');
                 currentTeam = (window as any).__MOCK_TEAM__;
                 isLoading = false; 
                 return;
@@ -50,7 +50,7 @@ export function createTeamStore() {
                     if (!snapshot.empty) {
                         const doc = snapshot.docs[0];
                         const data = doc.data();
-                        console.log(`[TeamStore] RAW DATA [${doc.id}]:`, JSON.stringify(data));
+
 
                         currentTeam = {
                             id: doc.id,
@@ -63,7 +63,7 @@ export function createTeamStore() {
                             ...data
                         } as Team;
 
-                        console.log('[TeamStore] Snapshot update: active team data synchronized.', { 
+                        console.debug('[TeamStore] Snapshot update: active team data synchronized.', { 
                             id: currentTeam.id, 
                             name: currentTeam.name,
                             leagueId: currentTeam.leagueId

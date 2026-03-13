@@ -12,7 +12,7 @@ export function createDriverStore() {
     function init() {
         // Support for Playwright/Testing Mocking
         if (browser && (window as any).__MOCK_DRIVERS__) {
-            console.log('🧪 MOCK Drivers Active');
+            console.debug('🧪 MOCK Drivers Active');
             drivers = (window as any).__MOCK_DRIVERS__;
             isLoading = false;
             return;

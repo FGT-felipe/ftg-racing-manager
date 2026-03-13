@@ -100,7 +100,7 @@ export function createRaceService() {
          */
         async getCompetitorPracticeTimes(sessionId: string, teamIds?: string[], teamNames?: Record<string, string>): Promise<Array<{teamName: string, driverName: string, time: number | null, tyre: string | null, totalLaps: number, driverId: string}>> {
             try {
-                console.log(`[RaceService] getCompetitorPracticeTimes: Redesigned Fetch with Fallback. Session: ${sessionId}`);
+                console.debug(`[RaceService] getCompetitorPracticeTimes: Redesigned Fetch with Fallback. Session: ${sessionId}`);
                 
                 if (!teamIds || teamIds.length === 0) {
                     console.warn('[RaceService] getCompetitorPracticeTimes: Aborting. No teamIds provided.');
@@ -108,16 +108,16 @@ export function createRaceService() {
                 }
 
                 // 1. Fetch ALL drivers in the league
-                console.log(`[RaceService] Fetching all drivers for ${teamIds.length} teams.`);
+                console.debug(`[RaceService] Fetching all drivers for ${teamIds.length} teams.`);
                 const driversQ = query(
                     collection(db, 'drivers'),
                     where('teamId', 'in', teamIds)
                 );
                 const driversSnap = await getDocs(driversQ);
-                console.log(`[RaceService] Drivers found: ${driversSnap.size}`);
+                console.debug(`[RaceService] Drivers found: ${driversSnap.size}`);
 
                 // 2. Fetch ALL teams in the league (for fallback data)
-                console.log(`[RaceService] Fetching all teams for fallback data.`);
+                console.debug(`[RaceService] Fetching all teams for fallback data.`);
                 const teamsQ = query(
                     collection(db, 'teams'),
                     where(documentId(), 'in', teamIds)
@@ -159,7 +159,7 @@ export function createRaceService() {
                     });
                 });
 
-                console.log(`[RaceService] Map complete. Total participants: ${competitors.length}`);
+                console.debug(`[RaceService] Map complete. Total participants: ${competitors.length}`);
 
                 // Sort: Drivers with times first (by time), then drivers without times alphabetically
                 competitors.sort((a, b) => {

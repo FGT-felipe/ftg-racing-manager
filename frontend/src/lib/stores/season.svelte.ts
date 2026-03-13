@@ -48,7 +48,7 @@ class SeasonStore {
         // Support for Playwright/Testing Mocking
         if (browser && (window as any).__MOCK_SEASON__) {
             if (this.value.season !== (window as any).__MOCK_SEASON__) {
-                console.log('🧪 MOCK Season Active');
+                console.debug('🧪 MOCK Season Active');
                 this.value.season = (window as any).__MOCK_SEASON__;
                 this.value.loading = false;
             }
@@ -57,7 +57,7 @@ class SeasonStore {
 
         if (this.currentSeasonId === (seasonId || "latest")) return;
 
-        console.log(`📡 SeasonStore: Initializing for Season ${seasonId || "Latest"}`);
+        console.debug(`📡 SeasonStore: Initializing for Season ${seasonId || "Latest"}`);
         this.clear();
         this.currentSeasonId = seasonId || "latest";
         this.value.loading = true;
@@ -106,7 +106,7 @@ class SeasonStore {
             } as Season;
 
             this.value.loading = false;
-            console.log(`✅ SeasonStore: Loaded ${this.value.season.id}`);
+            console.debug(`✅ SeasonStore: Loaded ${this.value.season.id}`);
         } else {
             console.error("❌ SeasonStore: Document not found", this.currentSeasonId);
             this.value.error = "Season document not found.";
