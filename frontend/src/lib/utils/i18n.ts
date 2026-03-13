@@ -163,6 +163,17 @@ export const translations = {
         set_target_setups: "Propagate Setup to Weekend",
         copy_practice_to_qualy: "Use current setup for Saturday",
         copy_practice_to_race: "Use current setup for Sunday",
+        objective_met: "Objective Met: {desc}",
+        objective_failed: "Objective Not Met: {desc}",
+        finish_top_3: "Finish Top 3",
+        both_in_points: "Both in Points",
+        race_win: "Race Win",
+        finish_top_10: "Finish Top 10",
+        fastest_lap: "Fastest Lap",
+        finish_race: "Finish Race",
+        improve_grid: "Improve Grid",
+        overtake_3_cars: "Overtake 3 Cars",
+        pole_position: "Pole Position",
     },
     es: {
         career_view: "Vista Profesional",
@@ -325,6 +336,17 @@ export const translations = {
         set_target_setups: "Propagar Setup al Fin de Semana",
         copy_practice_to_qualy: "Usar ajuste actual para el Sábado",
         copy_practice_to_race: "Usar ajuste actual para el Domingo",
+        objective_met: "Objetivo Logrado: {desc}",
+        objective_failed: "Objetivo no alcanzado: {desc}",
+        finish_top_3: "Terminar en el Top 3",
+        both_in_points: "Ambos en los Puntos",
+        race_win: "Victoria",
+        finish_top_10: "Terminar en el Top 10",
+        fastest_lap: "Vuelta Rápida",
+        finish_race: "Terminar la Carrera",
+        improve_grid: "Mejorar Posición de Parrilla",
+        overtake_3_cars: "Rebasar 3 Autos",
+        pole_position: "Pole Position",
     }
 };
 
@@ -334,12 +356,16 @@ export function getLanguage(): Language {
     return currentLang;
 }
 
-export function t(key: keyof typeof translations['en'], params?: Record<string, string | number>): string {
-    let text = translations[currentLang][key] || translations['en'][key] || key;
+export function t(key: any, params?: Record<string, string | number | undefined>): string {
+    if (!key) return "";
+    let text = translations[currentLang][key as TranslationKey] || translations['en'][key as TranslationKey] || key;
+    
+    if (typeof text !== 'string') text = String(text);
 
-    if (params) {
+    if (params && text) {
         Object.entries(params).forEach(([k, v]) => {
-            text = text.replace(`{${k}}`, v.toString());
+            const val = v !== undefined && v !== null ? v.toString() : "";
+            text = text.replace(`{${k}}`, val);
         });
     }
 

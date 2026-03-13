@@ -6,6 +6,7 @@
     import { teamStore } from "$lib/stores/team.svelte";
     import { db } from "$lib/firebase/config";
     import { doc, getDoc } from "firebase/firestore";
+    import { t } from "$lib/utils/i18n";
 
     let lastResults = $state<any>(null);
     let isLoading = $state(true);
@@ -138,6 +139,95 @@
         if (gap >= 999 || isNaN(gap)) return "DNF";
         return `+${gap.toFixed(3)}s`;
     }
+
+    const fallbackObjectives: Record<string, string> = {
+        'titans_oil': "Finish Top 3",
+        'global_tech': "Both in Points",
+        'zenith_sky': "Race Win",
+        'fast_logistics': "Finish Top 10",
+        'spark_energy': "Fastest Lap",
+        'eco_pulse': "Finish Race",
+        'local_drinks': "Finish Race",
+        'micro_chips': "Improve Grid",
+        'nitro_gear': "Overtake 3 Cars"
+    };
+
+    function translateObjective(desc: string | undefined | null) {
+        if (!desc) return "";
+        const mapping: Record<string, any> = {
+            "Finish Top 3": "finish_top_3",
+            "Both in Points": "both_in_points",
+            "Race Win": "race_win",
+            "Finish Top 10": "finish_top_10",
+            "Fastest Lap": "fastest_lap",
+            "Finish Race": "finish_race",
+            "Improve Grid": "improve_grid",
+            "Overtake 3 Cars": "overtake_3_cars",
+            "Pole Position": "pole_position"
+        };
+        const key = mapping[desc] || desc;
+        return t(key as any);
+    }
+
+    const sponsorObjectives = $derived.by(() => {
+        if (!teamStore.value.team?.sponsors || !lastResults) return [];
+        const activeSponsors = Object.values(teamStore.value.team.sponsors);
+        
+        return activeSponsors.map(s => {
+            const desc = s.objectiveDescription || fallbackObjectives[s.sponsorId] || "";
+            let isMet = false;
+            let targetPos = 99;
+            let type: 'qualy' | 'race' = 'race';
+
+            if (desc.includes("Pole")) {
+                type = 'qualy';
+                targetPos = 1;
+                isMet = lastResults.qualifyingResults?.some((r: any) => r.teamId === userTeamId && lastResults.qualifyingResults.indexOf(r) === 0);
+            } else if (desc.includes("Win")) {
+                targetPos = 1;
+                isMet = lastResults.raceResults?.some((r: any) => r.teamId === userTeamId && r.position === 1);
+            } else if (desc.includes("Top 3")) {
+                targetPos = 3;
+                isMet = lastResults.raceResults?.some((r: any) => r.teamId === userTeamId && r.position <= 3);
+            } else if (desc.includes("Top 10")) {
+                targetPos = 10;
+                isMet = lastResults.raceResults?.some((r: any) => r.teamId === userTeamId && r.position <= 10);
+            } else if (desc.includes("Both in Points")) {
+                targetPos = 10;
+                const inPoints = lastResults.raceResults?.filter((r: any) => r.teamId === userTeamId && r.position <= 10);
+                isMet = (inPoints?.length >= 2);
+            } else if (desc.includes("Fastest Lap")) {
+                const fastestLapSession = Math.min(...(lastResults.raceResults?.map((r: any) => r.bestLapTime || 999999) || [999999]));
+                isMet = lastResults.raceResults?.some((r: any) => r.teamId === userTeamId && r.bestLapTime === fastestLapSession);
+                targetPos = 1;
+            } else if (desc.includes("Improve Grid")) {
+                const qualyMap = new Map(lastResults.qualifyingResults?.map((r: any, idx: number) => [r.driverId, idx + 1]) || []);
+                isMet = lastResults.raceResults?.some((r: any) => {
+                    if (r.teamId !== userTeamId) return false;
+                    const qPos = qualyMap.get(r.driverId);
+                    return qPos && r.position < qPos;
+                });
+                targetPos = 10; 
+            } else if (desc.includes("Finish Race")) {
+                targetPos = 20; 
+                isMet = lastResults.raceResults?.some((r: any) => r.teamId === userTeamId && !r.isDnf);
+            } else if (desc.includes("Overtake")) {
+                const qualyMap = new Map(lastResults.qualifyingResults?.map((r: any, idx: number) => [r.driverId, idx + 1]) || []);
+                isMet = lastResults.raceResults?.some((r: any) => {
+                    if (r.teamId !== userTeamId) return false;
+                    const qPos = qualyMap.get(r.driverId);
+                    return qPos && (qPos - r.position) >= 3;
+                });
+                targetPos = 10;
+            }
+
+            return { ...s, isMet, targetPos, type, objectiveDescription: desc };
+        });
+    });
+
+    function getRibbonForPos(pos: number, type: 'qualy' | 'race') {
+        return sponsorObjectives.filter(o => o.targetPos === pos && o.type === type);
+    }
 </script>
 
 <div class="space-y-6">
@@ -206,6 +296,18 @@
                                         <p class="text-xs font-black italic text-app-primary tabular-nums">{formatTime(row.lapTime)}</p>
                                     </div>
                                 </div>
+                                {#each getRibbonForPos(i + 1, 'qualy') as ribbon}
+                                    <div class="px-4 py-2 flex items-center justify-between border-y {ribbon.isMet ? 'bg-app-success/10 border-app-success/20' : 'bg-app-error/10 border-app-error/20'}" in:slide>
+                                        <div class="flex items-center gap-3">
+                                            <span class="text-[9px] font-black uppercase tracking-[0.2em] {ribbon.isMet ? 'text-app-success' : 'text-app-error'}">{ribbon.sponsorName}</span>
+                                            <div class="w-1 h-3 w-[2px] rounded-full {ribbon.isMet ? 'bg-app-success/40' : 'bg-app-error/40'}"></div>
+                                            <span class="text-[10px] font-black italic text-app-text/50 uppercase tracking-tight">{translateObjective(ribbon.objectiveDescription)}</span>
+                                        </div>
+                                        <span class="text-[9px] font-black uppercase tracking-widest {ribbon.isMet ? 'text-app-success' : 'text-app-error'} px-2 py-0.5 rounded {ribbon.isMet ? 'bg-app-success/10' : 'bg-app-error/10'}">
+                                            {t(ribbon.isMet ? 'objective_met' : 'objective_failed', { desc: translateObjective(ribbon.objectiveDescription) })}
+                                        </span>
+                                    </div>
+                                {/each}
                             {/each}
                         {:else}
                             <div class="p-8 text-center text-app-text/20 text-[10px] uppercase font-black tracking-widest">No Qualy Data Found</div>
@@ -244,6 +346,18 @@
                                         {/if}
                                     </div>
                                 </div>
+                                {#each getRibbonForPos(i + 1, 'race') as ribbon}
+                                    <div class="px-4 py-2 flex items-center justify-between border-y {ribbon.isMet ? 'bg-app-success/10 border-app-success/20' : 'bg-app-error/10 border-app-error/20'}" in:slide>
+                                        <div class="flex items-center gap-3">
+                                            <span class="text-[9px] font-black uppercase tracking-[0.2em] {ribbon.isMet ? 'text-app-success' : 'text-app-error'}">{ribbon.sponsorName}</span>
+                                            <div class="w-1 h-3 w-[2px] rounded-full {ribbon.isMet ? 'bg-app-success/40' : 'bg-app-error/40'}"></div>
+                                            <span class="text-[10px] font-black italic text-app-text/50 uppercase tracking-tight">{translateObjective(ribbon.objectiveDescription)}</span>
+                                        </div>
+                                        <span class="text-[9px] font-black uppercase tracking-widest {ribbon.isMet ? 'text-app-success' : 'text-app-error'} px-2 py-0.5 rounded {ribbon.isMet ? 'bg-app-success/10' : 'bg-app-error/10'}">
+                                            {t(ribbon.isMet ? 'objective_met' : 'objective_failed', { desc: translateObjective(ribbon.objectiveDescription) })}
+                                        </span>
+                                    </div>
+                                {/each}
                             {/each}
                         {:else}
                             <div class="p-8 text-center text-app-text/20 text-[10px] uppercase font-black tracking-widest">No Race Data Found</div>

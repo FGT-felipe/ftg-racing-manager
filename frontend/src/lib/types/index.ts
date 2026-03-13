@@ -91,6 +91,8 @@ export interface ActiveContract {
     slot: SponsorSlot;
     currentFailures: number;
     weeklyBasePayment: number;
+    objectiveBonus: number;
+    objectiveDescription: string;
     racesRemaining: number;
 }
 
