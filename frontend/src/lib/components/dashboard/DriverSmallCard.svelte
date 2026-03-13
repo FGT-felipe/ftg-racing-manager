@@ -2,20 +2,13 @@
     import type { Driver } from "$lib/types";
     import DriverStars from "$lib/components/DriverStars.svelte";
     import DriverAvatar from "$lib/components/DriverAvatar.svelte";
+    import { getFlagEmoji } from "$lib/utils/country";
 
     let { driver, carIndex } = $props<{
         driver: Driver;
         carIndex: number;
     }>();
 
-    function getFlagEmoji(countryCode: string) {
-        if (!countryCode) return "🏁";
-        const codePoints = countryCode
-            .toUpperCase()
-            .split("")
-            .map((char) => 127397 + char.charCodeAt(0));
-        return String.fromCodePoint(...codePoints);
-    }
     const DRIVING_STATS = [
         "braking",
         "cornering",

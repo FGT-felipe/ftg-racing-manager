@@ -32,6 +32,7 @@
     import { t } from "$lib/utils/i18n";
     import { getTitleInfo } from "$lib/constants/titles";
     import ConfirmationModal from "./ui/ConfirmationModal.svelte";
+    import { getFlagEmoji } from "$lib/utils/country";
 
     interface Props {
         driver: Driver;
@@ -80,10 +81,6 @@
         }).format(value);
     }
 
-    function getFlagUrl(countryCode: string) {
-        if (!countryCode) return "https://flagcdn.com/w40/un.png";
-        return `https://flagcdn.com/w40/${countryCode.toLowerCase()}.png`;
-    }
 
     const DRIVING_STATS = [
         { key: "braking", label: "Braking" },
@@ -359,11 +356,9 @@
 
                             <div class="flex flex-col gap-2">
                                 <div class="flex items-center gap-3">
-                                    <img
-                                        src={getFlagUrl(driver.countryCode)}
-                                        alt={driver.countryCode}
-                                        class="w-6 h-4 object-cover rounded shadow-sm"
-                                    />
+                                    <span class="text-xl shadow-sm" title={driver.countryCode}>
+                                        {getFlagEmoji(driver.countryCode)}
+                                    </span>
                                     <span
                                         class="text-xs font-black text-app-text/30 uppercase tracking-[0.2em]"
                                         >{driver.age}Y</span

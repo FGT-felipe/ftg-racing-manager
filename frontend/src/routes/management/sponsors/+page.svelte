@@ -23,6 +23,7 @@
         type SponsorOffer,
         type ActiveContract,
     } from "$lib/types";
+    import { getFlagEmoji } from "$lib/utils/country";
 
     let team = $derived(teamStore.value.team);
     let manager = $derived(managerStore.profile);
@@ -35,6 +36,7 @@
                   selectedSlot,
                   manager.role,
                   team?.weekStatus?.sponsorNegotiations || {},
+                  team?.sponsors || {}
               )
             : [],
     );
@@ -317,7 +319,7 @@
                                             <h2
                                                 class="text-5xl font-heading font-black tracking-tighter text-app-text uppercase italic"
                                             >
-                                                {activeContract.sponsorName}
+                                                {getFlagEmoji(activeContract.countryCode)} {activeContract.sponsorName}
                                             </h2>
                                             <span
                                                 class="text-xs font-bold text-app-primary/60 uppercase tracking-[0.3em]"
@@ -416,6 +418,7 @@
                                                         <h4
                                                             class="text-2xl font-black text-app-text uppercase tracking-tight"
                                                         >
+                                                            <span class="mr-2">{getFlagEmoji(offer.countryCode)}</span>
                                                             {offer.name}
                                                         </h4>
                                                         {#if offer.isAdminBonusApplied}
