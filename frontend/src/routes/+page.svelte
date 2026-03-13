@@ -68,10 +68,10 @@
                     <span
                         class="text-[10px] font-black tracking-[0.3em] text-app-primary/40 uppercase font-heading"
                     >
-                        Welcome {authStore.user?.displayName || "Manager"}
+                        Welcome {managerStore.profile ? `${managerStore.profile.firstName} ${managerStore.profile.lastName}` : (authStore.user?.displayName || "Manager")}
                     </span>
                     {#if managerStore.profile}
-                        <CountryFlag countryCode={managerStore.profile.country} size="xs" />
+                        <CountryFlag countryCode={managerStore.profile.country || managerStore.profile.nationality} size="xs" />
                     {/if}
                 </div>
             </div>

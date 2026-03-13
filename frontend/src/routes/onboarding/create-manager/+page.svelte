@@ -18,7 +18,7 @@
 
     let firstName = $state("");
     let lastName = $state("");
-    let nationality = $state("Brazil");
+    let nationality = $state("BR");
     let gender = $state("Male");
     let day = $state("");
     let month = $state("");
@@ -42,6 +42,7 @@
                 firstName,
                 lastName,
                 nationality,
+                country: nationality, // Save as both for consistency
                 gender,
                 birthDate,
                 backgroundId: selectedRoleId,
@@ -149,12 +150,14 @@
                                 bind:value={nationality}
                                 class="w-full bg-app-surface border border-app-border rounded-xl px-12 py-3 text-sm focus:border-app-primary outline-none appearance-none transition-all"
                             >
-                                <option>Brazil</option>
-                                <option>Argentina</option>
-                                <option>Colombia</option>
-                                <option>Mexico</option>
-                                <option>Uruguay</option>
-                                <option>Chile</option>
+                                <option value="BR">Brazil</option>
+                                <option value="AR">Argentina</option>
+                                <option value="CO">Colombia</option>
+                                <option value="MX">Mexico</option>
+                                <option value="UY">Uruguay</option>
+                                <option value="CL">Chile</option>
+                                <option value="US">United States</option>
+                                <option value="GB">United Kingdom</option>
                             </select>
                         </div>
                     </div>
