@@ -200,6 +200,8 @@ export class SponsorService {
             sponsorName: offer.name,
             slot: slot,
             weeklyBasePayment: offer.weeklyBasePayment,
+            objectiveBonus: offer.objectiveBonus,
+            objectiveDescription: offer.objectiveDescription,
             racesRemaining: offer.contractDuration,
             currentFailures: 0
         };

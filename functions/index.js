@@ -11,6 +11,56 @@ const db = admin.firestore();
 
 setGlobalOptions({ maxInstances: 10 });
 
+const FALLBACK_BONUSES = {
+  "titans_oil": 250000,
+  "global_tech": 200000,
+  "zenith_sky": 300000,
+  "fast_logistics": 100000,
+  "spark_energy": 120000,
+  "eco_pulse": 80000,
+  "local_drinks": 30000,
+  "micro_chips": 40000,
+  "nitro_gear": 35000,
+};
+
+/**
+ * Evaluates if a sponsor objective was met.
+ * @param {Object} contract The active contract.
+ * @param {Object} raceData The final race document data.
+ * @param {Array} teamDrivers The list of team driver IDs.
+ * @return {boolean}
+ */
+function evaluateObjective(contract, raceData, teamDrivers) {
+  const desc = (contract.objectiveDescription || "").toLowerCase();
+  const finalPositions = raceData.finalPositions || {};
+  const dnfs = raceData.dnfs || [];
+  const fastLapDriver = raceData.fast_lap_driver;
+
+  if (desc.includes("race win")) {
+    return teamDrivers.some((id) => finalPositions[id] === 0 && !dnfs.includes(id));
+  }
+  if (desc.includes("finish top 3")) {
+    return teamDrivers.some((id) => finalPositions[id] >= 0 && finalPositions[id] < 3 && !dnfs.includes(id));
+  }
+  if (desc.includes("finish top 10")) {
+    return teamDrivers.some((id) => finalPositions[id] >= 0 && finalPositions[id] < 10 && !dnfs.includes(id));
+  }
+  if (desc.includes("both in points")) {
+    return teamDrivers.every((id) => {
+      const pos = finalPositions[id];
+      return pos >= 0 && pos < 10 && !dnfs.includes(id);
+    });
+  }
+  if (desc.includes("fastest lap")) {
+    return teamDrivers.includes(fastLapDriver);
+  }
+  if (desc.includes("finish race")) {
+    return teamDrivers.some((id) => !dnfs.includes(id));
+  }
+  return false;
+}
+
+
 // ─────────────────────────────────────────────
 // CIRCUIT PROFILES (mirror of circuit_service.dart)
 // ─────────────────────────────────────────────
@@ -321,6 +371,8 @@ const SimEngine = {
     }
 
     let curOrder = [...order];
+    let fast_lap_time = 999999;
+    let fast_lap_driver = "";
 
     for (let lap = 1; lap <= totalLaps; lap++) {
       const lapTimes = {};
@@ -443,6 +495,11 @@ const SimEngine = {
 
         lapTimes[did] = lt;
         total[did] = (total[did] || 0) + lt;
+
+        if (lt < fast_lap_time) {
+          fast_lap_time = lt;
+          fast_lap_driver = did;
+        }
       }
 
       // Sort by total time
@@ -505,7 +562,14 @@ const SimEngine = {
     const finalPos = {};
     curOrder.forEach((id, i) => finalPos[id] = i + 1);
 
-    return { raceLog, finalPositions: finalPos, totalTimes: total, dnfs };
+    return {
+      raceLog,
+      finalPositions: finalPos,
+      totalTimes: total,
+      dnfs,
+      fast_lap_time,
+      fast_lap_driver,
+    };
   },
 };
 
@@ -547,13 +611,26 @@ async function addPressNews(leagueId, data) {
  * @return {Promise} Firestore write.
  */
 async function addOfficeNews(teamId, data) {
-  return db.collection("teams").doc(teamId)
-    .collection("news").add({
-      ...data,
-      teamId,
-      isRead: false,
-      timestamp: admin.firestore.FieldValue.serverTimestamp(),
-    });
+  const batch = db.batch();
+  
+  // 1. news collection (for Office facility)
+  const newsRef = db.collection("teams").doc(teamId).collection("news").doc();
+  batch.set(newsRef, {
+    ...data,
+    teamId,
+    isRead: false,
+    timestamp: admin.firestore.FieldValue.serverTimestamp(),
+  });
+
+  // 2. notifications collection (for Dashboard / Store)
+  const notifRef = db.collection("teams").doc(teamId).collection("notifications").doc();
+  batch.set(notifRef, {
+    ...data,
+    isRead: false,
+    timestamp: admin.firestore.FieldValue.serverTimestamp(),
+  });
+
+  return batch.commit();
 }
 
 /**
@@ -1237,6 +1314,8 @@ async function runRaceLogic() {
           finalPositions: raceRes.finalPositions,
           totalTimes: raceRes.totalTimes,
           dnfs: raceRes.dnfs,
+          fast_lap_time: raceRes.fast_lap_time,
+          fast_lap_driver: raceRes.fast_lap_driver,
           liveDurationSeconds: liveDurationSec,
           updateIntervalSeconds: 120,
           completedAt: admin.firestore.FieldValue.serverTimestamp(),
@@ -1582,6 +1661,8 @@ exports.postRaceProcessing = onSchedule({
         const tRef = db.collection("teams").doc(tid);
 
         const teamData = tDoc.data();
+        const batch = db.batch();
+        const nowIso = admin.firestore.FieldValue.serverTimestamp();
 
         // --- NEW: Generate Race Analysis Debrief ---
         const driversSnap = await db.collection("drivers").where("teamId", "==", tid).get();
@@ -1601,9 +1682,34 @@ exports.postRaceProcessing = onSchedule({
         // 1. Sponsor Payouts & Contract decrement
         const sponsors = teamData.sponsors || {};
         const updatedSponsors = {};
+        const teamDriverIds = drivers.map((d) => d.id);
+
         for (const [slot, contract] of Object.entries(sponsors)) {
           if (contract.racesRemaining > 0) {
             weeklyIncome += contract.weeklyBasePayment || 0;
+
+            // PERFORMANCE BONUS
+            if (evaluateObjective(contract, rd, teamDriverIds)) {
+              const bonus = contract.objectiveBonus || FALLBACK_BONUSES[contract.sponsorId] || 0;
+              if (bonus > 0) {
+                weeklyIncome += bonus;
+                const bonusTxRef = tRef.collection("transactions").doc();
+                batch.set(bonusTxRef, {
+                  id: bonusTxRef.id,
+                  description: `Sponsor Objective Met: ${contract.sponsorName} (${slot})`,
+                  amount: bonus,
+                  date: nowIso,
+                  type: "SPONSOR",
+                });
+
+                await addOfficeNews(tid, {
+                  title: "Sponsor Objective Met!",
+                  message: `Congratulations! We met the ${contract.sponsorName} objective: "${contract.objectiveDescription}". A bonus of $${bonus.toLocaleString()} has been awarded.`,
+                  type: "SUCCESS",
+                });
+              }
+            }
+
             contract.racesRemaining -= 1;
 
             if (contract.racesRemaining > 0) {
@@ -1886,8 +1992,6 @@ exports.postRaceProcessing = onSchedule({
         const currentBudget = teamData.budget || 0;
         const newBudget = currentBudget + weeklyIncome - weeklyExpense;
 
-        const batch = db.batch();
-
         batch.update(tRef, {
           "weekStatus": {
             practiceCompleted: false,
@@ -1905,7 +2009,7 @@ exports.postRaceProcessing = onSchedule({
         });
 
         // Use ISO String for dates in JS so it matches Dart expectations
-        const nowIso = admin.firestore.FieldValue.serverTimestamp();
+        // (nowIso is defined above)
 
         if (weeklyIncome > 0) {
           const incTx = tRef.collection("transactions").doc();
@@ -2033,7 +2137,7 @@ exports.scheduledDailyFitnessRecovery = onSchedule({
       const currentFitness = stats.fitness || 50;
 
       if (currentFitness < 100) {
-        const newFitness = Math.min(100, currentFitness + 10);
+        const newFitness = Math.min(100, currentFitness + 1.5);
 
         currentBatch.update(doc.ref, {
           "stats.fitness": newFitness,

@@ -5,7 +5,7 @@
     import { authStore } from "$lib/stores/auth.svelte";
     import { notificationStore } from "$lib/stores/notifications.svelte";
     import NotificationOverlay from "./NotificationOverlay.svelte";
-    import { Shield, CircleUser, LogOut, Bell, Settings } from "lucide-svelte";
+    import { Shield, CircleUser, LogOut, Bell, Settings, Activity } from "lucide-svelte";
     import { fade, slide } from "svelte/transition";
 
     let teamData = $derived(teamStore.value);
@@ -42,6 +42,17 @@
             BETA V4
         </div>
     </div>
+
+    <!-- Race Day Center Button (User Requested) -->
+    <a 
+        href="/racing/live" 
+        class="hidden lg:flex items-center gap-2 px-4 py-2 border border-red-500/20 bg-red-500/5 hover:bg-red-500/10 rounded-xl transition-all group"
+    >
+        <div class="text-red-500 group-hover:scale-110 transition-transform">
+            <Activity size={16} strokeWidth={3} />
+        </div>
+        <span class="text-[10px] font-black uppercase tracking-widest text-red-500/80 group-hover:text-red-500 transition-colors">Race Day</span>
+    </a>
 
     <!-- Center: Finances Section -->
     <div class="hidden md:flex items-center gap-8">
