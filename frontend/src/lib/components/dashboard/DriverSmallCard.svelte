@@ -2,7 +2,8 @@
     import type { Driver } from "$lib/types";
     import DriverStars from "$lib/components/DriverStars.svelte";
     import DriverAvatar from "$lib/components/DriverAvatar.svelte";
-    import { getFlagEmoji } from "$lib/utils/country";
+    import { getFlagEmoji, getFlagUrl } from "$lib/utils/country";
+    import CountryFlag from "$lib/components/ui/CountryFlag.svelte";
 
     let { driver, carIndex } = $props<{
         driver: Driver;
@@ -58,9 +59,10 @@
     <div class="flex-grow min-w-0">
         <div class="flex items-center justify-between gap-2">
             <h4
-                class="text-xs font-black text-app-text uppercase truncate tracking-tight"
+                class="text-xs font-black text-app-text uppercase truncate tracking-tight flex items-center gap-1.5"
             >
-                {driver.name}
+                <CountryFlag countryCode={driver.countryCode} size="sm" />
+                <span>{driver.name}</span>
             </h4>
             <span class="text-[9px] font-bold text-app-text/30 uppercase"
                 >Car {carIndex === 0 ? "A" : "B"}</span

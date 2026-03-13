@@ -83,14 +83,8 @@
         }).format(value);
     }
 
-    function getFlagEmoji(countryCode: string | undefined) {
-        if (!countryCode) return "🏁";
-        const codePoints = countryCode
-            .toUpperCase()
-            .split("")
-            .map((char) => 127397 + char.charCodeAt(0));
-        return String.fromCodePoint(...codePoints);
-    }
+    import { getFlagEmoji, getFlagUrl } from "$lib/utils/country";
+    import CountryFlag from "$lib/components/ui/CountryFlag.svelte";
 </script>
 
 <svelte:head>
@@ -214,11 +208,9 @@
                                         >
                                             {driver.name}
                                         </span>
-                                        <span
-                                            class="text-[10px] font-bold text-app-text/20 uppercase tracking-widest"
-                                        >
-                                            {getFlagEmoji(driver.countryCode)}
-                                            {driver.age}y • CONTRACT: {driver.contractYearsRemaining}y
+                                        <span class="text-app-text/20 uppercase tracking-widest flex items-center gap-1.5">
+                                            <CountryFlag countryCode={driver.countryCode} size="sm" />
+                                            <span>{driver.age}y • CONTRACT: {driver.contractYearsRemaining}y</span>
                                         </span>
                                     </div>
                                 </div>
@@ -321,11 +313,12 @@
                                     {driver.name}
                                 </h3>
                                 <span
-                                    class="text-[10px] font-black text-app-text/20 uppercase tracking-[0.2em]"
-                                    >{getFlagEmoji(driver.countryCode)}
-                                    {driver.age}Y • {driver.salary
+                                    class="text-[10px] font-black text-app-text/20 uppercase tracking-[0.2em] flex items-center gap-1.5"
+                                    >
+                                    <CountryFlag countryCode={driver.countryCode} size="sm" />
+                                    <span>{driver.age}Y • {driver.salary
                                         ? formatCurrency(driver.salary)
-                                        : "$0"}/WK</span
+                                        : "$0"}/WK</span></span
                                 >
                             </div>
                         </div>

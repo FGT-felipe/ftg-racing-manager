@@ -35,6 +35,7 @@ const SPONSOR_METADATA = {
     'empire_state': { name: 'Empire State Capital', countryCode: 'US' },
     'titans_oil': { name: 'Titans Oil', countryCode: 'US' },
     'zen_sky': { name: 'Zenith Sky', countryCode: 'GB' },
+    'global_tech': { name: 'Global Tech', countryCode: '' },
     
     // Major
     'sol_mexico': { name: 'Sol de México Logistics', countryCode: 'MX' },
@@ -43,6 +44,7 @@ const SPONSOR_METADATA = {
     'spark_energy': { name: 'Spark Energy', countryCode: 'US' },
     'fast_logistics': { name: 'Fast Logistics', countryCode: 'DE' },
     'pampa_gear': { name: 'Pampa Gear', countryCode: 'AR' },
+    'eco_pulse': { name: 'Eco Pulse', countryCode: '' },
     
     // Partner
     'maya_micro': { name: 'Maya Microchips', countryCode: 'MX' },

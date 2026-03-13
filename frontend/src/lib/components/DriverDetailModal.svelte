@@ -32,7 +32,8 @@
     import { t } from "$lib/utils/i18n";
     import { getTitleInfo } from "$lib/constants/titles";
     import ConfirmationModal from "./ui/ConfirmationModal.svelte";
-    import { getFlagEmoji } from "$lib/utils/country";
+    import { getFlagEmoji, getFlagUrl } from "$lib/utils/country";
+    import CountryFlag from "$lib/components/ui/CountryFlag.svelte";
 
     interface Props {
         driver: Driver;
@@ -356,13 +357,11 @@
 
                             <div class="flex flex-col gap-2">
                                 <div class="flex items-center gap-3">
-                                    <span class="text-xl shadow-sm" title={driver.countryCode}>
-                                        {getFlagEmoji(driver.countryCode)}
-                                    </span>
-                                    <span
-                                        class="text-xs font-black text-app-text/30 uppercase tracking-[0.2em]"
-                                        >{driver.age}Y</span
-                                    >
+                                   <CountryFlag countryCode={driver.countryCode} size="lg" />
+                                   <span
+                                       class="text-xs font-black text-app-text/30 uppercase tracking-[0.2em]"
+                                       >{driver.age}Y</span
+                                   >
                                 </div>
                                 <h1
                                     class="text-4xl md:text-5xl font-heading font-black text-app-text uppercase tracking-tighter italic leading-none"

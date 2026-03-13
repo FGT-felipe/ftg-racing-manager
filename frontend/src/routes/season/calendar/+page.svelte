@@ -3,6 +3,7 @@
     import { fly } from "svelte/transition";
     import { seasonStore } from "$lib/stores/season.svelte";
     import { circuitService } from "$lib/services/circuit_service.svelte";
+    import CountryFlag from "$lib/components/ui/CountryFlag.svelte";
 
     let season = $derived(seasonStore.value.season);
     let loading = $derived(seasonStore.value.loading);
@@ -95,7 +96,7 @@
                     <div class="relative flex flex-col gap-4 h-full">
                         <!-- Top row: flag + status -->
                         <div class="flex items-center justify-between">
-                            <span class="text-3xl filter drop-shadow-md">{event.flagEmoji ?? '🏁'}</span>
+                            <CountryFlag countryCode={circuit.countryCode} size="lg" />
                             {#if event.isCompleted}
                                 <div class="flex items-center gap-1 text-green-500">
                                     <CheckCircle size={16} />

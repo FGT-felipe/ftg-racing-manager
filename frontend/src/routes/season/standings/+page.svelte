@@ -98,17 +98,8 @@
         }
     }
 
-    function getFlagEmoji(country: string): string {
-        const flags: Record<string, string> = {
-            'BRAZIL': '🇧🇷', 'ARGENTINA': '🇦🇷', 'COLOMBIA': '🇨🇴',
-            'MEXICO': '🇲🇽', 'URUGUAY': '🇺🇾', 'CHILE': '🇨🇱',
-            'USA': '🇺🇸', 'UNITED STATES': '🇺🇸', 'ITALY': '🇮🇹',
-            'SPAIN': '🇪🇸', 'FRANCE': '🇫🇷', 'GERMANY': '🇩🇪',
-            'UNITED KINGDOM': '🇬🇧', 'UK': '🇬🇧', 'JAPAN': '🇯🇵',
-            'NETHERLANDS': '🇳🇱', 'CANADA': '🇨🇦', 'AUSTRALIA': '🇦🇺',
-        };
-        return flags[country?.toUpperCase() ?? ''] ?? '🏁';
-    }
+    import { getFlagEmoji, getFlagUrl } from "$lib/utils/country";
+    import CountryFlag from "$lib/components/ui/CountryFlag.svelte";
 
     function getOrdinal(n: number): string {
         const s = ["th", "st", "nd", "rd"];
@@ -249,7 +240,10 @@
                             <span class="text-[11px] font-black uppercase italic truncate {mine ? 'text-app-primary' : 'text-app-text'}">{team.name}</span>
                             {#if mgr}
                                 <span class="text-[9px] text-app-text/40 font-medium truncate">
-                                    {getFlagEmoji(mgr.country)} {mgr.name}
+                                    <span class="flex items-center gap-2">
+                                        <CountryFlag countryCode={mgr.country} size="sm" />
+                                        <span>{mgr.name}</span>
+                                    </span>
                                 </span>
                             {/if}
                         </div>

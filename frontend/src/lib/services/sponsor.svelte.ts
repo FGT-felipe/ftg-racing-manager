@@ -33,6 +33,7 @@ const SPONSOR_POOL: Record<SponsorTier, { id: string, name: string, countryCode:
         { id: 'empire_state', name: 'Empire State Capital', countryCode: 'US' },
         { id: 'titans_oil', name: 'Titans Oil', countryCode: 'US' },
         { id: 'zenith_sky', name: 'Zenith Sky', countryCode: 'GB' },
+        { id: 'global_tech', name: 'Global Tech', countryCode: '' },
     ],
     [SponsorTier.major]: [
         { id: 'sol_mexico', name: 'Sol de México Logistics', countryCode: 'MX' },
@@ -41,6 +42,7 @@ const SPONSOR_POOL: Record<SponsorTier, { id: string, name: string, countryCode:
         { id: 'spark_energy', name: 'Spark Energy', countryCode: 'US' },
         { id: 'fast_logistics', name: 'Fast Logistics', countryCode: 'DE' },
         { id: 'pampa_gear', name: 'Pampa Gear', countryCode: 'AR' },
+        { id: 'eco_pulse', name: 'Eco Pulse', countryCode: '' },
     ],
     [SponsorTier.partner]: [
         { id: 'maya_micro', name: 'Maya Microchips', countryCode: 'MX' },
