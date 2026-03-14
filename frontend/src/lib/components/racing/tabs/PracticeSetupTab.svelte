@@ -3,6 +3,7 @@
     import { doc, updateDoc, increment, addDoc, collection, serverTimestamp } from "firebase/firestore";
     import { fade, slide } from "svelte/transition";
     import { teamStore } from "$lib/stores/team.svelte";
+    import { managerStore } from "$lib/stores/manager.svelte";
     import { driverStore } from "$lib/stores/driver.svelte";
     import { setupStore, type PracticeHistoryItem } from "$lib/stores/setup.svelte";
     import {
@@ -35,6 +36,7 @@
         Flag,
         Activity,
     } from "lucide-svelte";
+    import { t } from "$lib/utils/i18n";
     import { onMount, untrack } from "svelte";
     import { getDoc } from "firebase/firestore";
 
@@ -165,7 +167,7 @@
                 teamStore.value.team as Team,
                 driver,
                 entry.setupUsed,
-                nextEvent?.weatherPractice || "Sunny",
+                nextEvent?.weatherPractice || t('sunny'),
             );
 
             return {
@@ -226,7 +228,7 @@
 
         if (!hasPaid) {
             if (team.budget < PRACTICE_SESSION_COST) {
-                alert("Insufficient funds for practice runs. Cost is $10,000.");
+                alert(t('insufficient_funds_practice'));
                 isSimulating = false;
                 return;
             }
@@ -242,14 +244,14 @@
                 });
 
                 await addDoc(txRef, {
-                    description: `Track access fee for ${driver.name}`,
+                    description: t('practice_fee_description', { name: driver.name }),
                     amount: -PRACTICE_SESSION_COST,
                     date: serverTimestamp(),
                     type: "PRACTICE"
                 });
             } catch (err) {
                 console.error("Error paying practice fee:", err);
-                alert("Error processing payment.");
+                alert(t('error_payment'));
                 isSimulating = false;
                 return;
             }
@@ -265,10 +267,10 @@
 
         if (currentLaps + lapsToRun > MAX_PRACTICE_LAPS_PER_DRIVER) {
             alert(
-                `Practice aborted. Maximum of ${MAX_PRACTICE_LAPS_PER_DRIVER} laps per weekend. You have ${Math.max(
-                    0,
-                    MAX_PRACTICE_LAPS_PER_DRIVER - currentLaps,
-                )} laps remaining.`,
+                t('practice_aborted_limit', {
+                    max: MAX_PRACTICE_LAPS_PER_DRIVER,
+                    rem: Math.max(0, MAX_PRACTICE_LAPS_PER_DRIVER - currentLaps)
+                })
             );
             isSimulating = false;
             return;
@@ -278,9 +280,11 @@
         const setupToRun = { ...setup, qualifyingStyle: currentDriverStyle };
 
         pitBoardMessages = [
-            `${driver.name} heads out for ${lapsToRun} ${
-                lapsToRun === 1 ? "lap" : "laps"
-            }.`,
+            t('heads_out', {
+                name: driver.name,
+                count: lapsToRun,
+                unit: lapsToRun === 1 ? t('lap_singular') : t('laps_plural')
+            }),
             ...pitBoardMessages,
         ].slice(0, 30);
 
@@ -292,7 +296,7 @@
                     teamStore.value.team,
                     driver,
                     setupToRun,
-                    nextEvent?.weatherPractice || "Sunny",
+                    nextEvent?.weatherPractice || t('sunny'),
                 );
 
                 lastResult = result;
@@ -315,12 +319,12 @@
 
                 let suffix = "";
                 if (result.isCrashed) {
-                    suffix = " - CRASH";
+                    suffix = t('crash_suffix');
                 } else if (
                     previousBest === null ||
                     result.lapTime < previousBest
                 ) {
-                    suffix = " - NEW PERSONAL BEST";
+                    suffix = t('new_personal_best');
                 }
 
                 pitBoardMessages = [
@@ -405,7 +409,7 @@
 
         } catch (e) {
             console.error(e);
-            alert("Error running practice session.");
+            alert(t('error_practice_session'));
         }
 
         isSimulating = false;
@@ -419,38 +423,25 @@
     }
 
     function formatTime(seconds: number) {
-        if (seconds >= 999) return "DNF";
+        if (seconds >= 999) return t('dnf');
         const mins = Math.floor(seconds / 60);
         const secs = (seconds % 60).toFixed(3);
         return `${mins}:${secs.padStart(6, "0")}`;
     }
 
-    const styleConfigs = [
-        {
-            id: DriverStyle.defensive,
-            icon: ChevronRight,
-            color: "text-blue-400",
-            label: "Defensive",
-        },
-        {
-            id: DriverStyle.normal,
-            icon: Zap,
-            color: "text-green-400",
-            label: "Normal",
-        },
-        {
-            id: DriverStyle.offensive,
-            icon: Zap,
-            color: "text-orange-400",
-            label: "Offensive",
-        },
-        {
-            id: DriverStyle.mostRisky,
-            icon: Zap,
-            color: "text-red-500",
-            label: "Risky",
-        },
-    ];
+    const styleConfigs = $derived.by(() => {
+        const base = [
+            { id: DriverStyle.defensive, icon: ChevronRight, color: "text-blue-400", label: t('defensive') },
+            { id: DriverStyle.normal, icon: Zap, color: "text-green-400", label: t('normal') },
+            { id: DriverStyle.offensive, icon: Zap, color: "text-orange-400", label: t('offensive') },
+        ];
+
+        if (managerStore.profile?.role === "ex_driver") {
+            base.push({ id: DriverStyle.mostRisky, icon: Zap, color: "text-red-500", label: t('risky') });
+        }
+
+        return base;
+    });
 </script>
 
 <div class="grid grid-cols-1 lg:grid-cols-12 gap-5">
@@ -469,10 +460,10 @@
             <!-- Sliders -->
             <div class="space-y-6">
                 {#each [
-                    { label: "Front Wing", field: "frontWing" as keyof CarSetup, icon: Wind, color: "text-cyan-400", hintL: "Top Speed (0)", hintR: "Corner Grip (100)" }, 
-                    { label: "Rear Wing", field: "rearWing" as keyof CarSetup, icon: Wind, color: "text-cyan-400", hintL: "Top Speed (0)", hintR: "Corner Grip (100)" }, 
-                    { label: "Suspension", field: "suspension" as keyof CarSetup, icon: Navigation, color: "text-purple-400", hintL: "Soft/Bumps (0)", hintR: "Stiff/Aero (100)" }, 
-                    { label: "Gear Ratio", field: "gearRatio" as keyof CarSetup, icon: Zap, color: "text-orange-400", hintL: "Acceleration (0)", hintR: "Top Speed (100)" }
+                    { label: t("front_wing"), field: "frontWing" as keyof CarSetup, icon: Wind, color: "text-cyan-400", hintL: t("top_speed_0"), hintR: t("corner_grip_100") }, 
+                    { label: t("rear_wing"), field: "rearWing" as keyof CarSetup, icon: Wind, color: "text-cyan-400", hintL: t("top_speed_0"), hintR: t("corner_grip_100") }, 
+                    { label: t("suspension"), field: "suspension" as keyof CarSetup, icon: Navigation, color: "text-purple-400", hintL: t("soft_bumps_0"), hintR: t("stiff_aero_100") }, 
+                    { label: t("gear_ratio"), field: "gearRatio" as keyof CarSetup, icon: Zap, color: "text-orange-400", hintL: t("acceleration_0"), hintR: t("top_speed_100") }
                 ] as item}
                     <div class="space-y-3 group">
                         <div class="flex justify-between items-center px-1">
@@ -509,29 +500,31 @@
             <div class="mt-8 space-y-3">
                 <span
                     class="text-[9px] font-black text-app-text/40 uppercase tracking-widest"
-                    >Tyre Compound</span
+                    >{t('tyre_compound')}</span
                 >
                 <div class="grid grid-cols-4 gap-3">
                     {#each [TyreCompound.soft, TyreCompound.medium, TyreCompound.hard, TyreCompound.wet] as tc}
                         <button
-                            class="px-2 py-3 rounded-xl border transition-all flex flex-col items-center gap-2 {setup.tyreCompound ===
-                            tc
-                                ? 'bg-app-primary border-app-primary text-app-primary-foreground'
+                            class="px-2 py-3 rounded-xl border transition-all flex flex-col items-center gap-2 {setup.tyreCompound === tc
+                                ? tc === TyreCompound.soft ? 'bg-red-600 border-red-600 text-white' : 
+                                  tc === TyreCompound.medium ? 'bg-yellow-500 border-yellow-500 text-black' : 
+                                  tc === TyreCompound.hard ? 'bg-zinc-100 border-zinc-100 text-black' : 
+                                  'bg-blue-600 border-blue-600 text-white'
                                 : 'bg-app-text/5 border-app-border text-app-text/40 hover:bg-app-text/10'}"
                             onclick={() => (setup.tyreCompound = tc)}
                         >
                             <div
-                                class="w-2.5 h-2.5 rounded-full {tc === 'soft'
+                                class="w-2.5 h-2.5 rounded-full {tc === TyreCompound.soft
                                     ? 'bg-red-500'
-                                    : tc === 'medium'
-                                      ? 'bg-yellow-500'
-                                      : tc === 'hard'
-                                        ? 'bg-app-surface'
-                                        : 'bg-blue-500'} shadow-[0_0_10px_rgba(255,255,255,0.2)]"
+                                    : tc === TyreCompound.medium
+                                      ? 'bg-yellow-400'
+                                      : tc === TyreCompound.hard
+                                        ? 'bg-white'
+                                        : 'bg-blue-400'} shadow-[0_0_10px_rgba(255,255,255,0.2)]"
                             ></div>
                             <span
                                 class="text-[9px] font-black uppercase tracking-tighter"
-                                >{tc}</span
+                                >{t(tc)}</span
                             >
                         </button>
                     {/each}
@@ -547,7 +540,7 @@
                 <h4
                     class="text-[10px] font-black text-app-text/40 uppercase tracking-widest"
                 >
-                    Driving Aggression
+                    {t('driving_aggression')}
                 </h4>
                 <div class="flex gap-1.5">
                     {#each styleConfigs as style}
@@ -569,7 +562,7 @@
                 <h4
                     class="text-[10px] font-black text-app-text/40 uppercase tracking-widest"
                 >
-                    Stint Length
+                    {t('stint_length')}
                 </h4>
                 <div class="bg-app-text/20 rounded-xl p-1.5 flex gap-1">
                     {#each [1, 3, 5] as laps}
@@ -581,7 +574,7 @@
                             onclick={() => (lapsToRun = laps)}
                         >
                             {laps}
-                            {laps === 1 ? "Lap" : "Laps"}
+                            {laps === 1 ? t('lap_singular') : t('laps_plural')}
                         </button>
                     {/each}
                 </div>
@@ -602,7 +595,7 @@
                     <Flag size={14} class="text-app-primary" />
                     <span
                         class="text-[10px] font-black uppercase tracking-widest text-app-primary"
-                        >Live Classification</span
+                        >{t('live_classification')}</span
                     >
                 </div>
                 <button 
@@ -610,30 +603,30 @@
                     class="text-[9px] font-black uppercase text-app-text/40 hover:text-app-primary transition-colors flex items-center gap-1"
                 >
                     <Activity size={10} />
-                    Sync
+                    {t('sync')}
                 </button>
             </div>
 
             <!-- Table Header -->
             <div class="flex px-4 py-2 bg-app-text/5 border-b border-app-border">
                 <span class="w-8 text-[9px] font-black text-app-text/30 uppercase"
-                    >Pos</span
+                    >{t('pos')}</span
                 >
                 <span
                     class="flex-1 text-[9px] font-black text-app-text/30 uppercase"
-                    >Driver / Team</span
+                    >{t('driver_team')}</span
                 >
                 <span
                     class="w-12 text-[9px] font-black text-app-text/30 uppercase text-center"
-                    >Tyre</span
+                    >{t('tyre_compound')}</span
                 >
                 <span
                     class="w-20 text-[9px] font-black text-app-text/30 uppercase text-right"
-                    >Time</span
+                    >{t('lap_time')}</span
                 >
                 <span
                     class="w-16 text-[9px] font-black text-app-text/30 uppercase text-right"
-                    >Gap</span
+                    >{t('gap')}</span
                 >
             </div>
 
@@ -642,7 +635,7 @@
                 {#if competitorTimes.length === 0}
                     <div class="p-8 text-center opacity-20">
                         <Activity size={24} class="mx-auto mb-2" />
-                        <p class="text-[9px] font-black uppercase tracking-widest text-app-text">Awaiting session data...</p>
+                        <p class="text-[9px] font-black uppercase tracking-widest text-app-text">{t('awaiting_session_data')}</p>
                     </div>
                 {:else}
                     {#each globalStandings as row}
@@ -697,7 +690,7 @@
 
                             <div class="w-16 text-right">
                                 <span class="text-[10px] font-bold {row.position === 1 ? 'text-app-primary/40' : 'text-app-text/40'} text-mono">
-                                    {row.position === 1 ? 'Interval' : row.gap ? `+${row.gap.toFixed(3)}s` : '--'}
+                                    {row.position === 1 ? t('interval') : row.gap ? `+${row.gap.toFixed(3)}s` : '--'}
                                 </span>
                             </div>
                         </div>
@@ -754,15 +747,15 @@
                 <div class="bg-app-surface/40 px-3 py-2 border-b border-app-border/40 flex items-center justify-between">
                     <div class="flex items-center gap-2">
                         <div class="w-1.5 h-1.5 rounded-full bg-app-primary animate-pulse"></div>
-                        <span class="text-[9px] font-black uppercase tracking-widest text-app-text/60">Live Pit Board</span>
+                        <span class="text-[9px] font-black uppercase tracking-widest text-app-text/60">{t('live_pit_board')}</span>
                     </div>
                     {#if needsWetTyres}
                         <div class="flex items-center gap-1 text-red-500 animate-[pulse_1s_infinite]">
                             <AlertTriangle size={12} />
-                            <span class="text-[9px] font-black uppercase tracking-tighter">Wet track - Use wet tyres</span>
+                            <span class="text-[9px] font-black uppercase tracking-tighter">{t('wet_track_warning')}</span>
                         </div>
                     {:else}
-                        <span class="text-[9px] font-black uppercase text-app-primary/60">Box. Box. Box.</span>
+                        <span class="text-[9px] font-black uppercase text-app-primary/60">{t('box_box_box')}</span>
                     {/if}
                 </div>
                 
@@ -770,7 +763,7 @@
                     {#if pitBoardMessages.length === 0}
                         <div class="h-full flex flex-col items-center justify-center text-app-text/20 italic">
                             <Navigation size={24} class="mb-2 opacity-20" />
-                            <span>Awaiting Session Start</span>
+                            <span>{t('awaiting_session_start')}</span>
                         </div>
                     {:else}
                         {#each pitBoardMessages as msg, i}
@@ -899,7 +892,7 @@
                                     </span>
                                 {:else}
                                     <span class="text-[9px] text-app-text/40">
-                                        {entry.feedback[0] || "Clean lap"}
+                                        {entry.feedback[0] || t('clean_lap')}
                                     </span>
                                 {/if}
                             </div>

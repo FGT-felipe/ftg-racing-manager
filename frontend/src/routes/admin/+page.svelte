@@ -68,10 +68,15 @@
             if (
                 name === "nukeAndReseed" ||
                 name === "fixRaceCalendars" ||
-                name === "applyGreatRebalanceTax"
+                name === "applyGreatRebalanceTax" ||
+                name === "fixBrokenAcademies"
             ) {
                 const { adminService } = await import("$lib/services/admin.svelte");
-                await adminService[name as keyof typeof adminService]();
+                const result = await adminService[name as keyof typeof adminService]();
+                if (result && typeof result === 'object' && 'count' in result) {
+                    alert(`Success: ${name} executed. Fixed ${result.count} academies.`);
+                    return;
+                }
             } else if (name === "generate_market_drivers") {
                 const { db } = await import("$lib/firebase/config");
                 const { collection, addDoc, serverTimestamp } = await import("firebase/firestore");
@@ -182,7 +187,7 @@
                             onclick={() => activeTab = tab.id}
                             class="flex items-center gap-4 p-4 rounded-2xl transition-all group {activeTab === tab.id ? 'bg-app-primary text-black shadow-lg shadow-app-primary/10' : 'text-app-text/40 hover:bg-app-text/5 hover:text-app-text'}"
                         >
-                            <tab.icon size={18} class="{activeTab === tab.id ? 'opacity-100' : 'opacity-40 group-hover:opacity-100'}" />
+                            <tab.icon size={18} class={activeTab === tab.id ? 'opacity-100' : 'opacity-40 group-hover:opacity-100'} />
                             <span class="text-[10px] font-black uppercase tracking-widest">{tab.label}</span>
                         </button>
                     {/each}
@@ -241,6 +246,18 @@
                         </div>
                     {:else if activeTab === 'database'}
                         <div class="grid grid-cols-1 md:grid-cols-2 gap-6" in:fly={{ y: 20 }}>
+                            <button 
+                                class="action-card group"
+                                onclick={() => triggerAction("fixBrokenAcademies", "Identify and repair academies with no candidates.")}
+                            >
+                                <div class="card-icon bg-amber-500/10 text-amber-500"><Zap size={24} /></div>
+                                <div class="card-body">
+                                    <h3>Fix Broken Academies</h3>
+                                    <p>Scan all teams and generate missing candidates for established academies.</p>
+                                </div>
+                                <ChevronRight class="opacity-10 group-hover:opacity-100" />
+                            </button>
+
                             <button 
                                 class="action-card group dangerous"
                                 onclick={() => triggerAction("nukeAndReseed", "DANGEROUS: Wipes ALL collections and recreates the simulation state.", true)}

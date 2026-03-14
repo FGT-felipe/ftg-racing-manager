@@ -32,6 +32,7 @@
 ## 4. Driver Entity
 ### `drivers/{driverId}`
 - `teamId`: TeamID (nullable if free agent)
+- `countryCode`: ISO 3166-1 alpha-2 code.
 - `stats`: { cornering, braking, focus, fitness, etc. } [Scale: 1-20]
 - `transferMarket`: { isListed, highestBid, bidderId, expiresAt: Timestamp }
 

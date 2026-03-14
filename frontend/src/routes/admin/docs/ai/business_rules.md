@@ -4,8 +4,8 @@
 | Role | Physics Adjust | Stats/Economy Adjust | Limitations |
 | :--- | :--- | :--- | :--- |
 | `ex_driver` | `pace: *0.98`, `crash: +0.001` | N/A | N/A |
-| `ex_engineer` | `tyre_wear: *0.9` | `max_upgrades: 2/wk`, `upgrade_cost: *2` (fib) | N/A |
-| `business_admin`| `pace: *1.02` | `sponsor_pay: *1.15`, `facility_upg: *0.9` | N/A |
+| `engineer` | `tyre_wear: *0.9` | `max_upgrades: 2/wk`, `upgrade_cost: *2` (fib) | N/A |
+| `business`| `pace: *1.02` | `sponsor_pay: *1.15`, `facility_upg: *0.9` | N/A |
 | `bureaucrat` | N/A | `academy_slots: +level*2`, `facility_upg: *0.9`| `qualy_cooldown: 2wk` |
 
 ## 2. Simulation Engine Constants
@@ -23,9 +23,13 @@
     - **Surface Penalty**: Every wet session adds a base `+1.5s` penalty (Even with correct tyres).
     - **Rain Master Bonus**: Drivers with `rainMaster` trait get a `df -0.015` (improved pace) modifier in wet sessions.
     - **Parc Fermé**: Disabled if Qualy session is wet.
-    - **Starting Tyres**: The "Best Q2 Lap tyre" rule is waived if Qualy was wet. Managers can choose starting compound for a dry race.
+    - **Starting Tyres**: The "Qualy Q2 tyre" rule is waived if Qualy was wet (`isQualyWet`). Managers can choose starting compound for the race even if it's dry.
+    - **Tire Compounds**: Only `Soft`, `Medium`, `Hard`, and `Wet` are available. `Intermediate` tires are not implemented.
 
-## 3. Financial & Economic Cycles (Monday 00:00 UTC)
+## 3. Platform Governance & i18n (CRITICAL)
+- **Zero Hardcoding**: All user-facing strings must pass through `t()` helper in `$lib/utils/i18n.ts`.
+- **Parity Rule**: Every key added to `translations.en` MUST exist in `translations.es` and vice versa.
+- **Dynamic Values**: Use `{key}` placeholders for dynamic data within translations.
 - **Salary Formula**: `AnnualSalary / 52` (Weekly deduction).
 - **Facility Maintenance**: `Level * $15,000` (Weekly).
 - **Staff (Trainer) Tiers**: `[0, 0, 50k, 120k, 250k, 500k]` by Level [0-5].
@@ -37,8 +41,19 @@
 - **Age Peak Factors (Career Generation)**:
     - `<23`: 0.7-0.9x | `23-27`: 0.9-1.1x | `27-32`: 1.1-1.4x | `32-36`: 0.8-1.0x | `>36`: 0.5-0.8x
 - **Specialization**: Locked until `BaseSkill >= 8`.
+- **Academy Candidate Generation**:
+    - **Session Size**: Always returns a pair (2 drivers).
+    - **Gender Balance**: Strictly enforced **1 Male, 1 Female** per batch.
+    - **Level Scaling**: Base skill and potential are calculated as `(Base + academyLevel * 2) + rand(0,4)`.
+    - **Star Consistency**: `potentialStars` reflects `maxSkill / 4` to match main driver mechanics.
 
 ## 5. Transfer Market
 - **Duration**: Hardcoded 24 hours.
 - **Resolution**: Best bid wins, seller gets funds, driver contract resets to 1 year.
 - **Bot Cleaning**: Expired unsold listings for `teamId: null` drivers are DELETED.
+
+## 6. Dashboard Readiness (Race Prep)
+- **Logic**: Readiness (%) = (Completed Required Tasks / Total Required Tasks) * 100.
+- **Race Setups (Mandatory)**: `isComplete` only if `weekStatus.driverSetups[driverId].race` exists for all main drivers (car 0 and 1). Previous sessions (Practice/Qualy) are ignored for this specific indicator.
+- **Sponsors (Mandatory)**: `isComplete` if `team.sponsors` contains at least one entry.
+- **Facilities (Optional)**: Informational only. `isComplete` by default if team is valid.

@@ -1,16 +1,97 @@
 import { db } from '$lib/firebase/config';
-import { collection, getDocs } from 'firebase/firestore';
+import { 
+    collection, 
+    query, 
+    where, 
+    getDocs, 
+    doc, 
+    writeBatch,
+    type DocumentReference 
+} from 'firebase/firestore';
+import type { YoungDriver } from '$lib/types';
+import { getRandomName, getRandomNationality } from '../utils/names';
 
 export class AcademyService {
     async getSelectedTraineesCount(teamId: string): Promise<number> {
-        try {
-            const selectedRef = collection(db, 'teams', teamId, 'academy', 'config', 'selected');
-            const snapshot = await getDocs(selectedRef);
-            return snapshot.size;
-        } catch (error) {
-            console.error('Error fetching academy trainees count:', error);
-            return 0;
+        const selectedRef = collection(db, 'teams', teamId, 'academy', 'config', 'selected');
+        const snap = await getDocs(selectedRef);
+        return snap.size;
+    }
+
+    /**
+     * Generates a set of initial candidates for a new academy.
+     */
+    generateInitialCandidates(count: number = 2, preferredCountry?: string, academyLevel: number = 1): YoungDriver[] {
+        const candidates: YoungDriver[] = [];
+        const genders: ('M' | 'F')[] = ['M', 'F'];
+        
+        for (let i = 0; i < 2; i++) {
+            const country = getRandomNationality(preferredCountry);
+            const gender = genders[i];
+            
+            // Stats balance for "Junior" feel:
+            // Level 1: current stars ~1-2 (skill 4-8), potential ~3-4 (skill 10-14)
+            const currentBase = 2 + (academyLevel * 2); 
+            const potentialBase = 8 + (academyLevel * 2);
+
+            const baseSkill = currentBase + Math.floor(Math.random() * 4); // L1: 4-8
+            const maxSkill = potentialBase + Math.floor(Math.random() * 4); // L1: 10-14
+            const potentialStars = Math.round(maxSkill / 4.0);
+            
+            // Expiry in 2 weeks
+            const expiresAt = new Date();
+            expiresAt.setDate(expiresAt.getDate() + 14);
+
+            const candidate: YoungDriver = {
+                id: crypto.randomUUID(),
+                name: getRandomName(),
+                age: 15 + Math.floor(Math.random() * 4), // 15-18
+                gender: gender,
+                nationality: {
+                    code: country.code,
+                    name: country.name,
+                    flagEmoji: country.emoji
+                },
+                countryCode: country.code,
+                baseSkill: baseSkill,
+                maxSkill: maxSkill,
+                growthPotential: 0.8 + (Math.random() * 0.7), // 0.8 - 1.5
+                potentialStars: potentialStars,
+                salary: 5000 + Math.floor(Math.random() * 10000),
+                status: 'candidate',
+                expiresAt: expiresAt,
+                isMarkedForPromotion: false,
+                statRangeMin: { 
+                    braking: baseSkill, cornering: baseSkill, smoothness: baseSkill, 
+                    overtaking: baseSkill, consistency: baseSkill, adaptability: baseSkill, 
+                    fitness: 40, feedback: 40, focus: 40 
+                },
+                statRangeMax: { 
+                    braking: maxSkill, cornering: maxSkill, smoothness: maxSkill, 
+                    overtaking: maxSkill, consistency: maxSkill, adaptability: maxSkill, 
+                    fitness: 80, feedback: 80, focus: 80 
+                }
+            };
+            candidates.push(candidate);
         }
+
+        return candidates;
+    }
+
+    /**
+     * Saves generated candidates to Firestore.
+     * Note: This should ideally be called within a transaction or batch if done during purchase.
+     */
+    async saveCandidates(teamId: string, candidates: YoungDriver[]) {
+        const batch = writeBatch(db);
+        const candidatesCol = collection(db, 'teams', teamId, 'academy', 'config', 'candidates');
+
+        candidates.forEach(c => {
+            const ref = doc(candidatesCol, c.id);
+            batch.set(ref, c);
+        });
+
+        await batch.commit();
     }
 }
 

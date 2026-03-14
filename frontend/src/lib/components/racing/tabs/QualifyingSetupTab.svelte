@@ -2,6 +2,7 @@
     import { db } from "$lib/firebase/config";
     import { doc, updateDoc, increment } from "firebase/firestore";
     import { teamStore } from "$lib/stores/team.svelte";
+    import { managerStore } from "$lib/stores/manager.svelte";
     import { driverStore } from "$lib/stores/driver.svelte";
     import {
         type CarSetup,
@@ -14,6 +15,7 @@
     import { raceService } from "$lib/services/race_service.svelte";
     import { practiceService, type PracticeRunResult } from "$lib/services/practice_service.svelte";
     import { timeService } from "$lib/services/time_service.svelte";
+    import { uiStore } from "$lib/stores/ui.svelte";
     import {
         Timer,
         Zap,
@@ -160,8 +162,10 @@
             if (attempts === 0) {
                 const cost = 10000;
                 if (team.budget < cost) {
-                    alert(
-                        "Insufficient funds for Qualy Entry. Cost is $10,000.",
+                    uiStore.alert(
+                        t('insufficient_funds_qualy'),
+                        t('insufficient_funds'),
+                        "danger"
                     );
                     isSimulating = false;
                     return;
@@ -187,8 +191,6 @@
             pitBoardMessages = [driverDialogue, ...pitBoardMessages].slice(0, 50);
             await new Promise((r) => setTimeout(r, 1000));
 
-            const carIndex = teamDrivers.findIndex((d: any) => d.id === driver.id);
-            const carStats = teamStore.value.team?.carStats?.[String(carIndex)] || { aero: 1, powertrain: 1, chassis: 1 };
             const result = practiceService.simulatePracticeRun(
                 circuit,
                 team,
@@ -198,15 +200,15 @@
             );
 
             // Simulation Narrative
-            pitBoardMessages = [`Green sectors! Pushing to the limit...`, ...pitBoardMessages].slice(0, 50);
+            pitBoardMessages = [t('qualy_pushing_limit'), ...pitBoardMessages].slice(0, 50);
             await new Promise((r) => setTimeout(r, 1200));
 
             const s1Time = (result.lapTime / 3) + (Math.random() * 0.4 - 0.2);
-            pitBoardMessages = [`Sector 1: ${s1Time.toFixed(3)}s`, ...pitBoardMessages].slice(0, 50);
+            pitBoardMessages = [`${t('sector_1')}: ${s1Time.toFixed(3)}s`, ...pitBoardMessages].slice(0, 50);
             await new Promise((r) => setTimeout(r, 1000));
 
             const s2Time = (result.lapTime / 3) + (Math.random() * 0.4 - 0.2);
-            pitBoardMessages = [`Sector 2: ${s2Time.toFixed(3)}s`, ...pitBoardMessages].slice(0, 50);
+            pitBoardMessages = [`${t('sector_2')}: ${s2Time.toFixed(3)}s`, ...pitBoardMessages].slice(0, 50);
             await new Promise((r) => setTimeout(r, 1000));
 
             const teamRef = doc(db, "teams", team.id);
@@ -240,9 +242,9 @@
                 }
                 driverDialogue = t('returning_pits_bad');
                 pitBoardMessages = [driverDialogue, ...pitBoardMessages].slice(0, 50);
-                alert(`${driver.name} crashed during the Qualifying attempt!`);
+                uiStore.alert(t('qualy_crash_report', { name: driver.name }), t('accident_label'), 'danger');
             } else {
-                pitBoardMessages = [`COMPLETED: ${formatTime(result.lapTime)}`, ...pitBoardMessages].slice(0, 50);
+                pitBoardMessages = [`${t('validated').toUpperCase()}: ${formatTime(result.lapTime)}`, ...pitBoardMessages].slice(0, 50);
                 // Determine if new personal best
                 const currentBest = bestTime;
                 let newBest = currentBest;
@@ -287,7 +289,7 @@
             }
         } catch (e) {
             console.error(e);
-            alert("Error running qualifying lap.");
+            uiStore.alert(t('error_qualy_lap'), t('error_renew').split(' ')[0], "danger");
         }
 
         isSimulating = false;
@@ -296,7 +298,7 @@
 
     function formatTime(seconds: number) {
         if (seconds === 0 || seconds === null) return "--:--.---";
-        if (seconds >= 999) return "DNF";
+        if (seconds >= 999) return t('dnf');
         const mins = Math.floor(seconds / 60);
         const secs = (seconds % 60).toFixed(3);
         const parts = secs.split('.');
@@ -310,12 +312,19 @@
         return "text-red-400";
     }
 
-    const styleConfigs = [
-        { id: DriverStyle.defensive, icon: ChevronRight, color: "text-blue-400", label: "defensive" as const },
-        { id: DriverStyle.normal, icon: Zap, color: "text-emerald-400", label: "normal" as const },
-        { id: DriverStyle.offensive, icon: Zap, color: "text-orange-400", label: "offensive" as const },
-        { id: DriverStyle.mostRisky, icon: Zap, color: "text-red-500", label: "risky" as const },
-    ];
+    const styleConfigs = $derived.by(() => {
+        const base = [
+            { id: DriverStyle.defensive, icon: ChevronRight, color: "text-blue-400", label: t("defensive") },
+            { id: DriverStyle.normal, icon: Zap, color: "text-emerald-400", label: t("normal") },
+            { id: DriverStyle.offensive, icon: Zap, color: "text-orange-400", label: t("offensive") },
+        ];
+
+        if (managerStore.profile?.role === "ex_driver") {
+            base.push({ id: DriverStyle.mostRisky, icon: Zap, color: "text-red-500", label: t("risky") });
+        }
+
+        return base;
+    });
 </script>
 
 {#if timeService.currentStatus === 'qualifying'}
@@ -323,16 +332,14 @@
     <div class="flex flex-col items-center justify-center p-12 text-center min-h-[400px]">
         <Activity size={64} class="text-app-primary mb-6 animate-pulse" />
         <h2 class="text-3xl font-black italic text-app-text uppercase tracking-widest mb-4">
-            Qualifying Session in Progress
+            {t('qualy_in_progress_header')}
         </h2>
         <p class="text-sm text-app-text/60 max-w-lg mb-8 leading-relaxed">
-            The servers are currently processing the official Qualifying session. 
-            No further setup changes or flying laps can be submitted at this time. 
-            Please wait for the session to complete to view the final starting grid.
+            {t('qualy_processing_desc')}
         </p>
         <div class="flex items-center gap-2 text-app-primary px-4 py-2 bg-app-primary/10 rounded-lg">
             <Timer size={16} />
-            <span class="text-[10px] font-black uppercase tracking-widest">Waiting for Backend Sim...</span>
+            <span class="text-[10px] font-black uppercase tracking-widest">{t('waiting_backend_sim')}</span>
         </div>
     </div>
 {:else}
@@ -365,7 +372,7 @@
                             {#if isSimulating}
                                 <div in:fade class="text-[10px] font-black italic text-app-primary/60 uppercase tracking-widest animate-pulse flex items-center gap-2 mb-2">
                                     <div class="w-1.5 h-1.5 rounded-full bg-app-primary animate-ping"></div>
-                                    {t('simulating_current_lap') || 'Simulating...'}
+                                    {t('simulating_current_lap')}
                                 </div>
                                 {#if driverDialogue}
                                     <div in:fade class="bg-app-text/5 rounded-2xl rounded-tl-none p-4 relative border border-white/5 mb-4 shadow-lg shadow-app-primary/5">
@@ -424,7 +431,7 @@
                 {#if needsWetTyres}
                     <div class="flex items-center gap-1 text-red-500 animate-[pulse_1s_infinite]">
                         <AlertTriangle size={12} />
-                        <span class="text-[9px] font-black uppercase tracking-tighter">Wet track - Use wet tyres</span>
+                        <span class="text-[9px] font-black uppercase tracking-tighter">{t('wet_track_warning')}</span>
                     </div>
                 {/if}
             </div>
@@ -451,7 +458,7 @@
                                 >
                                 {#if item.locked}
                                     <span class="text-[8px] text-red-400 ml-1"
-                                        >(LOCKED)</span
+                                        >({t('locked_label')})</span
                                     >
                                 {/if}
                             </div>
@@ -494,29 +501,32 @@
             <div class="mt-8 space-y-3">
                 <span
                     class="text-[9px] font-black text-app-text/40 uppercase tracking-widest"
-                    >Qualifying Compound</span
+                    >{t('tyre_compound')}</span
                 >
                 <div class="grid grid-cols-4 gap-3">
                     {#each [TyreCompound.soft, TyreCompound.medium, TyreCompound.hard, TyreCompound.wet] as tc}
                         <button
-                            class="px-2 py-3 rounded-xl border transition-all flex flex-col items-center gap-2 {setup.tyreCompound ===
-                            tc
-                                ? 'bg-app-primary border-app-primary text-app-primary-foreground'
+                            class="px-2 py-3 rounded-xl border transition-all flex flex-col items-center gap-2 {setup.tyreCompound === tc
+                                ? tc === TyreCompound.soft ? 'bg-red-600 border-red-600 text-white shadow-[0_0_20px_rgba(220,38,38,0.3)]' : 
+                                  tc === TyreCompound.medium ? 'bg-yellow-500 border-yellow-500 text-black shadow-[0_0_20px_rgba(234,179,8,0.3)]' : 
+                                  tc === TyreCompound.hard ? 'bg-zinc-100 border-zinc-100 text-black shadow-[0_0_20px_rgba(244,244,245,0.3)]' : 
+                                  'bg-blue-600 border-blue-600 text-white shadow-[0_0_20px_rgba(37,99,235,0.3)]'
                                 : 'bg-app-text/5 border-app-border text-app-text/40 hover:bg-app-text/10'}"
                             onclick={() => (setup.tyreCompound = tc)}
+                            disabled={isParcFerme}
                         >
                             <div
-                                class="w-2.5 h-2.5 rounded-full {tc === 'soft'
+                                class="w-2.5 h-2.5 rounded-full {tc === TyreCompound.soft
                                     ? 'bg-red-500'
-                                    : tc === 'medium'
-                                      ? 'bg-yellow-500'
-                                      : tc === 'hard'
-                                        ? 'bg-app-surface'
-                                        : 'bg-blue-500'} shadow-[0_0_10px_rgba(255,255,255,0.2)]"
+                                    : tc === TyreCompound.medium
+                                      ? 'bg-yellow-400'
+                                      : tc === TyreCompound.hard
+                                        ? 'bg-white'
+                                        : 'bg-blue-400'} shadow-[0_0_10px_rgba(255,255,255,0.2)]"
                             ></div>
                             <span
                                 class="text-[9px] font-black uppercase tracking-tighter"
-                                >{tc}</span
+                                >{t(tc)}</span
                             >
                         </button>
                     {/each}

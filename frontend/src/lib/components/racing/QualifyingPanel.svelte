@@ -7,6 +7,7 @@
     import { timeService } from "$lib/services/time_service.svelte";
     import { db } from "$lib/firebase/config";
     import { doc, getDoc } from "firebase/firestore";
+    import { t } from "$lib/utils/i18n";
 
     let results = $state<any[]>([]);
     let isLoading = $state(true);
@@ -76,7 +77,7 @@
             ></div>
             <span
                 class="text-[10px] font-black uppercase tracking-widest text-app-primary"
-                >Analyzing Telemetry...</span
+                >{t('analyzing_telemetry')}</span
             >
         </div>
     {:else}
@@ -100,14 +101,14 @@
                         <h3
                             class="font-black text-4xl lg:text-5xl uppercase italic text-app-text tracking-tighter leading-[0.9]"
                         >
-                            {timeService.currentStatus === 'practice' ? 'Qualifying' : 'Session'} <span class="text-app-primary">{timeService.currentStatus === 'practice' ? 'Pending' : 'In Progress'}</span>
+                            {timeService.currentStatus === 'practice' ? t('qualifying_pending') : t('session') + ' ' + t('qualifying_in_progress')}
                         </h3>
                         <p
                             class="text-app-text/60 text-sm font-medium leading-relaxed"
                         >
                             {timeService.currentStatus === 'practice' 
-                                ? 'Technical delegates are preparing the circuit for the official classification. Stay tuned for live telemetry.'
-                                : 'The session is currently running. Technical delegates are processing initial lap data. Please wait for the official classifications.'}
+                                ? t('delegate_preparing')
+                                : t('session_running_wait')}
                         </p>
                     </div>
                 </div>
@@ -117,7 +118,7 @@
                 >
                     <span
                         class="text-[10px] font-black text-app-primary uppercase tracking-[0.3em] mb-3 font-mono opacity-80"
-                        >TIME UNTIL RACE</span
+                        >{t('time_until_race')}</span
                     >
                     <span
                         class="text-5xl font-black text-app-text tabular-nums font-mono italic tracking-tighter"
@@ -140,7 +141,7 @@
                         <h3
                             class="font-black text-xs uppercase tracking-widest italic"
                         >
-                            Official Classification
+                            {t('official_classification')}
                         </h3>
                     </div>
                 </div>

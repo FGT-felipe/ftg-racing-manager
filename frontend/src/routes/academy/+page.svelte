@@ -37,6 +37,7 @@
         type TranslationKey,
     } from "$lib/utils/i18n";
     import CountryFlag from "$lib/components/ui/CountryFlag.svelte";
+    import { getFlagEmoji } from "$lib/utils/country";
 
     function getSpecialtyKey(
         specialty: string | null | undefined,
@@ -60,14 +61,14 @@
     driverStore.init();
 
     const countries = [
-        { code: "CO", name: "Colombia" },
-        { code: "BR", name: "Brazil" },
-        { code: "AR", name: "Argentina" },
-        { code: "MX", name: "Mexico" },
-        { code: "ES", name: "Spain" },
-        { code: "IT", name: "Italy" },
-        { code: "GB", name: "United Kingdom" },
-        { code: "DE", name: "Germany" },
+        { code: "CO", name: "Colombia", flagEmoji: getFlagEmoji("CO") },
+        { code: "BR", name: "Brazil", flagEmoji: getFlagEmoji("BR") },
+        { code: "AR", name: "Argentina", flagEmoji: getFlagEmoji("AR") },
+        { code: "MX", name: "Mexico", flagEmoji: getFlagEmoji("MX") },
+        { code: "ES", name: "Spain", flagEmoji: getFlagEmoji("ES") },
+        { code: "IT", name: "Italy", flagEmoji: getFlagEmoji("IT") },
+        { code: "GB", name: "United Kingdom", flagEmoji: getFlagEmoji("GB") },
+        { code: "DE", name: "Germany", flagEmoji: getFlagEmoji("DE") },
     ];
 
     let selectedCountry = $state(countries[0]);

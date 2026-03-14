@@ -18,6 +18,8 @@ import { seasonStore } from './season.svelte';
 import { driverStore } from './driver.svelte';
 import type { YoungDriver } from '$lib/types';
 import { untrack } from 'svelte';
+import { getFlagEmoji } from '$lib/utils/country';
+import { academyService } from '$lib/services/academy.svelte';
 
 export function createYouthAcademyStore() {
     let config = $state<any>(null);
@@ -115,10 +117,11 @@ export function createYouthAcademyStore() {
         get loading() { return loading; },
         get maxSlots() { return maxSlots; },
         get scoutingQuota() { return scoutingQuota; },
+        get i18n_currentSeasonId() { return seasonStore.value.season?.id || teamStore.value.team?.currentSeasonId || null; },
         get canUpgrade() { return canUpgrade; },
         init,
 
-        async purchaseAcademy(country: { code: string, name: string, flagEmoji: string }) {
+        async purchaseAcademy(country: { code: string, name: string, flagEmoji?: string }) {
             const teamId = teamStore.value.team?.id;
             const currentSeasonId = seasonStore.value.season?.id || teamStore.value.team?.currentSeasonId || null;
 
@@ -141,11 +144,18 @@ export function createYouthAcademyStore() {
                 transaction.set(configRef, {
                     countryCode: country.code,
                     countryName: country.name,
-                    countryFlag: country.flagEmoji,
+                    countryFlag: country.flagEmoji || getFlagEmoji(country.code),
                     academyLevel: 1,
                     scoutsUsedThisSeason: 2, // Initial generation count
                     lastUpgradeSeasonId: currentSeasonId,
                     createdAt: serverTimestamp()
+                });
+
+                // Generate initial batch of candidates (Level 1, 1M, 1F)
+                const initialCandidates = academyService.generateInitialCandidates(2, country.code, 1);
+                initialCandidates.forEach(candidate => {
+                    const candidateRef = doc(db, 'teams', teamId, 'academy', 'config', 'candidates', candidate.id);
+                    transaction.set(candidateRef, candidate);
                 });
 
                 transaction.update(teamRef, {
@@ -157,6 +167,16 @@ export function createYouthAcademyStore() {
                         maintenanceCost: 15000,
                         lastUpgradeSeasonId: currentSeasonId
                     }
+                });
+
+                // Record transaction
+                const txRef = doc(collection(db, 'teams', teamId, 'transactions'));
+                transaction.set(txRef, {
+                    id: txRef.id,
+                    description: `Academy Establishment: ${country.name}`,
+                    amount: -purchasePrice,
+                    date: new Date().toISOString(),
+                    type: 'UPGRADE'
                 });
             });
 
@@ -177,7 +197,7 @@ export function createYouthAcademyStore() {
 
             const upgradePrice = 1000000 * config.academyLevel;
             const role = managerStore.profile?.role;
-            const finalPrice = (role === 'businessAdmin' || role === 'bureaucrat') ? Math.round(upgradePrice * 0.9) : upgradePrice;
+            const finalPrice = (role === 'business' || role === 'bureaucrat') ? Math.round(upgradePrice * 0.9) : upgradePrice;
 
             const teamRef = doc(db, 'teams', teamId);
             const configRef = doc(db, 'teams', teamId, 'academy', 'config');

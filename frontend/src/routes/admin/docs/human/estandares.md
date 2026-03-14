@@ -20,6 +20,7 @@ Seguimos una arquitectura de componentes modular y de diseño premium.
 *   **Estilo**: Usar Tailwind CSS exclusivamente. Prohibido el uso de styles inline o CSS en línea.
 *   **Tokens**: Respetar las variables definidas en `app.css` (`--app-primary`, `--app-surface`).
 *   **Slots & Snippets**: Utilizar `{#snippet ...}` de Svelte 5 para pasar fragmentos de UI complejos a componentes hijos.
+*   **Diálogos y Modales**: El uso de diálogos nativos del navegador (`alert`, `confirm`, `prompt`) está terminantemente **PROHIBIDO**. Se debe utilizar el sistema de modales del `uiStore`.
 *   **Responsividad**: Aplicar el enfoque *Mobile First*. Priorizar visualizaciones compactas para móviles que escalen a tableros de mando en desktop.
 
 ---

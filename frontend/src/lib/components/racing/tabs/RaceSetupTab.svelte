@@ -15,12 +15,17 @@
         AlertTriangle,
         ShieldCheck,
         Save,
-        Activity
+        Activity,
+        Wind,
+        Navigation
     } from "lucide-svelte";
     import { teamStore } from "$lib/stores/team.svelte";
+    import { managerStore } from "$lib/stores/manager.svelte";
     import { driverStore } from "$lib/stores/driver.svelte";
     import { seasonStore } from "$lib/stores/season.svelte";
     import { timeService } from "$lib/services/time_service.svelte";
+    import { uiStore } from "$lib/stores/ui.svelte";
+    import { t } from "$lib/utils/i18n";
     import {
         type CarSetup,
         TyreCompound,
@@ -60,21 +65,12 @@
     $effect(() => {
         if (driverId && team) {
             untrack(() => {
-                const existing =
-                    team.weekStatus?.driverSetups?.[driverId]?.race;
-                if (existing) {
-                    strategy = { ...strategy, ...existing };
+                const driverData = team.weekStatus?.driverSetups?.[driverId];
+                if (driverData?.race) {
+                    strategy = { ...strategy, ...driverData.race };
                 } else {
-                    // Fallback to Qualifying or Practice setup if Race strategy isn't saved yet
-                    const qualy =
-                        team.weekStatus?.driverSetups?.[driverId]?.qualifying;
-                    const prac =
-                        team.weekStatus?.driverSetups?.[driverId]?.practice;
-                    if (qualy) {
-                        strategy = { ...strategy, ...qualy };
-                    } else if (prac) {
-                        strategy = { ...strategy, ...prac };
-                    }
+                    // Fallback to best available if race strategy is not yet saved
+                    loadBestSetup(true); // Silent load on initialization
                 }
 
                 // Also fetch the qualy grid constraints
@@ -124,12 +120,43 @@
             await updateDoc(teamRef, {
                 [path]: { ...strategy },
             });
-            alert("✓ Race Strategy Saved");
+            uiStore.alert(`✓ ${t('race_strategy_saved')}`, t('race_strategy_saved'), "success");
         } catch (e) {
             console.error("Error saving strategy:", e);
-            alert("Error saving strategy.");
+            uiStore.alert(t('error_save_strategy'), t('error_renew').split(' ')[0], "danger");
         } finally {
             isSaving = false;
+        }
+    }
+
+    async function loadBestSetup(silent = false) {
+        if (!team || !driverId) return;
+        const practiceData = team.weekStatus?.driverSetups?.[driverId]?.practice;
+        const qualyData = team.weekStatus?.driverSetups?.[driverId]?.qualifying;
+
+        if (practiceData?.bestLapSetup) {
+            strategy = { ...strategy, ...practiceData.bestLapSetup };
+            if (!silent) uiStore.alert(`✓ ${t('best_setup_loaded')}`, t('best_setup'), "success");
+        } else if (practiceData?.lastResult?.setupUsed) {
+            // Fallback 1: Last practice result
+            strategy = { ...strategy, ...practiceData.lastResult.setupUsed };
+            if (!silent) uiStore.alert(`✓ ${t('best_setup_loaded')}`, t('best_setup'), "success");
+        } else if (practiceData?.frontWing !== undefined) {
+            // Fallback 2: Direct fields in practice doc
+            strategy = {
+                ...strategy,
+                frontWing: practiceData.frontWing,
+                rearWing: practiceData.rearWing,
+                suspension: practiceData.suspension,
+                gearRatio: practiceData.gearRatio
+            };
+            if (!silent) uiStore.alert(`✓ ${t('best_setup_loaded')}`, t('best_setup'), "success");
+        } else if (qualyData) {
+            // Fallback 3: Qualifying setup
+            strategy = { ...strategy, ...qualyData };
+            if (!silent) uiStore.alert(`✓ ${t('best_setup_loaded')}`, t('best_setup'), "success");
+        } else {
+            if (!silent) uiStore.alert(t('no_setup_found'), t('best_setup'), "warning");
         }
     }
 
@@ -152,32 +179,19 @@
         );
     }
 
-    const styleConfigs = [
-        {
-            id: DriverStyle.defensive,
-            icon: ChevronRight,
-            color: "text-blue-400",
-            label: "DEFE",
-        },
-        {
-            id: DriverStyle.normal,
-            icon: Zap,
-            color: "text-green-400",
-            label: "NORM",
-        },
-        {
-            id: DriverStyle.offensive,
-            icon: Zap,
-            color: "text-orange-400",
-            label: "OFFE",
-        },
-        {
-            id: DriverStyle.mostRisky,
-            icon: Zap,
-            color: "text-red-500",
-            label: "RISK",
-        },
-    ];
+    const styleConfigs = $derived.by(() => {
+        const base = [
+            { id: DriverStyle.defensive, icon: ChevronRight, color: "text-blue-400", label: t('defensive') },
+            { id: DriverStyle.normal, icon: Zap, color: "text-green-400", label: t('normal') },
+            { id: DriverStyle.offensive, icon: Zap, color: "text-orange-400", label: t('offensive') },
+        ];
+
+        if (managerStore.profile?.role === "ex_driver") {
+            base.push({ id: DriverStyle.mostRisky, icon: Zap, color: "text-red-500", label: t('risky') });
+        }
+
+        return base;
+    });
 </script>
 
 {#if timeService.currentStatus === 'qualifying'}
@@ -185,15 +199,14 @@
     <div class="flex flex-col items-center justify-center p-12 text-center min-h-[400px]">
         <Activity size={64} class="text-[#FFB800] mb-6 animate-pulse" />
         <h2 class="text-3xl font-black italic text-app-text uppercase tracking-widest mb-4">
-            Qualifying Session in Progress
+            {t('qualy_in_progress_header')}
         </h2>
         <p class="text-sm text-app-text/60 max-w-lg mb-8 leading-relaxed">
-            The servers are currently processing the official Qualifying session. 
-            Race setups cannot be modified until the grid is finalized.
+            {t('qualy_locked_desc')}
         </p>
         <div class="flex items-center gap-2 text-[#FFB800] px-4 py-2 bg-[#FFB800]/10 rounded-lg">
             <Timer size={16} />
-            <span class="text-[10px] font-black uppercase tracking-widest">Awaiting Grid Results...</span>
+            <span class="text-[10px] font-black uppercase tracking-widest">{t('awaiting_grid')}</span>
         </div>
     </div>
 {:else if timeService.currentStatus === 'race'}
@@ -201,15 +214,14 @@
     <div class="flex flex-col items-center justify-center p-12 text-center min-h-[400px]">
         <Flag size={64} class="text-[#E040FB] mb-6 animate-bounce" />
         <h2 class="text-3xl font-black italic text-app-text uppercase tracking-widest mb-4">
-            Race Session in Progress
+            {t('race_in_progress_header')}
         </h2>
         <p class="text-sm text-app-text/60 max-w-lg mb-8 leading-relaxed">
-            The Grand Prix is currently underway! 
-            You can no longer change your strategy. Head over to the Live Timing screen to see the action!
+            {t('race_ongoing_desc')}
         </p>
         <div class="flex items-center gap-2 text-[#E040FB] px-4 py-2 bg-[#E040FB]/10 rounded-lg">
             <Timer size={16} />
-            <span class="text-[10px] font-black uppercase tracking-widest">Simulating Race...</span>
+            <span class="text-[10px] font-black uppercase tracking-widest">{t('simulating_race')}</span>
         </div>
     </div>
 {:else}
@@ -223,15 +235,56 @@
                 <h3
                     class="font-black text-xs text-app-text uppercase tracking-[0.2em] italic"
                 >
-                    Race Start Configuration
+                    {t('race_start_config')}
                 </h3>
                 <div
                     class="px-3 py-1 bg-green-500/10 border border-green-500/20 rounded flex items-center gap-2"
                 >
                     <ShieldCheck size={12} class="text-green-500" />
                     <span class="text-[9px] font-black text-app-text/60 uppercase"
-                        >Validated</span
+                        >{t('validated')}</span
                     >
+                </div>
+            </div>
+
+            <!-- Setup Sliders -->
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-5 mb-10 pb-8 border-b border-app-border">
+                {#each [
+                    { label: t("front_wing"), field: "frontWing" as const, icon: Wind, color: "text-cyan-400", hintL: t("top_speed_0"), hintR: t("corner_grip_100") }, 
+                    { label: t("rear_wing"), field: "rearWing" as const, icon: Wind, color: "text-cyan-400", hintL: t("top_speed_0"), hintR: t("corner_grip_100") }, 
+                    { label: t("suspension"), field: "suspension" as const, icon: Navigation, color: "text-purple-400", hintL: t("soft_bumps_0"), hintR: t("stiff_aero_100") }, 
+                    { label: t("gear_ratio"), field: "gearRatio" as const, icon: Zap, color: "text-orange-400", hintL: t("acceleration_0"), hintR: t("top_speed_100") }
+                ] as item}
+                    <div class="space-y-3 group">
+                        <div class="flex justify-between items-center px-1">
+                            <div class="flex items-center gap-2 {item.color}">
+                                <item.icon size={14} />
+                                <span class="text-[10px] font-black uppercase tracking-widest">{item.label}</span>
+                            </div>
+                            <span class="text-sm font-black text-app-text">{strategy[item.field]}</span>
+                        </div>
+                        <input
+                            type="range"
+                            min="0"
+                            max="100"
+                            bind:value={strategy[item.field]}
+                            class="w-full h-1.5 bg-app-text/5 rounded-full appearance-none cursor-pointer {item.color.replace('text-', 'accent-')} transition-all"
+                        />
+                        <div class="flex justify-between px-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                            <span class="text-[8px] font-bold text-app-text/40 uppercase tracking-wider text-left max-w-[45%]">{item.hintL}</span>
+                            <span class="text-[8px] font-bold text-app-text/40 uppercase tracking-wider text-right max-w-[45%]">{item.hintR}</span>
+                        </div>
+                    </div>
+                {/each}
+
+                <div class="md:col-span-2 flex justify-end">
+                    <button
+                    onclick={() => loadBestSetup()}
+                    class="px-4 py-2 rounded-xl bg-app-primary/10 border border-app-primary text-app-primary font-black uppercase text-[10px] hover:bg-app-primary hover:text-black transition-all flex items-center gap-2"
+                >
+                        <Zap size={14} class="group-hover:animate-pulse" />
+                        {t('best_setup')}
+                    </button>
                 </div>
             </div>
 
@@ -243,7 +296,7 @@
                             <Fuel size={16} />
                             <span
                                 class="text-[10px] font-black uppercase tracking-widest"
-                                >Initial Fuel Load</span
+                                >{t('initial_fuel_load')}</span
                             >
                         </div>
                         <span class="text-xl font-black text-app-text italic"
@@ -260,8 +313,8 @@
                     <div
                         class="flex justify-between text-[9px] font-bold text-app-text/20 uppercase"
                     >
-                        <span>Light (Min)</span>
-                        <span>Heavy (Full)</span>
+                        <span>{t('light_min')}</span>
+                        <span>{t('heavy_full')}</span>
                     </div>
                 </div>
 
@@ -271,31 +324,35 @@
                         <span
                             class="text-[10px] font-black text-app-text/30 uppercase tracking-widest"
                         >
-                            Start Tyres {driverId && qualyCompounds[driverId]
-                                ? "(Qualy Locked)"
-                                : "(Free Choice)"}
+                            {t('start_tyres')} {driverId && qualyCompounds[driverId] && !isQualyWet
+                                ? `(${t('qualy_locked')})`
+                                : `(${t('free_choice')})`}
                         </span>
-                        <div class="grid grid-cols-2 gap-2">
-                            {#each [TyreCompound.soft, TyreCompound.medium, TyreCompound.hard] as tc}
-                                <div
-                                    class="py-2 rounded-lg border text-center text-[9px] font-black transition-all {strategy.tyreCompound ===
-                                    tc
-                                        ? 'bg-app-primary border-app-primary text-app-primary-foreground'
-                                        : 'bg-app-text/5 border-app-border text-app-text/40'} {driverId &&
-                                    qualyCompounds[driverId] &&
-                                    qualyCompounds[driverId] !== tc
-                                        ? 'opacity-30'
-                                        : ''}"
+                        <div class="grid grid-cols-4 gap-1.5">
+                            {#each [TyreCompound.soft, TyreCompound.medium, TyreCompound.hard, TyreCompound.wet] as tc}
+                                <button
+                                    class="py-2.5 rounded-lg border text-center text-[8px] font-black transition-all {strategy.tyreCompound === tc
+                                        ? tc === TyreCompound.soft ? 'bg-red-600 border-red-600 text-white' : 
+                                          tc === TyreCompound.medium ? 'bg-yellow-500 border-yellow-500 text-black' : 
+                                          tc === TyreCompound.hard ? 'bg-zinc-100 border-zinc-100 text-black' : 
+                                          'bg-blue-600 border-blue-600 text-white'
+                                        : 'bg-app-text/5 border-app-border text-app-text/40'} 
+                                        {driverId && qualyCompounds[driverId] && !isQualyWet && qualyCompounds[driverId] !== tc ? 'opacity-20 cursor-not-allowed' : 'hover:scale-105 active:scale-95'}"
+                                    onclick={() => {
+                                        if (driverId && qualyCompounds[driverId] && !isQualyWet) return;
+                                        strategy.tyreCompound = tc;
+                                    }}
+                                    disabled={driverId && qualyCompounds[driverId] && !isQualyWet && qualyCompounds[driverId] !== tc}
                                 >
-                                    {tc.toUpperCase()}
-                                </div>
+                                    {t(tc).toUpperCase()}
+                                </button>
                             {/each}
                         </div>
                     </div>
                     <div class="space-y-4">
                         <span
                             class="text-[10px] font-black text-app-text/30 uppercase tracking-widest"
-                            >Initial Pace</span
+                            >{t('initial_pace')}</span
                         >
                         <div class="grid grid-cols-2 gap-2">
                             {#each styleConfigs as style}
@@ -323,7 +380,7 @@
             <h3
                 class="font-black text-xs text-app-text uppercase tracking-[0.2em] italic"
             >
-                Pit Stop Strategy
+                {t('pit_stop_strategy')}
             </h3>
             <button
                 onclick={addPitStop}
@@ -332,7 +389,7 @@
             >
                 <Plus size={14} />
                 <span class="text-[10px] font-black uppercase"
-                    >Add Pit Stop</span
+                    >{t('add_pit_stop')}</span
                 >
             </button>
         </div>
@@ -356,7 +413,7 @@
                             </div>
                             <span
                                 class="text-[10px] font-black uppercase tracking-widest text-app-text/60"
-                                >Stint Configuration</span
+                                >{t('stint_config')}</span
                             >
                         </div>
                         <button
@@ -372,15 +429,17 @@
                         <div class="flex items-center justify-between">
                             <span
                                 class="text-[10px] font-black text-app-text/30 uppercase"
-                                >Compound</span
+                                >{t('compound')}</span
                             >
                             <div class="flex gap-1.5">
-                                {#each [TyreCompound.soft, TyreCompound.medium, TyreCompound.hard] as tc}
+                                {#each [TyreCompound.soft, TyreCompound.medium, TyreCompound.hard, TyreCompound.wet] as tc}
                                     <button
-                                        class="w-8 h-8 rounded-lg border flex items-center justify-center text-[9px] font-black transition-all {strategy
-                                            .pitStops[i] === tc
-                                            ? 'bg-app-text/10 border-app-border text-app-primary'
-                                            : 'bg-app-text/5 border-transparent text-app-text/20'}"
+                                        class="w-7 h-7 rounded-lg border flex items-center justify-center text-[8px] font-black transition-all {strategy.pitStops[i] === tc
+                                            ? tc === TyreCompound.soft ? 'bg-red-600 border-red-600 text-white' : 
+                                              tc === TyreCompound.medium ? 'bg-yellow-500 border-yellow-500 text-black' : 
+                                              tc === TyreCompound.hard ? 'bg-zinc-100 border-zinc-100 text-black' : 
+                                              'bg-blue-600 border-blue-600 text-white'
+                                            : 'bg-app-text/5 border-transparent text-app-text/20 hover:bg-app-text/10'}"
                                         onclick={() =>
                                             (strategy.pitStops[i] = tc)}
                                     >
@@ -395,7 +454,7 @@
                             <div
                                 class="flex justify-between text-[9px] font-black uppercase text-app-text/40"
                             >
-                                <span>Fuel to Add</span>
+                                <span>{t('fuel_to_add')}</span>
                                 <span class="text-app-text"
                                     >{strategy.pitStopFuel[i]} L</span
                                 >
@@ -413,7 +472,7 @@
                         <div class="flex items-center justify-between">
                             <span
                                 class="text-[10px] font-black text-app-text/30 uppercase"
-                                >Agression</span
+                                >{t('aggression')}</span
                             >
                             <div class="flex gap-1">
                                 {#each styleConfigs as style}
@@ -441,10 +500,10 @@
                 >
                     <History size={32} class="mb-3" />
                     <p class="text-[10px] font-black uppercase tracking-widest">
-                        No Pit Stops Planned
+                        {t('no_stops_planned')}
                     </p>
                     <p class="text-[8px] font-bold mt-1">
-                        Single stint strategy (No Stops)
+                        {t('single_stint_strategy')}
                     </p>
                 </div>
             {/if}
@@ -462,10 +521,10 @@
                 <div
                     class="w-4 h-4 border-2 border-black border-t-transparent rounded-full animate-spin"
                 ></div>
-                Updating Telemetry...
+                {t('updating_telemetry')}
             {:else}
                 <Save size={18} />
-                Submit Race Strategy
+                {t('submit_race_strategy')}
             {/if}
         </button>
     </div>

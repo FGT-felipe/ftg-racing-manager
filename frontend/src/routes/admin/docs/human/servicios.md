@@ -10,7 +10,7 @@ En este ecosistema, los servicios son **Stateless Logic Providers** encargados d
 ### A. TimeService (Orquestador Chronos)
 Es el metrónomo del sistema. Determina el estado de la liga (`practice`, `qualifying`, `race`, etc.) basándose en la zona horaria de Bogotá (UTC-5).
 *   **Responsabilidad**: Lock/Unlock de setups (Parc Fermé) y cálculo de cuentas regresivas.
-*   **Lógica Crítica**: El estado de la semana se deriva de una matriz de tiempo fija (Sábado 14:00 para Qualy, Domingo 14:00 para Carrera).
+*   **Lógica Crítica**: El estado de la semana se deriva de una matriz de tiempo fija. Las prácticas se bloquean (solo lectura) el Sábado a las 13:00 COT o tras el primer intento de Qualy. Qualy inicia el Sábado a las 14:00 y Carrera el Domingo a las 14:00.
 
 ### B. SponsorService (Gestor de Contratos)
 Gestiona el sistema de negociación de patrocinios mediante una máquina de estados compleja.
@@ -23,6 +23,8 @@ Implementa el motor de física simplificado para las sesiones de práctica.
 *   **Feedback**: Traduce la desviación del setup ideal en narrativa técnica (ej. "Understeer" vs "Oversteer"). La precisión del feedback escala con la habilidad de `Feedback` del piloto.
 *   **Setup Hints**: Genera rangos visuales dinámicos. Un piloto con alta `Adaptability` proporciona rangos más estrechos y precisos.
 *   **Gestión de Qualifying**: Persiste los `setupHints` en el `lastQualyResult` y permite el fallback de hints desde las sesiones de práctica. Incluye selector de agresividad (`Driving Aggression`) que impacta directamente en el tiempo de vuelta y riesgo de accidente.
+*   **Clima y Neumáticos**: Implementa la lógica de penalización por neumáticos incorrectos. El compuesto `Wet` es obligatorio en sesiones de lluvia para evitar una penalización de +8.0s por vuelta. En seco, los neumáticos `Wet` sufren sobrecalentamiento y penalizan +3.0s.
+*   **Bloqueo de Sesión**: Una vez iniciada la Qualy o pasado el límite de tiempo, la sesión de práctica entra en modo **"Read-Only"**, permitiendo ver telemetría pero bloqueando nuevas tandas.
 
 ### D. StaffService (Gestión de Personal)
 Orquestador de recursos humanos y optimización de rendimiento físico.
@@ -34,8 +36,13 @@ Actúa como puente entre el cliente y el SimEngine de Cloud Functions.
 *   **Benchmarking**: Recupera resultados de otros competidores de la liga para comparativas en tiempo real.
 *   **Triggers**: Expone métodos para forzar simulaciones de Qualy/Carrera (reservado para administradores).
 
-### F. Backend Orchestration (Cloud Functions)
-La lógica pesada se delega a las funciones de Firebase (Node.js) para garantizar imparcialidad y seguridad.
+### F. AcademyService (Gestor de Cantera)
+Gestiona el ciclo de vida de los pilotos junior y el scouting inicial.
+*   **Generación**: Implementa la lógica de escalado por nivel y el balance de género (1M, 1F) para candidatos.
+*   **Persistencia**: Centraliza el guardado de candidatos y el conteo de plazas ocupadas.
+
+### G. Backend Orchestration (Cloud Functions)
+Lógica pesada se delega a las funciones de Firebase (Node.js) para garantizar imparcialidad y seguridad.
 *   **Scheduled Jobs**: 
     *   `scheduledQualifying`: Ejecuta la clasificación los sábados a las 15:00 COT.
     *   `scheduledRace`: Simula la carrera completa los domingos a las 14:00 COT.
@@ -49,3 +56,10 @@ La lógica pesada se delega a las funciones de Firebase (Node.js) para garantiza
 ## 3. Integración y Seguridad
 *   **Transacciones**: Todas las operaciones que afectan el `budget` o el `rango de stats` de un piloto se realizan mediante `runTransaction` de Firestore para evitar colisiones de estado.
 *   **Persistencia Optimista**: La UI se actualiza inmediatamente tras la escritura, mientras que los listeners en los Stores aseguran la consistencia final con el servidor.
+
+---
+
+## 4. Administración (AdminService)
+Orquestador de herramientas de mantenimiento masivo.
+*   **Recuperación**: El método `fixBrokenAcademies` detecta equipos con instalaciones activas pero sin configuración o candidatos, inyectando un batch inicial de 2 pilotos (1M, 1F) escalados por nivel. 
+*   **Protección**: Nunca sobrescribe datos de pilotos ya contratados (`selected`), asegurando que no haya pérdida de progreso.

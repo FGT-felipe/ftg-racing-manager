@@ -71,7 +71,7 @@
         teamStore.value.team?.weekStatus?.upgradesThisWeek || 0,
     );
     const maxUpgrades = $derived(
-        managerStore.profile?.role === "exEngineer" ? 2 : 1,
+        managerStore.profile?.role === "engineer" ? 2 : 1,
     );
     const isLocked = $derived(timeService.isSetupLocked);
 </script>
@@ -122,14 +122,14 @@
                         >
                     </div>
                 </div>
-                {#if managerStore.profile?.role === "exEngineer"}
+                {#if managerStore.profile?.role === "engineer"}
                     <div
                         class="ml-auto px-3 py-1 bg-orange-500/10 border border-orange-500/20 rounded-full flex items-center gap-2"
                     >
                         <ArrowUpCircle size={12} class="text-orange-400" />
                         <span
                             class="text-[10px] font-black text-orange-400 uppercase"
-                            >Ex-Engineer Bonus: +1 Upgrade Slot</span
+                            >Lead Engineer Bonus: +1 Upgrade Slot</span
                         >
                     </div>
                 {/if}

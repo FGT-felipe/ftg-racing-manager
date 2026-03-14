@@ -20,6 +20,7 @@
     import CountryFlag from "$lib/components/ui/CountryFlag.svelte";
     import { circuitService } from "$lib/services/circuit_service.svelte";
     import { flip } from "svelte/animate";
+    import { t } from "$lib/utils/i18n";
 
     let results = $state<any[]>([]);
     let raceInfo = $state<any>(null);
@@ -55,8 +56,8 @@
     });
 
     function formatGap(gap: number) {
-        if (gap === 0) return "LEADER";
-        if (gap >= 999) return "DNF";
+        if (gap === 0) return t("leader");
+        if (gap >= 999) return t("dnf");
         return `+${gap.toFixed(3)}s`;
     }
 </script>
@@ -71,7 +72,7 @@
             ></div>
             <span
                 class="text-[10px] font-black uppercase tracking-widest text-red-500"
-                >Connecting to Race Control...</span
+                >{t('connecting_race_control')}</span
             >
         </div>
     {:else if !raceInfo || results.length === 0}
@@ -95,20 +96,19 @@
                         ></div>
                         <span
                             class="text-[10px] font-black text-app-error uppercase tracking-[0.2em] leading-none"
-                            >Awaiting Green Flag</span
+                            >{t('awaiting_green_flag')}</span
                         >
                     </div>
                     <h3
                         class="font-black text-4xl lg:text-6xl uppercase italic text-app-text tracking-tighter leading-[0.9]"
                     >
-                        Live Session <span class="text-app-error">Pending</span>
+                        {t('live_leaderboard')} <span class="text-app-error">{t('dnf')}</span>
                     </h3>
                 </div>
             </div>
             <p class="max-w-md text-app-text/60 text-sm font-medium leading-relaxed relative z-10">
-                The data stream from <span class="text-app-text font-bold italic">{circuit?.name || "the track"}</span> is currently inactive.
-                The broadcast will start once the race director confirms the session
-                launch.
+                {t('stream_inactive', { name: circuit?.name || "the track" })}
+                {t('broadcast_start_wait')}
             </p>
             <div
                 class="px-10 py-6 bg-app-surface border border-app-border rounded-2xl relative z-10 shadow-xl group hover:scale-105 transition-transform duration-300"
@@ -116,10 +116,10 @@
                 <p
                     class="text-[9px] font-black text-app-text/30 uppercase tracking-[0.3em] mb-2"
                 >
-                    Current Status
+                    {t('status')}
                 </p>
                 <p class="text-2xl font-black italic text-app-text uppercase tracking-tight">
-                    Waiting for Race Start
+                    {t('waiting_race_start')}
                 </p>
             </div>
         </div>
@@ -227,7 +227,7 @@
                     <div class="p-6 border-b border-app-border bg-app-surface flex items-center gap-3">
                         <Zap size={18} class="text-yellow-500" />
                         <h3 class="font-black text-xs uppercase tracking-widest italic text-app-text flex-1">
-                            Race Control Feed
+                            {t('race_control_feed')}
                         </h3>
                         <div class="w-2 h-2 rounded-full bg-red-500 animate-pulse"></div>
                     </div>
@@ -236,7 +236,7 @@
                         {#if events.length === 0}
                             <div class="h-full flex flex-col items-center justify-center text-app-text/20">
                                 <Activity size={32} class="mb-4 opacity-50" />
-                                <span class="text-[10px] font-black uppercase tracking-widest">Awaiting Events</span>
+                                <span class="text-[10px] font-black uppercase tracking-widest">{t('awaiting_events')}</span>
                             </div>
                         {:else}
                             {#each events as ev (ev.lap + '-' + ev.driverId + '-' + ev.type)}
@@ -268,7 +268,7 @@
                         <h4
                             class="text-[10px] font-black text-app-text/40 uppercase tracking-widest"
                         >
-                            Track Telemetry
+                            {t('track_telemetry')}
                         </h4>
                     </div>
 
@@ -305,12 +305,12 @@
                         <p
                             class="text-lg font-black text-app-text italic uppercase"
                         >
-                            Session Live
+                            {t('session_live')}
                         </p>
                         <p
                             class="text-[9px] font-bold text-app-text/30 uppercase tracking-[0.2em] mt-1"
                         >
-                            Telemetry Sync Active
+                            {t('telemetry_sync_active')}
                         </p>
                     </div>
                 </div>

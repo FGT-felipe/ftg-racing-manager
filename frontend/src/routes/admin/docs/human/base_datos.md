@@ -44,6 +44,7 @@ Entidades de pilotos (Main Squad y Transfers).
 *   **Campos**:
     *   `teamId`: Relación con la colección `teams`.
     *   `name`, `age`, `nationality`: Datos biográficos.
+    *   `countryCode`: Código ISO de 2 letras para banderas y filtros.
     *   `stats`: Mapa exhaustivo de habilidades (braking, cornering, focus, etc).
     *   `salary`: Coste anual.
     *   `isTransferListed`: Flag para el mercado.

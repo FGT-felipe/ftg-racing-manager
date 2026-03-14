@@ -12,9 +12,11 @@
         type PracticeRunResult,
     } from "$lib/services/practice_service.svelte";
     import { MAX_PRACTICE_LAPS_PER_DRIVER, PRACTICE_SESSION_COST } from "$lib/constants/app_constants";
+    import { uiStore } from "$lib/stores/ui.svelte";
     import { seasonStore } from "$lib/stores/season.svelte";
     import { universeStore } from "$lib/stores/universe.svelte";
-    import { circuitService } from "$lib/services/circuit_service.svelte";
+    import { managerStore } from "$lib/stores/manager.svelte";
+import { circuitService } from "$lib/services/circuit_service.svelte";
     import {
         type CarSetup,
         TyreCompound,
@@ -113,6 +115,37 @@
         }));
     });
 
+    const isSaturdayAfter1PM = $derived.by(() => {
+        try {
+            const now = new Date();
+            const bogota = new Intl.DateTimeFormat('en-US', {
+                timeZone: 'America/Bogota',
+                weekday: 'long',
+                hour: 'numeric',
+                hour12: false
+            });
+            const parts = bogota.formatToParts(now);
+            const weekday = parts.find(p => p.type === 'weekday')?.value;
+            const hourValue = parts.find(p => p.type === 'hour')?.value;
+            const hour = parseInt(hourValue || '0');
+            
+            return weekday === 'Saturday' && hour >= 13;
+        } catch (e: any) {
+            console.error('[PracticePanel] COT check error:', e.message);
+            return false;
+        }
+    });
+
+    const driverQualyAttempts = $derived.by(() => {
+        if (!driverId) return 0;
+        return (
+            teamStore.value.team?.weekStatus?.driverSetups?.[driverId]
+                ?.qualifyingAttempts || 0
+        );
+    });
+
+    const isPracticeLocked = $derived(driverQualyAttempts > 0 || isSaturdayAfter1PM);
+
     async function refreshStandings() {
         const team = teamStore.value.team;
         const season = seasonStore.value.season;
@@ -191,7 +224,7 @@
 
         if (!hasPaid) {
             if (team.budget < PRACTICE_SESSION_COST) {
-                alert(t('insufficient_funds'));
+                uiStore.alert(t('insufficient_funds'), 'Presupuesto Insuficiente', 'danger');
                 isSimulating = false;
                 return;
             }
@@ -299,7 +332,7 @@
         try {
             const teamRef = doc(db, "teams", teamStore.value.team.id);
             await updateDoc(teamRef, { [`weekStatus.driverSetups.${driver.id}.qualifying`]: { ...setup } });
-            alert("✓ " + t('set_qualy'));
+            uiStore.alert(t('set_qualy'), t('copy_practice_to_qualy'), 'success');
         } catch (e) { console.error(e); }
     }
 
@@ -308,7 +341,7 @@
         try {
             const teamRef = doc(db, "teams", teamStore.value.team.id);
             await updateDoc(teamRef, { [`weekStatus.driverSetups.${driver.id}.race`]: { ...setup } });
-            alert("✓ " + t('set_race'));
+            uiStore.alert(t('set_race'), t('copy_practice_to_race'), 'success');
         } catch (e) { console.error(e); }
     }
 
@@ -327,12 +360,19 @@
         return `${mins}:${parts[0].padStart(2, '0')}.${parts[1]}`;
     }
 
-    const styleConfigs = [
-        { id: DriverStyle.defensive, icon: ChevronRight, color: "text-blue-400", label: "defensive" as TranslationKey },
-        { id: DriverStyle.normal, icon: Zap, color: "text-emerald-400", label: "normal" as TranslationKey },
-        { id: DriverStyle.offensive, icon: Zap, color: "text-orange-400", label: "offensive" as TranslationKey },
-        { id: DriverStyle.mostRisky, icon: Zap, color: "text-red-500", label: "risky" as TranslationKey },
-    ];
+    const styleConfigs = $derived.by(() => {
+        const base = [
+            { id: DriverStyle.defensive, icon: ChevronRight, color: "text-blue-400", label: "defensive" as TranslationKey },
+            { id: DriverStyle.normal, icon: Zap, color: "text-emerald-400", label: "normal" as TranslationKey },
+            { id: DriverStyle.offensive, icon: Zap, color: "text-orange-400", label: "offensive" as TranslationKey },
+        ];
+
+        if (managerStore.profile?.role === "ex_driver") {
+            base.push({ id: DriverStyle.mostRisky, icon: Zap, color: "text-red-500", label: "risky" as TranslationKey });
+        }
+
+        return base;
+    });
 </script>
 
 <div class="grid grid-cols-1 lg:grid-cols-12 gap-5" in:fade>
@@ -493,8 +533,18 @@
                             </button>
                         {/each}
                     </div>
-                    <button disabled={isSimulating || !driver} onclick={runPractice} class="flex-[1.5] py-3 bg-app-primary text-black font-black uppercase tracking-widest text-[11px] rounded-xl hover:scale-[1.02] active:scale-95 transition-all disabled:opacity-50 disabled:scale-100 flex items-center justify-center gap-2 shadow-lg shadow-app-primary/20">
-                        {isSimulating ? t('simulating_laps') : t('start_practice')}
+                    <button 
+                        disabled={isSimulating || !driver || isPracticeLocked} 
+                        onclick={runPractice} 
+                        class="flex-[1.5] py-3 bg-app-primary text-black font-black uppercase tracking-widest text-[11px] rounded-xl hover:scale-[1.02] active:scale-95 transition-all disabled:opacity-50 disabled:scale-100 flex items-center justify-center gap-2 shadow-lg shadow-app-primary/20"
+                    >
+                        {#if isSimulating}
+                            {t('simulating_laps')}
+                        {:else if isPracticeLocked}
+                            {isSaturdayAfter1PM ? "PRACTICE EXPIRED" : "QUALY STARTED"}
+                        {:else}
+                            {t('start_practice')}
+                        {/if}
                     </button>
                 </div>
             </div>

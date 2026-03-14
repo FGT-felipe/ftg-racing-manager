@@ -15,10 +15,19 @@ export function createRaceService() {
             setup: any,
             circuit: any,
             carStats: any = { aero: 1, powertrain: 1, chassis: 1 },
-            weather: string = "Sunny"
+            weather: string = "Sunny",
+            managerRole: string = ""
         ): { lapTime: number, isCrashed: boolean, driverFeedback: string[], tyreFeedback: string[], setupConfidence: number } {
             const ideal = circuit.idealSetup;
             const s = carStats;
+            
+            // Manager: Ex-Driver (+5 feedback bonus)
+            const baseFeedback = driver.stats?.feedback || 50;
+            const effectiveFeedback = managerRole === 'ex_driver' ? baseFeedback + 5 : baseFeedback;
+
+            // Manager: Engineer (-10% tyre wear penalty reduction - reflected in feedback quality)
+            // (Tyre wear isn't directly simulated here but we can add feedback)
+            const tyreWearPenaltyMod = managerRole === 'engineer' ? 0.9 : 1.0;
 
             // Setup penalty
             const clamp = (v: number, lo: number, hi: number) => Math.min(Math.max(v, lo), hi);
@@ -29,7 +38,7 @@ export function createRaceService() {
             let penalty = 0;
             const driverFeedback: string[] = [];
             const tyreFeedback: string[] = [];
-            const feedbackStat = (driver.stats?.feedback || 50) / 100.0; // Standardize to 0-1 for logic below
+            const feedbackStat = effectiveFeedback / 100.0; // Standardize to 0-1 for logic below
 
             const gap = (a: number, b: number) => Math.abs(a - b);
             

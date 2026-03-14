@@ -65,7 +65,7 @@ export function createFacilityStore() {
             let price = this.getUpgradePrice(type, facility.level);
 
             // Apply discounts based on role
-            if (profile?.role === 'businessAdmin' || profile?.role === 'bureaucrat') {
+            if (profile?.role === 'business' || profile?.role === 'bureaucrat') {
                 price = Math.round(price * 0.9);
             }
 

@@ -42,7 +42,7 @@ Lógica determinista ejecutada en el backend para garantizar integridad.
     *   **Neumáticos**: La lluvia añade **5.0s** de penalización extra por vuelta si no se usan neumáticos `Wet`. Los neumáticos `Wet` en seco penalizan **3.0s**.
     *   **Especialistas (Rain Master)**: Los pilotos con el rasgo `rainMaster` reciben un bono de ritmo (`df -0.015`) en sesiones de lluvia.
 *   **Parc Fermé**: No se aplica si la sesión de Clasificación es con lluvia.
-*   **Regla de Neumáticos de Salida**: Si la clasificación fue con lluvia, se anula la obligación de empezar la carrera con el neumático de la mejor vuelta. El manager tiene libre elección para la carrera (si esta es en seco).
+*   **Regla de Neumáticos de Salida (Qualy Wet -> Race Dry)**: Si la clasificación fue con lluvia (`weatherQualifying` incluye 'rain'/'wet'), se anula la obligación de empezar la carrera con el neumático de la mejor vuelta. El manager tiene libre elección para la carrera (si esta es en seco). En la UI, esto se refleja como "Elección Libre" frente a "Bloqueado por Qualy".
 *   **Excepción de Compuestos**: En carreras con lluvia, no es obligatorio usar el compuesto `Hard`.
 
 ### Estrategia y Riesgo
@@ -81,6 +81,10 @@ Sistema de progresión basado en XP acumulado.
 *   **Eventos de Crisis**: 15% de probabilidad semanal de evento negativo (Falta de foco, fatiga) si no hay crecimiento.
 *   **Especialidades**: Un piloto de academia solo puede desbloquear una especialidad (Rainmaster, etc.) si su `Base Skill` es >= 8.
 *   **Recuperación Física**: Los pilotos recuperan **+1.5%** de Fitness cada día a medianoche.
+*   **Generación de Candidatos (Scouting)**:
+    *   Toda sesión de scouting genera siempre **2 candidatos en simultáneo**.
+    *   Distribución paritaria garantizada: **1 Hombre y 1 Mujer** por sesión.
+    *   **Escalado por Nivel**: El nivel de la academia define el rango de estrellas inicial (Nivel 1: ~1.5 estrellas actuales, ~3.5 potenciales).
 
 ---
 
@@ -89,3 +93,18 @@ Sistema de progresión basado en XP acumulado.
 *   **Resolución**: Al finalizar, el mejor postor recibe al piloto y el vendedor el dinero.
 *   **Contratos Post-Venta**: Todo piloto vendido resetea su contrato a **1 año**.
 *   **Limpieza**: Los pilotos generados por el sistema que no reciben pujas en 24h son eliminados para mantener el pool fresco.
+
+---
+
+## 7. Configuración de Carrera (Race Setup)
+*   **Best Setup**: El sistema guarda automáticamente la configuración (`CarSetup`) de la mejor vuelta obtenida durante las sesiones de práctica. Esta configuración puede ser recuperada en la pestaña de Estrategia de Carrera mediante el botón "Best Setup".
+*   **Preconfiguración**: Al iniciar la configuración de carrera, el sistema precarga el setup de Clasificación o Práctica si no existe una estrategia guardada previamente.
+*   **Flexibilidad**: A diferencia de Clasificación (Parc Fermé), el manager tiene libertad total para ajustar los parámetros aerodinámicos y mecánicos antes del inicio oficial del Gran Premio.
+
+---
+
+## 8. Dashboard: Preparación de Carrera (Race Prep)
+*   **Lógica de Preparación**: El indicador de "Readiness" en el dashboard se calcula en base a las tareas críticas del fin de semana.
+*   **Setups de Carrera**: Este ítem se marca como completado (`isComplete`) únicamente cuando ambos pilotos principales tienen guardada una **Estrategia de Carrera** (pestaña Race Setup). Esto elimina la dependencia de completar sesiones previas (Práctica/Qualy) para ver el indicador en verde.
+*   **Patrocinadores**: Requiere que el equipo tenga al menos un contrato de patrocinio activo para ser marcado como completado.
+*   **Instalaciones (Opcional)**: Informa sobre el estado de las infraestructuras. Actualmente se considera completado por defecto si el equipo es válido.
