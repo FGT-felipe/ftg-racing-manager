@@ -7,6 +7,9 @@
         AlertCircle,
         Lock,
         Activity,
+        Sun,
+        Cloud,
+        CloudRain,
     } from "lucide-svelte";
     import { teamStore } from "$lib/stores/team.svelte";
     import { driverStore } from "$lib/stores/driver.svelte";
@@ -53,6 +56,13 @@
             if (!stillExists) selectedDriverId = drivers[0].id;
         }
     });
+    
+    // Auto-switch tabs if current one becomes locked
+    $effect(() => {
+        if (isPracticeLocked && activeTab === "practice") {
+            activeTab = "qualy";
+        }
+    });
 
     let selectedDriver = $derived(
         drivers?.find((d: any) => d.id === selectedDriverId) || drivers?.[0],
@@ -66,15 +76,48 @@
         );
     });
 
+    let driverQualyAttempts = $derived.by(() => {
+        if (!selectedDriverId) return 0;
+        return (
+            teamStore.value.team?.weekStatus?.driverSetups?.[selectedDriverId]
+                ?.qualifyingAttempts || 0
+        );
+    });
+
+    let isSaturdayAfter1PM = $derived.by(() => {
+        try {
+            const now = new Date();
+            const bogota = new Intl.DateTimeFormat('en-US', {
+                timeZone: 'America/Bogota',
+                weekday: 'long',
+                hour: 'numeric',
+                hour12: false
+            });
+            const parts = bogota.formatToParts(now);
+            const weekday = parts.find(p => p.type === 'weekday')?.value;
+            const hourValue = parts.find(p => p.type === 'hour')?.value;
+            const hour = parseInt(hourValue || '0');
+            
+            return weekday === 'Saturday' && hour >= 13;
+        } catch (e: any) {
+            console.error('[GaragePanel] COT check error:', e.message);
+            return false;
+        }
+    });
+
+    let isPracticeLocked = $derived(driverQualyAttempts > 0 || isSaturdayAfter1PM);
+
     let isQualyLocked = $derived.by(() => {
         if (!selectedDriver) return true;
         if (selectedDriver.role === "Reserve") return true;
+        if (isSaturdayAfter1PM) return false;
         return driverPracticeLaps === 0;
     });
 
     let isRaceLocked = $derived.by(() => {
         if (!selectedDriver) return true;
         if (selectedDriver.role === "Reserve") return true;
+        if (isSaturdayAfter1PM) return false;
         return driverPracticeLaps === 0;
     });
 
@@ -88,6 +131,22 @@
         if (fitness >= 80) return "text-emerald-400";
         if (fitness >= 40) return "text-yellow-400";
         return "text-red-400";
+    }
+
+    function getWeatherIcon(condition: string) {
+        if (!condition) return Sun;
+        const c = condition.toLowerCase();
+        if (c.includes("rain") || c.includes("wet")) return CloudRain;
+        if (c.includes("cloud")) return Cloud;
+        return Sun;
+    }
+
+    function getWeatherColor(condition: string) {
+        if (!condition) return "text-yellow-400";
+        const c = condition.toLowerCase();
+        if (c.includes("rain") || c.includes("wet")) return "text-blue-400";
+        if (c.includes("cloud")) return "text-slate-400";
+        return "text-yellow-400";
     }
 </script>
 
@@ -193,10 +252,15 @@
             <button
                 id="practice-card"
                 class="flex flex-col p-4 rounded-xl border transition-all text-left group min-h-[110px] justify-between relative overflow-hidden
-                {activeTab === 'practice'
-                    ? 'bg-app-primary text-app-primary-foreground border-app-primary shadow-[0_0_20px_rgba(197,160,89,0.2)]'
-                    : 'bg-app-surface border-app-border hover:border-app-border'}"
-                onclick={() => (activeTab = "practice")}
+                {isPracticeLocked
+                    ? 'bg-app-text/50 border-app-border cursor-not-allowed grayscale'
+                    : activeTab === 'practice'
+                      ? 'bg-app-primary text-app-primary-foreground border-app-primary shadow-[0_0_20px_rgba(197,160,89,0.2)]'
+                      : 'bg-app-surface border-app-border hover:border-app-border'}"
+                onclick={() => {
+                    if (!isPracticeLocked) activeTab = "practice";
+                }}
+                disabled={isPracticeLocked}
             >
                 <div class="relative z-10">
                     <div
@@ -210,6 +274,18 @@
                             class="text-[9px] font-black uppercase tracking-[0.2em] font-heading"
                             >Free Practice</span
                         >
+                        {#if nextEvent?.weatherPractice}
+                            {@const Icon = getWeatherIcon(nextEvent.weatherPractice)}
+                            <div class="ml-auto flex items-center gap-1.5 px-2 py-1 bg-black/5 rounded-lg border border-black/5">
+                                <Icon 
+                                    size={18} 
+                                    class={getWeatherColor(nextEvent.weatherPractice)}
+                                />
+                                <span class="text-[10px] font-black uppercase tracking-widest {activeTab === 'practice' ? 'text-black/60' : 'text-app-text/60'}">
+                                    {nextEvent.weatherPractice}
+                                </span>
+                            </div>
+                        {/if}
                     </div>
                     <h3
                         class="text-base font-heading font-black uppercase italic {activeTab ===
@@ -228,7 +304,18 @@
                     >
                         {t('session_laps', { n: driverPracticeLaps })}
                     </div>
-                {#if activeTab === "practice"}
+                {#if isPracticeLocked}
+                    <div
+                        class="absolute inset-0 flex flex-col items-center justify-center bg-app-text/60 z-20 backdrop-blur-[1px] p-2 text-center"
+                    >
+                        <Lock size={16} class="text-red-500 mb-1" />
+                        <span
+                            class="text-[8px] font-black uppercase tracking-widest text-red-500 max-w-[100px]"
+                        >
+                            {isSaturdayAfter1PM ? "PRACTICE EXPIRED (SAT 1PM)" : "QUALY STARTED - LOCKED"}
+                        </span>
+                    </div>
+                {:else if activeTab === "practice"}
                     <div class="absolute -bottom-1 -right-1 opacity-10">
                         <Timer size={50} />
                     </div>
@@ -262,6 +349,18 @@
                             class="text-[9px] font-black uppercase tracking-[0.2em] font-heading"
                             >Qualifying</span
                         >
+                        {#if nextEvent?.weatherQualifying}
+                            {@const Icon = getWeatherIcon(nextEvent.weatherQualifying)}
+                            <div class="ml-auto flex items-center gap-1.5 px-2 py-1 bg-white/5 rounded-lg border border-white/5">
+                                <Icon 
+                                    size={18} 
+                                    class={getWeatherColor(nextEvent.weatherQualifying)}
+                                />
+                                <span class="text-[10px] font-black uppercase tracking-widest text-app-text/60">
+                                    {nextEvent.weatherQualifying}
+                                </span>
+                            </div>
+                        {/if}
                     </div>
                     <h3
                         class="text-base font-heading font-black uppercase italic {isQualyLocked
@@ -333,6 +432,18 @@
                             class="text-[9px] font-black uppercase tracking-[0.2em] font-heading"
                             >Race Preparation</span
                         >
+                        {#if nextEvent?.weatherRace}
+                            {@const Icon = getWeatherIcon(nextEvent.weatherRace)}
+                            <div class="ml-auto flex items-center gap-1.5 px-2 py-1 bg-white/5 rounded-lg border border-white/5">
+                                <Icon 
+                                    size={18} 
+                                    class={getWeatherColor(nextEvent.weatherRace)}
+                                />
+                                <span class="text-[10px] font-black uppercase tracking-widest text-app-text/60">
+                                    {nextEvent.weatherRace}
+                                </span>
+                            </div>
+                        {/if}
                     </div>
                     <h3
                         class="text-base font-heading font-black uppercase italic {isRaceLocked

@@ -18,7 +18,12 @@
     - `defensive`: `lt_delta: +0.01`, `crash_prob: 0.0005`, `fuel: 0.85x`, `wear: 0.75x`
 - **Tire Wear Penalty**: `(wear/100)^2 * 8.0s`
 - **Fuel Weight Penalty**: `(fuel/100) * 1.5s`
-- **Mandatory Hard Rule**: `+35.0s` penalty if `Hard` compound count == 0 on dry track.
+- **Mandatory Hard Rule**: `+35.0s` penalty if `Hard` compound count == 0 on dry track. **Waived if Race is wet.**
+- **Rain Logic**:
+    - **Surface Penalty**: Every wet session adds a base `+1.5s` penalty (Even with correct tyres).
+    - **Rain Master Bonus**: Drivers with `rainMaster` trait get a `df -0.015` (improved pace) modifier in wet sessions.
+    - **Parc Fermé**: Disabled if Qualy session is wet.
+    - **Starting Tyres**: The "Best Q2 Lap tyre" rule is waived if Qualy was wet. Managers can choose starting compound for a dry race.
 
 ## 3. Financial & Economic Cycles (Monday 00:00 UTC)
 - **Salary Formula**: `AnnualSalary / 52` (Weekly deduction).

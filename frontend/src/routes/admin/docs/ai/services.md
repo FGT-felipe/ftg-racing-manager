@@ -29,7 +29,9 @@ This document defines the interface and behaviors of core services for automated
 - **Function**: `simulatePracticeRun(circuit, team, driver, setup)` -> `PracticeRunResult`.
 - **Algorithm**: Deterministic lap time with Gaussian noise.
 - **Feedback Generation**: Derived from `setup_gap` vs `driver.feedback_skill`.
-- **State Writes**: Updates `weekStatus.driverSetups.{id}.practice` for persistence.
+- **Setup Hints**: Genera rangos visuales dinámicos. Un piloto con alta `Adaptability` proporciona rangos más estrechos y precisos.
+- **Qualifying Integration**: Per-driver `lastQualyResult` persists setup hints and allows fallback to `practice` results for managers to optimize during qualifying attempts.
+- **State Writes**: Updates `weekStatus.driverSetups.{id}.practice` or `qualifying` for persistence.
 
 ## 3. System Administration
 ### `AdminService`

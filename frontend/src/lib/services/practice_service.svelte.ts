@@ -1,6 +1,6 @@
 import { db } from "../firebase/config";
 import { collection, addDoc, doc, updateDoc, increment, serverTimestamp } from "firebase/firestore";
-import { type Driver, type Team, type CarSetup } from "../types";
+import { type Driver, type Team, type CarSetup, DriverTrait } from "../types";
 import { type CircuitProfile } from "./circuit_service.svelte";
 
 export interface SetupHint {
@@ -130,9 +130,17 @@ class PracticeService {
         const isWet = weatherOverride?.toLowerCase().includes('rain') || weatherOverride?.toLowerCase().includes('wet');
 
         if (isWet) {
+            // Base wet surface penalty: sessions in rain are always slower
+            tyreDelta += 1.5;
+
             if (setup.tyreCompound === 'wet') {
-                tyreDelta = -0.3;
+                tyreDelta -= 0.3;
                 tyreFeedback.push("Wets are working well.");
+                
+                // Rain Master trait bonus
+                if (driver.traits && driver.traits.includes(DriverTrait.rainMaster)) {
+                    driverFactor -= 0.015;
+                }
             } else {
                 tyreDelta = 8.0;
                 setupPenalty += 5.0;

@@ -36,10 +36,12 @@
         Smile,
         MessageSquare,
         Target,
+        Activity,
     } from "lucide-svelte";
     import { onMount, untrack } from "svelte";
     import { fade, slide } from "svelte/transition";
     import DriverAvatar from "$lib/components/DriverAvatar.svelte";
+    import Typewriter from "$lib/components/ui/Typewriter.svelte";
     import { t, type TranslationKey } from "$lib/utils/i18n";
 
     let { driverId = null } = $props();
@@ -64,6 +66,7 @@
     let lastResult = $state<PracticeRunResult | null>(null);
     let pitBoardMessages = $state<string[]>([]);
     let lapsToRun = $state(1);
+    let driverDialogue = $state<string | null>(null);
     let competitorTimes = $state<Array<{ teamName: string; driverName: string; time: number | null; tyre: string | null; totalLaps: number; driverId: string }>>([]);
     let telemetryTab = $state<'history' | 'standings'>('history');
 
@@ -206,7 +209,8 @@
         const sessionLapTimes: number[] = [];
         let bestSessionResult: PracticeRunResult | null = null;
         
-        pitBoardMessages = [`${currentDriver.name} heads out for ${lapsToRun} ${lapsToRun === 1 ? 'lap' : 'laps'}.`];
+        driverDialogue = t('leaving_pits');
+        pitBoardMessages = [driverDialogue];
         
         try {
             for (let i = 0; i < lapsToRun; i++) {
@@ -248,7 +252,8 @@
 
             // Save ONCE per session with aggregated results
             if (bestSessionResult) {
-                pitBoardMessages = ["Driver returning to pits...", ...pitBoardMessages].slice(0, 50);
+                driverDialogue = t('returning_pits_good');
+                pitBoardMessages = [driverDialogue, ...pitBoardMessages].slice(0, 50);
                 
                 // Add a small "debrief" delay before showing the final result with new feedback
                 await new Promise((r) => setTimeout(r, 1000));
@@ -286,6 +291,7 @@
             }
         } catch (e) { console.error(e); }
         isSimulating = false;
+        setTimeout(() => { driverDialogue = null; }, 5000);
     }
 
     async function copyToQualifying() {
@@ -360,9 +366,17 @@
                                     <div class="w-1.5 h-1.5 rounded-full bg-app-primary animate-ping"></div>
                                     {t('simulating_current_lap') || 'Simulating...'}
                                 </div>
-                            {/if}
-
-                            {#if lastResult}
+                                {#if driverDialogue}
+                                    <div in:fade class="bg-app-text/5 rounded-2xl rounded-tl-none p-4 relative border border-white/5 mb-4 shadow-lg shadow-app-primary/5">
+                                        <div class="absolute -left-2 top-0 w-2 h-2 bg-app-text/5 border-l border-t border-white/5" style="clip-path: polygon(100% 0, 0 0, 100% 100%);"></div>
+                                        <p class="text-[11px] font-bold italic leading-relaxed text-app-text/90 flex gap-2">
+                                            <span class="text-app-primary">“</span>
+                                            <Typewriter text={driverDialogue} />
+                                            <span class="text-app-primary">”</span>
+                                        </p>
+                                    </div>
+                                {/if}
+                            {:else if lastResult}
                                 <div in:fade class="bg-app-text/5 rounded-2xl rounded-tl-none p-4 relative border border-white/5">
                                     <div class="absolute -left-2 top-0 w-2 h-2 bg-app-text/5 border-l border-t border-white/5" style="clip-path: polygon(100% 0, 0 0, 100% 100%);"></div>
                                     <div class="space-y-2">
@@ -370,21 +384,25 @@
                                             {#each lastResult.driverFeedback as msg}
                                                 <p class="text-[11px] font-bold italic leading-relaxed text-app-text/90 flex gap-2">
                                                     <span class="text-app-primary">“</span>
-                                                    {msg}
+                                                    <Typewriter text={msg} />
                                                     <span class="text-app-primary">”</span>
                                                 </p>
                                             {/each}
                                         {:else}
                                             <p class="text-[11px] font-bold italic leading-relaxed text-app-text/60 flex gap-2">
                                                 <span class="text-app-primary">“</span>
-                                                The car feels good so far. I don't have any major complaints about the current balance.
+                                                <Typewriter text={t('balance_good')} />
                                                 <span class="text-app-primary">”</span>
                                             </p>
                                         {/if}
                                     </div>
                                 </div>
                             {:else if !isSimulating}
-                                <p class="text-[11px] font-black italic text-app-text/20 uppercase tracking-widest">{t('awaiting_data') || 'Awaiting track data...'}</p>
+                                <p class="text-[11px] font-black italic text-app-text/20 uppercase tracking-widest leading-relaxed flex gap-2">
+                                    <span class="text-app-primary/40">“</span>
+                                    <Typewriter text={t('awaiting_orders')} />
+                                    <span class="text-app-primary/40">”</span>
+                                </p>
                             {/if}
                         </div>
                     </div>
@@ -485,61 +503,124 @@
 
     <!-- RIGHT: Telemetry & Standings (5 Cols) -->
     <div class="lg:col-span-5 space-y-5">
-        <!-- GLOBAL LEADERBOARD CARD -->
-        <div class="bg-app-surface border border-app-border rounded-xl p-4 shadow-xl">
-            <div class="flex items-center justify-between mb-4">
-                <span class="text-[10px] font-black text-app-primary uppercase tracking-widest italic">{t('standings')}</span>
-                <div class="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></div>
-            </div>
-            
-            <div class="grid grid-cols-12 gap-2 px-1 mb-2 text-[8px] font-black uppercase text-app-text/20 tracking-tighter">
-                <div class="col-span-1">#</div>
-                <div class="col-span-4 text-left">{t('driver')}</div>
-                <div class="col-span-3 text-right">{t('best_lap')}</div>
-                <div class="col-span-2 text-right">{t('total_laps')}</div>
-                <div class="col-span-2 text-right">{t('gap')}</div>
+        <!-- Global Standings Table -->
+        <div
+            class="bg-app-surface border border-app-border rounded-2xl flex flex-col overflow-hidden shadow-xl"
+        >
+            <div
+                class="bg-app-primary/10 border-b border-app-primary/20 px-4 py-3 flex items-center justify-between"
+            >
+                <div class="flex items-center gap-2">
+                    <Flag size={14} class="text-app-primary" />
+                    <span
+                        class="text-[10px] font-black uppercase tracking-widest text-app-primary"
+                        >{t('standings')}</span
+                    >
+                </div>
+                <button 
+                    onclick={refreshStandings}
+                    class="text-[9px] font-black uppercase text-app-text/40 hover:text-app-primary transition-colors flex items-center gap-1"
+                >
+                    <Activity size={10} />
+                    Sync
+                </button>
             </div>
 
-            <div class="space-y-1.5 max-h-[260px] overflow-y-auto custom-scrollbar pr-1">
-                {#if globalStandings.length === 0}
-                    <p class="text-[10px] text-app-text/20 italic p-4 text-center">{t('waiting_competitors')}</p>
+            <!-- Table Header -->
+            <div class="flex px-4 py-2 bg-app-text/5 border-b border-app-border">
+                <span class="w-8 text-[9px] font-black text-app-text/30 uppercase"
+                    >Pos</span
+                >
+                <span
+                    class="flex-1 text-[9px] font-black text-app-text/30 uppercase"
+                    >{t('driver')} / {t('team')}</span
+                >
+                <span
+                    class="w-12 text-[9px] font-black text-app-text/30 uppercase text-center"
+                    >Tyre</span
+                >
+                <span
+                    class="w-20 text-[9px] font-black text-app-text/30 uppercase text-right"
+                    >{t('best_lap')}</span
+                >
+                <span
+                    class="w-16 text-[9px] font-black text-app-text/30 uppercase text-right"
+                    >{t('gap')}</span
+                >
+            </div>
+
+            <!-- Table Body -->
+            <div class="flex-1 overflow-y-auto custom-scrollbar p-2 max-h-[300px]">
+                {#if competitorTimes.length === 0}
+                    <div class="p-8 text-center opacity-20">
+                        <Activity size={24} class="mx-auto mb-2" />
+                        <p class="text-[9px] font-black uppercase tracking-widest text-app-text">{t('waiting_competitors')}</p>
+                    </div>
                 {:else}
-                    {#each globalStandings as s}
-                        {@const isPlayerDriver = teamDrivers.some(d => d.id === s.driverId)}
-                        {@const hasTime = s.time !== null}
-                        {@const isLeader = s.position === 1 && hasTime}
-                        <div class="grid grid-cols-12 gap-2 px-2 py-2 rounded-lg border transition-all items-center 
-                            {isLeader ? 'bg-app-primary border-app-primary text-black' : 
-                            isPlayerDriver ? (hasTime ? 'bg-app-primary/10 border-app-primary/30' : 'bg-app-primary/5 border-app-primary/10 opacity-70') : 
-                            (hasTime ? 'bg-app-text/2 border-transparent' : 'bg-app-text/2 border-transparent opacity-40 grayscale')}">
-                            
-                            <div class="col-span-1 text-[9px] font-black {isLeader ? 'text-black' : (s.position <= 3 && hasTime ? 'text-app-primary' : 'text-app-text/30')}">P{s.position}</div>
-                            
-                            <div class="col-span-4 flex flex-col min-w-0">
-                                <span class="text-[9px] font-bold truncate {isLeader ? 'text-black' : 'text-app-text'}">{s.driverName}</span>
-                                <span class="text-[7px] font-black uppercase {isLeader ? 'text-black/50' : 'opacity-30'} truncate">{s.teamName}</span>
+                    {#each globalStandings as row}
+                        <div
+                            class="flex items-center px-2 py-2.5 rounded-lg {row.driverId ===
+                            driverId
+                                ? 'bg-app-primary/10 border border-app-primary/20'
+                                : 'hover:bg-app-text/5'} transition-colors group"
+                        >
+                            <span
+                                class="w-8 text-xs font-black {row.time !== null
+                                    ? row.position <= 3
+                                        ? 'text-app-primary'
+                                        : 'text-app-text/80'
+                                    : 'text-app-text/30'}"
+                            >
+                                {row.position}.
+                            </span>
+
+                            <div class="flex-1 min-w-0">
+                                <div class="flex items-center gap-2">
+                                    <span
+                                        class="text-xs font-bold text-app-text truncate {row.driverId ===
+                                        driverId
+                                            ? 'text-app-primary'
+                                            : 'group-hover:text-app-primary/80 transition-colors'}"
+                                    >
+                                        {row.driverName}
+                                    </span>
+                                </div>
+                                <div class="text-[9px] font-medium text-app-text/40 uppercase tracking-tight">
+                                    {row.teamName}
+                                </div>
                             </div>
-                            
-                            <div class="col-span-3 text-right flex items-center justify-end gap-2">
-                                <span class="text-[10px] font-black font-mono {isLeader ? 'text-black' : 'text-app-text'}">{hasTime ? formatTime(s.time!) : '--:--.---'}</span>
-                                {#if s.tyre}
-                                    <div class="w-4 h-4 rounded-full border flex items-center justify-center text-[8px] font-black 
-                                        {s.tyre === 'soft' ? 'bg-red-500 border-red-700 text-white' : 
-                                         s.tyre === 'medium' ? 'bg-yellow-500 border-yellow-700 text-black' : 
-                                         s.tyre === 'hard' ? 'bg-white border-gray-300 text-black' : 
-                                         'bg-blue-500 border-blue-700 text-white'} {isLeader ? 'ring-1 ring-black/20' : ''}"
-                                         title={s.tyre.toUpperCase()}>
-                                        {s.tyre[0].toUpperCase()}
-                                    </div>
+
+                            <div class="w-12 flex justify-center">
+                                {#if row.tyre}
+                                    <div
+                                        class="w-2.5 h-2.5 rounded-full {row.tyre ===
+                                        'soft'
+                                            ? 'bg-red-500 shadow-[0_0_8px_rgba(239,68,68,0.4)]'
+                                            : row.tyre === 'medium'
+                                              ? 'bg-yellow-500 shadow-[0_0_8px_rgba(234,179,8,0.4)]'
+                                              : row.tyre === 'hard'
+                                                ? 'bg-zinc-100 shadow-[0_0_8px_rgba(255,255,255,0.2)]'
+                                                : 'bg-blue-500 shadow-[0_0_8px_rgba(59,130,246,0.4)]'}"
+                                    ></div>
                                 {:else}
-                                    <div class="w-4 h-4 rounded-full border border-app-text/10 bg-app-text/5"></div>
+                                    <div class="w-2.5 h-2.5 rounded-full bg-app-text/10 overflow-hidden"></div>
                                 {/if}
                             </div>
-                            
-                            <div class="col-span-2 text-right text-[9px] font-black {isLeader ? 'text-black/40' : 'text-app-text/40'}">{s.totalLaps}</div>
-                            
-                            <div class="col-span-2 text-right text-[8px] font-black {isLeader || (s.gap === 0 && hasTime) ? 'text-black' : 'text-app-text/30'} font-mono">
-                                {s.gap === null ? '--' : s.gap === 0 ? 'LEADER' : `+${s.gap.toFixed(3)}`}
+
+                            <div class="w-20 text-right">
+                                <span
+                                    class="text-xs font-black italic {row.time !== null
+                                        ? 'text-app-text'
+                                        : 'text-app-text/20'}"
+                                >
+                                    {formatTime(row.time ?? 0)}
+                                </span>
+                            </div>
+
+                            <div class="w-16 text-right">
+                                <span class="text-[10px] font-bold {row.position === 1 ? 'text-app-primary/40' : 'text-app-text/40'}">
+                                    {row.position === 1 ? 'Interval' : row.gap ? `+${row.gap.toFixed(3)}s` : '--'}
+                                </span>
                             </div>
                         </div>
                     {/each}
@@ -547,48 +628,35 @@
             </div>
         </div>
 
-        <!-- PIT BOARD (Status) -->
-        <div class="bg-app-surface border border-app-border rounded-xl p-5 shadow-xl flex flex-col h-[180px]">
-            <div class="flex items-center justify-between mb-3">
-                <span class="text-[10px] font-black text-emerald-400 uppercase tracking-widest italic">{t('pit_board')}</span>
-                <div class="text-[11px] font-black italic {isSimulating ? 'text-emerald-400' : 'text-app-text/40'}">
-                    {isSimulating ? t('track_status_live') || 'LIVE' : lastResult ? t('garage_status_debrief') || 'DEBRIEF' : t('track_status_pits_open') || 'OPEN'}
+        <!-- Pit Board System -->
+        <div class="bg-app-surface border border-app-border rounded-2xl flex flex-col h-[180px] overflow-hidden shadow-xl">
+            <div class="bg-app-surface/40 px-3 py-2 border-b border-app-border/40 flex items-center justify-between">
+                <div class="flex items-center gap-2">
+                    <div class="w-1.5 h-1.5 rounded-full bg-app-primary animate-pulse"></div>
+                    <span class="text-[9px] font-black uppercase tracking-widest text-app-text/60">{t('pit_board')}</span>
                 </div>
-            </div>
-
-            <div class="flex-1 overflow-y-auto custom-scrollbar space-y-1.5 no-scrollbar">
-                {#if isSimulating || pitBoardMessages.length > 0}
-                    {#each pitBoardMessages as msg, i}
-                        <div in:fade={{duration: 200}} class="text-[10px] font-mono leading-tight {i === 0 ? 'text-emerald-400 font-bold' : 'text-app-text/40'}">
-                            <span class="opacity-30">[{new Date().toLocaleTimeString([], {hour12: false, minute:'2-digit', second:'2-digit'})}]</span> {msg}
-                        </div>
-                    {/each}
-                {:else if lastResult}
-                    <div class="flex items-end justify-between h-full">
-                        <div class="space-y-1">
-                            <div class="flex items-center gap-3">
-                                <p class="text-[24px] font-black italic text-app-text font-mono leading-none">{formatTime(lastResult.lapTime)}</p>
-                                {#if lastResult.setupUsed?.tyreCompound}
-                                    <div class="w-5 h-5 rounded-full border flex items-center justify-center text-[10px] font-black 
-                                        {lastResult.setupUsed.tyreCompound === 'soft' ? 'bg-red-500 border-red-700 text-white' : 
-                                        lastResult.setupUsed.tyreCompound === 'medium' ? 'bg-yellow-500 border-yellow-700 text-black' : 
-                                        lastResult.setupUsed.tyreCompound === 'hard' ? 'bg-white border-gray-300 text-black' : 
-                                        'bg-blue-500 border-blue-700 text-white'} shadow-sm">
-                                        {lastResult.setupUsed.tyreCompound[0].toUpperCase()}
-                                    </div>
-                                {/if}
-                            </div>
-                            <p class="text-[9px] font-bold text-app-text/30 uppercase tracking-tighter">
-                                {t('last_outing_result')} • <span class="{getConfidenceColor(lastResult.setupConfidence)}">{t('confidence_label')} {(lastResult.setupConfidence*100).toFixed(0)}%</span>
-                            </p>
-                        </div>
-                        {#if lastResult.isCrashed}
-                            <div class="px-2 py-1 rounded bg-red-500 text-white text-[9px] font-black uppercase animate-bounce">{t('accident_label')}</div>
-                        {/if}
+                {#if lastResult?.isCrashed}
+                    <div class="flex items-center gap-1 text-red-500 animate-[pulse_1s_infinite]">
+                        <AlertTriangle size={12} />
+                        <span class="text-[9px] font-black uppercase tracking-tighter">{t('accident_label')}</span>
                     </div>
                 {:else}
-                    <div class="flex items-center justify-center h-full opacity-10">
-                        <Flag size={32} />
+                    <span class="text-[9px] font-black uppercase text-app-primary/60">Box. Box. Box.</span>
+                {/if}
+            </div>
+            
+            <div class="flex-1 bg-black/40 p-3 font-mono text-[11px] space-y-1.5 overflow-y-auto custom-scrollbar no-scrollbar">
+                {#if isSimulating || pitBoardMessages.length > 0}
+                    {#each pitBoardMessages as msg, i}
+                        <div in:fade={{duration: 200}} class="flex gap-2 {i === 0 ? 'text-app-primary font-bold' : 'text-app-text/40'}">
+                            <span class="opacity-30">[{new Date().toLocaleTimeString([], {hour12: false, minute:'2-digit', second:'2-digit'})}]</span>
+                            <span>{msg}</span>
+                        </div>
+                    {/each}
+                {:else}
+                    <div class="h-full flex flex-col items-center justify-center text-app-text/20 italic">
+                        <Navigation size={24} class="mb-2 opacity-20" />
+                        <span>Awaiting Session Start</span>
                     </div>
                 {/if}
             </div>

@@ -22,6 +22,7 @@ Gestiona el sistema de negociación de patrocinios mediante una máquina de esta
 Implementa el motor de física simplificado para las sesiones de práctica.
 *   **Feedback**: Traduce la desviación del setup ideal en narrativa técnica (ej. "Understeer" vs "Oversteer"). La precisión del feedback escala con la habilidad de `Feedback` del piloto.
 *   **Setup Hints**: Genera rangos visuales dinámicos. Un piloto con alta `Adaptability` proporciona rangos más estrechos y precisos.
+*   **Gestión de Qualifying**: Persiste los `setupHints` en el `lastQualyResult` y permite el fallback de hints desde las sesiones de práctica. Incluye selector de agresividad (`Driving Aggression`) que impacta directamente en el tiempo de vuelta y riesgo de accidente.
 
 ### D. StaffService (Gestión de Personal)
 Orquestador de recursos humanos y optimización de rendimiento físico.

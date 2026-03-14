@@ -17,3 +17,8 @@
 - **Semantic HTML**: Use `<header>`, `<main>`, `<aside>`.
 - **Interactivity**: All buttons must have unique `id` and `aria-label` for automated testing.
 - **Dynamic Meta**: Title updates via `<svelte:head>` based on active route.
+## Racing Grid Standards
+- **System**: 12-column grid.
+- **Ratio**: `7/5` (`col-span-7` Left / `col-span-5` Right).
+- **Spacing**: `gap-5` (Grid), `space-y-5` (Containers).
+- **Files**: `PracticePanel.svelte`, `QualifyingSetupTab.svelte`, `PracticeSetupTab.svelte`.

@@ -38,6 +38,13 @@ Todos los componentes deben implementar el patrón de **Props Desestructuradas**
 
 ---
 
+## 4. Estándares de Layout de Carrera
+*   **Grid System**: Las pestañas de sesión (Practice, Qualifying, Race) utilizan un sistema de 12 columnas.
+*   **Proporción 7/5**: La columna izquierda (Setup/Controls) ocupa 7 columnas (`lg:col-span-7`), mientras que la derecha (Live Classification/Telemetry) ocupa 5 (`lg:col-span-5`).
+*   **Espaciado**: Se utiliza un `gap-5` y `space-y-5` consistente para mantener una estética compacta y técnica.
+
+---
+
 ## 3. Guía de Interfaz (Design System)
 *   **Typography**: Outfit para encabezados (Legibilidad deportiva), Inter para datos tubulares (Telemetría).
 *   **Color tokens**:

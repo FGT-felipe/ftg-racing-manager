@@ -36,9 +36,14 @@ El rol del Manager define ventajas pasivas permanentes y limitaciones operativas
 Lógica determinista ejecutada en el backend para garantizar integridad.
 
 ### Reglas de Neumáticos
-*   **La Regla del Hard**: Si la pista está seca, es OBLIGATORIO usar el compuesto `Hard` al menos una vez. No hacerlo añade **35.0s** al tiempo total.
 *   **Degradación Exponencial**: El tiempo de vuelta aumenta según `(Wear/100)^2 * 8.0s`.
-*   **Efecto Clima**: La lluvia añade **5.0s** de penalización por vuelta si no se usan neumáticos `Wet`. Los neumáticos `Wet` en seco penalizan **3.0s**.
+*   **Efecto Clima**: 
+    *   **Penalización de Superficie**: Toda sesión con lluvia añade un retraso base de **+1.5s** (incluso con el neumático correcto).
+    *   **Neumáticos**: La lluvia añade **5.0s** de penalización extra por vuelta si no se usan neumáticos `Wet`. Los neumáticos `Wet` en seco penalizan **3.0s**.
+    *   **Especialistas (Rain Master)**: Los pilotos con el rasgo `rainMaster` reciben un bono de ritmo (`df -0.015`) en sesiones de lluvia.
+*   **Parc Fermé**: No se aplica si la sesión de Clasificación es con lluvia.
+*   **Regla de Neumáticos de Salida**: Si la clasificación fue con lluvia, se anula la obligación de empezar la carrera con el neumático de la mejor vuelta. El manager tiene libre elección para la carrera (si esta es en seco).
+*   **Excepción de Compuestos**: En carreras con lluvia, no es obligatorio usar el compuesto `Hard`.
 
 ### Estrategia y Riesgo
 *   **Estilo de Conducción**:
