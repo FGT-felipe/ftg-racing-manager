@@ -19,6 +19,7 @@
     import { onDestroy } from "svelte";
 
     import { circuitService } from "$lib/services/circuit_service.svelte";
+    import CountryFlag from "$lib/components/ui/CountryFlag.svelte";
 
     let nextEvent = $derived(seasonStore.nextEvent);
     let weekStatus = $derived(
@@ -137,9 +138,7 @@
                     ></div>
                 {:else if nextEvent}
                     <div class="flex items-center gap-4">
-                        <span class="text-4xl filter drop-shadow-md"
-                            >{nextEvent.flagEmoji}</span
-                        >
+                        <CountryFlag countryCode={nextEvent.countryCode} size="lg" />
                         <h2
                             class="text-4xl lg:text-5xl font-heading font-black tracking-tighter text-app-text uppercase italic"
                         >

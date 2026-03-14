@@ -2,20 +2,13 @@
     import type { Driver } from "$lib/types";
     import DriverStars from "$lib/components/DriverStars.svelte";
     import DriverAvatar from "$lib/components/DriverAvatar.svelte";
+    import CountryFlag from "$lib/components/ui/CountryFlag.svelte";
 
     let { driver, carIndex } = $props<{
         driver: Driver;
         carIndex: number;
     }>();
 
-    function getFlagEmoji(countryCode: string) {
-        if (!countryCode) return "🏁";
-        const codePoints = countryCode
-            .toUpperCase()
-            .split("")
-            .map((char) => 127397 + char.charCodeAt(0));
-        return String.fromCodePoint(...codePoints);
-    }
     const DRIVING_STATS = [
         "braking",
         "cornering",
@@ -65,9 +58,10 @@
     <div class="flex-grow min-w-0">
         <div class="flex items-center justify-between gap-2">
             <h4
-                class="text-xs font-black text-app-text uppercase truncate tracking-tight"
+                class="text-xs font-black text-app-text uppercase truncate tracking-tight flex items-center gap-1.5"
             >
-                {driver.name}
+                <CountryFlag countryCode={driver.countryCode} size="sm" />
+                <span>{driver.name}</span>
             </h4>
             <span class="text-[9px] font-bold text-app-text/30 uppercase"
                 >Car {carIndex === 0 ? "A" : "B"}</span

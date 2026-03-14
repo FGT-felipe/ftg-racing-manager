@@ -23,6 +23,7 @@
         type SponsorOffer,
         type ActiveContract,
     } from "$lib/types";
+    import CountryFlag from "$lib/components/ui/CountryFlag.svelte";
 
     let team = $derived(teamStore.value.team);
     let manager = $derived(managerStore.profile);
@@ -35,6 +36,7 @@
                   selectedSlot,
                   manager.role,
                   team?.weekStatus?.sponsorNegotiations || {},
+                  team?.sponsors || {}
               )
             : [],
     );
@@ -315,9 +317,10 @@
                                         </div>
                                         <div class="flex flex-col gap-2">
                                             <h2
-                                                class="text-5xl font-heading font-black tracking-tighter text-app-text uppercase italic"
+                                                class="text-5xl font-heading font-black tracking-tighter text-app-text flex items-center justify-center gap-4"
                                             >
-                                                {activeContract.sponsorName}
+                                                <CountryFlag countryCode={activeContract.countryCode} size="xl" />
+                                                <span class="uppercase italic">{activeContract.sponsorName}</span>
                                             </h2>
                                             <span
                                                 class="text-xs font-bold text-app-primary/60 uppercase tracking-[0.3em]"
@@ -413,8 +416,9 @@
                                                     <div
                                                         class="flex items-center gap-3"
                                                     >
+                                                        <CountryFlag countryCode={offer.countryCode} size="lg" />
                                                         <h4
-                                                            class="text-2xl font-black text-app-text uppercase tracking-tight"
+                                                            class="text-2xl font-black text-app-text uppercase tracking-tight italic"
                                                         >
                                                             {offer.name}
                                                         </h4>

@@ -24,7 +24,7 @@ export function createAuthStore() {
             return;
         }
 
-        console.log('🛡️ Auth State Changed:', firebaseUser ? `User logged in: ${firebaseUser.uid}` : 'No user');
+        console.debug('🛡️ Auth State Changed:', firebaseUser ? `User logged in: ${firebaseUser.uid}` : 'No user');
         user = firebaseUser;
         // Only flip loading flag once Firebase has resolved the session
         if (loading) {

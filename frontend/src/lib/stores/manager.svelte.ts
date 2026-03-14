@@ -66,6 +66,7 @@ export function createManagerStore() {
             firstName: string;
             lastName: string;
             nationality: string;
+            country: string;
             gender: string;
             birthDate: string;
             backgroundId: string;

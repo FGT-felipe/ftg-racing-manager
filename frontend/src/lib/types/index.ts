@@ -77,6 +77,7 @@ export interface SponsorOffer {
     weeklyBasePayment: number;
     objectiveBonus: number;
     objectiveDescription: string;
+    countryCode?: string;
     consecutiveFailuresAllowed: number;
     personality: SponsorPersonality;
     contractDuration: number;
@@ -93,6 +94,7 @@ export interface ActiveContract {
     weeklyBasePayment: number;
     objectiveBonus: number;
     objectiveDescription: string;
+    countryCode?: string;
     racesRemaining: number;
 }
 

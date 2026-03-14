@@ -14,7 +14,7 @@ const adcCredentials = {
     refresh_token: config.tokens.refresh_token,
 };
 
-const adcPath = path.join(__dirname, "_adc_temp_audit_2.json");
+const adcPath = path.join(__dirname, "_adc_temp_audit_6.json");
 fs.writeFileSync(adcPath, JSON.stringify(adcCredentials, null, 2));
 
 process.env.GOOGLE_APPLICATION_CREDENTIALS = adcPath;
@@ -25,44 +25,54 @@ admin.initializeApp({ projectId: "ftg-racing-manager" });
 const db = admin.firestore();
 
 async function audit() {
-    const tid = "team_cl_1771709065020_1"; // GBA Racing
-    const raceId = "qRM0nhyt95JGXqgxLtnT_r1"; // R1
+    let output = "";
+    const log = (msg) => {
+        console.log(msg);
+        output += msg + "\n";
+    };
 
-    console.log("Checking GBA Racing R1 results...");
-    const drivers = await db.collection("drivers").where("teamId", "==", tid).get();
-    const dIds = drivers.docs.map(d => d.id);
-    console.log("Drivers:", dIds);
-
-    const race = await db.collection("races").doc(raceId).get();
-    const rd = race.data();
-    dIds.forEach(id => {
-        const pos = rd.finalPositions ? rd.finalPositions[id] : "N/A";
-        const isDnf = (rd.dnfs || []).includes(id);
-        console.log(`Driver ${id}: Pos ${pos} | DNF: ${isDnf}`);
-    });
-
-    const team = await db.collection("teams").doc(tid).get();
-    const sponsors = team.data().sponsors || {};
-    console.log("Sponsors Objectives:");
-    Object.entries(sponsors).forEach(([slot, s]) => {
-        console.log(` - ${slot}: ${s.sponsorName} | Obj: ${s.objectiveDescription} | Bonus: ${s.objectiveBonus}`);
-    });
-
-    const txs = await db.collection("teams").doc(tid).collection("transactions")
-        .where("type", "==", "SPONSOR")
-        .get();
-    console.log(`Team has ${txs.size} SPONSOR transactions.`);
-    txs.forEach(tx => {
-        const d = tx.data();
-        if (d.description.includes("Objective")) {
-            console.log(` FOUND: ${d.description} | Date: ${d.date}`);
+    try {
+        log("Starting audit...");
+        const raceId = "qRM0nhyt95JGXqgxLtnT_r1"; // R1
+        const race = await db.collection("races").doc(raceId).get();
+        if (!race.exists) {
+            log("Race not found");
+        } else {
+            const rd = race.data();
+            log("Race ID: " + raceId);
+            log("Keys: " + Object.keys(rd).join(", "));
+            
+            if (rd.results) {
+                log("Results Keys: " + Object.keys(rd.results).join(", "));
+            }
+            
+            // Sample driver
+            const firstDriverId = Object.keys(rd.finalPositions || {})[0];
+            if (firstDriverId) {
+                 log(`Sample Driver (${firstDriverId}):`);
+                 log(` - Final Pos: ${rd.finalPositions[firstDriverId]}`);
+                 if (rd.startingPositions) log(` - Start Pos (root): ${rd.startingPositions[firstDriverId]}`);
+                 if (rd.results && rd.results.startingPositions) log(` - Start Pos (results): ${rd.results.startingPositions[firstDriverId]}`);
+                 if (rd.results && rd.results.initialGrid) log(` - Initial Grid (results): ${rd.results.initialGrid[firstDriverId]}`);
+            }
+            
+            log("Fastest Lap Driver: " + (rd.fast_lap_driver || "NOT FOUND"));
+            
+            // Check Toro Rojo
+            const trSnap = await db.collection("teams").where("name", "==", "Toro Rojo").get();
+            if (!trSnap.empty) {
+                const tr = trSnap.docs[0];
+                log("\nToro Rojo Sponsors:\n" + JSON.stringify(tr.data().sponsors, null, 2));
+            }
         }
-    });
 
-    if (fs.existsSync(adcPath)) fs.unlinkSync(adcPath);
+    } catch (e) {
+        log("AUDIT ERROR: " + e.message);
+    } finally {
+        fs.writeFileSync(path.join(__dirname, "audit_final_report.txt"), output);
+        if (fs.existsSync(adcPath)) fs.unlinkSync(adcPath);
+        process.exit(0);
+    }
 }
 
-audit().catch(e => {
-    console.error(e);
-    if (fs.existsSync(adcPath)) fs.unlinkSync(adcPath);
-});
+audit();

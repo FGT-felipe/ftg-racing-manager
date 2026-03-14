@@ -3,8 +3,7 @@ import {
     collection,
     doc,
     runTransaction,
-    serverTimestamp,
-    type DocumentReference
+    serverTimestamp
 } from 'firebase/firestore';
 import {
     SponsorTier,
@@ -13,7 +12,6 @@ import {
     type SponsorOffer,
     type ActiveContract
 } from '$lib/types';
-import { notificationStore } from '$lib/stores/notifications.svelte';
 
 export enum NegotiationStatus {
     success = 'success',
@@ -27,11 +25,64 @@ export interface NegotiationResult {
     remainingAttempts: number;
 }
 
+const SPONSOR_POOL: Record<SponsorTier, { id: string, name: string, countryCode: string }[]> = {
+    [SponsorTier.title]: [
+        { id: 'liberty_petrol', name: 'Liberty Petroleum', countryCode: 'US' },
+        { id: 'samba_bio', name: 'Samba Bio-Fuel', countryCode: 'BR' },
+        { id: 'north_star', name: 'North Star Precision', countryCode: 'CA' },
+        { id: 'empire_state', name: 'Empire State Capital', countryCode: 'US' },
+        { id: 'titans_oil', name: 'Titans Oil', countryCode: 'US' },
+        { id: 'zenith_sky', name: 'Zenith Sky', countryCode: 'GB' },
+        { id: 'global_tech', name: 'Global Tech', countryCode: '' },
+    ],
+    [SponsorTier.major]: [
+        { id: 'sol_mexico', name: 'Sol de México Logistics', countryCode: 'MX' },
+        { id: 'aconcagua_energy', name: 'Aconcagua Energy', countryCode: 'AR' },
+        { id: 'sao_paulo_stream', name: 'São Paulo Stream', countryCode: 'BR' },
+        { id: 'spark_energy', name: 'Spark Energy', countryCode: 'US' },
+        { id: 'fast_logistics', name: 'Fast Logistics', countryCode: 'DE' },
+        { id: 'pampa_gear', name: 'Pampa Gear', countryCode: 'AR' },
+        { id: 'eco_pulse', name: 'Eco Pulse', countryCode: '' },
+    ],
+    [SponsorTier.partner]: [
+        { id: 'maya_micro', name: 'Maya Microchips', countryCode: 'MX' },
+        { id: 'andes_techno', name: 'Andes Techno', countryCode: 'CL' },
+        { id: 'caribbean_surf', name: 'Caribbean Surf', countryCode: 'VE' },
+        { id: 'local_drinks', name: 'Local Drinks', countryCode: 'AR' },
+        { id: 'micro_chips', name: 'Micro Chips', countryCode: 'US' },
+        { id: 'nitro_gear', name: 'Nitro Gear', countryCode: 'BR' },
+    ]
+};
+
+const OBJECTIVES_BY_TIER: Record<SponsorTier, { desc: string, bonus: number }[]> = {
+    [SponsorTier.title]: [
+        { desc: "Race Win", bonus: 300000 },
+        { desc: "Finish Top 3", bonus: 250000 },
+        { desc: "Double Podium", bonus: 450000 },
+        { desc: "Finish Top 5", bonus: 180000 },
+    ],
+    [SponsorTier.major]: [
+        { desc: "Finish Top 5", bonus: 150000 },
+        { desc: "Finish Top 8", bonus: 110000 },
+        { desc: "Finish Top 10", bonus: 100000 },
+        { desc: "Fastest Lap", bonus: 120000 },
+        { desc: "Home Race Win", bonus: 220000 },
+    ],
+    [SponsorTier.partner]: [
+        { desc: "Finish Top 16", bonus: 50000 },
+        { desc: "Finish Race", bonus: 40000 },
+        { desc: "Improve Grid", bonus: 40000 },
+        { desc: "Overtake 3 Cars", bonus: 35000 },
+        { desc: "Home Race Win", bonus: 80000 },
+    ]
+};
+
 export class SponsorService {
     getAvailableSponsors(
         slot: SponsorSlot,
         role: string,
-        negotiations: Record<string, any>
+        negotiations: Record<string, any>,
+        activeContracts: Record<string, ActiveContract> = {}
     ): SponsorOffer[] {
         let multiplier = 1.0;
         let isAdmin = false;
@@ -48,54 +99,57 @@ export class SponsorService {
 
         const getRandomDuration = () => 4 + Math.floor(Math.random() * 7);
 
-        const createOffer = (params: {
-            id: string,
-            name: string,
-            tier: SponsorTier,
-            baseSign: number,
-            baseWeekly: number,
-            baseObj: number,
-            objDesc: string
-        }): SponsorOffer => ({
-            id: params.id,
-            name: params.name,
-            tier: params.tier,
-            signingBonus: Math.round(params.baseSign * multiplier),
-            weeklyBasePayment: Math.round(params.baseWeekly * multiplier),
-            objectiveBonus: Math.round(params.baseObj * multiplier),
-            objectiveDescription: params.objDesc,
-            personality: getRandomPersonality(),
-            contractDuration: getRandomDuration(),
-            isAdminBonusApplied: isAdmin,
-            attemptsMade: 0,
-            consecutiveFailuresAllowed: 2
-        });
-
-        let offers: SponsorOffer[] = [];
-
+        // Map slot to Tier
+        let targetTier = SponsorTier.partner;
         switch (slot) {
             case SponsorSlot.rearWing:
-                offers = [
-                    createOffer({ id: 'titans_oil', name: 'Titans Oil', tier: SponsorTier.title, baseSign: 1000000, baseWeekly: 150000, baseObj: 250000, objDesc: "Finish Top 3" }),
-                    createOffer({ id: 'global_tech', name: 'Global Tech', tier: SponsorTier.title, baseSign: 800000, baseWeekly: 180000, baseObj: 200000, objDesc: "Both in Points" }),
-                    createOffer({ id: 'zenith_sky', name: 'Zenith Sky', tier: SponsorTier.title, baseSign: 900000, baseWeekly: 140000, baseObj: 300000, objDesc: "Race Win" }),
-                ];
+                targetTier = SponsorTier.title;
                 break;
             case SponsorSlot.frontWing:
             case SponsorSlot.sidepods:
-                offers = [
-                    createOffer({ id: 'fast_logistics', name: 'Fast Logistics', tier: SponsorTier.major, baseSign: 300000, baseWeekly: 50000, baseObj: 100000, objDesc: "Finish Top 10" }),
-                    createOffer({ id: 'spark_energy', name: 'Spark Energy', tier: SponsorTier.major, baseSign: 350000, baseWeekly: 40000, baseObj: 120000, objDesc: "Fastest Lap" }),
-                    createOffer({ id: 'eco_pulse', name: 'Eco Pulse', tier: SponsorTier.major, baseSign: 250000, baseWeekly: 60000, baseObj: 80000, objDesc: "Finish Race" }),
-                ];
+                targetTier = SponsorTier.major;
                 break;
-            default:
-                offers = [
-                    createOffer({ id: 'local_drinks', name: 'Local Drinks', tier: SponsorTier.partner, baseSign: 50000, baseWeekly: 15000, baseObj: 30000, objDesc: "Finish Race" }),
-                    createOffer({ id: 'micro_chips', name: 'Micro Chips', tier: SponsorTier.partner, baseSign: 70000, baseWeekly: 12000, baseObj: 40000, objDesc: "Improve Grid" }),
-                    createOffer({ id: 'nitro_gear', name: 'Nitro Gear', tier: SponsorTier.partner, baseSign: 60000, baseWeekly: 18000, baseObj: 35000, objDesc: "Overtake 3 Cars" }),
-                ];
+            case SponsorSlot.nose:
+            case SponsorSlot.halo:
+                targetTier = SponsorTier.partner;
+                break;
         }
+
+        // Base financial values by tier
+        const TIER_FINANCES = {
+            [SponsorTier.title]: { sign: 900000, weekly: 150000 },
+            [SponsorTier.major]: { sign: 320000, weekly: 50000 },
+            [SponsorTier.partner]: { sign: 65000, weekly: 15000 }
+        };
+
+        const finances = TIER_FINANCES[targetTier];
+        const activeSponsorIds = new Set(Object.values(activeContracts).map(c => c.sponsorId));
+        
+        // Pick 3 random sponsors from pool for this tier, avoiding duplicates
+        const sponsorPool = SPONSOR_POOL[targetTier].filter(s => !activeSponsorIds.has(s.id));
+        const pickedSponsors = [...sponsorPool].sort(() => 0.5 - Math.random()).slice(0, 3);
+
+        const offers: SponsorOffer[] = pickedSponsors.map((s) => {
+            // Pick a random objective for this tier
+            const objPool = OBJECTIVES_BY_TIER[targetTier];
+            const obj = objPool[Math.floor(Math.random() * objPool.length)];
+
+            return {
+                id: s.id,
+                name: s.name,
+                tier: targetTier,
+                countryCode: s.countryCode,
+                signingBonus: Math.round(finances.sign * multiplier * (0.9 + Math.random() * 0.2)),
+                weeklyBasePayment: Math.round(finances.weekly * multiplier * (0.9 + Math.random() * 0.2)),
+                objectiveBonus: Math.round(obj.bonus * multiplier),
+                objectiveDescription: obj.desc,
+                personality: getRandomPersonality(),
+                contractDuration: getRandomDuration(),
+                isAdminBonusApplied: isAdmin,
+                attemptsMade: 0,
+                consecutiveFailuresAllowed: 2
+            };
+        });
 
         // Apply state
         return offers.map(offer => {
@@ -150,7 +204,7 @@ export class SponsorService {
             await this.signContract(teamId, offer, slot);
             return { status: NegotiationStatus.success, message: "Deal Signed!", remainingAttempts: 0 };
         } else {
-            const attemptsMade = offer.attemptsMade + 1;
+            const attemptsMade = (offer.attemptsMade || 0) + 1;
             const remaining = 2 - attemptsMade;
             let lockedUntil: Date | null = null;
 
@@ -202,6 +256,7 @@ export class SponsorService {
             weeklyBasePayment: offer.weeklyBasePayment,
             objectiveBonus: offer.objectiveBonus,
             objectiveDescription: offer.objectiveDescription,
+            countryCode: offer.countryCode,
             racesRemaining: offer.contractDuration,
             currentFailures: 0
         };

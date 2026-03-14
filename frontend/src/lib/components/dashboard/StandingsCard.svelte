@@ -3,6 +3,7 @@
     import { universeStore } from "$lib/stores/universe.svelte";
     import { Trophy, User, Users, ChevronRight } from "lucide-svelte";
     import DriverAvatar from "$lib/components/DriverAvatar.svelte";
+    import CountryFlag from "$lib/components/ui/CountryFlag.svelte";
     import { fly } from "svelte/transition";
 
     let team = $derived(teamStore.value.team);
@@ -105,10 +106,13 @@
                                     />
                                 </div>
                                 <div class="flex flex-col">
-                                    <span
-                                        class="text-[10px] font-black text-app-text uppercase italic"
-                                        >{driver.name}</span
-                                    >
+                                    <div class="flex items-center gap-1.5">
+                                        <span
+                                            class="text-[10px] font-black text-app-text uppercase italic"
+                                            >{driver.name}</span
+                                        >
+                                        <CountryFlag countryCode={driver.countryCode} size="xs" />
+                                    </div>
                                     <span
                                         class="text-[8px] font-bold text-app-text/30 uppercase tracking-tighter pt-0.5"
                                         >{driver.seasonPoints} PTS</span

@@ -17,6 +17,7 @@
     import { db } from "$lib/firebase/config";
     import { doc, onSnapshot } from "firebase/firestore";
     import { seasonStore } from "$lib/stores/season.svelte";
+    import CountryFlag from "$lib/components/ui/CountryFlag.svelte";
     import { circuitService } from "$lib/services/circuit_service.svelte";
     import { flip } from "svelte/animate";
 
@@ -76,48 +77,48 @@
     {:else if !raceInfo || results.length === 0}
         <div
             in:fade
-            class="bg-app-text/40 border border-red-500/20 rounded-2xl p-12 flex flex-col items-center justify-center text-center gap-8 min-h-[500px] relative overflow-hidden"
+            class="bg-app-surface/60 backdrop-blur-xl border border-app-border rounded-3xl p-12 flex flex-col items-center justify-center text-center gap-10 min-h-[500px] relative overflow-hidden shadow-2xl"
         >
             <div
-                class="absolute inset-0 bg-red-500/5 animate-pulse pointer-events-none"
+                class="absolute inset-0 bg-primary-color/5 animate-pulse pointer-events-none"
             ></div>
-            <div class="flex items-center gap-8 relative z-10">
+            <div class="flex flex-col items-center gap-6 relative z-10">
                 <div
-                    class="w-24 h-24 rounded-3xl bg-red-500/20 flex items-center justify-center text-red-500 border border-red-500/30"
+                    class="w-24 h-24 rounded-3xl bg-app-error/10 flex items-center justify-center text-app-error border border-app-error/20 shadow-lg"
                 >
                     <Flag size={48} />
                 </div>
-                <div class="text-left">
-                    <div class="flex items-center gap-2 mb-2">
+                <div class="flex flex-col items-center">
+                    <div class="flex items-center gap-2.5 mb-4 bg-app-error/10 px-4 py-1.5 rounded-full border border-app-error/20">
                         <div
-                            class="w-3 h-3 rounded-full bg-red-500 animate-pulse"
+                            class="w-2 h-2 rounded-full bg-app-error animate-pulse"
                         ></div>
                         <span
-                            class="text-xs font-black text-red-500 uppercase tracking-widest leading-none"
+                            class="text-[10px] font-black text-app-error uppercase tracking-[0.2em] leading-none"
                             >Awaiting Green Flag</span
                         >
                     </div>
                     <h3
-                        class="font-black text-4xl lg:text-5xl uppercase italic text-app-text tracking-tighter"
+                        class="font-black text-4xl lg:text-6xl uppercase italic text-app-text tracking-tighter leading-[0.9]"
                     >
-                        Live Session Pending
+                        Live Session <span class="text-app-error">Pending</span>
                     </h3>
                 </div>
             </div>
-            <p class="max-w-xl text-app-text/40 text-sm font-medium relative z-10">
-                Data stream from {circuit?.name || "the track"} is currently inactive.
+            <p class="max-w-md text-app-text/60 text-sm font-medium leading-relaxed relative z-10">
+                The data stream from <span class="text-app-text font-bold italic">{circuit?.name || "the track"}</span> is currently inactive.
                 The broadcast will start once the race director confirms the session
                 launch.
             </p>
             <div
-                class="px-8 py-5 bg-app-text/40 rounded-2xl border border-app-border relative z-10"
+                class="px-10 py-6 bg-app-surface border border-app-border rounded-2xl relative z-10 shadow-xl group hover:scale-105 transition-transform duration-300"
             >
                 <p
-                    class="text-[10px] font-black text-app-text/20 uppercase tracking-[0.2em] mb-1"
+                    class="text-[9px] font-black text-app-text/30 uppercase tracking-[0.3em] mb-2"
                 >
-                    Status
+                    Current Status
                 </p>
-                <p class="text-xl font-black italic text-app-text uppercase">
+                <p class="text-2xl font-black italic text-app-text uppercase tracking-tight">
                     Waiting for Race Start
                 </p>
             </div>
@@ -183,6 +184,7 @@
                                         >
                                             {row.driverName}
                                         </p>
+                                        <CountryFlag countryCode={row.countryCode} size="xs" />
                                         {#if row.isPitStop}
                                             <span
                                                 class="px-1.5 py-0.5 rounded bg-blue-500/20 text-blue-400 text-[8px] font-black uppercase"

@@ -98,17 +98,7 @@
         }
     }
 
-    function getFlagEmoji(country: string): string {
-        const flags: Record<string, string> = {
-            'BRAZIL': '🇧🇷', 'ARGENTINA': '🇦🇷', 'COLOMBIA': '🇨🇴',
-            'MEXICO': '🇲🇽', 'URUGUAY': '🇺🇾', 'CHILE': '🇨🇱',
-            'USA': '🇺🇸', 'UNITED STATES': '🇺🇸', 'ITALY': '🇮🇹',
-            'SPAIN': '🇪🇸', 'FRANCE': '🇫🇷', 'GERMANY': '🇩🇪',
-            'UNITED KINGDOM': '🇬🇧', 'UK': '🇬🇧', 'JAPAN': '🇯🇵',
-            'NETHERLANDS': '🇳🇱', 'CANADA': '🇨🇦', 'AUSTRALIA': '🇦🇺',
-        };
-        return flags[country?.toUpperCase() ?? ''] ?? '🏁';
-    }
+    import CountryFlag from "$lib/components/ui/CountryFlag.svelte";
 
     function getOrdinal(n: number): string {
         const s = ["th", "st", "nd", "rd"];
@@ -202,7 +192,10 @@
                         <span class="text-xs font-heading font-black italic {pos === 1 ? 'text-yellow-500' : pos === 2 ? 'text-slate-400' : pos === 3 ? 'text-amber-600' : 'text-app-text/30'}">
                             {getOrdinal(pos)}
                         </span>
-                        <span class="text-[11px] font-black text-app-text uppercase italic truncate {mine ? 'text-app-primary' : ''}">{driver.name}</span>
+                        <div class="flex items-center gap-2">
+                            <span class="text-[11px] font-black text-app-text uppercase italic truncate {mine ? 'text-app-primary' : ''}">{driver.name}</span>
+                            <CountryFlag countryCode={driver.countryCode} size="xs" />
+                        </div>
                         <span class="text-[10px] font-bold text-app-text/50 truncate">{driverTeamName}</span>
                         <span class="text-[10px] font-black text-app-text/40 text-center">{driver.seasonRaces ?? 0}</span>
                         <span class="text-[10px] font-black text-app-text/40 text-center">{driver.seasonWins ?? 0}</span>
@@ -245,12 +238,15 @@
                         </span>
 
                         <!-- Team name + manager -->
-                        <div class="flex flex-col gap-0.5 min-w-0">
+                        <div class="flex flex-col min-w-0">
                             <span class="text-[11px] font-black uppercase italic truncate {mine ? 'text-app-primary' : 'text-app-text'}">{team.name}</span>
                             {#if mgr}
-                                <span class="text-[9px] text-app-text/40 font-medium truncate">
-                                    {getFlagEmoji(mgr.country)} {mgr.name}
-                                </span>
+                                <div class="flex items-center gap-1.5">
+                                    <span class="text-[9px] font-bold text-app-text/20 uppercase truncate">Mgr: {mgr.name}</span>
+                                    <CountryFlag countryCode={mgr.country} size="xs" />
+                                </div>
+                            {:else}
+                                <span class="text-[9px] font-bold text-app-text/10 uppercase tracking-widest italic tracking-widest">Awaiting Manager</span>
                             {/if}
                         </div>
 

@@ -119,41 +119,7 @@
         return `$${(budget / 1000000).toFixed(0)}M`;
     }
 
-    function getFlagEmoji(countryCode: string) {
-        if (!countryCode) return "🏳️";
-        const code = countryCode.toUpperCase();
-        const flags: Record<string, string> = {
-            BR: "🇧🇷",
-            BRAZIL: "🇧🇷",
-            AR: "🇦🇷",
-            ARGENTINA: "🇦🇷",
-            CO: "🇨🇴",
-            COLOMBIA: "🇨🇴",
-            MX: "🇲🇽",
-            MEXICO: "🇲🇽",
-            UY: "🇺🇾",
-            URUGUAY: "🇺🇾",
-            CL: "🇨🇱",
-            CHILE: "🇨🇱",
-            GB: "🇬🇧",
-            UK: "🇬🇧",
-            DE: "🇩🇪",
-            GERMANY: "🇩🇪",
-            IT: "🇮🇹",
-            ITALY: "🇮🇹",
-            ES: "🇪🇸",
-            SPAIN: "🇪🇸",
-            FR: "🇫🇷",
-            FRANCE: "🇫🇷",
-            US: "🇺🇸",
-            USA: "🇺🇸",
-            MC: "🇲🇨",
-            MONACO: "🇲🇨",
-            NL: "🇳🇱",
-            NETHERLANDS: "🇳🇱",
-        };
-        return flags[code] || "🏳️";
-    }
+    import CountryFlag from "$lib/components/ui/CountryFlag.svelte";
 </script>
 
 <div class="min-h-screen bg-app-bg text-app-text p-6 md:p-12 overflow-x-hidden">
@@ -238,11 +204,7 @@
                                 <div class="flex flex-col gap-2">
                                     {#each team.drivers || [] as driver}
                                         <div class="flex items-center gap-2">
-                                            <span class="text-sm"
-                                                >{getFlagEmoji(
-                                                    driver.countryCode,
-                                                )}</span
-                                            >
+                                            <CountryFlag countryCode={driver.countryCode} size="sm" />
                                             <span
                                                 class="text-[11px] font-bold text-app-text/60 uppercase tracking-widest"
                                                 >{driver.name}</span
@@ -373,14 +335,8 @@
                                 <!-- Drivers -->
                                 <div class="flex flex-col gap-2">
                                     {#each team.drivers || [] as driver}
-                                        <div
-                                            class="flex items-center gap-2 opacity-30"
-                                        >
-                                            <span class="text-sm"
-                                                >{getFlagEmoji(
-                                                    driver.countryCode,
-                                                )}</span
-                                            >
+                                        <div class="flex items-center gap-2 opacity-30">
+                                            <CountryFlag countryCode={driver.countryCode} size="sm" customClass="opacity-50" />
                                             <span
                                                 class="text-[11px] font-bold text-app-text uppercase tracking-widest"
                                                 >{driver.name}</span

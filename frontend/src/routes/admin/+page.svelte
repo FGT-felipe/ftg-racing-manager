@@ -3,32 +3,66 @@
     import { functions } from "$lib/firebase/config";
     import { httpsCallable } from "firebase/functions";
     import { goto } from "$app/navigation";
+    import { 
+        Shield, 
+        Database, 
+        Zap, 
+        TrendingUp, 
+        BookOpen, 
+        LogOut, 
+        AlertOctagon, 
+        RefreshCw, 
+        History,
+        Lock,
+        ChevronRight,
+        Activity
+    } from "lucide-svelte";
+    import { fade, fly } from "svelte/transition";
+    import ConfirmModal from "$lib/components/admin/ConfirmModal.svelte";
+    import { enhance } from "$app/forms";
+
+    let { form } = $props();
 
     let password = $state("");
     let isAuthenticated = $state(false);
     let error = $state("");
     let processingAction = $state<string | null>(null);
+    let activeTab = $state("simulation");
 
-    const ADMIN_PASSWORD = "ftgadmin2026";
+    // Modal State
+    let showConfirmModal = $state(false);
+    let pendingActionData = $state<{ name: string, description: string, requireWord?: string, confirmText?: string }>({
+        name: "",
+        description: ""
+    });
 
-    async function handleLogin() {
-        if (password === ADMIN_PASSWORD) {
+    $effect(() => {
+        if (form?.success) {
             isAuthenticated = true;
             error = "";
-        } else {
-            error = "Invalid Admin Password";
+        } else if (form?.error) {
+            error = form.error;
             password = "";
+        }
+    });
+
+    function triggerAction(name: string, description: string, dangerous = false) {
+        if (dangerous) {
+            pendingActionData = { 
+                name, 
+                description, 
+                requireWord: name === "nukeAndReseed" ? "NUKE" : "CONFIRM",
+                confirmText: "Execute Action" 
+            };
+            showConfirmModal = true;
+        } else {
+            runAction(name, description);
         }
     }
 
     async function runAction(name: string, description: string) {
         if (processingAction) return;
-
-        const confirm = window.confirm(
-            `Are you sure you want to execute: ${description}?`,
-        );
-        if (!confirm) return;
-
+        
         processingAction = name;
         try {
             if (
@@ -36,509 +70,333 @@
                 name === "fixRaceCalendars" ||
                 name === "applyGreatRebalanceTax"
             ) {
-                const { adminService } = await import(
-                    "$lib/services/admin.svelte"
-                );
-                await adminService[name]();
+                const { adminService } = await import("$lib/services/admin.svelte");
+                await adminService[name as keyof typeof adminService]();
+            } else if (name === "generate_market_drivers") {
+                const { db } = await import("$lib/firebase/config");
+                const { collection, addDoc, serverTimestamp } = await import("firebase/firestore");
+                await addDoc(collection(db, "commands"), {
+                    type: "generate_market_drivers",
+                    timestamp: serverTimestamp(),
+                    executed: false,
+                });
             } else {
                 const func = httpsCallable(functions, name);
                 await func();
             }
             alert(`Success: ${name} executed.`);
         } catch (e: any) {
-            console.error(`Error executing ${name}:`, e);
+            console.error('Admin action failed:', e.message || 'Unknown error');
             alert(`Error: ${e.message}`);
         } finally {
             processingAction = null;
         }
     }
 
-    async function runCommandAction(type: string, description: string) {
-        if (processingAction) return;
-
-        const confirm = window.confirm(
-            `Are you sure you want to trigger: ${description}?`,
-        );
-        if (!confirm) return;
-
-        processingAction = type;
-        try {
-            const { db } = await import("$lib/firebase/config");
-            const { collection, addDoc, serverTimestamp } = await import(
-                "firebase/firestore"
-            );
-            await addDoc(collection(db, "commands"), {
-                type,
-                timestamp: serverTimestamp(),
-                executed: false,
-            });
-            alert(`Triggered: ${type} command added.`);
-        } catch (e: any) {
-            console.error(`Error triggering ${type}:`, e);
-            alert(`Error: ${e.message}`);
-        } finally {
-            processingAction = null;
-        }
-    }
+    const tabs = [
+        { id: "simulation", label: "Simulation", icon: Activity },
+        { id: "database", label: "Database", icon: Database },
+        { id: "economy", label: "Economy", icon: TrendingUp },
+        { id: "docs", label: "Documentation", icon: BookOpen },
+    ];
 
     $effect(() => {
         if (!authStore.loading && !authStore.isAdmin) {
             goto("/");
         }
     });
+
+    function navigateToDocs() {
+        goto("/admin/docs");
+    }
 </script>
 
 <svelte:head>
-    <title>Admin Panel | FTG Racing Manager</title>
+    <title>Admin Terminal | FTG</title>
 </svelte:head>
 
-<div class="admin-container">
+<div class="admin-wrapper bg-app-bg min-h-screen text-app-text font-sans">
     {#if !isAuthenticated}
-        <div class="auth-card glass-panel">
-            <div class="header">
-                <span class="icon">🔐</span>
-                <h1>Admin Access</h1>
-                <p>Enter the security key to continue</p>
-            </div>
+        <div class="auth-layer fixed inset-0 flex items-center justify-center p-6 bg-black/60 backdrop-blur-xl z-50">
+            <div class="auth-card p-10 bg-app-surface border border-app-border rounded-[2.5rem] w-full max-w-sm shadow-2xl relative overflow-hidden" in:fly={{ y: 20, duration: 400 }}>
+                <div class="absolute -top-24 -right-24 w-48 h-48 bg-app-primary/10 blur-3xl rounded-full"></div>
+                
+                <div class="flex flex-col items-center text-center gap-6 relative z-10">
+                    <div class="p-4 rounded-3xl bg-app-primary/10 text-app-primary">
+                        <Lock size={32} />
+                    </div>
+                    <div>
+                        <h1 class="text-2xl font-heading font-black tracking-tighter uppercase italic">Secure Login</h1>
+                        <p class="text-[10px] font-black uppercase tracking-widest text-app-text/40 mt-1">Authorized Personnel Only</p>
+                    </div>
 
-            <div class="input-group">
-                <input
-                    type="password"
-                    bind:value={password}
-                    placeholder="Enter security key..."
-                    onkeydown={(e) => e.key === "Enter" && handleLogin()}
-                />
-                {#if error}
-                    <span class="error-msg">{error}</span>
-                {/if}
+                    <form 
+                        method="POST" 
+                        action="?/login" 
+                        use:enhance 
+                        class="w-full flex flex-col gap-4"
+                    >
+                        <div class="flex flex-col gap-2 text-left">
+                            <label for="pwd" class="text-[9px] font-black uppercase tracking-[0.2em] text-app-text/20 ml-2">Security Key</label>
+                            <input
+                                id="pwd"
+                                name="password"
+                                type="password"
+                                bind:value={password}
+                                placeholder="••••••••••••"
+                                class="w-full bg-black/40 border border-app-border rounded-2xl p-4 text-center text-app-primary font-mono outline-none focus:border-app-primary/40 transition-all placeholder:text-app-text/10"
+                            />
+                            {#if error}
+                                <span class="text-[9px] text-red-500 font-black uppercase text-center mt-1 animate-pulse">{error}</span>
+                            {/if}
+                        </div>
+                        
+                        <button 
+                            type="submit"
+                            class="w-full p-4 rounded-2xl bg-app-primary text-black font-black uppercase text-[10px] tracking-widest hover:scale-[1.02] active:scale-95 transition-all shadow-lg shadow-app-primary/10"
+                        >
+                            Authenticate
+                        </button>
+                    </form>
+                </div>
             </div>
-
-            <button class="primary-btn" onclick={handleLogin}>
-                Authenticate
-            </button>
         </div>
     {:else}
-        <div class="admin-panel glass-panel">
-            <header class="panel-header">
-                <div class="title-group">
-                    <h1>System Administration</h1>
-                    <span class="badge admin">Superuser</span>
+        <div class="admin-layout flex flex-col lg:flex-row min-h-screen">
+            <!-- Sidebar -->
+            <aside class="w-full lg:w-80 border-b lg:border-b-0 lg:border-r border-app-border bg-app-surface/40 backdrop-blur-md p-8 flex flex-col gap-10">
+                <div class="flex items-center gap-3">
+                    <div class="p-2 rounded-xl bg-app-primary/10 text-app-primary">
+                        <Shield size={20} />
+                    </div>
+                    <div class="flex flex-col">
+                        <span class="text-sm font-heading font-black uppercase italic tracking-tighter">FTG Terminal</span>
+                        <span class="text-[8px] font-black uppercase tracking-widest text-app-text/30">v4.2.0-STABLE</span>
+                    </div>
                 </div>
-                <button
-                    class="ghost-btn"
-                    onclick={() => (isAuthenticated = false)}
-                >
-                    Lock Session
-                </button>
-            </header>
 
-            <div class="admin-grid">
-                <!-- Simulation Controls -->
-                <section class="admin-section">
-                    <h2>Simulation Engine</h2>
-                    <div class="actions">
+                <nav class="flex flex-col gap-2">
+                    <span class="text-[9px] font-black uppercase tracking-[0.25em] text-app-text/20 mb-2 ml-2">Management</span>
+                    {#each tabs as tab}
                         <button
-                            class="action-btn warning"
-                            disabled={!!processingAction}
-                            onclick={() =>
-                                runAction(
-                                    "forceQualy",
-                                    "Force Qualifying simulation for all active leagues",
-                                )}
+                            onclick={() => activeTab = tab.id}
+                            class="flex items-center gap-4 p-4 rounded-2xl transition-all group {activeTab === tab.id ? 'bg-app-primary text-black shadow-lg shadow-app-primary/10' : 'text-app-text/40 hover:bg-app-text/5 hover:text-app-text'}"
                         >
-                            <span class="icon"
-                                >{processingAction === "forceQualy"
-                                    ? "⌛"
-                                    : "⚡"}</span
-                            >
-                            <div class="label">
-                                <strong>Force Qualy</strong>
-                                <small
-                                    >{processingAction === "forceQualy"
-                                        ? "Simulation in progress..."
-                                        : "Triggers qualifying simulation"}</small
-                                >
-                            </div>
+                            <tab.icon size={18} class="{activeTab === tab.id ? 'opacity-100' : 'opacity-40 group-hover:opacity-100'}" />
+                            <span class="text-[10px] font-black uppercase tracking-widest">{tab.label}</span>
                         </button>
-                        <button
-                            class="action-btn warning"
-                            disabled={!!processingAction}
-                            onclick={() =>
-                                runAction(
-                                    "forceRace",
-                                    "Force Race simulation for all active leagues",
-                                )}
-                        >
-                            <span class="icon"
-                                >{processingAction === "forceRace"
-                                    ? "⌛"
-                                    : "🏁"}</span
-                            >
-                            <div class="label">
-                                <strong>Force Race</strong>
-                                <small
-                                    >{processingAction === "forceRace"
-                                        ? "Simulation in progress..."
-                                        : "Triggers race simulation"}</small
-                                >
-                            </div>
-                        </button>
-                    </div>
-                </section>
+                    {/each}
+                </nav>
 
-                <!-- Database Operations -->
-                <section class="admin-section">
-                    <h2>Maintenance & Seeding</h2>
-                    <div class="actions">
-                        <button
-                            class="action-btn danger"
-                            disabled={!!processingAction}
-                            onclick={() =>
-                                runAction(
-                                    "nukeAndReseed",
-                                    "DANGEROUS: Wipe ALL data and reseed database",
-                                )}
-                        >
-                            <span class="icon"
-                                >{processingAction === "nukeAndReseed"
-                                    ? "⌛"
-                                    : "☢️"}</span
-                            >
-                            <div class="label">
-                                <strong>Nuke & Reseed</strong>
-                                <small>Factory reset all database data</small>
-                            </div>
-                        </button>
-                        <button
-                            class="action-btn secondary"
-                            disabled={!!processingAction}
-                            onclick={() =>
-                                runAction(
-                                    "fixRaceCalendars",
-                                    "Synchronize all league calendars with master config",
-                                )}
-                        >
-                            <span class="icon"
-                                >{processingAction === "fixRaceCalendars"
-                                    ? "⌛"
-                                    : "🛠️"}</span
-                            >
-                            <div class="label">
-                                <strong>Fix Race Calendars</strong>
-                                <small>Sync with global master config</small>
-                            </div>
-                        </button>
-                        <button
-                            class="action-btn warning"
-                            disabled={!!processingAction}
-                            onclick={() =>
-                                runAction(
-                                    "restoreDriversHistory",
-                                    "Restore and clean up all drivers' career history (Fixes 'F1 Team')",
-                                )}
-                        >
-                            <span class="icon"
-                                >{processingAction === "restoreDriversHistory"
-                                    ? "⌛"
-                                    : "👨‍✈️"}</span
-                            >
-                            <div class="label">
-                                <strong>Restore Driver History</strong>
-                                <small>Fix F1 Team & regenerate stats</small>
-                            </div>
-                        </button>
+                <div class="mt-auto pt-8 border-t border-app-border/40 flex flex-col gap-4">
+                    <div class="p-4 rounded-2xl bg-black/40 border border-app-border flex items-center gap-3">
+                        <div class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></div>
+                        <span class="text-[9px] font-black uppercase tracking-widest text-app-text/60">System Online</span>
                     </div>
-                </section>
+                    <button 
+                        onclick={() => (isAuthenticated = false)}
+                        class="flex items-center gap-3 p-4 rounded-2xl text-[10px] font-black uppercase tracking-widest text-red-500/60 hover:text-red-500 hover:bg-red-500/5 transition-all"
+                    >
+                        <LogOut size={16} />
+                        Logout Session
+                    </button>
+                </div>
+            </aside>
 
-                <!-- Economy & Market -->
-                <section class="admin-section">
-                    <h2>Economy & Market</h2>
-                    <div class="actions">
-                        <button
-                            class="action-btn secondary"
-                            disabled={!!processingAction}
-                            onclick={() =>
-                                runAction(
-                                    "applyGreatRebalanceTax",
-                                    "Apply economic rebalance across all teams",
-                                )}
-                        >
-                            <span class="icon"
-                                >{processingAction === "applyGreatRebalanceTax"
-                                    ? "⌛"
-                                    : "💰"}</span
+            <!-- Main Content -->
+            <main class="flex-1 p-8 md:p-12 overflow-y-auto">
+                <div class="max-w-5xl mx-auto flex flex-col gap-12" in:fade={{ duration: 400 }}>
+                    <header class="flex flex-col gap-2">
+                        <h2 class="text-4xl font-heading font-black tracking-tighter uppercase italic text-app-text">
+                            System <span class="text-app-primary">{tabs.find(t => t.id === activeTab)?.label}</span>
+                        </h2>
+                        <p class="text-[11px] font-black uppercase tracking-widest text-app-text/40">Administrative Command Center</p>
+                    </header>
+
+                    {#if activeTab === 'simulation'}
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-6" in:fly={{ y: 20 }}>
+                            <button 
+                                class="action-card group"
+                                onclick={() => triggerAction("forceQualy", "Trigger Qualifying simulation for all active leagues", true)}
                             >
-                            <div class="label">
-                                <strong>Apply Rebalance Tax</strong>
-                                <small>Execute economic rebalance</small>
-                            </div>
-                        </button>
-                        <button
-                            class="action-btn secondary"
-                            disabled={!!processingAction}
-                            onclick={() =>
-                                runCommandAction(
-                                    "generate_market_drivers",
-                                    "Force refresh of transfer market drivers",
-                                )}
-                        >
-                            <span class="icon"
-                                >{processingAction === "generate_market_drivers"
-                                    ? "⌛"
-                                    : "🛒"}</span
+                                <div class="card-icon bg-amber-500/10 text-amber-500"><Zap size={24} /></div>
+                                <div class="card-body">
+                                    <h3>Force Qualifying</h3>
+                                    <p>Manually trigger the qualifying engine for the current event.</p>
+                                </div>
+                                <ChevronRight class="opacity-10 group-hover:opacity-100 group-hover:translate-x-1 transition-all" />
+                            </button>
+
+                            <button 
+                                class="action-card group"
+                                onclick={() => triggerAction("forceRace", "Trigger Race simulation for all active leagues", true)}
                             >
-                            <div class="label">
-                                <strong>Refresh Market</strong>
-                                <small
-                                    >{processingAction ===
-                                    "generate_market_drivers"
-                                        ? "Command sent..."
-                                        : "Force new drivers generation"}</small
-                                >
+                                <div class="card-icon bg-emerald-500/10 text-emerald-500"><Activity size={24} /></div>
+                                <div class="card-body">
+                                    <h3>Force Race</h3>
+                                    <p>Execute the full race simulation logic for all divisions.</p>
+                                </div>
+                                <ChevronRight class="opacity-10 group-hover:opacity-100 group-hover:translate-x-1 transition-all" />
+                            </button>
+                        </div>
+                    {:else if activeTab === 'database'}
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-6" in:fly={{ y: 20 }}>
+                            <button 
+                                class="action-card group dangerous"
+                                onclick={() => triggerAction("nukeAndReseed", "DANGEROUS: Wipes ALL collections and recreates the simulation state.", true)}
+                            >
+                                <div class="card-icon bg-red-500/10 text-red-500"><AlertOctagon size={24} /></div>
+                                <div class="card-body">
+                                    <h3>Nuke & Reseed</h3>
+                                    <p class="text-red-500/60 font-medium">Critical: Irreversible database reset.</p>
+                                </div>
+                                <ChevronRight class="opacity-20 group-hover:opacity-100" />
+                            </button>
+
+                            <button 
+                                class="action-card group"
+                                onclick={() => triggerAction("fixRaceCalendars", "Sync all league schedule arrays with the master circuit config.")}
+                            >
+                                <div class="card-icon bg-blue-500/10 text-blue-500"><RefreshCw size={24} /></div>
+                                <div class="card-body">
+                                    <h3>Fix Calendars</h3>
+                                    <p>Sychronize league events with global configuration.</p>
+                                </div>
+                                <ChevronRight class="opacity-10 group-hover:opacity-100" />
+                            </button>
+
+                            <button 
+                                class="action-card group"
+                                onclick={() => triggerAction("restoreDriversHistory", "Clean up career history and fix 'F1 Team' naming issues.", true)}
+                            >
+                                <div class="card-icon bg-purple-500/10 text-purple-500"><History size={24} /></div>
+                                <div class="card-body">
+                                    <h3>Restore Driver Stats</h3>
+                                    <p>Fix legacy data issues in the drivers collection.</p>
+                                </div>
+                                <ChevronRight class="opacity-10 group-hover:opacity-100" />
+                            </button>
+                        </div>
+                    {:else if activeTab === 'economy'}
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-6" in:fly={{ y: 20 }}>
+                            <button 
+                                class="action-card group dangerous"
+                                onclick={() => triggerAction("applyGreatRebalanceTax", "Execute a massive economy rebalance across all teams.", true)}
+                            >
+                                <div class="card-icon bg-red-500/10 text-red-500"><TrendingUp size={24} /></div>
+                                <div class="card-body">
+                                    <h3>Rebalance Tax</h3>
+                                    <p>Apply global tax to equalize team budgets.</p>
+                                </div>
+                                <ChevronRight class="opacity-10 group-hover:opacity-100" />
+                            </button>
+
+                            <button 
+                                class="action-card group"
+                                onclick={() => triggerAction("generate_market_drivers", "Force the generation of 20+ new market drivers.")}
+                            >
+                                <div class="card-icon bg-emerald-500/10 text-emerald-500"><RefreshCw size={24} /></div>
+                                <div class="card-body">
+                                    <h3>Market Refresh</h3>
+                                    <p>Force inject new candidates into the transfer market.</p>
+                                </div>
+                                <ChevronRight class="opacity-10 group-hover:opacity-100" />
+                            </button>
+                        </div>
+                    {:else if activeTab === 'docs'}
+                        <div class="flex flex-col items-center justify-center py-20 bg-black/20 rounded-[3rem] border border-app-border/40 gap-8">
+                            <div class="p-6 rounded-full bg-app-primary/5 text-app-primary border border-app-primary/10">
+                                <BookOpen size={48} />
                             </div>
-                        </button>
-                    </div>
-                </section>
-            </div>
+                            <div class="text-center">
+                                <h3 class="text-2xl font-black uppercase italic tracking-tighter">Documentation Hub</h3>
+                                <p class="text-app-text/40 text-sm mt-2 max-w-sm mx-auto">Access internal architectural blueprints, business rules, and technical standards.</p>
+                            </div>
+                            <button 
+                                onclick={navigateToDocs}
+                                class="px-8 py-4 rounded-2xl bg-app-primary text-black font-black uppercase text-[11px] tracking-widest hover:scale-105 transition-all shadow-xl shadow-app-primary/10 flex items-center gap-3"
+                            >
+                                Open Documentation Base
+                                <ChevronRight size={16} />
+                            </button>
+                        </div>
+                    {/if}
+                </div>
+            </main>
         </div>
     {/if}
 </div>
 
+<ConfirmModal 
+    bind:show={showConfirmModal}
+    title={pendingActionData.name === "nukeAndReseed" ? "☢️ SYSTEM RESET" : "Confirm Action"}
+    description={pendingActionData.description}
+    requireWord={pendingActionData.requireWord}
+    confirmText={pendingActionData.confirmText || "Execute"}
+    onConfirm={() => runAction(pendingActionData.name, pendingActionData.description)}
+/>
+
 <style>
-    .admin-container {
-        min-height: calc(100vh - 100px);
+    .font-heading {
+        font-family: "Outfit", sans-serif;
+    }
+
+    .action-card {
         display: flex;
         align-items: center;
-        justify-content: center;
-        padding: 2rem;
-        background: var(--bg-color);
-    }
-
-    .glass-panel {
-        background: var(--surface-color);
-        backdrop-filter: blur(12px);
-        border: 1px solid var(--border-color);
-        border-radius: 20px;
-        box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
-    }
-
-    .auth-card {
-        width: 100%;
-        max-width: 400px;
-        padding: 3rem;
-        text-align: center;
-        display: flex;
-        flex-direction: column;
-        gap: 2rem;
-    }
-
-    .header .icon {
-        font-size: 3rem;
-        margin-bottom: 1rem;
-        display: block;
-    }
-
-    .header h1 {
-        font-size: 1.5rem;
-        font-weight: 800;
-        letter-spacing: -0.5px;
-        margin: 0;
-    }
-
-    .header p {
-        color: var(--text-muted);
-        font-size: 0.9rem;
-        margin-top: 0.5rem;
-    }
-
-    .input-group {
-        display: flex;
-        flex-direction: column;
-        gap: 0.5rem;
-        text-align: left;
-    }
-
-    input {
-        width: 100%;
-        padding: 1rem;
-        background: var(--bg-color);
-        border: 1px solid var(--border-color);
-        border-radius: 12px;
-        color: var(--text-color);
-        font-family: inherit;
-        transition: all 0.2s ease;
-    }
-
-    input:focus {
-        outline: none;
-        border-color: var(--primary-color);
-        background: var(--surface-color);
-    }
-
-    .error-msg {
-        color: #ff4444;
-        font-size: 0.8rem;
-        padding-left: 0.5rem;
-    }
-
-    .admin-panel {
-        width: 100%;
-        max-width: 1000px;
-        padding: 3rem;
-        display: flex;
-        flex-direction: column;
-        gap: 3rem;
-        align-self: flex-start;
-    }
-
-    .panel-header {
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-    }
-
-    .title-group {
-        display: flex;
-        align-items: center;
-        gap: 1rem;
-    }
-
-    .title-group h1 {
-        font-size: 2rem;
-        font-weight: 900;
-        margin: 0;
-        color: var(--text-color);
-    }
-
-    .badge {
-        padding: 0.25rem 0.75rem;
-        border-radius: 20px;
-        font-size: 0.7rem;
-        font-weight: 700;
-        text-transform: uppercase;
-        letter-spacing: 1px;
-    }
-
-    .badge.admin {
-        background: rgba(0, 200, 83, 0.1);
-        color: #00c853;
-        border: 1px solid rgba(0, 200, 83, 0.2);
-    }
-
-    .admin-grid {
-        display: grid;
-        grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-        gap: 2rem;
-    }
-
-    .admin-section {
-        display: flex;
-        flex-direction: column;
         gap: 1.5rem;
-    }
-
-    .admin-section h2 {
-        font-size: 0.8rem;
-        text-transform: uppercase;
-        letter-spacing: 2px;
-        color: var(--text-muted);
-        margin: 0;
-    }
-
-    .actions {
-        display: flex;
-        flex-direction: column;
-        gap: 1rem;
-    }
-
-    .action-btn {
-        display: flex;
-        align-items: center;
-        gap: 1.25rem;
-        padding: 1.25rem;
-        background: var(--bg-color);
-        border: 1px solid var(--border-color);
-        border-radius: 16px;
-        color: var(--text-color);
-        cursor: pointer;
-        transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
-        text-align: left;
-    }
-
-    .action-btn:hover {
+        padding: 2rem;
         background: var(--surface-color);
-        border-color: var(--primary-color);
-        transform: translateY(-2px);
+        border: 1px solid var(--border-color);
+        border-radius: 2rem;
+        text-align: left;
+        transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        cursor: pointer;
     }
 
-    .action-btn .icon {
-        font-size: 1.5rem;
-        width: 48px;
-        height: 48px;
+    .action-card:hover {
+        background: var(--bg-color);
+        border-color: var(--app-primary);
+        transform: translateY(-4px);
+    }
+
+    .action-card.dangerous:hover {
+        border-color: #ff4444;
+        box-shadow: 0 10px 30px rgba(255, 68, 68, 0.05);
+    }
+
+    .card-icon {
+        width: 64px;
+        height: 64px;
         display: flex;
         align-items: center;
         justify-content: center;
-        background: var(--surface-color);
-        border-radius: 12px;
+        border-radius: 1.25rem;
+        flex-shrink: 0;
     }
 
-    .action-btn.warning:hover .icon {
-        background: rgba(255, 160, 0, 0.1);
-        color: #ffa000;
-    }
-    .action-btn.danger:hover .icon {
-        background: rgba(255, 68, 68, 0.1);
-        color: #ff4444;
-    }
-    .action-btn.secondary:hover .icon {
-        background: rgba(0, 200, 83, 0.1);
-        color: #00c853;
-    }
-
-    .label {
+    .card-body {
+        flex: 1;
         display: flex;
         flex-direction: column;
+        gap: 0.25rem;
     }
 
-    .label strong {
-        font-size: 1rem;
-        font-weight: 600;
+    .card-body h3 {
+        font-size: 1.1rem;
+        font-weight: 800;
+        text-transform: uppercase;
+        letter-spacing: -0.5px;
     }
 
-    .label small {
+    .card-body p {
         font-size: 0.8rem;
         color: var(--text-muted);
+        line-height: 1.4;
     }
 
-    .primary-btn {
-        background: var(--primary-color);
-        color: var(--primary-foreground-color);
-        border: none;
-        padding: 1rem;
-        border-radius: 12px;
-        font-weight: 700;
-        cursor: pointer;
-        transition: transform 0.2s ease;
-    }
-
-    .primary-btn:hover {
-        transform: scale(1.02);
-    }
-
-    .ghost-btn {
-        background: transparent;
-        border: 1px solid var(--border-color);
-        color: var(--text-color);
-        opacity: 0.6;
-        padding: 0.6rem 1.2rem;
-        border-radius: 10px;
-        font-size: 0.8rem;
-        cursor: pointer;
-    }
-
-    .ghost-btn:hover {
-        background: var(--surface-color);
-        opacity: 1;
-        color: var(--text-color);
+    /* Override for lucide icons inside buttons if needed */
+    :global(.lucide) {
+        stroke-width: 2.5px;
     }
 </style>

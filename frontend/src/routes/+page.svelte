@@ -2,6 +2,8 @@
     import { teamStore } from "$lib/stores/team.svelte";
     import { authStore } from "$lib/stores/auth.svelte";
     import { seasonStore } from "$lib/stores/season.svelte";
+    import { managerStore } from "$lib/stores/manager.svelte";
+    import CountryFlag from "$lib/components/ui/CountryFlag.svelte";
     import { goto } from "$app/navigation";
     import { browser } from "$app/environment";
     import { Factory, Wallet } from "lucide-svelte";
@@ -62,11 +64,16 @@
         <!-- Dashboard Header Section -->
         <header class="flex flex-col gap-2">
             <div class="flex items-center gap-3">
-                <span
-                    class="text-[10px] font-black tracking-[0.3em] text-app-primary/40 uppercase font-heading"
-                >
-                    Welcome {authStore.user?.displayName || "Manager"}
-                </span>
+                <div class="flex items-center gap-2">
+                    <span
+                        class="text-[10px] font-black tracking-[0.3em] text-app-primary/40 uppercase font-heading"
+                    >
+                        Welcome {managerStore.profile ? `${managerStore.profile.firstName} ${managerStore.profile.lastName}` : (authStore.user?.displayName || "Manager")}
+                    </span>
+                    {#if managerStore.profile}
+                        <CountryFlag countryCode={managerStore.profile.country || managerStore.profile.nationality} size="xs" />
+                    {/if}
+                </div>
             </div>
             <h1
                 class="text-4xl lg:text-5xl font-heading font-black tracking-tighter uppercase italic text-app-text mt-1"

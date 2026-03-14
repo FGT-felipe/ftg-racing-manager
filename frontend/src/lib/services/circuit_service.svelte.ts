@@ -4,6 +4,7 @@ export interface CircuitProfile {
     id: string;
     name: string;
     flagEmoji: string;
+    countryCode: string;
     baseLapTime: number;
     laps: number;
     tyreWearMultiplier: number;
@@ -21,6 +22,7 @@ class CircuitService {
         mexico: {
             id: 'mexico',
             name: 'Autodromo Hermanos Rodriguez',
+            countryCode: 'MX',
             flagEmoji: '🇲🇽',
             baseLapTime: 76.0,
             laps: 71,
@@ -45,6 +47,7 @@ class CircuitService {
         vegas: {
             id: 'vegas',
             name: 'Las Vegas Strip Circuit',
+            countryCode: 'US',
             flagEmoji: '🇺🇸',
             baseLapTime: 92.0,
             laps: 50,
@@ -70,6 +73,7 @@ class CircuitService {
         interlagos: {
             id: 'interlagos',
             name: 'Autódromo José Carlos Pace',
+            countryCode: 'BR',
             flagEmoji: '🇧🇷',
             baseLapTime: 70.5,
             laps: 71,
@@ -96,6 +100,7 @@ class CircuitService {
         miami: {
             id: 'miami',
             name: 'Miami International Autodrome',
+            countryCode: 'US',
             flagEmoji: '🇺🇸',
             baseLapTime: 90.0,
             laps: 57,

@@ -35,27 +35,47 @@ function evaluateObjective(contract, raceData, teamDrivers) {
   const finalPositions = raceData.finalPositions || {};
   const dnfs = raceData.dnfs || [];
   const fastLapDriver = raceData.fast_lap_driver;
+  const raceCountry = raceData.countryCode || "";
+  const sponsorCountry = contract.countryCode || "";
+
+  // Helper to get driver position safely
+  const getPos = (id) => (dnfs.includes(id) ? 999 : (finalPositions[id] || 999));
 
   if (desc.includes("race win")) {
-    return teamDrivers.some((id) => finalPositions[id] === 0 && !dnfs.includes(id));
+    return teamDrivers.some((id) => getPos(id) === 1);
   }
   if (desc.includes("finish top 3")) {
-    return teamDrivers.some((id) => finalPositions[id] >= 0 && finalPositions[id] < 3 && !dnfs.includes(id));
+    return teamDrivers.some((id) => getPos(id) <= 3);
+  }
+  if (desc.includes("finish top 5")) {
+    return teamDrivers.some((id) => getPos(id) <= 5);
+  }
+  if (desc.includes("finish top 8")) {
+    return teamDrivers.some((id) => getPos(id) <= 8);
   }
   if (desc.includes("finish top 10")) {
-    return teamDrivers.some((id) => finalPositions[id] >= 0 && finalPositions[id] < 10 && !dnfs.includes(id));
+    return teamDrivers.some((id) => getPos(id) <= 10);
+  }
+  if (desc.includes("finish top 16")) {
+    return teamDrivers.some((id) => getPos(id) <= 16);
+  }
+  if (desc.includes("double podium")) {
+    const podiumDrivers = teamDrivers.filter((id) => getPos(id) <= 3);
+    return podiumDrivers.length >= 2;
   }
   if (desc.includes("both in points")) {
-    return teamDrivers.every((id) => {
-      const pos = finalPositions[id];
-      return pos >= 0 && pos < 10 && !dnfs.includes(id);
-    });
+    return teamDrivers.every((id) => getPos(id) <= 10);
   }
   if (desc.includes("fastest lap")) {
     return teamDrivers.includes(fastLapDriver);
   }
   if (desc.includes("finish race")) {
     return teamDrivers.some((id) => !dnfs.includes(id));
+  }
+  if (desc.includes("home race win")) {
+    const isHomeRace = raceCountry && sponsorCountry && raceCountry === sponsorCountry;
+    if (!isHomeRace) return false;
+    return teamDrivers.some((id) => getPos(id) === 1);
   }
   return false;
 }
@@ -66,7 +86,7 @@ function evaluateObjective(contract, raceData, teamDrivers) {
 // ─────────────────────────────────────────────
 const CIRCUITS = {
   "mexico": {
-    id: "mexico", baseLapTime: 76.0, laps: 71,
+    id: "mexico", countryCode: "MX", baseLapTime: 76.0, laps: 71,
     tyreWearMultiplier: 1.1, fuelConsumptionMultiplier: 1.0,
     aeroWeight: 0.4, powertrainWeight: 0.4, chassisWeight: 0.2,
     idealSetup: {
@@ -75,7 +95,7 @@ const CIRCUITS = {
     },
   },
   "vegas": {
-    id: "vegas", baseLapTime: 92.0, laps: 50,
+    id: "vegas", countryCode: "US", baseLapTime: 92.0, laps: 50,
     tyreWearMultiplier: 0.8, fuelConsumptionMultiplier: 1.1,
     aeroWeight: 0.2, powertrainWeight: 0.6, chassisWeight: 0.2,
     idealSetup: {
@@ -84,7 +104,7 @@ const CIRCUITS = {
     },
   },
   "interlagos": {
-    id: "interlagos", baseLapTime: 70.5, laps: 71,
+    id: "interlagos", countryCode: "BR", baseLapTime: 70.5, laps: 71,
     tyreWearMultiplier: 1.2, fuelConsumptionMultiplier: 1.2,
     aeroWeight: 0.3, powertrainWeight: 0.3, chassisWeight: 0.4,
     idealSetup: {
@@ -93,7 +113,7 @@ const CIRCUITS = {
     },
   },
   "miami": {
-    id: "miami", baseLapTime: 90.0, laps: 57,
+    id: "miami", countryCode: "US", baseLapTime: 90.0, laps: 57,
     tyreWearMultiplier: 1.0, fuelConsumptionMultiplier: 1.0,
     aeroWeight: 0.4, powertrainWeight: 0.3, chassisWeight: 0.3,
     idealSetup: {
@@ -102,7 +122,7 @@ const CIRCUITS = {
     },
   },
   "san_pablo_street": {
-    id: "san_pablo_street", baseLapTime: 82.0, laps: 40,
+    id: "san_pablo_street", countryCode: "BR", baseLapTime: 82.0, laps: 40,
     tyreWearMultiplier: 1.3, fuelConsumptionMultiplier: 1.3,
     aeroWeight: 0.2, powertrainWeight: 0.2, chassisWeight: 0.6,
     idealSetup: {
@@ -111,7 +131,7 @@ const CIRCUITS = {
     },
   },
   "indianapolis": {
-    id: "indianapolis", baseLapTime: 72.0, laps: 73,
+    id: "indianapolis", countryCode: "US", baseLapTime: 72.0, laps: 73,
     tyreWearMultiplier: 1.1, fuelConsumptionMultiplier: 1.1,
     aeroWeight: 0.3, powertrainWeight: 0.4, chassisWeight: 0.3,
     idealSetup: {
@@ -120,7 +140,7 @@ const CIRCUITS = {
     },
   },
   "montreal": {
-    id: "montreal", baseLapTime: 73.0, laps: 70,
+    id: "montreal", countryCode: "CA", baseLapTime: 73.0, laps: 70,
     tyreWearMultiplier: 0.9, fuelConsumptionMultiplier: 1.3,
     aeroWeight: 0.2, powertrainWeight: 0.4, chassisWeight: 0.4,
     idealSetup: {
@@ -129,7 +149,7 @@ const CIRCUITS = {
     },
   },
   "texas": {
-    id: "texas", baseLapTime: 94.0, laps: 56,
+    id: "texas", countryCode: "US", baseLapTime: 94.0, laps: 56,
     tyreWearMultiplier: 1.4, fuelConsumptionMultiplier: 1.1,
     aeroWeight: 0.5, powertrainWeight: 0.2, chassisWeight: 0.3,
     idealSetup: {
@@ -138,7 +158,7 @@ const CIRCUITS = {
     },
   },
   "buenos_aires": {
-    id: "buenos_aires", baseLapTime: 74.0, laps: 72,
+    id: "buenos_aires", countryCode: "AR", baseLapTime: 74.0, laps: 72,
     tyreWearMultiplier: 1.1, fuelConsumptionMultiplier: 1.0,
     aeroWeight: 0.3, powertrainWeight: 0.2, chassisWeight: 0.5,
     idealSetup: {
@@ -1316,6 +1336,7 @@ async function runRaceLogic() {
           dnfs: raceRes.dnfs,
           fast_lap_time: raceRes.fast_lap_time,
           fast_lap_driver: raceRes.fast_lap_driver,
+          countryCode: circuit.countryCode || "",
           liveDurationSeconds: liveDurationSec,
           updateIntervalSeconds: 120,
           completedAt: admin.firestore.FieldValue.serverTimestamp(),

@@ -6,6 +6,7 @@
     import { teamStore } from "$lib/stores/team.svelte";
     import { db } from "$lib/firebase/config";
     import { doc, getDoc } from "firebase/firestore";
+    import CountryFlag from "$lib/components/ui/CountryFlag.svelte";
     import { t } from "$lib/utils/i18n";
 
     let lastResults = $state<any>(null);
@@ -301,7 +302,10 @@
                                         {i + 1}
                                     </div>
                                     <div class="flex-1 min-w-0">
-                                        <p class="text-[11px] font-black {row.teamId === userTeamId ? 'text-app-primary' : 'text-app-text'} truncate uppercase">{row.driverName}</p>
+                                        <div class="flex items-center gap-2">
+                                            <p class="text-[11px] font-black {row.teamId === userTeamId ? 'text-app-primary' : 'text-app-text'} truncate uppercase">{row.driverName}</p>
+                                            <CountryFlag countryCode={row.countryCode} size="xs" />
+                                        </div>
                                         <p class="text-[8px] font-bold {row.teamId === userTeamId ? 'text-app-primary/60' : 'text-app-text/30'} uppercase tracking-widest">{row.teamName}</p>
                                     </div>
                                     <div class="text-right">
@@ -364,6 +368,7 @@
                                     <div class="flex-1 min-w-0">
                                         <div class="flex items-center gap-2">
                                             <p class="text-[11px] font-black {row.teamId === userTeamId ? 'text-app-primary' : 'text-app-text'} truncate uppercase">{row.driverName}</p>
+                                            <CountryFlag countryCode={row.countryCode} size="xs" />
                                             {#if row.pts > 0}
                                                 <span class="px-1.5 py-0.5 rounded bg-red-500/20 text-red-500 font-black text-[8px] italic">+{row.pts} PTS</span>
                                             {/if}

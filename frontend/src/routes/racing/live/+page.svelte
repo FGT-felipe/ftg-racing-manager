@@ -13,6 +13,8 @@
     import RaceLivePanel from "$lib/components/racing/RaceLivePanel.svelte";
     import ResultsPanel from "$lib/components/racing/ResultsPanel.svelte";
     import { seasonStore } from "$lib/stores/season.svelte";
+    import { circuitService } from "$lib/services/circuit_service.svelte";
+    import CountryFlag from "$lib/components/ui/CountryFlag.svelte";
 
     let activeTab = $state<"qualy" | "race" | "results">("qualy");
 
@@ -49,7 +51,7 @@
 
         {#if nextEvent}
             <div class="flex items-center gap-4 px-6 py-4 bg-app-surface border border-app-border rounded-2xl shadow-lg">
-               <span class="text-3xl filter saturate-[0.8]">{nextEvent.flagEmoji || '🏁'}</span>
+                <CountryFlag countryCode={circuitService.getCircuitProfile(nextEvent.circuitId || '').countryCode} size="lg" />
                <div class="flex flex-col">
                    <span class="text-[10px] font-black uppercase tracking-widest text-app-text/40 leading-none mb-1">Current Venue</span>
                    <span class="text-sm font-black uppercase italic text-app-text">{nextEvent.trackName}</span>

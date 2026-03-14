@@ -36,6 +36,7 @@
         translateAcademyNarrative,
         type TranslationKey,
     } from "$lib/utils/i18n";
+    import CountryFlag from "$lib/components/ui/CountryFlag.svelte";
 
     function getSpecialtyKey(
         specialty: string | null | undefined,
@@ -59,14 +60,14 @@
     driverStore.init();
 
     const countries = [
-        { code: "CO", name: "Colombia", flagEmoji: "🇨🇴" },
-        { code: "BR", name: "Brazil", flagEmoji: "🇧🇷" },
-        { code: "AR", name: "Argentina", flagEmoji: "🇦🇷" },
-        { code: "MX", name: "Mexico", flagEmoji: "🇲🇽" },
-        { code: "ES", name: "Spain", flagEmoji: "🇪🇸" },
-        { code: "IT", name: "Italy", flagEmoji: "🇮🇹" },
-        { code: "GB", name: "United Kingdom", flagEmoji: "🇬🇧" },
-        { code: "DE", name: "Germany", flagEmoji: "🇩🇪" },
+        { code: "CO", name: "Colombia" },
+        { code: "BR", name: "Brazil" },
+        { code: "AR", name: "Argentina" },
+        { code: "MX", name: "Mexico" },
+        { code: "ES", name: "Spain" },
+        { code: "IT", name: "Italy" },
+        { code: "GB", name: "United Kingdom" },
+        { code: "DE", name: "Germany" },
     ];
 
     let selectedCountry = $state(countries[0]);
@@ -264,10 +265,11 @@
                                 : 'bg-app-text/20 border-app-border text-app-text/40 hover:border-app-border'}"
                             onclick={() => (selectedCountry = country)}
                         >
-                            <span
-                                class="text-3xl group-hover:scale-110 transition-transform"
-                                >{country.flagEmoji}</span
+                            <div
+                                class="group-hover:scale-110 transition-transform mb-1"
                             >
+                                <CountryFlag countryCode={country.code} size="lg" />
+                            </div>
                             <span
                                 class="text-[10px] font-black uppercase tracking-tighter truncate w-full text-center"
                                 >{country.name}</span
@@ -345,9 +347,7 @@
                             </div>
                         </div>
                         <div class="flex items-center gap-2">
-                            <span class="text-2xl"
-                                >{youthAcademyStore.config?.countryFlag}</span
-                            >
+                            <CountryFlag countryCode={youthAcademyStore.config?.countryCode} size="lg" />
                             <span
                                 class="text-[11px] font-black text-app-text/40 uppercase tracking-[0.2em]"
                                 >{youthAcademyStore.config?.countryName}
@@ -489,11 +489,14 @@
                                 {/if}
                             </div>
                             <div>
-                                <h5
-                                    class="text-app-text font-black text-lg tracking-tighter leading-none mb-1.5 uppercase italic truncate w-24"
-                                >
-                                    {promoted?.name.split(" ")[0]}
-                                </h5>
+                                <div class="flex items-center gap-2 mb-1.5">
+                                    <h5
+                                        class="text-app-text font-black text-lg tracking-tighter leading-none uppercase italic truncate"
+                                    >
+                                        {promoted?.name.split(" ")[0]}
+                                    </h5>
+                                    <CountryFlag countryCode={promoted?.countryCode} size="sm" />
+                                </div>
                                 <div class="flex items-center gap-2">
                                     <div
                                         class="w-2 h-2 bg-emerald-500 rounded-full animate-pulse"
@@ -682,11 +685,14 @@
                                         <div
                                             class="flex items-center justify-between mb-2"
                                         >
-                                            <h4
-                                                class="text-2xl font-black text-app-text tracking-tighter uppercase leading-none truncate w-36 italic"
-                                            >
-                                                {driver.name}
-                                            </h4>
+                                            <div class="flex items-center gap-2">
+                                                <h4
+                                                    class="text-2xl font-black text-app-text tracking-tighter uppercase leading-none truncate italic"
+                                                >
+                                                    {driver.name}
+                                                </h4>
+                                                <CountryFlag countryCode={driver.countryCode} size="sm" />
+                                            </div>
                                             {#if getSpecialtyKey(driver.specialty)}
                                                 <div class="mt-1 flex gap-2">
                                                     <span
@@ -942,10 +948,9 @@
                             class="bg-app-bg/40 border border-app-border rounded-[2.5rem] p-6 transition-all duration-500 hover:bg-app-bg/80 hover:border-emerald-500/20 group relative overflow-hidden"
                         >
                             <!-- Subtle regional backdrop symbol -->
-                            <span
-                                class="absolute -top-6 -right-6 text-7xl opacity-[0.03] group-hover:opacity-[0.07] transition-opacity grayscale select-none pointer-events-none"
-                                >{youthAcademyStore.config?.countryFlag}</span
-                            >
+                            <div class="absolute -top-4 -right-4 opacity-[0.05] group-hover:opacity-[0.1] transition-opacity grayscale select-none pointer-events-none">
+                                <CountryFlag countryCode={youthAcademyStore.config?.countryCode} size="xl" />
+                            </div>
 
                             <div class="flex items-center gap-6 mb-6">
                                 <div
@@ -961,11 +966,14 @@
                                     <div
                                         class="flex items-center justify-between mb-2"
                                     >
-                                        <h4
-                                            class="text-lg font-black text-app-text uppercase tracking-tighter italic truncate leading-none"
-                                        >
-                                            {candidate.name}
-                                        </h4>
+                                        <div class="flex items-center gap-2">
+                                            <h4
+                                                class="text-lg font-black text-app-text uppercase tracking-tighter italic truncate leading-none"
+                                            >
+                                                {candidate.name}
+                                            </h4>
+                                            <CountryFlag countryCode={candidate.countryCode} size="xs" />
+                                        </div>
                                         {#if getSpecialtyKey(candidate.specialty)}
                                             <div
                                                 class="px-2 py-0.5 bg-fuchsia-500/10 text-fuchsia-400 text-[8px] font-black rounded border border-fuchsia-500/20 tracking-wider uppercase w-max"

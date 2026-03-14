@@ -53,6 +53,8 @@
     const team = $derived(teamStore.value.team);
 
     let qualyCompounds = $state<Record<string, TyreCompound>>({});
+    let isQualyWet = $state(false);
+    const isRaceWet = $derived(seasonStore.nextEvent?.weatherRace?.toLowerCase().includes('rain') || seasonStore.nextEvent?.weatherRace?.toLowerCase().includes('wet'));
 
     // Watch for driver changes to load their RACE setup and Qualy tyre
     $effect(() => {
@@ -85,6 +87,9 @@
         try {
             const nextEvent = seasonStore.nextEvent;
             if (nextEvent && seasonStore.value.season) {
+                // Check if Qualy was wet
+                isQualyWet = nextEvent.weatherQualifying?.toLowerCase().includes('rain') || nextEvent.weatherQualifying?.toLowerCase().includes('wet') || false;
+
                 const raceDocId = `${seasonStore.value.season.id}_${nextEvent.id}`;
                 const raceSnap = await getDoc(doc(db, "races", raceDocId));
                 if (raceSnap.exists()) {
@@ -98,8 +103,8 @@
                             }
                         });
 
-                        // Force lock tyre if they qualified
-                        if (qualyCompounds[dId]) {
+                        // Force lock tyre if they qualified AND it wasn't wet Qualy
+                        if (qualyCompounds[dId] && !isQualyWet) {
                             strategy.tyreCompound = qualyCompounds[dId];
                         }
                     }

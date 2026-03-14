@@ -38,7 +38,7 @@ export function createYouthAcademyStore() {
 
         if (initializedTeamId === teamId) return;
 
-        console.log(`📡 YouthAcademyStore: Initializing for Team ${teamId}`);
+        console.debug(`📡 YouthAcademyStore: Initializing for Team ${teamId}`);
         clear();
 
         initializedTeamId = teamId;
@@ -53,7 +53,7 @@ export function createYouthAcademyStore() {
                 config = null;
             }
             loading = false;
-            console.log('✅ YouthAcademyStore: Config loaded');
+            console.debug('✅ YouthAcademyStore: Config loaded');
         });
 
         // Stream candidates
@@ -122,7 +122,7 @@ export function createYouthAcademyStore() {
             const teamId = teamStore.value.team?.id;
             const currentSeasonId = seasonStore.value.season?.id || teamStore.value.team?.currentSeasonId || null;
 
-            console.log('YouthAcademyStore: Attempting purchase...', { teamId, currentSeasonId });
+            console.debug('YouthAcademyStore: Attempting purchase...', { teamId, currentSeasonId });
 
             if (!teamId) throw new Error("Team context missing. Please try again.");
 

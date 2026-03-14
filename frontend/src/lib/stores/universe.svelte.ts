@@ -24,7 +24,7 @@ class UniverseStore {
     init() {
         if (this.unsubscribe) return;
 
-        console.log("[UniverseStore] Initializing: Setting up Firestore snapshot listener for 'game_universe_v1'.");
+        console.debug("[UniverseStore] Initializing: Setting up Firestore snapshot listener for 'game_universe_v1'.");
         this.value.loading = true;
 
         const universeRef = doc(db, "universe", "game_universe_v1");
@@ -34,10 +34,10 @@ class UniverseStore {
             (snap) => {
                 if (snap.exists()) {
                     const data = snap.data();
-                    console.log("[UniverseStore] RAW DATA:", JSON.stringify(data));
+
                     this.value.universe = data as GameUniverse;
                     this.value.loading = false;
-                    console.log("[UniverseStore] Snapshot update: Universe loaded successfully.", {
+                    console.debug("[UniverseStore] Snapshot update: Universe loaded successfully.", {
                         leaguesCount: this.value.universe?.leagues?.length || 0,
                         activeSeasonId: this.value.universe?.activeSeasonId
                     });
@@ -65,7 +65,7 @@ class UniverseStore {
         const league = this.value.universe.leagues.find(l =>
             l.teams.some((t: any) => t.id === teamId)
         );
-        console.log(`[UniverseStore] getLeagueByTeamId searching for ${teamId}: ${league ? 'Found ' + league.name : 'NOT FOUND'}`);
+        console.debug(`[UniverseStore] getLeagueByTeamId searching for ${teamId}: ${league ? 'Found ' + league.name : 'NOT FOUND'}`);
         return league;
     }
 

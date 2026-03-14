@@ -16,7 +16,7 @@ export function createRaceService() {
             circuit: any,
             carStats: any = { aero: 1, powertrain: 1, chassis: 1 },
             weather: string = "Sunny"
-        ): { lapTime: number, isCrashed: boolean } {
+        ): { lapTime: number, isCrashed: boolean, driverFeedback: string[], tyreFeedback: string[], setupConfidence: number } {
             const ideal = circuit.idealSetup;
             const s = carStats;
 
@@ -27,19 +27,57 @@ export function createRaceService() {
             const cB = 1.0 - (clamp(s.chassis || 1, 1, 20) / 40.0);
 
             let penalty = 0;
+            const driverFeedback: string[] = [];
+            const tyreFeedback: string[] = [];
+            const feedbackStat = (driver.stats?.feedback || 50) / 100.0; // Standardize to 0-1 for logic below
+
             const gap = (a: number, b: number) => Math.abs(a - b);
             
-            const g1 = gap(setup.frontWing, ideal.frontWing);
-            penalty += (g1 <= 3 ? 0 : g1 - 3) * 0.03 * aB;
+            // Helper to add feedback with quality check (matching PracticeService)
+            const addFeedback = (specific: string, vague: string, g: number) => {
+                const threshold = 12 - (feedbackStat * 10); 
+                if (Math.abs(g) > threshold) {
+                    if (feedbackStat > 0.75) {
+                        driverFeedback.push(specific);
+                    } else if (feedbackStat > 0.4) {
+                        driverFeedback.push(Math.random() > 0.5 ? specific : vague);
+                    } else {
+                        driverFeedback.push(vague);
+                    }
+                }
+            };
+
+            const g1 = setup.frontWing - ideal.frontWing;
+            penalty += (Math.abs(g1) <= 3 ? 0 : Math.abs(g1) - 3) * 0.03 * aB;
+            addFeedback(
+                g1 > 0 ? "The front end is way too sharp, I'm fighting oversteer." : "The car is lazy on entry, we have too much understeer.",
+                "The front balance doesn't feel right, I can't hit the apex.",
+                g1
+            );
             
-            const g2 = gap(setup.rearWing, ideal.rearWing);
-            penalty += (g2 <= 3 ? 0 : g2 - 3) * 0.03 * aB;
+            const g2 = setup.rearWing - ideal.rearWing;
+            penalty += (Math.abs(g2) <= 3 ? 0 : Math.abs(g2) - 3) * 0.03 * aB;
+            addFeedback(
+                g2 > 0 ? "We're slow on the straights, feels like we have a parachute." : "The rear is very nervous. I can't put the power down.",
+                "The rear of the car is giving me zero confidence.",
+                g2
+            );
             
-            const g3 = gap(setup.suspension, ideal.suspension);
-            penalty += (g3 <= 3 ? 0 : g3 - 3) * 0.02 * cB;
+            const g3 = setup.suspension - ideal.suspension;
+            penalty += (Math.abs(g3) <= 3 ? 0 : Math.abs(g3) - 3) * 0.02 * cB;
+            addFeedback(
+                g3 > 0 ? "The car is too stiff, it's bouncing like crazy." : "The suspension feels like jelly, too much roll.",
+                "The car's handling over the bumps is very poor.",
+                g3
+            );
             
-            const g4 = gap(setup.gearRatio, ideal.gearRatio);
-            penalty += (g4 <= 3 ? 0 : g4 - 3) * 0.025 * pB;
+            const g4 = setup.gearRatio - ideal.gearRatio;
+            penalty += (Math.abs(g4) <= 3 ? 0 : Math.abs(g4) - 3) * 0.025 * pB;
+            addFeedback(
+                g4 > 0 ? "Gears are too short, hitting the limiter too early." : "Gears are too long, acceleration is non-existent.",
+                "The engine mapping doesn't match the track layout.",
+                g4
+            );
 
             // Car Config 
             const aV = clamp(s.aero || 1, 1, 20);
@@ -60,16 +98,22 @@ export function createRaceService() {
 
             const isWet = String(weather).toLowerCase().includes("rain") || String(weather).toLowerCase().includes("wet");
             if (isWet) {
+                // Base wet surface penalty: sessions in rain are always slower
+                penalty += 1.5;
+
                 if (ds.traits && ds.traits.includes("rainMaster")) {
-                    df -= 0.01;
+                    df -= 0.015; // Increased bonus for Rain Masters
                 }
                 if (setup.tyreCompound !== "wet") {
                     penalty += 5.0;
+                    tyreFeedback.push("Zero grip! Need wets!");
                 } else {
                     penalty -= 0.3; 
+                    tyreFeedback.push("Wets are working well.");
                 }
             } else if (setup.tyreCompound === "wet") {
                 penalty += 3.0; 
+                tyreFeedback.push("Wets are overheating on this dry track.");
             }
 
             // Style modifier
@@ -91,7 +135,17 @@ export function createRaceService() {
             let lap = circuit.baseLapTime * carFactor * df + penalty;
             lap += (Math.random() - 0.5) * 0.8;
 
-            return { lapTime: crashed ? 999.0 : lap, isCrashed: crashed };
+            // Final confidence calculation
+            const totalGap = Math.abs(g1) + Math.abs(g2) + Math.abs(g3) + Math.abs(g4);
+            const confidence = Math.max(0, Math.min(1, 1.0 - (totalGap / 100.0)));
+
+            return { 
+                lapTime: crashed ? 999.0 : lap, 
+                isCrashed: crashed,
+                driverFeedback,
+                tyreFeedback,
+                setupConfidence: confidence
+            };
         },
 
          /**
@@ -100,7 +154,7 @@ export function createRaceService() {
          */
         async getCompetitorPracticeTimes(sessionId: string, teamIds?: string[], teamNames?: Record<string, string>): Promise<Array<{teamName: string, driverName: string, time: number | null, tyre: string | null, totalLaps: number, driverId: string}>> {
             try {
-                console.log(`[RaceService] getCompetitorPracticeTimes: Redesigned Fetch with Fallback. Session: ${sessionId}`);
+                console.debug(`[RaceService] getCompetitorPracticeTimes: Redesigned Fetch with Fallback. Session: ${sessionId}`);
                 
                 if (!teamIds || teamIds.length === 0) {
                     console.warn('[RaceService] getCompetitorPracticeTimes: Aborting. No teamIds provided.');
@@ -108,16 +162,16 @@ export function createRaceService() {
                 }
 
                 // 1. Fetch ALL drivers in the league
-                console.log(`[RaceService] Fetching all drivers for ${teamIds.length} teams.`);
+                console.debug(`[RaceService] Fetching all drivers for ${teamIds.length} teams.`);
                 const driversQ = query(
                     collection(db, 'drivers'),
                     where('teamId', 'in', teamIds)
                 );
                 const driversSnap = await getDocs(driversQ);
-                console.log(`[RaceService] Drivers found: ${driversSnap.size}`);
+                console.debug(`[RaceService] Drivers found: ${driversSnap.size}`);
 
                 // 2. Fetch ALL teams in the league (for fallback data)
-                console.log(`[RaceService] Fetching all teams for fallback data.`);
+                console.debug(`[RaceService] Fetching all teams for fallback data.`);
                 const teamsQ = query(
                     collection(db, 'teams'),
                     where(documentId(), 'in', teamIds)
@@ -159,7 +213,7 @@ export function createRaceService() {
                     });
                 });
 
-                console.log(`[RaceService] Map complete. Total participants: ${competitors.length}`);
+                console.debug(`[RaceService] Map complete. Total participants: ${competitors.length}`);
 
                 // Sort: Drivers with times first (by time), then drivers without times alphabetically
                 competitors.sort((a, b) => {
@@ -173,6 +227,75 @@ export function createRaceService() {
 
             } catch (e) {
                 console.error("Failed to fetch competitor times", e);
+                return [];
+            }
+        },
+
+        /**
+         * Fetches other competitor qualifying times from the same league to display as a benchmark.
+         */
+        async getCompetitorQualifyingTimes(sessionId: string, teamIds?: string[], teamNames?: Record<string, string>): Promise<Array<{teamName: string, driverName: string, time: number | null, tyre: string | null, totalLaps: number, driverId: string, gender: string}>> {
+            try {
+                console.debug(`[RaceService] getCompetitorQualifyingTimes. Session: ${sessionId}`);
+                
+                if (!teamIds || teamIds.length === 0) {
+                    console.warn('[RaceService] getCompetitorQualifyingTimes: Aborting. No teamIds provided.');
+                    return [];
+                }
+
+                // 1. Fetch ALL drivers in the league
+                const driversQ = query(
+                    collection(db, 'drivers'),
+                    where('teamId', 'in', teamIds)
+                );
+                const driversSnap = await getDocs(driversQ);
+
+                // 2. Fetch ALL teams in the league (for fallback/direct data)
+                const teamsQ = query(
+                    collection(db, 'teams'),
+                    where(documentId(), 'in', teamIds)
+                );
+                const teamsSnap = await getDocs(teamsQ);
+                const teamsMap = new Map<string, any>();
+                teamsSnap.forEach(tDoc => teamsMap.set(tDoc.id, tDoc.data()));
+
+                const competitors: Array<{teamName: string, driverName: string, time: number | null, tyre: string | null, totalLaps: number, driverId: string, gender: string}> = [];
+
+                // 3. Merge data using team weekStatus (where qualy data is stored)
+                driversSnap.forEach(driverDoc => {
+                    const dId = driverDoc.id;
+                    const d = driverDoc.data();
+                    const teamData = teamsMap.get(d.teamId);
+                    
+                    const qualyData = teamData?.weekStatus?.driverSetups?.[dId] || {};
+
+                    const bestTime = qualyData.qualifyingBestTime || null;
+                    const bestTyre = qualyData.qualifyingBestCompound || null;
+                    const laps = qualyData.qualifyingLaps || 0;
+
+                    competitors.push({
+                        teamName: teamNames?.[d.teamId] || d.teamName || teamData?.name || `Team ${d.teamId.substring(0, 5)}`,
+                        driverName: d.name || 'Unknown Driver',
+                        driverId: dId,
+                        time: bestTime === 0 ? null : bestTime,
+                        tyre: bestTyre,
+                        totalLaps: laps,
+                        gender: d.gender || 'male'
+                    });
+                });
+
+                // Sort: Drivers with times first (by time), then drivers without times alphabetically
+                competitors.sort((a, b) => {
+                    if (a.time === null && b.time === null) return a.driverName.localeCompare(b.driverName);
+                    if (a.time === null) return 1;
+                    if (b.time === null) return -1;
+                    return a.time - b.time;
+                });
+                
+                return competitors;
+
+            } catch (e) {
+                console.error("Failed to fetch competitor qualy times", e);
                 return [];
             }
         },

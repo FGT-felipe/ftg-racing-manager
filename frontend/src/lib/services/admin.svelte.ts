@@ -20,12 +20,9 @@ export const adminService = {
      * Wipes historical data and resets the universe.
      */
     async nukeAndReseed() {
-        console.warn('☢️ NUKE: Starting total wipeout...');
-
         try {
             // 1. Delete Universe
             await deleteDoc(doc(db, 'universe', 'game_universe_v1'));
-            console.log('NUKE: Universe deleted.');
 
             // 2. Clear Collection Groups (Drivers, Press News)
             const collectionGroups = ['drivers', 'press_news'];
@@ -35,7 +32,6 @@ export const adminService = {
                     const batch = writeBatch(db);
                     snap.docs.forEach(d => batch.delete(d.ref));
                     await batch.commit();
-                    console.log(`NUKE: ${cg} group cleared.`);
                 }
             }
 
@@ -56,14 +52,12 @@ export const adminService = {
                     const batch = writeBatch(db);
                     snap.docs.forEach(d => batch.delete(d.ref));
                     await batch.commit();
-                    console.log(`NUKE: ${col} collection cleared.`);
                 }
             }
 
-            console.log('NUKE: Wipe completed.');
             return true;
-        } catch (e) {
-            console.error('FATAL ERROR DURING NUKE:', e);
+        } catch (e: any) {
+            console.error('Admin operation failed:', e.message || 'Unknown error');
             throw e;
         }
     },
@@ -73,7 +67,6 @@ export const adminService = {
      * Synchronizes calendars with the absolute truth from ftg_world.
      */
     async fixRaceCalendars() {
-        console.log('Starting Race Calendar Maintenance...');
         const worldSeasonId = '3sh7fStGc55XxwmQHaJu';
         const targetSeasons = {
             'ftg_2th': 'Py9vb4IrLJGZPDCCCUkG',
@@ -121,12 +114,11 @@ export const adminService = {
 
                 if (changed) {
                     await updateDoc(doc(db, 'seasons', seasonId), { calendar });
-                    console.log(`Updated calendar for ${leagueId}`);
                 }
             }
             return true;
-        } catch (e) {
-            console.error('Error fixing calendars:', e);
+        } catch (e: any) {
+            console.error('Calendar sync failed:', e.message || 'Unknown error');
             throw e;
         }
     },
@@ -135,7 +127,6 @@ export const adminService = {
      * Port of FinanceService.applyGreatRebalanceTax
      */
     async applyGreatRebalanceTax() {
-        console.log('Applying great rebalance tax...');
         try {
             const teamsSnap = await getDocs(collection(db, 'teams'));
             let batch = writeBatch(db);
@@ -180,8 +171,6 @@ export const adminService = {
                     title: 'Economic Rebalance',
                     message: `The Racing Federation has applied an economic rebalance. Your budget is now $${(newBudget / 1000000).toFixed(1)}M. Previous sponsors have been terminated.`,
                     type: 'INFO',
-                    actionRoute: '/hq',
-                    isRead: false,
                     timestamp: serverTimestamp()
                 });
                 opCount++;
@@ -195,8 +184,8 @@ export const adminService = {
 
             if (opCount > 0) await batch.commit();
             return true;
-        } catch (e) {
-            console.error('Error applying tax:', e);
+        } catch (e: any) {
+            console.error('Rebalance operation failed:', e.message || 'Unknown error');
             throw e;
         }
     }
