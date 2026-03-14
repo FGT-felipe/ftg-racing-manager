@@ -81,6 +81,10 @@ Sistema de progresión basado en XP acumulado.
 *   **Eventos de Crisis**: 15% de probabilidad semanal de evento negativo (Falta de foco, fatiga) si no hay crecimiento.
 *   **Especialidades**: Un piloto de academia solo puede desbloquear una especialidad (Rainmaster, etc.) si su `Base Skill` es >= 8.
 *   **Recuperación Física**: Los pilotos recuperan **+1.5%** de Fitness cada día a medianoche.
+*   **Generación de Candidatos (Scouting)**:
+    *   Toda sesión de scouting genera siempre **2 candidatos en simultáneo**.
+    *   Distribución paritaria garantizada: **1 Hombre y 1 Mujer** por sesión.
+    *   **Escalado por Nivel**: El nivel de la academia define el rango de estrellas inicial (Nivel 1: ~1.5 estrellas actuales, ~3.5 potenciales).
 
 ---
 

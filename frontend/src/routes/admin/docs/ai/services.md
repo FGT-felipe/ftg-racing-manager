@@ -36,9 +36,18 @@ This document defines the interface and behaviors of core services for automated
 - **Qualifying Integration**: Per-driver `lastQualyResult` persists setup hints and allows fallback to `practice` results for managers to optimize during qualifying attempts.
 - **State Writes**: Updates `weekStatus.driverSetups.{id}.practice` or `qualifying` for persistence. Stores `bestLapSetup` upon achieving a new personal best lap.
 
+### `AcademyService`
+- **Mutations**: `academy.config.candidates`, `academy.config.selected`.
+- **API**:
+  - `generateInitialCandidates(count, nation, level)`: Strictly returns 1M/1F pair with level-based stat scaling.
+  - `saveCandidates(teamId, candidates)`: Batch persistent write.
+- **Rules**: Protects recruited drivers by avoiding overwrites in existing subcollections.
+
 ## 3. System Administration
 ### `AdminService`
 - **Capabilities**: Full reseed (`nuke`), calendar sync, global economic rebalancing.
+- **Recovery Tools**:
+  - `fixBrokenAcademies()`: Repairs teams with unlocked facilities but missing setup/candidates. Atomic sync of `config` document and initial batch.
 - **Patterns**: High-performance batch writes (450 ops/chunk).
 
 ## 4. Interaction Dependency Graph

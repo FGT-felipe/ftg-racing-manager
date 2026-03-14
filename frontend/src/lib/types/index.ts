@@ -233,6 +233,7 @@ export interface YoungDriver {
         name: string;
         flagEmoji: string;
     };
+    countryCode: string;
     baseSkill: number;
     maxSkill: number;
     growthPotential: number;

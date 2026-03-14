@@ -72,7 +72,11 @@
                 name === "fixBrokenAcademies"
             ) {
                 const { adminService } = await import("$lib/services/admin.svelte");
-                await adminService[name as keyof typeof adminService]();
+                const result = await adminService[name as keyof typeof adminService]();
+                if (result && typeof result === 'object' && 'count' in result) {
+                    alert(`Success: ${name} executed. Fixed ${result.count} academies.`);
+                    return;
+                }
             } else if (name === "generate_market_drivers") {
                 const { db } = await import("$lib/firebase/config");
                 const { collection, addDoc, serverTimestamp } = await import("firebase/firestore");
@@ -183,7 +187,7 @@
                             onclick={() => activeTab = tab.id}
                             class="flex items-center gap-4 p-4 rounded-2xl transition-all group {activeTab === tab.id ? 'bg-app-primary text-black shadow-lg shadow-app-primary/10' : 'text-app-text/40 hover:bg-app-text/5 hover:text-app-text'}"
                         >
-                            <tab.icon size={18} class="{activeTab === tab.id ? 'opacity-100' : 'opacity-40 group-hover:opacity-100'}" />
+                            <tab.icon size={18} class={activeTab === tab.id ? 'opacity-100' : 'opacity-40 group-hover:opacity-100'} />
                             <span class="text-[10px] font-black uppercase tracking-widest">{tab.label}</span>
                         </button>
                     {/each}

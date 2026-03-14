@@ -15,7 +15,8 @@
     import { uiStore } from "$lib/stores/ui.svelte";
     import { seasonStore } from "$lib/stores/season.svelte";
     import { universeStore } from "$lib/stores/universe.svelte";
-    import { circuitService } from "$lib/services/circuit_service.svelte";
+    import { managerStore } from "$lib/stores/manager.svelte";
+import { circuitService } from "$lib/services/circuit_service.svelte";
     import {
         type CarSetup,
         TyreCompound,
@@ -359,12 +360,19 @@
         return `${mins}:${parts[0].padStart(2, '0')}.${parts[1]}`;
     }
 
-    const styleConfigs = [
-        { id: DriverStyle.defensive, icon: ChevronRight, color: "text-blue-400", label: "defensive" as TranslationKey },
-        { id: DriverStyle.normal, icon: Zap, color: "text-emerald-400", label: "normal" as TranslationKey },
-        { id: DriverStyle.offensive, icon: Zap, color: "text-orange-400", label: "offensive" as TranslationKey },
-        { id: DriverStyle.mostRisky, icon: Zap, color: "text-red-500", label: "risky" as TranslationKey },
-    ];
+    const styleConfigs = $derived.by(() => {
+        const base = [
+            { id: DriverStyle.defensive, icon: ChevronRight, color: "text-blue-400", label: "defensive" as TranslationKey },
+            { id: DriverStyle.normal, icon: Zap, color: "text-emerald-400", label: "normal" as TranslationKey },
+            { id: DriverStyle.offensive, icon: Zap, color: "text-orange-400", label: "offensive" as TranslationKey },
+        ];
+
+        if (managerStore.profile?.role === "ex_driver") {
+            base.push({ id: DriverStyle.mostRisky, icon: Zap, color: "text-red-500", label: "risky" as TranslationKey });
+        }
+
+        return base;
+    });
 </script>
 
 <div class="grid grid-cols-1 lg:grid-cols-12 gap-5" in:fade>

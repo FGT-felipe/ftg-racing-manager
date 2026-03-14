@@ -36,8 +36,13 @@ Actúa como puente entre el cliente y el SimEngine de Cloud Functions.
 *   **Benchmarking**: Recupera resultados de otros competidores de la liga para comparativas en tiempo real.
 *   **Triggers**: Expone métodos para forzar simulaciones de Qualy/Carrera (reservado para administradores).
 
-### F. Backend Orchestration (Cloud Functions)
-La lógica pesada se delega a las funciones de Firebase (Node.js) para garantizar imparcialidad y seguridad.
+### F. AcademyService (Gestor de Cantera)
+Gestiona el ciclo de vida de los pilotos junior y el scouting inicial.
+*   **Generación**: Implementa la lógica de escalado por nivel y el balance de género (1M, 1F) para candidatos.
+*   **Persistencia**: Centraliza el guardado de candidatos y el conteo de plazas ocupadas.
+
+### G. Backend Orchestration (Cloud Functions)
+Lógica pesada se delega a las funciones de Firebase (Node.js) para garantizar imparcialidad y seguridad.
 *   **Scheduled Jobs**: 
     *   `scheduledQualifying`: Ejecuta la clasificación los sábados a las 15:00 COT.
     *   `scheduledRace`: Simula la carrera completa los domingos a las 14:00 COT.
@@ -51,3 +56,10 @@ La lógica pesada se delega a las funciones de Firebase (Node.js) para garantiza
 ## 3. Integración y Seguridad
 *   **Transacciones**: Todas las operaciones que afectan el `budget` o el `rango de stats` de un piloto se realizan mediante `runTransaction` de Firestore para evitar colisiones de estado.
 *   **Persistencia Optimista**: La UI se actualiza inmediatamente tras la escritura, mientras que los listeners en los Stores aseguran la consistencia final con el servidor.
+
+---
+
+## 4. Administración (AdminService)
+Orquestador de herramientas de mantenimiento masivo.
+*   **Recuperación**: El método `fixBrokenAcademies` detecta equipos con instalaciones activas pero sin configuración o candidatos, inyectando un batch inicial de 2 pilotos (1M, 1F) escalados por nivel. 
+*   **Protección**: Nunca sobrescribe datos de pilotos ya contratados (`selected`), asegurando que no haya pérdida de progreso.

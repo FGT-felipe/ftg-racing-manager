@@ -2,6 +2,7 @@
     import { db } from "$lib/firebase/config";
     import { doc, updateDoc, increment } from "firebase/firestore";
     import { teamStore } from "$lib/stores/team.svelte";
+    import { managerStore } from "$lib/stores/manager.svelte";
     import { driverStore } from "$lib/stores/driver.svelte";
     import {
         type CarSetup,
@@ -311,12 +312,19 @@
         return "text-red-400";
     }
 
-    const styleConfigs = [
-        { id: DriverStyle.defensive, icon: ChevronRight, color: "text-blue-400", label: t("defensive") },
-        { id: DriverStyle.normal, icon: Zap, color: "text-emerald-400", label: t("normal") },
-        { id: DriverStyle.offensive, icon: Zap, color: "text-orange-400", label: t("offensive") },
-        { id: DriverStyle.mostRisky, icon: Zap, color: "text-red-500", label: t("risky") },
-    ];
+    const styleConfigs = $derived.by(() => {
+        const base = [
+            { id: DriverStyle.defensive, icon: ChevronRight, color: "text-blue-400", label: t("defensive") },
+            { id: DriverStyle.normal, icon: Zap, color: "text-emerald-400", label: t("normal") },
+            { id: DriverStyle.offensive, icon: Zap, color: "text-orange-400", label: t("offensive") },
+        ];
+
+        if (managerStore.profile?.role === "ex_driver") {
+            base.push({ id: DriverStyle.mostRisky, icon: Zap, color: "text-red-500", label: t("risky") });
+        }
+
+        return base;
+    });
 </script>
 
 {#if timeService.currentStatus === 'qualifying'}

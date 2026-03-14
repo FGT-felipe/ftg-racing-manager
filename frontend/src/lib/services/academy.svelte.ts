@@ -21,11 +21,13 @@ export class AcademyService {
     /**
      * Generates a set of initial candidates for a new academy.
      */
-    generateInitialCandidates(count: number = 4, preferredCountry?: string, academyLevel: number = 1): YoungDriver[] {
+    generateInitialCandidates(count: number = 2, preferredCountry?: string, academyLevel: number = 1): YoungDriver[] {
         const candidates: YoungDriver[] = [];
+        const genders: ('M' | 'F')[] = ['M', 'F'];
         
-        for (let i = 0; i < count; i++) {
+        for (let i = 0; i < 2; i++) {
             const country = getRandomNationality(preferredCountry);
+            const gender = genders[i];
             
             // Stats balance for "Junior" feel:
             // Level 1: current stars ~1-2 (skill 4-8), potential ~3-4 (skill 10-14)
@@ -44,12 +46,13 @@ export class AcademyService {
                 id: crypto.randomUUID(),
                 name: getRandomName(),
                 age: 15 + Math.floor(Math.random() * 4), // 15-18
-                gender: Math.random() > 0.8 ? 'F' : 'M',
+                gender: gender,
                 nationality: {
                     code: country.code,
                     name: country.name,
                     flagEmoji: country.emoji
                 },
+                countryCode: country.code,
                 baseSkill: baseSkill,
                 maxSkill: maxSkill,
                 growthPotential: 0.8 + (Math.random() * 0.7), // 0.8 - 1.5

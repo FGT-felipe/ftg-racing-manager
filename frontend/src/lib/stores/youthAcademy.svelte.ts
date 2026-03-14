@@ -151,8 +151,8 @@ export function createYouthAcademyStore() {
                     createdAt: serverTimestamp()
                 });
 
-                // Generate initial batch of candidates (Level 1)
-                const initialCandidates = academyService.generateInitialCandidates(5, country.code, 1);
+                // Generate initial batch of candidates (Level 1, 1M, 1F)
+                const initialCandidates = academyService.generateInitialCandidates(2, country.code, 1);
                 initialCandidates.forEach(candidate => {
                     const candidateRef = doc(db, 'teams', teamId, 'academy', 'config', 'candidates', candidate.id);
                     transaction.set(candidateRef, candidate);

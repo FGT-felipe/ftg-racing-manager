@@ -41,6 +41,11 @@
 - **Age Peak Factors (Career Generation)**:
     - `<23`: 0.7-0.9x | `23-27`: 0.9-1.1x | `27-32`: 1.1-1.4x | `32-36`: 0.8-1.0x | `>36`: 0.5-0.8x
 - **Specialization**: Locked until `BaseSkill >= 8`.
+- **Academy Candidate Generation**:
+    - **Session Size**: Always returns a pair (2 drivers).
+    - **Gender Balance**: Strictly enforced **1 Male, 1 Female** per batch.
+    - **Level Scaling**: Base skill and potential are calculated as `(Base + academyLevel * 2) + rand(0,4)`.
+    - **Star Consistency**: `potentialStars` reflects `maxSkill / 4` to match main driver mechanics.
 
 ## 5. Transfer Market
 - **Duration**: Hardcoded 24 hours.

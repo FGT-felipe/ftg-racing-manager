@@ -199,6 +199,7 @@ export const adminService = {
             const { academyService } = await import('./academy.svelte');
             const teamsSnap = await getDocs(collection(db, 'teams'));
             let fixedCount = 0;
+            let fixedTeamIds: string[] = [];
 
             for (const tDoc of teamsSnap.docs) {
                 const teamData = tDoc.data();
@@ -208,24 +209,61 @@ export const adminService = {
                 if (academy && academy.level > 0) {
                     const teamId = tDoc.id;
                     const candidatesRef = collection(db, 'teams', teamId, 'academy', 'config', 'candidates');
-                    const candSnap = await getDocs(query(candidatesRef, limit(1)));
+                    const selectedRef = collection(db, 'teams', teamId, 'academy', 'config', 'selected');
+                    const configRef = doc(db, 'teams', teamId, 'academy', 'config');
+                    
+                    const [candSnap, selectedSnap, configSnap] = await Promise.all([
+                        getDocs(candidatesRef),
+                        getDocs(selectedRef),
+                        getDoc(configRef)
+                    ]);
 
-                    // If no candidates exist, generate initial batch
-                    if (candSnap.empty) {
-                        const configRef = doc(db, 'teams', teamId, 'academy', 'config');
-                        const configSnap = await getDoc(configRef);
-                        const countryCode = configSnap.exists() ? configSnap.data().countryCode : 'ES'; // Fallback to ES
+                    // SAFETY: Only fix if they have NO selected pilots (trainees)
+                    // This protects existing user progress.
+                    if (selectedSnap.empty) {
+                        const countryCode = configSnap.exists() ? configSnap.data().countryCode : 'ES';
+                        const countryName = configSnap.exists() ? configSnap.data().countryName : 'Spain';
+                        const countryFlag = configSnap.exists() ? configSnap.data().countryFlag : '🇪🇸';
 
-                        const initialCandidates = academyService.generateInitialCandidates(5, countryCode, academy.level);
-                        await academyService.saveCandidates(teamId, initialCandidates);
-                        fixedCount++;
-                        console.debug(`[AdminService] Fixed academy for team ${teamId}`);
+                        // Check if we need to fix (either empty OR doesn't match the new 1M/1F 2-candidate rule)
+                        const needsFix = candSnap.empty || candSnap.size !== 2 || !configSnap.exists();
+
+                        if (needsFix) {
+                            const batch = writeBatch(db);
+
+                            // 1. Ensure config document exists
+                            if (!configSnap.exists()) {
+                                batch.set(configRef, {
+                                    countryCode,
+                                    countryName,
+                                    countryFlag,
+                                    academyLevel: academy.level || 1,
+                                    scoutsUsedThisSeason: 2,
+                                    createdAt: serverTimestamp()
+                                });
+                            }
+
+                            // 2. Clear all existing candidates
+                            candSnap.docs.forEach(d => batch.delete(d.ref));
+
+                            // 3. Generate and set new 1M/1F pair
+                            const newCandidates = academyService.generateInitialCandidates(2, countryCode, academy.level || 1);
+                            newCandidates.forEach(c => {
+                                const cRef = doc(candidatesRef, c.id);
+                                batch.set(cRef, c);
+                            });
+
+                            await batch.commit();
+                            fixedCount++;
+                            fixedTeamIds.push(teamId);
+                            console.debug(`[AdminService] Fixed/Reset academy for team ${teamId}`);
+                        }
                     }
                 }
             }
 
-            console.log(`[AdminService] Finished fixing academies. Total fixed: ${fixedCount}`);
-            return fixedCount;
+            console.log(`[AdminService] Finished fixing academies. Total fixed: ${fixedCount}`, fixedTeamIds);
+            return { count: fixedCount, teams: fixedTeamIds };
         } catch (e: any) {
             console.error('Fix academies operation failed:', e.message || 'Unknown error');
             throw e;
