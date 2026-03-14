@@ -2,6 +2,7 @@
     import { CheckCircle2, ChevronRight, XCircle, AlertCircle, TrendingUp } from 'lucide-svelte';
     import { teamStore } from '$lib/stores/team.svelte';
     import { driverStore } from '$lib/stores/driver.svelte';
+    import { t } from '$lib/utils/i18n';
     
     // Preparation steps Logic
     let team = $derived(teamStore.value.team);
@@ -14,13 +15,13 @@
         const setups = team.weekStatus?.driverSetups || {};
         
         // Find main drivers
-        const mainDrivers = drivers.filter((d: any) => d.role === 'Main');
+        const mainDrivers = drivers.filter((d: any) => d.carIndex === 0 || d.carIndex === 1);
         if (mainDrivers.length === 0) return false;
 
-        // Check if all main drivers have setups
+        // Check if all main drivers have race setups saved (this is the final goal)
         return mainDrivers.every((d: any) => {
             const driverSetup = setups[d.id];
-            return driverSetup && driverSetup.practice && driverSetup.qualifying && driverSetup.race;
+            return driverSetup && driverSetup.race;
         });
     });
 
@@ -40,24 +41,24 @@
     const checklist = $derived([
         {
             id: 'setups',
-            title: 'Race Setups',
-            description: 'Configure tuning for your main drivers.',
+            title: t('race_setups'),
+            description: t('readiness_desc'),
             isComplete: hasMainSetups,
             link: '/racing',
             optional: false,
         },
         {
             id: 'sponsors',
-            title: 'Sponsorships',
-            description: 'Assign sponsors to the car to generate income.',
+            title: t('sponsors'),
+            description: t('scouting_efforts', { country: 'Global' }), // Use existing key or create new
             isComplete: hasSponsorsAssigned,
             link: '/office/sponsors',
             optional: false,
         },
         {
             id: 'upgrades',
-            title: 'Facilities (Optional)',
-            description: 'Invest your budget to gain long-term advantages.',
+            title: t('facilities') + ' (Opt)',
+            description: t('operational_benefits'),
             isComplete: hasUpgrades,
             link: '/office/facilities',
             optional: true,
@@ -79,9 +80,9 @@
     <div class="flex items-center justify-between mb-8 relative z-10">
         <div>
             <h3 class="text-xl font-heading font-black italic uppercase tracking-tighter text-app-text">
-                Race <span class="text-app-primary">Prep</span>
+                {t('race_prep_title').split(' ')[0]} <span class="text-app-primary">{t('race_prep_title').split(' ')[1] || ''}</span>
             </h3>
-            <p class="text-xs font-bold text-app-text/40 uppercase tracking-widest mt-1">Weekend Checklist</p>
+            <p class="text-xs font-bold text-app-text/40 uppercase tracking-widest mt-1">{t('session_label')} Checklist</p>
         </div>
         
         <!-- Progress Circular / Text Indicator -->
@@ -89,7 +90,7 @@
              <span class="text-2xl font-black italic {progressValue === 100 ? 'text-green-400' : 'text-app-text'} tabular-nums leading-none">
                  {progressValue.toFixed(0)}%
              </span>
-             <span class="text-[9px] uppercase tracking-widest text-app-text/40 font-black mt-1">Readiness</span>
+             <span class="text-[9px] uppercase tracking-widest text-app-text/40 font-black mt-1">{t('potential_peak_label')}</span>
         </div>
     </div>
 

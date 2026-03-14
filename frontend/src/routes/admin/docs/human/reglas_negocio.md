@@ -96,3 +96,11 @@ Sistema de progresión basado en XP acumulado.
 *   **Best Setup**: El sistema guarda automáticamente la configuración (`CarSetup`) de la mejor vuelta obtenida durante las sesiones de práctica. Esta configuración puede ser recuperada en la pestaña de Estrategia de Carrera mediante el botón "Best Setup".
 *   **Preconfiguración**: Al iniciar la configuración de carrera, el sistema precarga el setup de Clasificación o Práctica si no existe una estrategia guardada previamente.
 *   **Flexibilidad**: A diferencia de Clasificación (Parc Fermé), el manager tiene libertad total para ajustar los parámetros aerodinámicos y mecánicos antes del inicio oficial del Gran Premio.
+
+---
+
+## 8. Dashboard: Preparación de Carrera (Race Prep)
+*   **Lógica de Preparación**: El indicador de "Readiness" en el dashboard se calcula en base a las tareas críticas del fin de semana.
+*   **Setups de Carrera**: Este ítem se marca como completado (`isComplete`) únicamente cuando ambos pilotos principales tienen guardada una **Estrategia de Carrera** (pestaña Race Setup). Esto elimina la dependencia de completar sesiones previas (Práctica/Qualy) para ver el indicador en verde.
+*   **Patrocinadores**: Requiere que el equipo tenga al menos un contrato de patrocinio activo para ser marcado como completado.
+*   **Instalaciones (Opcional)**: Informa sobre el estado de las infraestructuras. Actualmente se considera completado por defecto si el equipo es válido.

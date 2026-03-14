@@ -64,21 +64,12 @@
     $effect(() => {
         if (driverId && team) {
             untrack(() => {
-                const existing =
-                    team.weekStatus?.driverSetups?.[driverId]?.race;
-                if (existing) {
-                    strategy = { ...strategy, ...existing };
+                const driverData = team.weekStatus?.driverSetups?.[driverId];
+                if (driverData?.race) {
+                    strategy = { ...strategy, ...driverData.race };
                 } else {
-                    // Fallback to Qualifying or Practice setup if Race strategy isn't saved yet
-                    const qualy =
-                        team.weekStatus?.driverSetups?.[driverId]?.qualifying;
-                    const prac =
-                        team.weekStatus?.driverSetups?.[driverId]?.practice;
-                    if (qualy) {
-                        strategy = { ...strategy, ...qualy };
-                    } else if (prac) {
-                        strategy = { ...strategy, ...prac };
-                    }
+                    // Fallback to best available if race strategy is not yet saved
+                    loadBestSetup(true); // Silent load on initialization
                 }
 
                 // Also fetch the qualy grid constraints
@@ -137,18 +128,18 @@
         }
     }
 
-    function loadBestSetup() {
+    async function loadBestSetup(silent = false) {
         if (!team || !driverId) return;
         const practiceData = team.weekStatus?.driverSetups?.[driverId]?.practice;
         const qualyData = team.weekStatus?.driverSetups?.[driverId]?.qualifying;
 
         if (practiceData?.bestLapSetup) {
             strategy = { ...strategy, ...practiceData.bestLapSetup };
-            uiStore.alert(`✓ ${t('best_setup_loaded')}`, t('best_setup_loaded'), "success");
+            if (!silent) uiStore.alert(`✓ ${t('best_setup_loaded')}`, t('best_setup'), "success");
         } else if (practiceData?.lastResult?.setupUsed) {
             // Fallback 1: Last practice result
             strategy = { ...strategy, ...practiceData.lastResult.setupUsed };
-            uiStore.alert(`✓ ${t('best_setup_loaded')}`, t('best_setup_loaded'), "success");
+            if (!silent) uiStore.alert(`✓ ${t('best_setup_loaded')}`, t('best_setup'), "success");
         } else if (practiceData?.frontWing !== undefined) {
             // Fallback 2: Direct fields in practice doc
             strategy = {
@@ -158,13 +149,13 @@
                 suspension: practiceData.suspension,
                 gearRatio: practiceData.gearRatio
             };
-            uiStore.alert(`✓ ${t('best_setup_loaded')}`, t('best_setup_loaded'), "success");
+            if (!silent) uiStore.alert(`✓ ${t('best_setup_loaded')}`, t('best_setup'), "success");
         } else if (qualyData) {
             // Fallback 3: Qualifying setup
             strategy = { ...strategy, ...qualyData };
-            uiStore.alert(`✓ ${t('best_setup_loaded')}`, t('best_setup_loaded'), "success");
+            if (!silent) uiStore.alert(`✓ ${t('best_setup_loaded')}`, t('best_setup'), "success");
         } else {
-            uiStore.alert(t('no_setup_found'), t('insufficient_funds').split(' ')[0], "warning");
+            if (!silent) uiStore.alert(t('no_setup_found'), t('best_setup'), "warning");
         }
     }
 
@@ -299,10 +290,10 @@
                 {/each}
 
                 <div class="md:col-span-2 flex justify-end">
-                    <button 
-                        onclick={loadBestSetup}
-                        class="px-4 py-2 rounded-xl border border-[#E040FB]/20 bg-[#E040FB]/5 text-[#E040FB] text-[10px] font-black uppercase hover:bg-[#E040FB] hover:text-white transition-all flex items-center gap-2 group"
-                    >
+                    <button
+                    onclick={() => loadBestSetup()}
+                    class="px-4 py-2 rounded-xl bg-app-primary/10 border border-app-primary text-app-primary font-black uppercase text-[10px] hover:bg-app-primary hover:text-black transition-all flex items-center gap-2"
+                >
                         <Zap size={14} class="group-hover:animate-pulse" />
                         {t('best_setup')}
                     </button>

@@ -87,7 +87,7 @@ export class SponsorService {
         let multiplier = 1.0;
         let isAdmin = false;
 
-        if (role === 'businessAdmin') {
+        if (role === 'business') {
             multiplier = 1.15;
             isAdmin = true;
         }

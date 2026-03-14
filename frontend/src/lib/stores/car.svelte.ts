@@ -20,7 +20,7 @@ export function createCarStore() {
             // Fibonacci sequence for multiplier: 1, 1, 2, 3, 5, 8, 13, 21...
             if (currentLevel <= 2) {
                 const base = 100000;
-                return profile?.role === 'exEngineer' ? base * 2 : base;
+                return profile?.role === 'engineer' ? base * 2 : base;
             }
 
             let a = 1;
@@ -32,7 +32,7 @@ export function createCarStore() {
             }
 
             const base = b * 100000;
-            return profile?.role === 'exEngineer' ? base * 2 : base;
+            return profile?.role === 'engineer' ? base * 2 : base;
         },
 
         async upgradePart(carIndex: number, partKey: string) {
@@ -71,7 +71,7 @@ export function createCarStore() {
                 }
 
                 // Upgrade limit check
-                const maxUpgrades = profile?.role === 'exEngineer' ? 2 : 1;
+                const maxUpgrades = profile?.role === 'engineer' ? 2 : 1;
                 if (upgradeCount >= maxUpgrades) {
                     throw new Error(`Upgrade limit reached (${maxUpgrades} per week).`);
                 }

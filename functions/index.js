@@ -349,10 +349,15 @@ const SimEngine = {
     // Reliability reduces crash chance
     const rV = clamp(s.reliability || 1, 1, 20);
     accProb *= (1.0 - (rV / 30.0));
-    // Ex-Driver: small extra crash probability
+    // Ex-Driver: small extra crash probability (+5% relative increase or flat extra)
     const teamRole = p.teamRole || "";
-    let extraCrash = 0;
-    if (teamRole === "exDriver") extraCrash = 0.001;
+    if (teamRole === "ex_driver") {
+      extraCrash = 0.001;
+      df -= 0.02; // +2% race pace bonus
+    } else if (teamRole === "business") {
+      df += 0.02; // -2% race pace penalty
+    }
+
     const crashed = Math.random() < (accProb + extraCrash);
 
     let lap = circuit.baseLapTime * carFactor * df + penalty;
@@ -428,13 +433,6 @@ const SimEngine = {
 
         let lt = res.lapTime;
 
-        // ── Manager Role Modifiers ──
-        const teamRole = roles[driver.teamId] || "";
-        // Ex-Driver: +2% pace (faster = multiply by 0.98)
-        if (teamRole === "exDriver") lt *= 0.98;
-        // Business Admin: -2% pace (slower = multiply by 1.02)
-        if (teamRole === "businessAdmin") lt *= 1.02;
-
         // Tyre wear penalty
         lt += Math.pow(wear[did] / 100.0, 2) * 8.0;
 
@@ -508,7 +506,7 @@ const SimEngine = {
 
           // Ex-Engineer: -10% tyre wear
           const teamRoleW = roles[driversMap[did].teamId] || "";
-          if (teamRoleW === "exEngineer") {
+          if (teamRoleW === "engineer") {
             wear[did] *= 0.9;
           }
         }
@@ -784,9 +782,10 @@ function generateAcademyCandidate(academyLevel, countryCode, gender) {
  * @param {string} teamId The ID of the team.
  * @param {number} academyLevel The current level of the academy (1-5).
  * @param {string} countryCode The country code of the team/academy.
+ * @param {string} teamRole The manager's role.
  * @return {Promise<void>} Resolves when the batch commit is complete.
  */
-async function refreshAcademyCandidates(teamId, academyLevel, countryCode) {
+async function refreshAcademyCandidates(teamId, academyLevel, countryCode, teamRole = "") {
   const configRef = db.collection("teams").doc(teamId).collection("academy").doc("config");
   const configSnap = await configRef.get();
   const config = configSnap.exists ? configSnap.data() : {};
@@ -818,13 +817,29 @@ async function refreshAcademyCandidates(teamId, academyLevel, countryCode) {
   });
 
   // Ensure 1 male, 1 female offering if under quota
-  if (males === 0 && scoutsUsed < maxScouts) {
-    const newM = generateAcademyCandidate(academyLevel, countryCode, "M");
-    batch.set(candidatesRef.doc(newM.id), newM);
+  // Bureaucrat: +1 extra youth academy driver per level (conceptually we just allow more scouts/candidates)
+  let maleTarget = 1;
+  let femaleTarget = 1;
+  if (teamRole === "bureaucrat") {
+    maleTarget = 2; // For simplicity, we double the base targets if bureaucrat
+    femaleTarget = 2;
   }
-  if (females === 0 && scoutsUsed < maxScouts) {
-    const newF = generateAcademyCandidate(academyLevel, countryCode, "F");
-    batch.set(candidatesRef.doc(newF.id), newF);
+
+  if (males < maleTarget && scoutsUsed < maxScouts) {
+    for (let i = 0; i < (maleTarget - males); i++) {
+        if (scoutsUsed >= maxScouts) break;
+        const newM = generateAcademyCandidate(academyLevel, countryCode, "M");
+        batch.set(candidatesRef.doc(newM.id), newM);
+        scoutsUsed++;
+    }
+  }
+  if (females < femaleTarget && scoutsUsed < maxScouts) {
+    for (let i = 0; i < (femaleTarget - females); i++) {
+        if (scoutsUsed >= maxScouts) break;
+        const newF = generateAcademyCandidate(academyLevel, countryCode, "F");
+        batch.set(candidatesRef.doc(newF.id), newF);
+        scoutsUsed++;
+    }
   }
 
   // Always update scoutsUsedThisSeason if it changed (increase for expired)
@@ -835,7 +850,7 @@ async function refreshAcademyCandidates(teamId, academyLevel, countryCode) {
 
 // ─────────────────────────────────────────────
 // 1. SCHEDULED QUALIFYING (Sat 3:00 PM COT)
-// ─────────────────────────────────────────────
+// ─────────────────────────────────────────────────────
 
 async function runQualifyingLogic() {
   logger.info("=== QUALIFYING START ===");
@@ -997,7 +1012,7 @@ async function runQualifyingLogic() {
 
               // Ex-Engineer: +5% qualy success (5% faster lap)
               finalLapTime = res.lapTime;
-              if (!res.isCrashed && managerRoles[team.id] === "exEngineer") {
+              if (!res.isCrashed && managerRoles[team.id] === "engineer") {
                 finalLapTime *= 0.95;
               }
               isCrashed = res.isCrashed;
@@ -1424,6 +1439,11 @@ async function runRaceLogic() {
             mDelta = 3; fDelta = 0.02;
           }
 
+          const mRoleForStats = dData.teamId ? (managerRoles[dData.teamId] || "") : "";
+          if (mRoleForStats === "ex_driver") {
+            mDelta += 10;
+          }
+
           const curStats = dData.stats || {};
           const newMorale = Math.min(100, Math.max(0, (curStats.morale || 50) + mDelta));
           const newForm = Math.min(10, Math.max(1, (dData.form || 5.0) + fDelta));
@@ -1760,9 +1780,13 @@ exports.postRaceProcessing = onSchedule({
         // 3. Driver Salaries
         let salaryCost = 0;
         const dSnap = await db.collection("drivers").where("teamId", "==", tid).get();
+        const mRoleForEco = teamData.managerId ? (managerRoles[tid] || "") : "";
         dSnap.forEach((doc) => {
           const d = doc.data();
-          const salary = d.salary || 10000; // default $10k
+          let salary = d.salary || 10000; // default $10k
+          if (mRoleForEco === "ex_driver") {
+            salary *= 1.2; // +20% salary penalty
+          }
           salaryCost += Math.round(salary / 52); // weekly wage
         });
         weeklyExpense += salaryCost;
@@ -1783,8 +1807,9 @@ exports.postRaceProcessing = onSchedule({
           const ac = academyConfigDoc.data();
           const academyLevel = ac.academyLevel || 1;
           const countryCode = ac.countryCode || "GB";
+          const mRole = teamData.managerId ? (managerRoles[tid] || "") : "";
 
-          await refreshAcademyCandidates(tid, academyLevel, countryCode);
+          await refreshAcademyCandidates(tid, academyLevel, countryCode, mRole);
 
           const selectedRef = db.collection("teams").doc(tid).collection("academy").doc("config").collection("selected");
           const selectedSnap = await selectedRef.get();
@@ -1800,7 +1825,13 @@ exports.postRaceProcessing = onSchedule({
             const growthPot = yDriver.growthPotential || 5;
             // Increased growth rate for better feel + Academy Level Bonus
             const levelBonus = (academyLevel - 1) * 8;
-            const xpGain = Math.floor(Math.random() * (growthPot * 15)) + 40 + levelBonus;
+            let xpGain = Math.floor(Math.random() * (growthPot * 15)) + 40 + levelBonus;
+
+            // Lead Engineer: -5% driver XP gain penalty
+            if (mRole === "engineer") {
+              xpGain = Math.floor(xpGain * 0.95);
+            }
+
             curWeekly += xpGain;
 
             let applyBaseGrowth = false;

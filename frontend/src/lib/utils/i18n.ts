@@ -281,7 +281,11 @@ export const translations = {
         locked_label: "LOCKED",
         qualy_locked_desc: "Race setups cannot be modified until the grid is finalized.",
         sunny: "Sunny",
-        clean_lap: "Clean lap"
+        clean_lap: "Clean lap",
+        race_prep_title: "Race Prep",
+        race_readiness: "{n}% Readiness",
+        readiness_desc: "Complete all setup phases to maximize performance.",
+        race_setups: "Race Setups"
     },
     es: {
         career_view: "Vista Profesional",
@@ -562,7 +566,11 @@ export const translations = {
         locked_label: "BLOQUEADO",
         qualy_locked_desc: "Los ajustes de carrera no pueden modificarse hasta que la parrilla sea final.",
         sunny: "Soleado",
-        clean_lap: "Vuelta limpia"
+        clean_lap: "Vuelta limpia",
+        race_prep_title: "Prep. de Carrera",
+        race_readiness: "{n}% Preparado",
+        readiness_desc: "Completa todas las fases de setup para maximizar el rendimiento.",
+        race_setups: "Setups de Carrera"
     }
 };
 

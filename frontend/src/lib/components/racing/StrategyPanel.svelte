@@ -20,6 +20,7 @@
     import { teamStore } from "$lib/stores/team.svelte";
     import { driverStore } from "$lib/stores/driver.svelte";
     import { seasonStore } from "$lib/stores/season.svelte";
+    import { managerStore } from "$lib/stores/manager.svelte";
     import {
         type CarSetup,
         TyreCompound,
@@ -150,7 +151,7 @@
         );
     }
 
-    const styleConfigs = [
+    const styleConfigs = $derived([
         {
             id: DriverStyle.defensive,
             icon: ChevronRight,
@@ -169,13 +170,17 @@
             color: "text-orange-400",
             label: "OFFE",
         },
-        {
-            id: DriverStyle.mostRisky,
-            icon: Zap,
-            color: "text-red-500",
-            label: "RISK",
-        },
-    ];
+        ...(managerStore.profile?.role === "ex_driver"
+            ? [
+                  {
+                      id: DriverStyle.mostRisky,
+                      icon: Zap,
+                      color: "text-red-500",
+                      label: "RISK",
+                  },
+              ]
+            : []),
+    ]);
 </script>
 
 <div class="space-y-6">

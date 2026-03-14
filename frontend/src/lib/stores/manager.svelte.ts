@@ -42,9 +42,11 @@ export function createManagerStore() {
             isLoading = true;
             unsubscribe = onSnapshot(doc(db, 'managers', user.uid), (snapshot) => {
                 if (snapshot.exists()) {
+                    const data = snapshot.data();
                     profile = {
                         uid: snapshot.id,
-                        ...snapshot.data()
+                        ...data,
+                        role: data?.backgroundId || ''
                     } as ManagerProfile;
                 } else {
                     profile = null;

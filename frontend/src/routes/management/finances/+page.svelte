@@ -83,8 +83,12 @@
 
         // 2. Staff Salaries (Payroll)
         const teamDrivers = drivers;
+        const managerRole = managerStore.profile?.role || "";
         teamDrivers.forEach((d) => {
-            const weekly = Math.round(d.salary / 52);
+            let weekly = Math.round(d.salary / 52);
+            if (managerRole === "ex_driver") {
+                weekly = Math.round(weekly * 1.2);
+            }
             payroll += weekly;
             breakdown.push({
                 name: `${d.name} (Salary)`,

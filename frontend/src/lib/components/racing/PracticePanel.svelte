@@ -331,7 +331,7 @@
         try {
             const teamRef = doc(db, "teams", teamStore.value.team.id);
             await updateDoc(teamRef, { [`weekStatus.driverSetups.${driver.id}.qualifying`]: { ...setup } });
-            uiStore.alert(t('set_qualy'), 'Setup Guardado', 'success');
+            uiStore.alert(t('set_qualy'), t('copy_practice_to_qualy'), 'success');
         } catch (e) { console.error(e); }
     }
 
@@ -340,7 +340,7 @@
         try {
             const teamRef = doc(db, "teams", teamStore.value.team.id);
             await updateDoc(teamRef, { [`weekStatus.driverSetups.${driver.id}.race`]: { ...setup } });
-            uiStore.alert(t('set_race'), 'Setup Guardado', 'success');
+            uiStore.alert(t('set_race'), t('copy_practice_to_race'), 'success');
         } catch (e) { console.error(e); }
     }
 

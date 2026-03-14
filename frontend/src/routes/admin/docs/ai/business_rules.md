@@ -4,8 +4,8 @@
 | Role | Physics Adjust | Stats/Economy Adjust | Limitations |
 | :--- | :--- | :--- | :--- |
 | `ex_driver` | `pace: *0.98`, `crash: +0.001` | N/A | N/A |
-| `ex_engineer` | `tyre_wear: *0.9` | `max_upgrades: 2/wk`, `upgrade_cost: *2` (fib) | N/A |
-| `business_admin`| `pace: *1.02` | `sponsor_pay: *1.15`, `facility_upg: *0.9` | N/A |
+| `engineer` | `tyre_wear: *0.9` | `max_upgrades: 2/wk`, `upgrade_cost: *2` (fib) | N/A |
+| `business`| `pace: *1.02` | `sponsor_pay: *1.15`, `facility_upg: *0.9` | N/A |
 | `bureaucrat` | N/A | `academy_slots: +level*2`, `facility_upg: *0.9`| `qualy_cooldown: 2wk` |
 
 ## 2. Simulation Engine Constants
@@ -46,3 +46,9 @@
 - **Duration**: Hardcoded 24 hours.
 - **Resolution**: Best bid wins, seller gets funds, driver contract resets to 1 year.
 - **Bot Cleaning**: Expired unsold listings for `teamId: null` drivers are DELETED.
+
+## 6. Dashboard Readiness (Race Prep)
+- **Logic**: Readiness (%) = (Completed Required Tasks / Total Required Tasks) * 100.
+- **Race Setups (Mandatory)**: `isComplete` only if `weekStatus.driverSetups[driverId].race` exists for all main drivers (car 0 and 1). Previous sessions (Practice/Qualy) are ignored for this specific indicator.
+- **Sponsors (Mandatory)**: `isComplete` if `team.sponsors` contains at least one entry.
+- **Facilities (Optional)**: Informational only. `isComplete` by default if team is valid.
