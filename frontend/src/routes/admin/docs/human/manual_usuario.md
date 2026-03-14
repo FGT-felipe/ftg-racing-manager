@@ -14,3 +14,8 @@
 ### 🏎️ Práctica (Practice)
 - **Costo por Salida**: Cada salida a pista tiene un costo de mantenimiento y logística de **$10,000**.
 - **Límite de Vueltas**: Existe un límite máximo de vueltas por fin de semana para preservar la vida útil del motor y componentes.
+
+### 🛞 Gestión de Neumáticos (Tyre Management)
+- **Compuestos Secos**: Soft (Blando), Medium (Medio), Hard (Duro). Ofrecen diferentes niveles de agarre y durabilidad.
+- **Compuesto de Lluvia (Wet)**: Obligatorio en sesiones con lluvia. El uso de gomas de seco en lluvia penaliza gravemente el tiempo de vuelta (+8.0s).
+- **Regla Qualy Wet**: Si la clasificación fue en lluvia, la restricción de neumáticos de salida para el Top 10 se anula, permitiendo libre elección de compuestos para la carrera.

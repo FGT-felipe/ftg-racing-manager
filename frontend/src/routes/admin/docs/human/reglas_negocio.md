@@ -42,7 +42,7 @@ Lógica determinista ejecutada en el backend para garantizar integridad.
     *   **Neumáticos**: La lluvia añade **5.0s** de penalización extra por vuelta si no se usan neumáticos `Wet`. Los neumáticos `Wet` en seco penalizan **3.0s**.
     *   **Especialistas (Rain Master)**: Los pilotos con el rasgo `rainMaster` reciben un bono de ritmo (`df -0.015`) en sesiones de lluvia.
 *   **Parc Fermé**: No se aplica si la sesión de Clasificación es con lluvia.
-*   **Regla de Neumáticos de Salida**: Si la clasificación fue con lluvia, se anula la obligación de empezar la carrera con el neumático de la mejor vuelta. El manager tiene libre elección para la carrera (si esta es en seco).
+*   **Regla de Neumáticos de Salida (Qualy Wet -> Race Dry)**: Si la clasificación fue con lluvia (`weatherQualifying` incluye 'rain'/'wet'), se anula la obligación de empezar la carrera con el neumático de la mejor vuelta. El manager tiene libre elección para la carrera (si esta es en seco). En la UI, esto se refleja como "Elección Libre" frente a "Bloqueado por Qualy".
 *   **Excepción de Compuestos**: En carreras con lluvia, no es obligatorio usar el compuesto `Hard`.
 
 ### Estrategia y Riesgo
@@ -89,3 +89,10 @@ Sistema de progresión basado en XP acumulado.
 *   **Resolución**: Al finalizar, el mejor postor recibe al piloto y el vendedor el dinero.
 *   **Contratos Post-Venta**: Todo piloto vendido resetea su contrato a **1 año**.
 *   **Limpieza**: Los pilotos generados por el sistema que no reciben pujas en 24h son eliminados para mantener el pool fresco.
+
+---
+
+## 7. Configuración de Carrera (Race Setup)
+*   **Best Setup**: El sistema guarda automáticamente la configuración (`CarSetup`) de la mejor vuelta obtenida durante las sesiones de práctica. Esta configuración puede ser recuperada en la pestaña de Estrategia de Carrera mediante el botón "Best Setup".
+*   **Preconfiguración**: Al iniciar la configuración de carrera, el sistema precarga el setup de Clasificación o Práctica si no existe una estrategia guardada previamente.
+*   **Flexibilidad**: A diferencia de Clasificación (Parc Fermé), el manager tiene libertad total para ajustar los parámetros aerodinámicos y mecánicos antes del inicio oficial del Gran Premio.

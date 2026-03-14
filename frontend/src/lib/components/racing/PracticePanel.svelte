@@ -12,6 +12,7 @@
         type PracticeRunResult,
     } from "$lib/services/practice_service.svelte";
     import { MAX_PRACTICE_LAPS_PER_DRIVER, PRACTICE_SESSION_COST } from "$lib/constants/app_constants";
+    import { uiStore } from "$lib/stores/ui.svelte";
     import { seasonStore } from "$lib/stores/season.svelte";
     import { universeStore } from "$lib/stores/universe.svelte";
     import { circuitService } from "$lib/services/circuit_service.svelte";
@@ -113,6 +114,37 @@
         }));
     });
 
+    const isSaturdayAfter1PM = $derived.by(() => {
+        try {
+            const now = new Date();
+            const bogota = new Intl.DateTimeFormat('en-US', {
+                timeZone: 'America/Bogota',
+                weekday: 'long',
+                hour: 'numeric',
+                hour12: false
+            });
+            const parts = bogota.formatToParts(now);
+            const weekday = parts.find(p => p.type === 'weekday')?.value;
+            const hourValue = parts.find(p => p.type === 'hour')?.value;
+            const hour = parseInt(hourValue || '0');
+            
+            return weekday === 'Saturday' && hour >= 13;
+        } catch (e: any) {
+            console.error('[PracticePanel] COT check error:', e.message);
+            return false;
+        }
+    });
+
+    const driverQualyAttempts = $derived.by(() => {
+        if (!driverId) return 0;
+        return (
+            teamStore.value.team?.weekStatus?.driverSetups?.[driverId]
+                ?.qualifyingAttempts || 0
+        );
+    });
+
+    const isPracticeLocked = $derived(driverQualyAttempts > 0 || isSaturdayAfter1PM);
+
     async function refreshStandings() {
         const team = teamStore.value.team;
         const season = seasonStore.value.season;
@@ -191,7 +223,7 @@
 
         if (!hasPaid) {
             if (team.budget < PRACTICE_SESSION_COST) {
-                alert(t('insufficient_funds'));
+                uiStore.alert(t('insufficient_funds'), 'Presupuesto Insuficiente', 'danger');
                 isSimulating = false;
                 return;
             }
@@ -299,7 +331,7 @@
         try {
             const teamRef = doc(db, "teams", teamStore.value.team.id);
             await updateDoc(teamRef, { [`weekStatus.driverSetups.${driver.id}.qualifying`]: { ...setup } });
-            alert("✓ " + t('set_qualy'));
+            uiStore.alert(t('set_qualy'), 'Setup Guardado', 'success');
         } catch (e) { console.error(e); }
     }
 
@@ -308,7 +340,7 @@
         try {
             const teamRef = doc(db, "teams", teamStore.value.team.id);
             await updateDoc(teamRef, { [`weekStatus.driverSetups.${driver.id}.race`]: { ...setup } });
-            alert("✓ " + t('set_race'));
+            uiStore.alert(t('set_race'), 'Setup Guardado', 'success');
         } catch (e) { console.error(e); }
     }
 
@@ -493,8 +525,18 @@
                             </button>
                         {/each}
                     </div>
-                    <button disabled={isSimulating || !driver} onclick={runPractice} class="flex-[1.5] py-3 bg-app-primary text-black font-black uppercase tracking-widest text-[11px] rounded-xl hover:scale-[1.02] active:scale-95 transition-all disabled:opacity-50 disabled:scale-100 flex items-center justify-center gap-2 shadow-lg shadow-app-primary/20">
-                        {isSimulating ? t('simulating_laps') : t('start_practice')}
+                    <button 
+                        disabled={isSimulating || !driver || isPracticeLocked} 
+                        onclick={runPractice} 
+                        class="flex-[1.5] py-3 bg-app-primary text-black font-black uppercase tracking-widest text-[11px] rounded-xl hover:scale-[1.02] active:scale-95 transition-all disabled:opacity-50 disabled:scale-100 flex items-center justify-center gap-2 shadow-lg shadow-app-primary/20"
+                    >
+                        {#if isSimulating}
+                            {t('simulating_laps')}
+                        {:else if isPracticeLocked}
+                            {isSaturdayAfter1PM ? "PRACTICE EXPIRED" : "QUALY STARTED"}
+                        {:else}
+                            {t('start_practice')}
+                        {/if}
                     </button>
                 </div>
             </div>

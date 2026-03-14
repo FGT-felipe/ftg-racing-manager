@@ -1,7 +1,8 @@
 import { db } from "../firebase/config";
 import { collection, addDoc, doc, updateDoc, increment, serverTimestamp } from "firebase/firestore";
-import { type Driver, type Team, type CarSetup, DriverTrait } from "../types";
+import { type Driver, type Team, type CarSetup, DriverTrait, TyreCompound } from "../types";
 import { type CircuitProfile } from "./circuit_service.svelte";
+import { t } from "../utils/i18n";
 
 export interface SetupHint {
     min: number;
@@ -133,9 +134,9 @@ class PracticeService {
             // Base wet surface penalty: sessions in rain are always slower
             tyreDelta += 1.5;
 
-            if (setup.tyreCompound === 'wet') {
+            if (setup.tyreCompound === TyreCompound.wet) {
                 tyreDelta -= 0.3;
-                tyreFeedback.push("Wets are working well.");
+                tyreFeedback.push(t("wets_working_well"));
                 
                 // Rain Master trait bonus
                 if (driver.traits && driver.traits.includes(DriverTrait.rainMaster)) {
@@ -144,14 +145,19 @@ class PracticeService {
             } else {
                 tyreDelta = 8.0;
                 setupPenalty += 5.0;
-                tyreFeedback.push("Zero grip! Need wets!");
+                tyreFeedback.push(t("zero_grip_need_wets"));
             }
         } else {
-            const deltas = { soft: -0.5, medium: -0.3, hard: -0.1, wet: 3.0 };
-            tyreDelta = deltas[setup.tyreCompound];
-            if (setup.tyreCompound === 'wet') {
+            const deltas: Record<string, number> = { 
+                [TyreCompound.soft]: -0.5, 
+                [TyreCompound.medium]: -0.3, 
+                [TyreCompound.hard]: -0.1, 
+                [TyreCompound.wet]: 3.0 
+            };
+            tyreDelta = deltas[setup.tyreCompound] || 0;
+            if (setup.tyreCompound === TyreCompound.wet) {
                 setupPenalty += 2.0;
-                tyreFeedback.push("Wets are overheating on this dry track.");
+                tyreFeedback.push(t("wets_overheating"));
             }
         }
 
@@ -239,6 +245,7 @@ class PracticeService {
         if (isNewBest) {
             updates[`${practiceSetupPath}.bestLapTime`] = result.lapTime;
             updates[`${practiceSetupPath}.bestLapTyre`] = setup.tyreCompound;
+            updates[`${practiceSetupPath}.bestLapSetup`] = setup;
         }
 
         const teamRef = doc(db, "teams", team.id);

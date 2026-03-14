@@ -23,9 +23,13 @@
     - **Surface Penalty**: Every wet session adds a base `+1.5s` penalty (Even with correct tyres).
     - **Rain Master Bonus**: Drivers with `rainMaster` trait get a `df -0.015` (improved pace) modifier in wet sessions.
     - **Parc Fermé**: Disabled if Qualy session is wet.
-    - **Starting Tyres**: The "Best Q2 Lap tyre" rule is waived if Qualy was wet. Managers can choose starting compound for a dry race.
+    - **Starting Tyres**: The "Qualy Q2 tyre" rule is waived if Qualy was wet (`isQualyWet`). Managers can choose starting compound for the race even if it's dry.
+    - **Tire Compounds**: Only `Soft`, `Medium`, `Hard`, and `Wet` are available. `Intermediate` tires are not implemented.
 
-## 3. Financial & Economic Cycles (Monday 00:00 UTC)
+## 3. Platform Governance & i18n (CRITICAL)
+- **Zero Hardcoding**: All user-facing strings must pass through `t()` helper in `$lib/utils/i18n.ts`.
+- **Parity Rule**: Every key added to `translations.en` MUST exist in `translations.es` and vice versa.
+- **Dynamic Values**: Use `{key}` placeholders for dynamic data within translations.
 - **Salary Formula**: `AnnualSalary / 52` (Weekly deduction).
 - **Facility Maintenance**: `Level * $15,000` (Weekly).
 - **Staff (Trainer) Tiers**: `[0, 0, 50k, 120k, 250k, 500k]` by Level [0-5].

@@ -27,6 +27,7 @@
   import { transactionStore } from "$lib/stores/transactions.svelte";
   import { managerStore } from "$lib/stores/manager.svelte";
   import { universeStore } from "$lib/stores/universe.svelte";
+  import GlobalModal from "$lib/components/ui/GlobalModal.svelte";
 
   let { children } = $props();
 
@@ -279,4 +280,5 @@
       </nav>
     </div>
   {/if}
+  <GlobalModal />
 </div>

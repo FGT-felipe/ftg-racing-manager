@@ -10,7 +10,7 @@ En este ecosistema, los servicios son **Stateless Logic Providers** encargados d
 ### A. TimeService (Orquestador Chronos)
 Es el metrónomo del sistema. Determina el estado de la liga (`practice`, `qualifying`, `race`, etc.) basándose en la zona horaria de Bogotá (UTC-5).
 *   **Responsabilidad**: Lock/Unlock de setups (Parc Fermé) y cálculo de cuentas regresivas.
-*   **Lógica Crítica**: El estado de la semana se deriva de una matriz de tiempo fija (Sábado 14:00 para Qualy, Domingo 14:00 para Carrera).
+*   **Lógica Crítica**: El estado de la semana se deriva de una matriz de tiempo fija. Las prácticas se bloquean (solo lectura) el Sábado a las 13:00 COT o tras el primer intento de Qualy. Qualy inicia el Sábado a las 14:00 y Carrera el Domingo a las 14:00.
 
 ### B. SponsorService (Gestor de Contratos)
 Gestiona el sistema de negociación de patrocinios mediante una máquina de estados compleja.
@@ -23,6 +23,8 @@ Implementa el motor de física simplificado para las sesiones de práctica.
 *   **Feedback**: Traduce la desviación del setup ideal en narrativa técnica (ej. "Understeer" vs "Oversteer"). La precisión del feedback escala con la habilidad de `Feedback` del piloto.
 *   **Setup Hints**: Genera rangos visuales dinámicos. Un piloto con alta `Adaptability` proporciona rangos más estrechos y precisos.
 *   **Gestión de Qualifying**: Persiste los `setupHints` en el `lastQualyResult` y permite el fallback de hints desde las sesiones de práctica. Incluye selector de agresividad (`Driving Aggression`) que impacta directamente en el tiempo de vuelta y riesgo de accidente.
+*   **Clima y Neumáticos**: Implementa la lógica de penalización por neumáticos incorrectos. El compuesto `Wet` es obligatorio en sesiones de lluvia para evitar una penalización de +8.0s por vuelta. En seco, los neumáticos `Wet` sufren sobrecalentamiento y penalizan +3.0s.
+*   **Bloqueo de Sesión**: Una vez iniciada la Qualy o pasado el límite de tiempo, la sesión de práctica entra en modo **"Read-Only"**, permitiendo ver telemetría pero bloqueando nuevas tandas.
 
 ### D. StaffService (Gestión de Personal)
 Orquestador de recursos humanos y optimización de rendimiento físico.

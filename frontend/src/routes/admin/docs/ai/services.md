@@ -8,6 +8,7 @@ This document defines the interface and behaviors of core services for automated
 - **Phases**: `[practice, qualifying, raceStrategy, race, postRace]`.
 - **Logic**:
   - `isSetupLocked`: `targetStatus IN [qualifying, raceStrategy, race]`.
+  - `isPracticeActionLocked`: `qualifyingAttempts > 0 OR (Saturday >= 13:00 COT)`. 
   - `getRaceWeekStatus`: Monday 00:00 -> Sat 13:59 (Practice); Sat 14:00 (Qualy); Sat 15:00 (Strategy); Sun 14:00 (Race); Sun 16:00 (Post).
 
 ## 2. Business Entity Services
@@ -27,11 +28,13 @@ This document defines the interface and behaviors of core services for automated
 
 ### `PracticeService` (Simulation Engine - Client)
 - **Function**: `simulatePracticeRun(circuit, team, driver, setup)` -> `PracticeRunResult`.
-- **Algorithm**: Deterministic lap time with Gaussian noise.
+- **Algorithm**: Deterministic lap time with Gaussian noise. 
+  - `Wet` Surface Penalty: `+1.5s` base.
+  - Incorrect Tyre Penalty: `+8.0s` (if dry tyres in rain) or `+3.0s` (if wet tyres in dry).
 - **Feedback Generation**: Derived from `setup_gap` vs `driver.feedback_skill`.
 - **Setup Hints**: Genera rangos visuales dinámicos. Un piloto con alta `Adaptability` proporciona rangos más estrechos y precisos.
 - **Qualifying Integration**: Per-driver `lastQualyResult` persists setup hints and allows fallback to `practice` results for managers to optimize during qualifying attempts.
-- **State Writes**: Updates `weekStatus.driverSetups.{id}.practice` or `qualifying` for persistence.
+- **State Writes**: Updates `weekStatus.driverSetups.{id}.practice` or `qualifying` for persistence. Stores `bestLapSetup` upon achieving a new personal best lap.
 
 ## 3. System Administration
 ### `AdminService`

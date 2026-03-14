@@ -59,8 +59,9 @@
     
     // Auto-switch tabs if current one becomes locked
     $effect(() => {
-        if (isPracticeLocked && activeTab === "practice") {
-            activeTab = "qualy";
+        if (isQualyLocked && activeTab === "qualy") {
+            // Logic for switching away from Qualy if needed? 
+            // Actually, keep it simple for now as per instructions.
         }
     });
 
@@ -104,8 +105,6 @@
             return false;
         }
     });
-
-    let isPracticeLocked = $derived(driverQualyAttempts > 0 || isSaturdayAfter1PM);
 
     let isQualyLocked = $derived.by(() => {
         if (!selectedDriver) return true;
@@ -252,15 +251,12 @@
             <button
                 id="practice-card"
                 class="flex flex-col p-4 rounded-xl border transition-all text-left group min-h-[110px] justify-between relative overflow-hidden
-                {isPracticeLocked
-                    ? 'bg-app-text/50 border-app-border cursor-not-allowed grayscale'
-                    : activeTab === 'practice'
+                {activeTab === 'practice'
                       ? 'bg-app-primary text-app-primary-foreground border-app-primary shadow-[0_0_20px_rgba(197,160,89,0.2)]'
                       : 'bg-app-surface border-app-border hover:border-app-border'}"
                 onclick={() => {
-                    if (!isPracticeLocked) activeTab = "practice";
+                    activeTab = "practice";
                 }}
-                disabled={isPracticeLocked}
             >
                 <div class="relative z-10">
                     <div
@@ -304,18 +300,7 @@
                     >
                         {t('session_laps', { n: driverPracticeLaps })}
                     </div>
-                {#if isPracticeLocked}
-                    <div
-                        class="absolute inset-0 flex flex-col items-center justify-center bg-app-text/60 z-20 backdrop-blur-[1px] p-2 text-center"
-                    >
-                        <Lock size={16} class="text-red-500 mb-1" />
-                        <span
-                            class="text-[8px] font-black uppercase tracking-widest text-red-500 max-w-[100px]"
-                        >
-                            {isSaturdayAfter1PM ? "PRACTICE EXPIRED (SAT 1PM)" : "QUALY STARTED - LOCKED"}
-                        </span>
-                    </div>
-                {:else if activeTab === "practice"}
+                {#if activeTab === "practice"}
                     <div class="absolute -bottom-1 -right-1 opacity-10">
                         <Timer size={50} />
                     </div>

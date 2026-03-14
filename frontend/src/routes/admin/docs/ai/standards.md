@@ -15,6 +15,7 @@ This document provides rigid constraints and rules for AI agents modifying this 
 ## 3. UI/UX Consistency Standards
 - **Design Tokens**: Use standard Tailwind utilities. Custom colors must reference `app.css` definitions.
 - **Aesthetics**: Maintain the "Premium Dark Gold" aesthetic. High contrast, subtle gradients, and `backdrop-blur` for overlays are standard.
+- **Modals & Dialogs**: Native browser dialogs (`alert`, `confirm`, `prompt`) are PROHIBITED. Use `uiStore` and custom modals to maintain UX consistency.
 - **Interactivity**: Add `aria-label` and `id` to all interactive elements for automated E2E test targeting.
 
 ## 4. Verification & Testing Requirements
