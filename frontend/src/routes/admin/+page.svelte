@@ -68,7 +68,8 @@
             if (
                 name === "nukeAndReseed" ||
                 name === "fixRaceCalendars" ||
-                name === "applyGreatRebalanceTax"
+                name === "applyGreatRebalanceTax" ||
+                name === "fixBrokenAcademies"
             ) {
                 const { adminService } = await import("$lib/services/admin.svelte");
                 await adminService[name as keyof typeof adminService]();
@@ -241,6 +242,18 @@
                         </div>
                     {:else if activeTab === 'database'}
                         <div class="grid grid-cols-1 md:grid-cols-2 gap-6" in:fly={{ y: 20 }}>
+                            <button 
+                                class="action-card group"
+                                onclick={() => triggerAction("fixBrokenAcademies", "Identify and repair academies with no candidates.")}
+                            >
+                                <div class="card-icon bg-amber-500/10 text-amber-500"><Zap size={24} /></div>
+                                <div class="card-body">
+                                    <h3>Fix Broken Academies</h3>
+                                    <p>Scan all teams and generate missing candidates for established academies.</p>
+                                </div>
+                                <ChevronRight class="opacity-10 group-hover:opacity-100" />
+                            </button>
+
                             <button 
                                 class="action-card group dangerous"
                                 onclick={() => triggerAction("nukeAndReseed", "DANGEROUS: Wipes ALL collections and recreates the simulation state.", true)}

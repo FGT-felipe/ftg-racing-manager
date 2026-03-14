@@ -19,6 +19,7 @@ import { driverStore } from './driver.svelte';
 import type { YoungDriver } from '$lib/types';
 import { untrack } from 'svelte';
 import { getFlagEmoji } from '$lib/utils/country';
+import { academyService } from '$lib/services/academy.svelte';
 
 export function createYouthAcademyStore() {
     let config = $state<any>(null);
@@ -150,6 +151,13 @@ export function createYouthAcademyStore() {
                     createdAt: serverTimestamp()
                 });
 
+                // Generate initial batch of candidates (Level 1)
+                const initialCandidates = academyService.generateInitialCandidates(5, country.code, 1);
+                initialCandidates.forEach(candidate => {
+                    const candidateRef = doc(db, 'teams', teamId, 'academy', 'config', 'candidates', candidate.id);
+                    transaction.set(candidateRef, candidate);
+                });
+
                 transaction.update(teamRef, {
                     budget: budget - purchasePrice,
                     [`facilities.youthAcademy`]: {
@@ -159,6 +167,16 @@ export function createYouthAcademyStore() {
                         maintenanceCost: 15000,
                         lastUpgradeSeasonId: currentSeasonId
                     }
+                });
+
+                // Record transaction
+                const txRef = doc(collection(db, 'teams', teamId, 'transactions'));
+                transaction.set(txRef, {
+                    id: txRef.id,
+                    description: `Academy Establishment: ${country.name}`,
+                    amount: -purchasePrice,
+                    date: new Date().toISOString(),
+                    type: 'UPGRADE'
                 });
             });
 

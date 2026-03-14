@@ -234,6 +234,7 @@ export interface YoungDriver {
         flagEmoji: string;
     };
     baseSkill: number;
+    maxSkill: number;
     growthPotential: number;
     potentialStars: number;
     salary: number;

@@ -11,7 +11,8 @@ import {
     setDoc,
     getDoc,
     where,
-    updateDoc
+    updateDoc,
+    limit
 } from 'firebase/firestore';
 
 export const adminService = {
@@ -186,6 +187,47 @@ export const adminService = {
             return true;
         } catch (e: any) {
             console.error('Rebalance operation failed:', e.message || 'Unknown error');
+            throw e;
+        }
+    },
+
+    /**
+     * Recovery tool for teams that purchased an academy but have no candidates.
+     */
+    async fixBrokenAcademies() {
+        try {
+            const { academyService } = await import('./academy.svelte');
+            const teamsSnap = await getDocs(collection(db, 'teams'));
+            let fixedCount = 0;
+
+            for (const tDoc of teamsSnap.docs) {
+                const teamData = tDoc.data();
+                const academy = teamData.facilities?.youthAcademy;
+
+                // If they have an academy level > 0
+                if (academy && academy.level > 0) {
+                    const teamId = tDoc.id;
+                    const candidatesRef = collection(db, 'teams', teamId, 'academy', 'config', 'candidates');
+                    const candSnap = await getDocs(query(candidatesRef, limit(1)));
+
+                    // If no candidates exist, generate initial batch
+                    if (candSnap.empty) {
+                        const configRef = doc(db, 'teams', teamId, 'academy', 'config');
+                        const configSnap = await getDoc(configRef);
+                        const countryCode = configSnap.exists() ? configSnap.data().countryCode : 'ES'; // Fallback to ES
+
+                        const initialCandidates = academyService.generateInitialCandidates(5, countryCode, academy.level);
+                        await academyService.saveCandidates(teamId, initialCandidates);
+                        fixedCount++;
+                        console.debug(`[AdminService] Fixed academy for team ${teamId}`);
+                    }
+                }
+            }
+
+            console.log(`[AdminService] Finished fixing academies. Total fixed: ${fixedCount}`);
+            return fixedCount;
+        } catch (e: any) {
+            console.error('Fix academies operation failed:', e.message || 'Unknown error');
             throw e;
         }
     }
