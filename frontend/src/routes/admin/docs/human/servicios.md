@@ -43,12 +43,20 @@ Gestiona el ciclo de vida de los pilotos junior y el scouting inicial.
 
 ### G. Backend Orchestration (Cloud Functions)
 Lógica pesada se delega a las funciones de Firebase (Node.js) para garantizar imparcialidad y seguridad.
-*   **Scheduled Jobs**: 
-    *   `scheduledQualifying`: Ejecuta la clasificación los sábados a las 15:00 COT.
-    *   `scheduledRace`: Simula la carrera completa los domingos a las 14:00 COT.
-    *   `postRaceProcessing`: Procesa la economía, contratos de sponsors y evolución de pilotos 1 hora tras el fin de la carrera.
-    *   `scheduledDailyFitnessRecovery`: Cron diario (00:00 COT) que recupera +1.5 de fatiga a todos los pilotos activos.
-*   **SimEngine**: Implementa las leyes físicas del universo FTG (Degradación de gomas, consumo de combustible, probabilidades de accidente).
+
+*   **Pipeline completo del fin de semana (4 fases):**
+
+    | Fase | Función | Cuándo | Qué hace |
+    |------|---------|--------|----------|
+    | 1. Qualy | `scheduledQualifying` | Sáb 15:00 COT | Simula clasificación, escribe `qualyGrid` en el Race doc |
+    | 2. Carrera | `scheduledRace` | Dom 14:00 COT | Simula carrera, actualiza `drivers/` y `teams/` con puntos, premios y stats |
+    | 3. Economía | `postRaceProcessing` | ~1h tras carrera | Salarios, bonos de sponsors, eventos de academia, restablece `weekStatus` |
+    | 4. Standings | `sync_universe.js` ⚠️ | **Manual** | Propaga `seasonPoints` hacia el documento `universe` cacheado |
+
+*   **Dependencia crítica — Universe Sync:**
+    La página de Standings (`/season/standings`) lee del documento **denormalizado** `universe/game_universe_v1`. Las Fases 1-3 actualizan los documentos individuales de `drivers/` y `teams/`, pero **el universo no se actualiza automáticamente**. Si los puntajes en la app no cambian tras la carrera, siempre ejecutar `node sync_universe.js` desde la carpeta `/functions`.
+
+*   **`scheduledDailyFitnessRecovery`**: Cron diario (00:00 COT). Recupera +1.5 de fatiga a todos los pilotos activos.
 *   **Transfer Resolver**: Cron por hora que cierra subastas de pilotos tras 24h de expiración.
 
 ---
@@ -59,7 +67,24 @@ Lógica pesada se delega a las funciones de Firebase (Node.js) para garantizar i
 
 ---
 
-## 4. Administración (AdminService)
+## 4. Protocolo de Recuperación de Emergencia
+
+> Si alguna simulación automática falla, ejecutar en orden desde `/functions`:
+
+```bash
+node reset_all.js              # 1. Limpia datos corruptos de R2/R3
+node run_simulation.js qualy   # 2. Simula Qualy manualmente
+node run_simulation.js race    # 3. Simula Carrera manualmente
+node force_post_race.js        # 4. Fuerza procesamiento financiero
+node sync_universe.js          # 5. Sincroniza Standings en la UI
+```
+
+> **Postmortem:** Ver [postmortem_r2.md](postmortem_r2.md) para el análisis completo del incidente del 16-Mar-2026.
+
+---
+
+## 5. Administración (AdminService)
 Orquestador de herramientas de mantenimiento masivo.
-*   **Recuperación**: El método `fixBrokenAcademies` detecta equipos con instalaciones activas pero sin configuración o candidatos, inyectando un batch inicial de 2 pilotos (1M, 1F) escalados por nivel. 
+*   **Recuperación**: El método `fixBrokenAcademies` detecta equipos con instalaciones activas pero sin configuración o candidatos, inyectando un batch inicial de 2 pilotos (1M, 1F) escalados por nivel.
 *   **Protección**: Nunca sobrescribe datos de pilotos ya contratados (`selected`), asegurando que no haya pérdida de progreso.
+

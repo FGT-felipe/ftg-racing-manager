@@ -1,6 +1,7 @@
 <script lang="ts">
     import { teamStore } from "$lib/stores/team.svelte";
     import { transactionStore } from "$lib/stores/transactions.svelte";
+    import { managerStore } from "$lib/stores/manager.svelte";
     import {
         Wallet,
         ArrowUpRight,
