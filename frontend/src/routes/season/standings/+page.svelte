@@ -245,8 +245,12 @@
                                     <span class="text-[9px] font-bold text-app-text/20 uppercase truncate">Mgr: {mgr.name}</span>
                                     <CountryFlag countryCode={mgr.country} size="xs" />
                                 </div>
+                            {:else if team.managerName}
+                                <span class="text-[9px] font-bold text-app-text/20 uppercase truncate">Mgr: {team.managerName}</span>
+                            {:else if team.isBot}
+                                <span class="text-[9px] font-bold text-app-text/20 uppercase tracking-widest italic">Bot Manager</span>
                             {:else}
-                                <span class="text-[9px] font-bold text-app-text/10 uppercase tracking-widest italic tracking-widest">Awaiting Manager</span>
+                                <span class="text-[9px] font-bold text-app-text/10 uppercase tracking-widest italic">Awaiting Manager</span>
                             {/if}
                         </div>
 
