@@ -50,17 +50,60 @@ This document defines the interface and behaviors of core services for automated
   - `fixBrokenAcademies()`: Repairs teams with unlocked facilities but missing setup/candidates. Atomic sync of `config` document and initial batch.
 - **Patterns**: High-performance batch writes (450 ops/chunk).
 
-## 4. Interaction Dependency Graph
+## 4. Cloud Functions — Weekend Event Pipeline
+
+### Scheduler Table
+| Export Name | Schedule | Action |
+|---|---|---|
+| `scheduledQualifying` | `0 15 * * 6` (Sat 15:00 COT) | `runQualifyingLogic()` |
+| `scheduledRace` | `0 14 * * 0` (Sun 14:00 COT) | `runRaceLogic()` |
+| `postRaceProcessing` | `*/30 * * * *` | Economy processing (fires when `postRaceProcessingAt` has passed) |
+| `scheduledDailyFitnessRecovery` | `0 0 * * *` | +1.5 fitness to all active drivers |
+
+### Critical Architecture: Universe Denormalization
+- The `/season/standings` UI page reads from `universe/game_universe_v1` (a denormalized document).
+- `runRaceLogic()` updates individual `drivers/{id}` and `teams/{id}` documents.
+- **These are NOT the same.** The universe document requires an explicit sync step.
+- **Script:** `node functions/sync_universe.js` (must be run after any manual race simulation).
+
+### Guard Conditions (CRITICAL)
+```js
+// Qualifying skip guard — MUST use .length > 0, NOT just existence
+if (rSnap.data().qualyGrid?.length > 0) { continue; }
+
+// Variables MUST be declared before conditional assignment (strict mode)
+let extraCrash = 0; // REQUIRED before "if (teamRole === 'ex_driver') { extraCrash = ... }"
+```
+
+### Emergency Recovery Commands (from `functions/` dir)
+```bash
+node reset_all.js              # Reset race doc fields for current R2/R3
+node run_simulation.js qualy   # Force qualifying
+node run_simulation.js race    # Force race
+node force_post_race.js        # Force postRaceProcessing
+node sync_universe.js          # Sync denormalized universe document
+```
+
+See full spec: [weekend_pipeline.md](weekend_pipeline.md)
+
+## 5. Interaction Dependency Graph
 ```mermaid
 graph TD
     TimeService[TimeService] -->|Lock/Unlock| UI[UI Components]
     TeamStore[TeamStore] -->|Triggers| SponsorService[SponsorService]
     PracticeService[PracticeService] -->|Updates| TeamStore
     RaceService[RaceService] -->|Calls| CloudFunctions[Cloud Functions]
+    CloudFunctions -->|Updates| DriversCollection[drivers/ collection]
+    CloudFunctions -->|Updates| TeamsCollection[teams/ collection]
+    DriversCollection -->|Manual sync required| UniverseDoc[universe document]
+    TeamsCollection -->|Manual sync required| UniverseDoc
+    UniverseDoc -->|Read by| StandingsPage[Standings UI]
     StaffService -->|Mutates| DriverStore[DriverStore]
     StaffService -->|Mutates| TeamStore
 ```
 
-## 5. Security & Transactional Integrity
+## 6. Security & Transactional Integrity
 - Use `runTransaction` for all budget mutations.
 - Notification entries MUST be created within the same batch as the event that triggered them.
+- Firebase Functions run in **strict mode**. Variables MUST be declared before use.
+
