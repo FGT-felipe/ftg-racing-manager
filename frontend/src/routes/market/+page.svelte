@@ -104,10 +104,18 @@
             const expires = listed.getTime() + 24 * 3600 * 1000;
             const diff = expires - now;
             if (diff <= 0) { map[d.id] = "Expired"; continue; }
-            const hrs = Math.floor(diff / 3600000).toString().padStart(2, "0");
+            const totalHours = Math.floor(diff / 3600000);
             const mins = Math.floor((diff % 3600000) / 60000).toString().padStart(2, "0");
             const secs = Math.floor((diff % 60000) / 1000).toString().padStart(2, "0");
-            map[d.id] = `${hrs}h ${mins}m ${secs}s`;
+            
+            if (totalHours >= 24) {
+                const days = Math.floor(totalHours / 24);
+                const remainingHours = (totalHours % 24).toString().padStart(2, "0");
+                map[d.id] = `${days}d ${remainingHours}h ${mins}m`;
+            } else {
+                const hrs = totalHours.toString().padStart(2, "0");
+                map[d.id] = `${hrs}h ${mins}m ${secs}s`;
+            }
         }
         countdownMap = map;
     }
