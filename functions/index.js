@@ -1,5 +1,5 @@
 /* eslint-disable max-len */
-// Deployment: 2026-02-24
+// Deployment: 2026-03-21 (R3 Fix: extraCrash declaration + qualyGrid length checks)
 const { onSchedule } = require("firebase-functions/v2/scheduler");
 const { onCall } = require("firebase-functions/v2/https");
 const { setGlobalOptions } = require("firebase-functions");
@@ -351,6 +351,7 @@ const SimEngine = {
     accProb *= (1.0 - (rV / 30.0));
     // Ex-Driver: small extra crash probability (+5% relative increase or flat extra)
     const teamRole = p.teamRole || "";
+    let extraCrash = 0;
     if (teamRole === "ex_driver") {
       extraCrash = 0.001;
       df -= 0.02; // +2% race pace bonus
@@ -407,7 +408,17 @@ const SimEngine = {
         if (dnfs.includes(did)) continue;
 
         const driver = driversMap[did];
-        const team = teamsMap[driver.teamId];
+        const team = driver ? teamsMap[driver.teamId] : null;
+
+        if (!driver || !team) {
+          dnfs.push(did);
+          lapEvents.push({
+            lap, driverId: did,
+            desc: "DNS: Driver or team data missing", type: "DNF",
+          });
+          continue;
+        }
+
         const su = setupsMap[did] || DEFAULT_SETUP;
         const idx = driver.carIndex || 0;
         const cs = (team.carStats && team.carStats[String(idx)]) ||
@@ -902,7 +913,7 @@ async function runQualifyingLogic() {
         const rRef = db.collection("races").doc(raceDocId);
         const rSnap = await rRef.get();
 
-        if (rSnap.exists && rSnap.data().qualyGrid) {
+        if (rSnap.exists && rSnap.data().qualyGrid && rSnap.data().qualyGrid.length > 0) {
           logger.info(`Qualy already done: ${raceDocId}`);
           continue;
         }
@@ -1220,7 +1231,7 @@ async function runRaceLogic() {
         const rSnap = await db.collection("races")
           .doc(raceDocId).get();
 
-        if (!rSnap.exists || !rSnap.data().qualyGrid) {
+        if (!rSnap.exists || !rSnap.data().qualyGrid || rSnap.data().qualyGrid.length === 0) {
           logger.warn(`No qualy grid: ${raceDocId}`);
           continue;
         }
@@ -1694,6 +1705,20 @@ exports.postRaceProcessing = onSchedule({
       const sDoc = await db.collection("seasons").doc(sId).get();
       const season = sDoc.data();
       const rEvent = season ? (season.calendar || []).find((e) => e.id === eId) : null;
+
+      // Build managerRoles map for role-based economic modifiers
+      const managerRoles = {};
+      for (const tid of teamIdsSet) {
+        const tmDoc = await db.collection("teams").doc(tid).get();
+        if (tmDoc.exists && tmDoc.data().managerId) {
+          const mgrDoc = await db.collection("managers").doc(tmDoc.data().managerId).get();
+          if (mgrDoc.exists) {
+            managerRoles[tid] = mgrDoc.data().role || "";
+          }
+        }
+      }
+
+
 
       for (const tid of teamIdsSet) {
         // Read current weekStatus to preserve Bureaucrat cooldown

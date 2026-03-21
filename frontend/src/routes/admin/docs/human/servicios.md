@@ -79,7 +79,7 @@ node force_post_race.js        # 4. Fuerza procesamiento financiero
 node sync_universe.js          # 5. Sincroniza Standings en la UI
 ```
 
-> **Postmortem:** Ver [postmortem_r2.md](postmortem_r2.md) para el análisis completo del incidente del 16-Mar-2026.
+> **Postmortem:** Ver [postmortem_r2.md](postmortem_r2.md) y [postmortem_r3.md](postmortem_r3.md) para análisis de incidentes de simulación.
 
 ---
 

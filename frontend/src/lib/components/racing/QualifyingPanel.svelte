@@ -4,6 +4,8 @@
     import { Timer, Trophy, ChevronRight, User } from "lucide-svelte";
     import CountryFlag from "$lib/components/ui/CountryFlag.svelte";
     import { seasonStore } from "$lib/stores/season.svelte";
+    import { teamStore } from "$lib/stores/team.svelte";
+    import { universeStore } from "$lib/stores/universe.svelte";
     import { timeService } from "$lib/services/time_service.svelte";
     import { db } from "$lib/firebase/config";
     import { doc, getDoc } from "firebase/firestore";
@@ -15,6 +17,7 @@
     let timeLeft = $state("");
 
     const nextEvent = $derived(seasonStore.nextEvent);
+    let userTeamId = $derived(teamStore.value?.team?.id);
 
     onMount(() => {
         loadQualyData();
@@ -55,15 +58,47 @@
                 }
             }
         } catch (e) {
-            console.error("Error loading qualy data:", e);
+            console.error("[QualifyingPanel:loadQualyData] Error loading qualy data:", e);
         } finally {
             isLoading = false;
         }
     }
 
-    function formatTime(seconds: number) {
-        if (seconds === 0 || !isFinite(seconds)) return "—";
-        return `${seconds.toFixed(3)}s`;
+    /**
+     * Formats a lap time in seconds to mm:ss.ms format.
+     * @param seconds - Raw lap time in seconds.
+     * @returns Formatted string like "1:16.234" or "—" for invalid values.
+     */
+    function formatLapTime(seconds: number): string {
+        if (seconds === 0 || !isFinite(seconds) || seconds >= 999) return "—";
+        const mins = Math.floor(seconds / 60);
+        const secs = seconds % 60;
+        const secsStr = secs.toFixed(3).padStart(6, '0');
+        if (mins > 0) {
+            return `${mins}:${secsStr}`;
+        }
+        return secsStr;
+    }
+
+    /**
+     * Formats the gap to pole position.
+     * @param gap - Gap in seconds to the pole time.
+     * @param index - Grid position index (0-based).
+     * @returns Formatted gap string.
+     */
+    function formatGap(gap: number, index: number): string {
+        if (index === 0) return "";
+        if (!isFinite(gap) || gap >= 999) return "DNF";
+        return `+${gap.toFixed(3)}s`;
+    }
+
+    /**
+     * Checks if a driver row belongs to the logged-in manager's team.
+     * @param row - The qualifying result row.
+     * @returns True if the driver belongs to the user's team.
+     */
+    function isUserDriver(row: any): boolean {
+        return !!userTeamId && row.teamId === userTeamId;
     }
 </script>
 
@@ -148,40 +183,73 @@
 
                 <div class="divide-y divide-white/5">
                     {#each results as row, i}
+                        {@const isPole = i === 0 && !row.isCrashed}
+                        {@const isUser = isUserDriver(row)}
                         <div
-                            class="p-4 flex items-center gap-4 hover:bg-white/[0.02] transition-colors"
+                            id="qualy-row-{i}"
+                            class="p-4 flex items-center gap-4 transition-colors
+                                {isPole ? 'qualy-pole-row' : ''}
+                                {isUser && !isPole ? 'bg-app-primary/8' : ''}
+                                {!isPole && !isUser ? 'hover:bg-white/[0.02]' : ''}"
                         >
+                            <!-- Position Badge -->
                             <div
-                                class="w-8 h-8 rounded-lg bg-app-text/40 flex items-center justify-center font-black italic text-xs {i <
-                                3
-                                    ? 'text-app-primary'
-                                    : 'text-app-text/20'}"
+                                class="w-8 h-8 rounded-lg flex items-center justify-center font-black italic text-xs
+                                    {isPole ? 'bg-app-pole/20 text-app-pole' : ''}
+                                    {!isPole && i < 3 ? 'bg-app-text/40 text-app-primary' : ''}
+                                    {!isPole && i >= 3 && isUser ? 'bg-app-primary/10 text-app-primary' : ''}
+                                    {!isPole && i >= 3 && !isUser ? 'bg-app-text/40 text-app-text/20' : ''}"
                             >
                                 {i + 1}
                             </div>
 
+                            <!-- Driver Info -->
                             <div class="flex-1 min-w-0">
                                 <div class="flex items-center gap-2">
+                                    <CountryFlag countryCode={row.countryCode || universeStore.getDriverById(row.driverId)?.countryCode} size="xs" />
                                     <p
-                                        class="text-[13px] font-black text-app-text truncate uppercase"
+                                        class="text-[13px] font-black truncate uppercase
+                                            {isPole ? 'text-app-pole' : ''}
+                                            {!isPole && isUser ? 'text-app-primary' : ''}
+                                            {!isPole && !isUser ? 'text-app-text' : ''}"
                                     >
                                         {row.driverName}
                                     </p>
-                                    <CountryFlag countryCode={row.countryCode} size="xs" />
+                                    {#if isPole}
+                                        <span class="px-1.5 py-0.5 rounded bg-app-pole/20 text-app-pole font-black text-[8px] uppercase tracking-widest">
+                                            POLE
+                                        </span>
+                                    {/if}
+                                    {#if isUser}
+                                        <User size={10} class="{isPole ? 'text-app-pole' : 'text-app-primary'} opacity-60" />
+                                    {/if}
                                 </div>
                                 <p
-                                    class="text-[9px] font-bold text-app-text/30 uppercase tracking-widest"
+                                    class="text-[9px] font-bold uppercase tracking-widest
+                                        {isPole ? 'text-app-pole/50' : ''}
+                                        {!isPole && isUser ? 'text-app-primary/50' : ''}
+                                        {!isPole && !isUser ? 'text-app-text/30' : ''}"
                                 >
                                     {row.teamName}
                                 </p>
                             </div>
 
+                            <!-- Lap Time -->
                             <div class="text-right">
                                 <p
-                                    class="text-sm font-black italic text-app-primary tabular-nums"
+                                    class="text-sm font-black italic tabular-nums
+                                        {isPole ? 'text-app-pole' : 'text-app-primary'}"
                                 >
-                                    {formatTime(row.lapTime)}
+                                    {row.isCrashed ? 'DNF' : formatLapTime(row.lapTime)}
                                 </p>
+                                {#if i > 0 && !row.isCrashed}
+                                    <p class="text-[9px] font-bold text-app-text/30 tabular-nums italic">
+                                        {formatGap(row.gap, i)}
+                                    </p>
+                                {/if}
+                                {#if row.isCrashed}
+                                    <p class="text-[8px] font-bold text-app-error/60 uppercase italic">Crashed</p>
+                                {/if}
                             </div>
                         </div>
                     {/each}
@@ -190,3 +258,14 @@
         {/if}
     {/if}
 </div>
+
+<style>
+    .qualy-pole-row {
+        background: linear-gradient(
+            90deg,
+            color-mix(in srgb, var(--pole-color) 12%, transparent) 0%,
+            transparent 100%
+        );
+        border-left: 3px solid var(--pole-color);
+    }
+</style>
