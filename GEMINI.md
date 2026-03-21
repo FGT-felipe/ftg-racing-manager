@@ -10,7 +10,7 @@ Key documents to review every time:
 - **Standards**: `human/estandares.md` and `ai/standards.md`.
 - **Business Rules**: `human/reglas_negocio.md`.
 - **System Architecture**: `human/servicios.md` and `ai/architecture.md`.
-- **Incident History**: `human/postmortem_r2.md` (Crucial for preventing recurring simulation and state bugs).
+- **Incident History**: `human/postmortem_r2.md` and `human/postmortem_r3.md` (Crucial for preventing recurring simulation and state bugs).
 
 ## 🧪 Quality Assurance & Testing
 - **Playwright Testing Prohibited**: Do NOT create, suggest, or attempt to run E2E tests using Playwright.
@@ -46,6 +46,7 @@ Hardcoding is strictly prohibited. Every project value must be managed through t
 - **Variable Declaration**: Always declare variables (e.g., `let variable = 0;`) before conditional assignment to prevent `ReferenceError` in strict mode.
 - **Truthiness Checks**: Always check array length (`array.length > 0`) instead of just checking for the object's existence.
 - **Sync Pipeline**: After manual simulations or data fixes, always execute the full pipeline including `node sync_universe.js` to propagate denormalized standings.
+- **Deploy Verification**: After ANY fix to `functions/index.js`, you MUST remind the user to run `firebase deploy --only functions` AND verify in Firebase Console → Functions that the deployment timestamp matches. A local-only fix is NOT a deployed fix. (See `postmortem_r3.md` — the R2 fix was applied locally but never deployed, causing an identical failure 5 days later.)
 
 ## 📝 Documentation & Knowledge Maintenance
 - **JSDoc**: Obligatory for all public methods in services and stores, detailing parameters and return types.
