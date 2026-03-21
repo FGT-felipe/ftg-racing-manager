@@ -5,7 +5,14 @@
     import { authStore } from "$lib/stores/auth.svelte";
     import { notificationStore } from "$lib/stores/notifications.svelte";
     import NotificationOverlay from "./NotificationOverlay.svelte";
-    import { Shield, CircleUser, LogOut, Bell, Settings, Activity } from "lucide-svelte";
+    import {
+        Shield,
+        CircleUser,
+        LogOut,
+        Bell,
+        Settings,
+        Activity,
+    } from "lucide-svelte";
     import { fade, slide } from "svelte/transition";
 
     let teamData = $derived(teamStore.value);
@@ -38,20 +45,25 @@
     <!-- Left: Logo Section -->
     <div class="flex items-center gap-4">
         <AppLogo size={32} />
-        <div class="px-2 py-0.5 bg-app-primary/10 border border-app-primary/20 rounded text-[9px] font-black text-app-primary uppercase tracking-tighter">
-            BETA V4
+        <div
+            class="px-2 py-0.5 bg-app-primary/10 border border-app-primary/20 rounded text-[9px] font-black text-app-primary uppercase tracking-tighter"
+        >
+            BETA V4.1.3
         </div>
     </div>
 
     <!-- Race Day Center Button (User Requested) -->
-    <a 
-        href="/racing/live" 
+    <a
+        href="/racing/live"
         class="hidden lg:flex items-center gap-2 px-4 py-2 border border-red-500/20 bg-red-500/5 hover:bg-red-500/10 rounded-xl transition-all group"
     >
         <div class="text-red-500 group-hover:scale-110 transition-transform">
             <Activity size={16} strokeWidth={3} />
         </div>
-        <span class="text-[10px] font-black uppercase tracking-widest text-red-500/80 group-hover:text-red-500 transition-colors">Race Day</span>
+        <span
+            class="text-[10px] font-black uppercase tracking-widest text-red-500/80 group-hover:text-red-500 transition-colors"
+            >Race Day</span
+        >
     </a>
 
     <!-- Center: Finances Section -->
@@ -139,7 +151,9 @@
                 >
                     <Bell size={20} strokeWidth={2} />
                     {#if unreadCount > 0}
-                        <div class="absolute top-1.5 right-1.5 w-2 h-2 bg-red-500 rounded-full animate-bounce"></div>
+                        <div
+                            class="absolute top-1.5 right-1.5 w-2 h-2 bg-red-500 rounded-full animate-bounce"
+                        ></div>
                     {/if}
                 </button>
                 <NotificationOverlay bind:isOpen={isNotificationsOpen} />
@@ -157,26 +171,36 @@
                 >
                     <CircleUser size={20} strokeWidth={2} />
                 </button>
-                
+
                 {#if isAccountOpen}
-                    <div 
-                        in:fade={{ duration: 150 }} 
+                    <div
+                        in:fade={{ duration: 150 }}
                         out:fade={{ duration: 100 }}
                         class="absolute top-12 right-0 w-48 bg-app-surface border border-app-border rounded-2xl shadow-2xl z-50 overflow-hidden flex flex-col py-2"
                     >
-                        <div class="px-4 py-3 border-b border-app-border flex flex-col">
-                            <span class="text-xs font-bold text-app-text truncate">{authStore.user.displayName || "Manager"}</span>
-                            <span class="text-[10px] text-app-text/40 truncate">{authStore.user.email}</span>
+                        <div
+                            class="px-4 py-3 border-b border-app-border flex flex-col"
+                        >
+                            <span
+                                class="text-xs font-bold text-app-text truncate"
+                                >{authStore.user.displayName || "Manager"}</span
+                            >
+                            <span class="text-[10px] text-app-text/40 truncate"
+                                >{authStore.user.email}</span
+                            >
                         </div>
-                        <button 
-                            onclick={() => { 
+                        <button
+                            onclick={() => {
                                 isAccountOpen = false;
                                 goto("/settings");
-                            }} 
+                            }}
                             class="px-4 py-3 flex items-center gap-3 hover:bg-app-text/5 transition-colors text-app-text/70 hover:text-app-text w-full text-left cursor-pointer"
                         >
                             <Settings size={14} />
-                            <span class="text-[11px] font-black uppercase tracking-widest">Settings</span>
+                            <span
+                                class="text-[11px] font-black uppercase tracking-widest"
+                                >Settings</span
+                            >
                         </button>
                         <button
                             onclick={() => {
@@ -186,13 +210,16 @@
                             class="px-4 py-3 flex items-center gap-3 hover:bg-red-500/10 transition-colors text-red-500/70 hover:text-red-500 w-full text-left"
                         >
                             <LogOut size={14} />
-                            <span class="text-[11px] font-black uppercase tracking-widest">Log Out</span>
+                            <span
+                                class="text-[11px] font-black uppercase tracking-widest"
+                                >Log Out</span
+                            >
                         </button>
                     </div>
-                    
+
                     <!-- Backdrop for clicking outside (invisible) -->
-                    <button 
-                        onclick={() => isAccountOpen = false}
+                    <button
+                        onclick={() => (isAccountOpen = false)}
                         class="fixed inset-0 z-40 bg-transparent cursor-default"
                         aria-label="Close menu"
                     ></button>

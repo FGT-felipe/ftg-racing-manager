@@ -45,6 +45,7 @@
 
     // Modal state
     let selectedDriver = $state<MarketDriver | null>(null);
+    let showDetail = $state(false);
     let showBidModal = $state(false);
     let bidAmount = $state(0);
     let bidLoading = $state(false);
@@ -53,6 +54,7 @@
 
     // Countdown timers
     let countdownMap = $state<Record<string, string>>({});
+    let activeDrivers = $derived(drivers.filter(d => countdownMap[d.id] !== "Expired"));
     let timerInterval: ReturnType<typeof setInterval> | null = null;
 
     // ─── Helpers ─────────────────────────────────────────────────────────────────
@@ -121,8 +123,10 @@
         loading = true;
         try {
             const { collection, query, where, orderBy, limit, startAfter, getDocs } = firestoreApi;
+            const twentyFourHoursAgo = new Date(Date.now() - 24 * 3600 * 1000).toISOString();
             const constraints: any[] = [
                 where("isTransferListed", "==", true),
+                where("transferListedAt", ">", twentyFourHoursAgo),
                 orderBy("transferListedAt"),
                 limit(PAGE_SIZE),
             ];
@@ -200,12 +204,14 @@
             const { doc, updateDoc } = firestoreApi;
             await updateDoc(doc(db, "drivers", driver.id), { isTransferListed: false, transferListedAt: null });
             selectedDriver = null;
+            showDetail = false;
             fetchPage(currentPage);
         } catch (e) { console.error(e); }
     }
 
     function openBidModal(driver: MarketDriver) {
         selectedDriver = driver;
+        showDetail = false;
         bidAmount = driver.currentHighestBid === 0 ? driver.marketValue : driver.currentHighestBid + 50_000;
         bidError = "";
         bidSuccess = false;
@@ -297,7 +303,7 @@
                 {/each}
 
             <!-- Empty -->
-            {:else if drivers.length === 0}
+            {:else if activeDrivers.length === 0}
                 <div class="flex flex-col items-center justify-center h-48 opacity-30 gap-4">
                     <Users size={36} strokeWidth={1} />
                     <span class="text-sm font-black uppercase tracking-widest">No drivers listed</span>
@@ -305,7 +311,7 @@
 
             <!-- Rows -->
             {:else}
-                {#each drivers as driver, i}
+                {#each activeDrivers as driver, i (driver.id)}
                     {@const isMyBid = driver.highestBidderTeamId === myTeamId}
                     {@const isMyDriver = driver.teamId === myTeamId}
                     {@const expiring = isExpiringSoon(driver)}
@@ -319,7 +325,7 @@
                     >
                         <!-- Driver Name -->
                         <button
-                            onclick={() => { selectedDriver = driver; showBidModal = false; }}
+                            onclick={() => { selectedDriver = driver; showDetail = true; showBidModal = false; }}
                             class="flex items-center gap-3 text-left hover:opacity-80 transition-opacity"
                         >
                             <div class="w-8 h-8 rounded-full bg-app-text/5 flex-shrink-0 overflow-hidden">
@@ -413,7 +419,7 @@
 </div>
 
 <!-- ──── Driver Detail Sheet ───────────────────────────────────────────────────── -->
-{#if selectedDriver && !showBidModal}
+{#if showDetail && selectedDriver && !showBidModal}
     {@const d = selectedDriver}
     {@const lvl = getLevelInfo(d?.currentStars || 1)}
     {@const isMyBid = d?.highestBidderTeamId === myTeamId}
@@ -424,8 +430,8 @@
         role="dialog"
         aria-modal="true"
         tabindex="-1"
-        onclick={(e) => { if (e.target === e.currentTarget) selectedDriver = null; }}
-        onkeydown={(e) => { if (e.key === 'Escape') selectedDriver = null; }}
+        onclick={(e) => { if (e.target === e.currentTarget) showDetail = false; }}
+        onkeydown={(e) => { if (e.key === 'Escape') showDetail = false; }}
     >
         <div
             class="bg-[#121216] border border-app-border rounded-[32px] w-full max-w-5xl overflow-hidden shadow-[0_0_50px_rgba(0,0,0,0.5)] relative"
@@ -433,7 +439,7 @@
         >
             <!-- Close -->
             <button
-                onclick={() => selectedDriver = null}
+                onclick={() => showDetail = false}
                 class="absolute top-6 right-6 p-2 bg-white/5 rounded-full text-app-text/40 hover:text-app-text hover:bg-white/10 transition-all z-20"
             >
                 <X size={20} />

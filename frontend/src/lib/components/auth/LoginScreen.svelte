@@ -57,7 +57,9 @@
     <div class="relative max-w-md w-full flex flex-col items-center gap-10">
         <!-- Header Section -->
         <div class="flex flex-col items-center gap-6">
-            <div class="scale-125 drop-shadow-[0_0_15px_rgba(var(--primary-color-rgb),0.2)]">
+            <div
+                class="scale-125 drop-shadow-[0_0_15px_rgba(var(--primary-color-rgb),0.2)]"
+            >
                 <AppLogo size={56} />
             </div>
             <p
@@ -73,8 +75,10 @@
         >
             <!-- User requested: Badge above google login -->
             <div class="flex justify-center -mb-2">
-                <div class="px-2 py-0.5 bg-app-primary text-app-primary-foreground font-black text-[9px] rounded uppercase tracking-[0.2em] shadow-lg shadow-app-primary/20">
-                    BETA V4
+                <div
+                    class="px-2 py-0.5 bg-app-primary text-app-primary-foreground font-black text-[9px] rounded uppercase tracking-[0.2em] shadow-lg shadow-app-primary/20"
+                >
+                    BETA V4.1.3
                 </div>
             </div>
 
