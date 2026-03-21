@@ -21,6 +21,7 @@
     import { circuitService } from "$lib/services/circuit_service.svelte";
     import { flip } from "svelte/animate";
     import { t } from "$lib/utils/i18n";
+    import { universeStore } from "$lib/stores/universe.svelte";
 
     let results = $state<any[]>([]);
     let raceInfo = $state<any>(null);
@@ -184,7 +185,7 @@
                                         >
                                             {row.driverName}
                                         </p>
-                                        <CountryFlag countryCode={row.countryCode} size="xs" />
+                                        <CountryFlag countryCode={row.countryCode || universeStore.getDriverById(row.driverId)?.countryCode} size="xs" />
                                         {#if row.isPitStop}
                                             <span
                                                 class="px-1.5 py-0.5 rounded bg-blue-500/20 text-blue-400 text-[8px] font-black uppercase"

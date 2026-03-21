@@ -8,6 +8,7 @@
     import { doc, getDoc } from "firebase/firestore";
     import CountryFlag from "$lib/components/ui/CountryFlag.svelte";
     import { t } from "$lib/utils/i18n";
+    import { universeStore } from "$lib/stores/universe.svelte";
 
     let lastResults = $state<any>(null);
     let isLoading = $state(true);
@@ -95,6 +96,7 @@
                             return {
                                 driverId,
                                 driverName: qInfo?.driverName || "Unknown Driver",
+                                countryCode: qInfo?.countryCode,
                                 teamId: qInfo?.teamId,
                                 teamName: qInfo?.teamName || "Privateer",
                                 position: isDnf ? 999 : posInt,
@@ -304,7 +306,7 @@
                                     <div class="flex-1 min-w-0">
                                         <div class="flex items-center gap-2">
                                             <p class="text-[11px] font-black {row.teamId === userTeamId ? 'text-app-primary' : 'text-app-text'} truncate uppercase">{row.driverName}</p>
-                                            <CountryFlag countryCode={row.countryCode} size="xs" />
+                                            <CountryFlag countryCode={row.countryCode || universeStore.getDriverById(row.driverId)?.countryCode} size="xs" />
                                         </div>
                                         <p class="text-[8px] font-bold {row.teamId === userTeamId ? 'text-app-primary/60' : 'text-app-text/30'} uppercase tracking-widest">{row.teamName}</p>
                                     </div>
@@ -368,7 +370,7 @@
                                     <div class="flex-1 min-w-0">
                                         <div class="flex items-center gap-2">
                                             <p class="text-[11px] font-black {row.teamId === userTeamId ? 'text-app-primary' : 'text-app-text'} truncate uppercase">{row.driverName}</p>
-                                            <CountryFlag countryCode={row.countryCode} size="xs" />
+                                            <CountryFlag countryCode={row.countryCode || universeStore.getDriverById(row.driverId)?.countryCode} size="xs" />
                                             {#if row.pts > 0}
                                                 <span class="px-1.5 py-0.5 rounded bg-red-500/20 text-red-500 font-black text-[8px] italic">+{row.pts} PTS</span>
                                             {/if}

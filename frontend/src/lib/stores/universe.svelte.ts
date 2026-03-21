@@ -98,6 +98,16 @@ class UniverseStore {
             .filter(d => d.teamId === teamId);
     }
 
+    getDriverById(driverId: string) {
+        if (!this.value.universe) return null;
+        for (const league of this.value.universe.leagues) {
+            if (!league.drivers) continue;
+            const driver = league.drivers.find((d: any) => d.id === driverId);
+            if (driver) return driver;
+        }
+        return null;
+    }
+
     clear() {
         if (this.unsubscribe) {
             this.unsubscribe();
