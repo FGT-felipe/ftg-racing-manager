@@ -32,12 +32,6 @@
         return Object.keys(sponsors).length > 0;
     });
 
-    let hasUpgrades = $derived.by(() => {
-         // Placeholder for when Facility / Upgrade logic is more refined.
-         if(!team) return false;
-         return true; // We can assume it's optional for now.
-    });
-
     const checklist = $derived([
         {
             id: 'setups',
@@ -52,16 +46,8 @@
             title: t('sponsors'),
             description: t('scouting_efforts', { country: 'Global' }), // Use existing key or create new
             isComplete: hasSponsorsAssigned,
-            link: '/office/sponsors',
+            link: '/management/sponsors',
             optional: false,
-        },
-        {
-            id: 'upgrades',
-            title: t('facilities') + ' (Opt)',
-            description: t('operational_benefits'),
-            isComplete: hasUpgrades,
-            link: '/office/facilities',
-            optional: true,
         }
     ]);
 

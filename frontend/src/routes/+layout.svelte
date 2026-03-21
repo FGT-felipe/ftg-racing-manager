@@ -27,6 +27,7 @@
   import { transactionStore } from "$lib/stores/transactions.svelte";
   import { managerStore } from "$lib/stores/manager.svelte";
   import { universeStore } from "$lib/stores/universe.svelte";
+  import { driverStore } from "$lib/stores/driver.svelte";
   import GlobalModal from "$lib/components/ui/GlobalModal.svelte";
 
   let { children } = $props();
@@ -89,6 +90,7 @@
       transactionStore.init();
       managerStore.init();
       universeStore.init();
+      driverStore.init();
     }
   });
 
