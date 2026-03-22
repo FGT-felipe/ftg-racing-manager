@@ -20,6 +20,7 @@
 
     import { circuitService } from "$lib/services/circuit_service.svelte";
     import CountryFlag from "$lib/components/ui/CountryFlag.svelte";
+    import { t } from "$lib/utils/i18n";
 
     let nextEvent = $derived(seasonStore.nextEvent);
     let weekStatus = $derived(
@@ -30,6 +31,10 @@
         nextEvent
             ? circuitService.getCircuitProfile(nextEvent.circuitId)
             : null,
+    );
+
+    let componentTraits = $derived(
+        circuitInfo ? circuitService.getComponentTraits(circuitInfo) : null
     );
 
     // Timer States
@@ -321,7 +326,8 @@
                     </div>
 
                     <div class="grid grid-cols-3 gap-6">
-                        <div class="flex flex-col gap-2">
+                        <!-- Aero -->
+                        <div class="flex flex-col items-center gap-2 text-center">
                             <div class="flex items-center gap-2 text-app-text/60">
                                 <Cpu size={14} />
                                 <span
@@ -329,17 +335,21 @@
                                     >Aero</span
                                 >
                             </div>
-                            <div
-                                class="h-1 w-full bg-app-text/10 rounded-full overflow-hidden"
-                            >
-                                <div
-                                    class="h-full bg-app-primary"
-                                    style="width: {circuitInfo.aeroWeight *
-                                        100}%"
-                                ></div>
-                            </div>
+                            {#if componentTraits}
+                                <div class="relative group/trait">
+                                    <span
+                                        class="inline-flex items-center px-2.5 py-1 rounded-lg text-[8px] font-black uppercase tracking-wider cursor-help transition-all
+                                        {componentTraits.aero.label === 'High Downforce' ? 'bg-app-primary/15 text-app-primary border border-app-primary/20 shadow-[0_0_8px_rgba(197,160,89,0.1)]' : 'bg-blue-500/15 text-blue-400 border border-blue-500/20 shadow-[0_0_8px_rgba(59,130,246,0.1)]'}"
+                                    >{t(componentTraits.aero.tooltipKey)}</span>
+                                    <div class="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 w-48 px-3 py-2 bg-app-bg border border-app-border rounded-lg shadow-xl opacity-0 invisible group-hover/trait:opacity-100 group-hover/trait:visible transition-all duration-200 z-50 pointer-events-none">
+                                        <span class="text-[9px] text-app-text/80 leading-relaxed">{t('circuit_tooltip_' + componentTraits.aero.tooltipKey.replace('circuit_trait_', ''))}</span>
+                                        <div class="absolute top-full left-1/2 -translate-x-1/2 w-2 h-2 bg-app-bg border-r border-b border-app-border rotate-45 -mt-1"></div>
+                                    </div>
+                                </div>
+                            {/if}
                         </div>
-                        <div class="flex flex-col gap-2">
+                        <!-- Power -->
+                        <div class="flex flex-col items-center gap-2 text-center">
                             <div class="flex items-center gap-2 text-app-text/60">
                                 <Zap size={14} />
                                 <span
@@ -347,17 +357,21 @@
                                     >Power</span
                                 >
                             </div>
-                            <div
-                                class="h-1 w-full bg-app-text/10 rounded-full overflow-hidden"
-                            >
-                                <div
-                                    class="h-full bg-blue-400"
-                                    style="width: {circuitInfo.powertrainWeight *
-                                        100}%"
-                                ></div>
-                            </div>
+                            {#if componentTraits}
+                                <div class="relative group/trait">
+                                    <span
+                                        class="inline-flex items-center px-2.5 py-1 rounded-lg text-[8px] font-black uppercase tracking-wider cursor-help transition-all
+                                        {componentTraits.power.label === 'Top Speed' ? 'bg-orange-500/15 text-orange-400 border border-orange-500/20 shadow-[0_0_8px_rgba(249,115,22,0.1)]' : 'bg-cyan-500/15 text-cyan-400 border border-cyan-500/20 shadow-[0_0_8px_rgba(6,182,212,0.1)]'}"
+                                    >{t(componentTraits.power.tooltipKey)}</span>
+                                    <div class="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 w-48 px-3 py-2 bg-app-bg border border-app-border rounded-lg shadow-xl opacity-0 invisible group-hover/trait:opacity-100 group-hover/trait:visible transition-all duration-200 z-50 pointer-events-none">
+                                        <span class="text-[9px] text-app-text/80 leading-relaxed">{t('circuit_tooltip_' + componentTraits.power.tooltipKey.replace('circuit_trait_', ''))}</span>
+                                        <div class="absolute top-full left-1/2 -translate-x-1/2 w-2 h-2 bg-app-bg border-r border-b border-app-border rotate-45 -mt-1"></div>
+                                    </div>
+                                </div>
+                            {/if}
                         </div>
-                        <div class="flex flex-col gap-2">
+                        <!-- Chassis -->
+                        <div class="flex flex-col items-center gap-2 text-center">
                             <div class="flex items-center gap-2 text-app-text/60">
                                 <Shield size={14} />
                                 <span
@@ -365,15 +379,18 @@
                                     >Chassis</span
                                 >
                             </div>
-                            <div
-                                class="h-1 w-full bg-app-text/10 rounded-full overflow-hidden"
-                            >
-                                <div
-                                    class="h-full bg-green-400"
-                                    style="width: {circuitInfo.chassisWeight *
-                                        100}%"
-                                ></div>
-                            </div>
+                            {#if componentTraits}
+                                <div class="relative group/trait">
+                                    <span
+                                        class="inline-flex items-center px-2.5 py-1 rounded-lg text-[8px] font-black uppercase tracking-wider cursor-help transition-all
+                                        {componentTraits.chassis.label === 'Stiff' ? 'bg-red-500/15 text-red-400 border border-red-500/20 shadow-[0_0_8px_rgba(239,68,68,0.1)]' : 'bg-emerald-500/15 text-emerald-400 border border-emerald-500/20 shadow-[0_0_8px_rgba(16,185,129,0.1)]'}"
+                                    >{t(componentTraits.chassis.tooltipKey)}</span>
+                                    <div class="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 w-48 px-3 py-2 bg-app-bg border border-app-border rounded-lg shadow-xl opacity-0 invisible group-hover/trait:opacity-100 group-hover/trait:visible transition-all duration-200 z-50 pointer-events-none">
+                                        <span class="text-[9px] text-app-text/80 leading-relaxed">{t('circuit_tooltip_' + componentTraits.chassis.tooltipKey.replace('circuit_trait_', ''))}</span>
+                                        <div class="absolute top-full left-1/2 -translate-x-1/2 w-2 h-2 bg-app-bg border-r border-b border-app-border rotate-45 -mt-1"></div>
+                                    </div>
+                                </div>
+                            {/if}
                         </div>
                     </div>
 
@@ -381,23 +398,30 @@
                         class="flex flex-wrap gap-3 border-t border-app-border pt-6"
                     >
                         {#if circuitInfo.characteristics}
-                            {#each Object.entries(circuitInfo.characteristics).filter(([key]) => key.toLowerCase() !== 'weather') as [key, value]}
-                            {@const tooltip = 
-                                key.toLowerCase().includes('fuel') ? 'Fuel consumption ranges between 1.0 and 1.9 liters per lap.' :
-                                key.toLowerCase().includes('tyre') ? 'Indicates the rate of tire degradation on this surface.' :
-                                key.toLowerCase().includes('elevation') ? 'Significant height changes affecting balance and power.' : null
+                            {#each Object.entries(circuitInfo.characteristics).filter(([key]) => {
+                                const k = key.toLowerCase();
+                                return k.includes('tyre') || k.includes('fuel');
+                            }) as [key, value]}
+                            {@const tooltipKey = 
+                                key.toLowerCase().includes('fuel') ? 'circuit_tooltip_fuel_consumption' :
+                                key.toLowerCase().includes('tyre') ? 'circuit_tooltip_tyre_wear' : null
                             }
                             <div
-                                class="px-3 py-1.5 bg-app-text/5 border border-app-border rounded-lg flex items-center gap-2 cursor-help group/item"
-                                title={tooltip}
+                                class="relative px-3 py-1.5 bg-app-text/5 border border-app-border rounded-lg flex items-center gap-2 cursor-help group/badge"
                             >
                                 <span
-                                    class="text-[8px] font-black text-app-text/40 uppercase tracking-tighter group-hover/item:text-app-primary transition-colors"
+                                    class="text-[8px] font-black text-app-text/40 uppercase tracking-tighter group-hover/badge:text-app-primary transition-colors"
                                     >{key}</span
                                 >
                                 <span class="text-[9px] font-bold text-app-text"
                                     >{value}</span
                                 >
+                                {#if tooltipKey}
+                                    <div class="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 w-56 px-3 py-2 bg-app-bg border border-app-border rounded-lg shadow-xl opacity-0 invisible group-hover/badge:opacity-100 group-hover/badge:visible transition-all duration-200 z-50 pointer-events-none">
+                                        <span class="text-[9px] text-app-text/80 leading-relaxed">{t(tooltipKey)}</span>
+                                        <div class="absolute top-full left-1/2 -translate-x-1/2 w-2 h-2 bg-app-bg border-r border-b border-app-border rotate-45 -mt-1"></div>
+                                    </div>
+                                {/if}
                             </div>
                             {/each}
                         {/if}

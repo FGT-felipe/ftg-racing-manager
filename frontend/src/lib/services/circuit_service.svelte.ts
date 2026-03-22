@@ -17,6 +17,12 @@ export interface CircuitProfile {
     characteristics: Record<string, string>;
 }
 
+/** Dynamically derived trait badge for a circuit component. */
+export interface CircuitComponentTrait {
+    label: string;
+    tooltipKey: string;
+}
+
 class CircuitService {
     private circuits: Record<string, CircuitProfile> = {
         mexico: {
@@ -39,7 +45,6 @@ class CircuitService {
             },
             difficulty: 0.6,
             characteristics: {
-                'Top Speed': 'High',
                 'Tyre Wear': 'Medium',
                 'Fuel Consumption': 'Normal',
             },
@@ -64,8 +69,6 @@ class CircuitService {
             },
             difficulty: 0.5,
             characteristics: {
-                'Night Race': 'Yes',
-                'Top Speed': 'Very High',
                 'Tyre Wear': 'Low',
                 'Fuel Consumption': 'High',
             },
@@ -90,10 +93,7 @@ class CircuitService {
             },
             difficulty: 0.6,
             characteristics: {
-                'Elevation': 'Significant',
-                'Weather': 'Unpredictable',
                 'Tyre Wear': 'High',
-                'Top Speed': 'Medium',
                 'Fuel Consumption': 'High',
             },
         },
@@ -117,9 +117,6 @@ class CircuitService {
             },
             difficulty: 0.5,
             characteristics: {
-                'Environment': 'Complex',
-                'Surface': 'Smooth',
-                'Top Speed': 'High',
                 'Tyre Wear': 'Normal',
                 'Fuel Consumption': 'Normal',
             },
@@ -133,6 +130,32 @@ class CircuitService {
 
     getAllCircuits(): CircuitProfile[] {
         return Object.values(this.circuits);
+    }
+
+    /**
+     * Derives the dynamic component trait badges from a circuit's numerical profile.
+     * Aero: High Downforce (aeroWeight >= 0.35) or Low Downforce.
+     * Power: Top Speed (gearRatio >= 70) or Acceleration.
+     * Chassis: Stiff (chassisWeight >= 0.3 AND suspension < 55) or Soft.
+     */
+    getComponentTraits(circuit: CircuitProfile): {
+        aero: CircuitComponentTrait;
+        power: CircuitComponentTrait;
+        chassis: CircuitComponentTrait;
+    } {
+        const aero: CircuitComponentTrait = circuit.aeroWeight >= 0.35
+            ? { label: 'High Downforce', tooltipKey: 'circuit_trait_high_downforce' }
+            : { label: 'Low Downforce', tooltipKey: 'circuit_trait_low_downforce' };
+
+        const power: CircuitComponentTrait = circuit.idealSetup.gearRatio >= 70
+            ? { label: 'Top Speed', tooltipKey: 'circuit_trait_top_speed' }
+            : { label: 'Acceleration', tooltipKey: 'circuit_trait_acceleration' };
+
+        const chassis: CircuitComponentTrait = (circuit.chassisWeight >= 0.3 && circuit.idealSetup.suspension < 55)
+            ? { label: 'Stiff', tooltipKey: 'circuit_trait_stiff' }
+            : { label: 'Soft', tooltipKey: 'circuit_trait_soft' };
+
+        return { aero, power, chassis };
     }
 }
 
