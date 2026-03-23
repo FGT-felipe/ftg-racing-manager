@@ -1,140 +1,138 @@
 # Architectural Roadmap — FTG Racing Manager
 
-> Last updated: 2026-03-23. Priority is the backend refactor. Frontend improvements are deferred.
+> Last updated: 2026-03-23. Backend refactor complete and deployed. Active focus: frontend quality and security.
 
 ---
 
-## 1. The Core Problem: The Functions Monolith
+## 1. Backend Refactor — COMPLETE ✅
 
-`functions/index.js` is a **2,696-line JavaScript file** that contains every piece of backend logic. This is the single biggest risk in the project.
+The `functions/index.js` monolith has been fully migrated to TypeScript modules.
 
-### Why it's dangerous
+### What was done
 
-- **Silent failures in strict mode.** Node.js Cloud Functions run with `"use strict"`. An undeclared variable crashes the *entire simulation pipeline* for all leagues. This is exactly what caused R2 and R3 postmortems. TypeScript would catch these at compile time.
-- **No isolation.** The `simulateLap()` physics engine, `postRaceProcessing()` economy, the Transfer Market resolver, and admin fix tools all share the same file and scope. A bug in one can silently corrupt another.
-- **Untestable.** The sim engine cannot be unit tested in isolation because it's entangled with Firestore calls. There is no way to verify a physics change without deploying and running a full race.
-- **Cognitive overload.** The file exceeds the context window of any AI agent and most human developers. Finding the blast radius of a change requires reading thousands of lines.
-- **Plain JavaScript.** No type safety, no compile-time checks, no autocomplete contracts between modules.
-
-### Current domain map (what lives in `index.js`)
-
-| Lines | Domain | Responsibility |
+| Épica | Deliverable | Status |
 |---|---|---|
-| 1–25 | Config | `FALLBACK_BONUSES` constants |
-| 26–185 | Sponsor | `evaluateObjective()` |
-| 186–608 | Circuits | `getCircuit()` — hardcoded circuit data |
-| 609–696 | Shared utils | `sleep()`, `addOfficeNews()`, `fetchTeams()` |
-| 697–790 | Academy | `generateAcademyCandidate()` |
-| 791–1178 | Sim Engine | `simulateLap()`, tire physics, weather, crash logic |
-| 1179–1749 | Qualifying | `runQualifyingLogic()` |
-| 1750–2286 | Race + Economy | `runRaceLogic()`, `postRaceProcessing()` |
-| 2287–2348 | Fitness | `scheduledDailyFitnessRecovery` |
-| 2349–2465 | Transfer Market | `resolveTransferMarket` |
-| 2466–2696 | Admin tools | `megaFixDebriefs`, `forceFixGBA`, `restoreDriversHistory` |
+| 0 — Cleanup | Moved scripts to `scripts/emergency/` and `scripts/migrations/`. Deleted temp files. Fixed CLAUDE.md. | ✅ |
+| 1 — Config + Shared | `config/constants.ts`, `config/circuits.ts`, `shared/types.ts`, `shared/admin.ts`, `shared/utils.ts`, `shared/firestore.ts`, `shared/notifications.ts` | ✅ |
+| 2 — Sim Engine | `domains/simulation/sim-engine.ts` (pure, zero Firestore), `qualifying.ts`, `race-engine.ts`. 7 unit tests including R2/R3 regression test. | ✅ |
+| 3 — Economy | `domains/economy/sponsors.ts` (pure `evaluateObjective()`), `salaries.ts` (pure calc helpers), `post-race.ts` (orchestrator). 18 unit tests. | ✅ |
+| 4 — Independent domains | `domains/academy/candidate-factory.ts`, `domains/fitness/recovery.ts`, `domains/transfer-market/resolver.ts`, `domains/admin/tools.ts` | ✅ |
+| 5 — Wiring + Cutover | `schedulers/jobs.ts`, `src/index.ts`, `firebase.json` predeploy, `package.json` main → `lib/index.js` | ✅ Deployed |
 
----
-
-## 2. Target Architecture
-
-### Module structure
+### Current module structure
 
 ```
 functions/
 ├── src/
-│   ├── index.ts                        # Entry point — re-exports only, zero logic
-│   │
+│   ├── index.ts                        ← Entry point, re-exports only
 │   ├── config/
-│   │   ├── constants.ts                # FALLBACK_BONUSES, NAME_CHANGE_COST, etc.
-│   │   └── circuits.ts                 # Circuit definitions (extracted from getCircuit())
-│   │
+│   │   ├── constants.ts                ← All business constants
+│   │   └── circuits.ts                 ← Circuit definitions
 │   ├── shared/
-│   │   ├── types.ts                    # All TypeScript interfaces (Team, Driver, Race…)
-│   │   ├── firestore.ts                # fetchTeams(), batch helpers, chunk utilities
-│   │   └── notifications.ts            # addOfficeNews(), addPressNews()
-│   │
+│   │   ├── types.ts                    ← All TypeScript interfaces
+│   │   ├── admin.ts                    ← Firebase Admin init
+│   │   ├── firestore.ts                ← fetchTeams(), chunkedBatchWrite()
+│   │   ├── notifications.ts            ← addOfficeNews()
+│   │   └── utils.ts                    ← sleep()
 │   ├── domains/
 │   │   ├── simulation/
-│   │   │   ├── sim-engine.ts           # simulateLap() — pure function, zero Firestore
-│   │   │   ├── qualifying.ts           # runQualifyingLogic()
-│   │   │   └── race-engine.ts          # runRaceLogic()
-│   │   │
+│   │   │   ├── sim-engine.ts           ← simulateLap() — PURE, zero Firestore
+│   │   │   ├── qualifying.ts
+│   │   │   └── race-engine.ts
 │   │   ├── economy/
-│   │   │   ├── post-race.ts            # postRaceProcessing orchestration
-│   │   │   ├── sponsors.ts             # evaluateObjective(), bonus calculations
-│   │   │   └── salaries.ts             # Salary + HQ maintenance calculations
-│   │   │
+│   │   │   ├── post-race.ts
+│   │   │   ├── sponsors.ts             ← evaluateObjective() — PURE
+│   │   │   └── salaries.ts             ← salary/maintenance calcs — PURE
 │   │   ├── academy/
-│   │   │   └── candidate-factory.ts    # generateAcademyCandidate()
-│   │   │
+│   │   │   └── candidate-factory.ts    ← generateAcademyCandidate() — PURE
 │   │   ├── transfer-market/
-│   │   │   └── resolver.ts             # resolveTransferMarket
-│   │   │
-│   │   └── fitness/
-│   │       └── recovery.ts             # scheduledDailyFitnessRecovery
-│   │
-│   └── schedulers/
-│       └── jobs.ts                     # All onSchedule + onCall exports wired to domains
-│
-├── src/__tests__/
-│   ├── sim-engine.test.ts              # Unit tests for pure simulation math
-│   ├── sponsors.test.ts                # Unit tests for objective evaluation
-│   └── economy.test.ts                 # Unit tests for salary/bonus calculations
-│
-├── package.json                        # + typescript, ts-jest devDependencies
-└── tsconfig.json
+│   │   │   └── resolver.ts
+│   │   ├── fitness/
+│   │   │   └── recovery.ts
+│   │   └── admin/
+│   │       └── tools.ts
+│   ├── schedulers/
+│   │   └── jobs.ts                     ← All Cloud Function exports
+│   └── __tests__/
+│       ├── sim-engine.test.ts          ← 7 tests (incl. R2/R3 regression)
+│       ├── sponsors.test.ts            ← 5 tests
+│       └── economy.test.ts             ← 13 tests
+└── index.js                            ← Legacy. Kept for rollback. Deprecate after R(n+1) verified.
 ```
 
-### Design principles
+### Remaining backend task
 
-1. **`index.ts` exports only.** No logic lives there. It only imports from `schedulers/jobs.ts`.
-2. **`sim-engine.ts` is a pure module.** `simulateLap()` takes data as arguments and returns a result. Zero Firestore calls. This makes it unit-testable without a Firebase emulator.
-3. **One file per domain.** No file exceeds 400 lines. If it grows, extract a sub-module.
-4. **TypeScript everywhere.** The class of bug from R2/R3 (`let extraCrash` undeclared) becomes a compile error — `tsc` fails before deployment.
-5. **Constants are centralized.** No magic numbers in logic files. All business values live in `config/constants.ts`.
-6. **Types are shared.** `shared/types.ts` is the single source of truth for data shapes, imported by both domain modules and (eventually) the frontend.
+- **Tarea 5.7**: After the first successful race weekend on the TypeScript build, rename `index.js` → `_legacy_index.js.bak`. Delete after R(n+2).
 
 ---
 
-## 3. Migration Strategy
+## 2. CI/CD Pipeline — COMPLETE ✅
 
-**Not a big-bang rewrite.** The current `index.js` stays deployed and functional. Migration happens domain by domain. Each domain is extracted, tested, and the new TypeScript build replaces the equivalent section in `index.js` only when verified.
+GitHub Actions workflow at `.github/workflows/ci.yml`. Runs on every PR to `main` and every push to `core/**` branches:
 
-### Migration order (safest first)
+- `functions`: `npm ci` → `typecheck` → `test`
+- `frontend`: `npm ci` → `svelte-check`
 
-1. **Config + Shared** — No risk. Extract constants, types, and utility functions.
-2. **Sim Engine** — Highest value. Extract `simulateLap()` as a pure function and write unit tests. This directly addresses the R2/R3 root cause.
-3. **Economy** — Extract sponsor evaluation and salary logic. Unit test `evaluateObjective()`.
-4. **Academy + Transfer Market** — Independent domains, low coupling.
-5. **Qualifying + Race orchestration** — Depend on Sim Engine and Economy being stable first.
-6. **Fitness + Admin tools** — Last, lowest risk.
+Prevents broken code from reaching `main`. No secrets required — checks only, no deploy.
 
 ---
 
-## 4. Functions Directory Cleanup
+## 3. Pending Improvements (priority order)
 
-The `functions/` directory contains ~30 diagnostic/fix scripts and temp JSON files from past incidents. These must be organized before the refactor begins, otherwise the migration creates confusion about what is production code vs. throwaway tooling.
+### 3.1 App Check — HIGH PRIORITY 🔒
 
+**Problem:** Several Cloud Functions use `invoker: "public"` — `megaFixDebriefs`, `forceFixGBA`, `restoreDriversHistory`. These are callable by anyone with the project ID.
+
+**Fix:**
+1. Enable App Check in Firebase Console with reCAPTCHA v3 for web.
+2. Add `enforceAppCheck: true` to all write `onCall` functions in `tools.ts` and any future admin handlers.
+3. Remove `invoker: "public"` from admin tools and require Firebase Auth instead.
+
+**Needs QA:** Yes — verify the app still works after App Check is enforced (app must pass the attestation token on every call).
+
+### 3.2 Zod Validation on Firestore Writes — MEDIUM PRIORITY
+
+**Problem:** The frontend writes to Firestore without schema validation. A malformed setup object (e.g., `tyreCompound: null`) can corrupt the simulation.
+
+**Fix:** Add Zod schemas in `src/lib/schemas/` for `CarSetup`, `SponsorContract`, and `TeamWeekStatus`. Validate before every `setDoc`/`updateDoc` call in services.
+
+**Needs QA:** Yes — run through strategy submission, sponsor negotiation, and HQ upgrade flows.
+
+### 3.3 Repository Pattern (Frontend) — MEDIUM PRIORITY
+
+**Problem:** Services call Firestore SDK directly, making them untestable in isolation and tightly coupled to Firebase.
+
+**Fix:** Introduce a thin repository layer:
 ```
-functions/
-├── src/                    # New TypeScript source (production)
-├── scripts/                # Admin + diagnostic scripts (not deployed)
-│   ├── emergency/          # Recovery scripts (sync_universe, force_post_race, etc.)
-│   └── migrations/         # One-time migration scripts
-├── index.js                # Legacy — kept until TypeScript migration completes
-└── package.json
+src/lib/repositories/
+  ├── driver.repository.ts     ← getDriver(), updateDriverStats()
+  ├── team.repository.ts       ← getTeam(), updateBudget()
+  └── race.repository.ts       ← getRace(), saveQualyGrid()
 ```
+Services import repositories, not the Firestore SDK directly. Repositories can be swapped for in-memory fakes in tests.
 
-Temp JSON files (`_adc_temp_*.json`, `_t12.json`, etc.) and log files (`run_log.txt`, `log_post_race.txt`, `eslint_output.txt`) are deleted immediately.
+**Needs QA:** Yes — smoke test all service flows after the refactor.
+
+### 3.4 Web Workers for Race Telemetry — LOW PRIORITY
+
+**Problem:** Race live view interpolates lap-by-lap telemetry on the main thread, causing UI jank on low-end devices.
+
+**Fix:** Move the interpolation loop (`RaceLivePanel`) to a Web Worker. The worker posts position updates every frame; the Svelte component only reads state.
+
+**Needs QA:** Yes — verify race live view on mobile.
+
+### 3.5 SSG for `/admin/docs` — LOW PRIORITY
+
+**Problem:** The docs routes (`/admin/docs/**`) are rendered client-side even though they are purely static markdown. This adds unnecessary LCP latency.
+
+**Fix:** Add `export const prerender = true` to each docs layout. Requires verifying all links are static (no dynamic Firestore reads in docs pages).
+
+**Needs QA:** Minimal — verify docs pages load correctly after prerender.
 
 ---
 
-## 5. Frontend Architecture (Deferred)
+## 4. Not doing (intentional)
 
-These improvements are valid but blocked on the backend stabilization:
-
-- **Repository Pattern**: Decouple Firestore SDK from Svelte Runes to enable mocked unit tests on the frontend.
-- **Web Workers**: Move race telemetry interpolation off the main thread for 60 FPS UI.
-- **SSG for docs**: Move `/admin/docs` to static generation to improve LCP.
-- **Zod validation**: Schema validation on Firestore writes.
-- **App Check**: Zero-trust enforcement on all write Cloud Functions.
-- **CI/CD Pipeline**: GitHub Actions — lint + typecheck + test before every deploy.
+- **Playwright E2E tests** — Prohibited per CLAUDE.md. QA is manual.
+- **`addPressNews`** — Dead code in `index.js`, confirmed commented out. Not extracted.
+- **Flutter codebase** — 100% deprecated. Do not modify.

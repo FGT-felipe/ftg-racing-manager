@@ -19,9 +19,9 @@
     let activeTab = $state<"qualy" | "race" | "results">("qualy");
 
     const tabs = [
-        { id: "qualy", label: "Qualy Live", icon: Trophy, color: "text-app-primary" },
-        { id: "race", label: "Live Race", icon: Flag, color: "text-red-500" },
-        { id: "results", label: "Last Results", icon: History, color: "text-blue-400" }
+        { id: "qualy" as const, label: "Qualy Live", icon: Trophy, color: "text-app-primary" },
+        { id: "race" as const, label: "Live Race", icon: Flag, color: "text-red-500" },
+        { id: "results" as const, label: "Last Results", icon: History, color: "text-blue-400" }
     ];
 
     let nextEvent = $derived(seasonStore.nextEvent);
