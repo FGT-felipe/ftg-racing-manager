@@ -11,9 +11,9 @@
     // Dynamic checklist states
     let hasMainSetups = $derived.by(() => {
         if (!team || !drivers) return false;
-        
+
         const setups = team.weekStatus?.driverSetups || {};
-        
+
         // Find main drivers
         const mainDrivers = drivers.filter((d: any) => d.carIndex === 0 || d.carIndex === 1);
         if (mainDrivers.length === 0) return false;
@@ -25,6 +25,21 @@
         });
     });
 
+    let hasQualifyingSetups = $derived.by(() => {
+        if (!team || !drivers) return false;
+
+        const setups = team.weekStatus?.driverSetups || {};
+
+        const mainDrivers = drivers.filter((d: any) => d.carIndex === 0 || d.carIndex === 1);
+        if (mainDrivers.length === 0) return false;
+
+        // Check if all main drivers have sent a qualifying setup (avoids morale/fitness penalty)
+        return mainDrivers.every((d: any) => {
+            const driverSetup = setups[d.id];
+            return driverSetup?.isSetupSent === true;
+        });
+    });
+
     let hasSponsorsAssigned = $derived.by(() => {
         if (!team) return false;
         const sponsors = team.sponsors || {};
@@ -33,6 +48,14 @@
     });
 
     const checklist = $derived([
+        {
+            id: 'qualifying',
+            title: 'Qualifying Setup',
+            description: 'Send a qualifying setup to avoid fitness & morale penalties',
+            isComplete: hasQualifyingSetups,
+            link: '/racing',
+            optional: false,
+        },
         {
             id: 'setups',
             title: t('race_setups'),
