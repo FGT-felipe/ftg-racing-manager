@@ -186,14 +186,15 @@ When you modify a business rule, data structure, service interface, or architect
 If any automated simulation fails, run from `functions/` in order:
 
 ```bash
-node reset_all.js           # 1. Clear corrupted race data
-node run_simulation.js qualy  # 2. Re-run qualifying
-node run_simulation.js race   # 3. Re-run race
-node force_post_race.js     # 4. Force economy processing
-node sync_universe.js       # 5. Sync Standings UI
+node scripts/emergency/force_race_local.js qualy  # 1. Re-run qualifying
+node scripts/emergency/force_race_local.js race    # 2. Re-run race  (or force_race_wrapper.js)
+node scripts/emergency/force_post_race.js          # 3. Force economy processing
+node scripts/emergency/sync_universe.js            # 4. Sync Standings UI
 ```
 
 **Do not skip steps.** Each depends on the previous completing cleanly (Exit code 0).
+
+> **Note:** `reset_all.js` and `run_simulation.js` do not exist. Use `force_race_local.js` or `force_race_wrapper.js` for manual race simulation.
 
 ---
 
