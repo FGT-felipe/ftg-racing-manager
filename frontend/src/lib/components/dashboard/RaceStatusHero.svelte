@@ -325,69 +325,60 @@
                         </div>
                     </div>
 
-                    <div class="grid grid-cols-3 gap-6">
+                    <div class="flex flex-col gap-4">
                         <!-- Aero -->
-                        <div class="flex flex-col items-center gap-2 text-center">
-                            <div class="flex items-center gap-2 text-app-text/60">
-                                <Cpu size={14} />
-                                <span
-                                    class="text-[8px] font-black uppercase tracking-widest"
-                                    >Aero</span
-                                >
+                        <div class="flex items-center justify-between">
+                            <div class="flex items-center gap-3 text-app-text/60">
+                                <Cpu size={16} />
+                                <span class="text-[10px] font-black uppercase tracking-widest">Aero</span>
                             </div>
                             {#if componentTraits}
                                 <div class="relative group/trait">
                                     <span
-                                        class="inline-flex items-center px-2.5 py-1 rounded-lg text-[8px] font-black uppercase tracking-wider cursor-help transition-all
+                                        class="inline-flex items-center px-2.5 py-1 rounded-lg text-[9px] font-black uppercase tracking-wider cursor-help transition-all
                                         {componentTraits.aero.label === 'High Downforce' ? 'bg-app-primary/15 text-app-primary border border-app-primary/20 shadow-[0_0_8px_rgba(197,160,89,0.1)]' : 'bg-blue-500/15 text-blue-400 border border-blue-500/20 shadow-[0_0_8px_rgba(59,130,246,0.1)]'}"
                                     >{t(componentTraits.aero.tooltipKey)}</span>
-                                    <div class="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 w-48 px-3 py-2 bg-app-bg border border-app-border rounded-lg shadow-xl opacity-0 invisible group-hover/trait:opacity-100 group-hover/trait:visible transition-all duration-200 z-50 pointer-events-none">
+                                    <div class="absolute bottom-full right-0 mb-2 w-48 px-3 py-2 bg-app-bg border border-app-border rounded-lg shadow-xl opacity-0 invisible group-hover/trait:opacity-100 group-hover/trait:visible transition-all duration-200 z-50 pointer-events-none">
                                         <span class="text-[9px] text-app-text/80 leading-relaxed">{t('circuit_tooltip_' + componentTraits.aero.tooltipKey.replace('circuit_trait_', ''))}</span>
-                                        <div class="absolute top-full left-1/2 -translate-x-1/2 w-2 h-2 bg-app-bg border-r border-b border-app-border rotate-45 -mt-1"></div>
+                                        <div class="absolute top-full right-6 w-2 h-2 bg-app-bg border-r border-b border-app-border rotate-45 -mt-1"></div>
                                     </div>
                                 </div>
                             {/if}
                         </div>
                         <!-- Power -->
-                        <div class="flex flex-col items-center gap-2 text-center">
-                            <div class="flex items-center gap-2 text-app-text/60">
-                                <Zap size={14} />
-                                <span
-                                    class="text-[8px] font-black uppercase tracking-widest"
-                                    >Power</span
-                                >
+                        <div class="flex items-center justify-between">
+                            <div class="flex items-center gap-3 text-app-text/60">
+                                <Zap size={16} />
+                                <span class="text-[10px] font-black uppercase tracking-widest">Power</span>
                             </div>
                             {#if componentTraits}
                                 <div class="relative group/trait">
                                     <span
-                                        class="inline-flex items-center px-2.5 py-1 rounded-lg text-[8px] font-black uppercase tracking-wider cursor-help transition-all
+                                        class="inline-flex items-center px-2.5 py-1 rounded-lg text-[9px] font-black uppercase tracking-wider cursor-help transition-all
                                         {componentTraits.power.label === 'Top Speed' ? 'bg-orange-500/15 text-orange-400 border border-orange-500/20 shadow-[0_0_8px_rgba(249,115,22,0.1)]' : 'bg-cyan-500/15 text-cyan-400 border border-cyan-500/20 shadow-[0_0_8px_rgba(6,182,212,0.1)]'}"
                                     >{t(componentTraits.power.tooltipKey)}</span>
-                                    <div class="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 w-48 px-3 py-2 bg-app-bg border border-app-border rounded-lg shadow-xl opacity-0 invisible group-hover/trait:opacity-100 group-hover/trait:visible transition-all duration-200 z-50 pointer-events-none">
+                                    <div class="absolute bottom-full right-0 mb-2 w-48 px-3 py-2 bg-app-bg border border-app-border rounded-lg shadow-xl opacity-0 invisible group-hover/trait:opacity-100 group-hover/trait:visible transition-all duration-200 z-50 pointer-events-none">
                                         <span class="text-[9px] text-app-text/80 leading-relaxed">{t('circuit_tooltip_' + componentTraits.power.tooltipKey.replace('circuit_trait_', ''))}</span>
-                                        <div class="absolute top-full left-1/2 -translate-x-1/2 w-2 h-2 bg-app-bg border-r border-b border-app-border rotate-45 -mt-1"></div>
+                                        <div class="absolute top-full right-6 w-2 h-2 bg-app-bg border-r border-b border-app-border rotate-45 -mt-1"></div>
                                     </div>
                                 </div>
                             {/if}
                         </div>
                         <!-- Chassis -->
-                        <div class="flex flex-col items-center gap-2 text-center">
-                            <div class="flex items-center gap-2 text-app-text/60">
-                                <Shield size={14} />
-                                <span
-                                    class="text-[8px] font-black uppercase tracking-widest"
-                                    >Chassis</span
-                                >
+                        <div class="flex items-center justify-between">
+                            <div class="flex items-center gap-3 text-app-text/60">
+                                <Shield size={16} />
+                                <span class="text-[10px] font-black uppercase tracking-widest">Chassis</span>
                             </div>
                             {#if componentTraits}
                                 <div class="relative group/trait">
                                     <span
-                                        class="inline-flex items-center px-2.5 py-1 rounded-lg text-[8px] font-black uppercase tracking-wider cursor-help transition-all
+                                        class="inline-flex items-center px-2.5 py-1 rounded-lg text-[9px] font-black uppercase tracking-wider cursor-help transition-all
                                         {componentTraits.chassis.label === 'Stiff' ? 'bg-red-500/15 text-red-400 border border-red-500/20 shadow-[0_0_8px_rgba(239,68,68,0.1)]' : 'bg-emerald-500/15 text-emerald-400 border border-emerald-500/20 shadow-[0_0_8px_rgba(16,185,129,0.1)]'}"
                                     >{t(componentTraits.chassis.tooltipKey)}</span>
-                                    <div class="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 w-48 px-3 py-2 bg-app-bg border border-app-border rounded-lg shadow-xl opacity-0 invisible group-hover/trait:opacity-100 group-hover/trait:visible transition-all duration-200 z-50 pointer-events-none">
+                                    <div class="absolute bottom-full right-0 mb-2 w-48 px-3 py-2 bg-app-bg border border-app-border rounded-lg shadow-xl opacity-0 invisible group-hover/trait:opacity-100 group-hover/trait:visible transition-all duration-200 z-50 pointer-events-none">
                                         <span class="text-[9px] text-app-text/80 leading-relaxed">{t('circuit_tooltip_' + componentTraits.chassis.tooltipKey.replace('circuit_trait_', ''))}</span>
-                                        <div class="absolute top-full left-1/2 -translate-x-1/2 w-2 h-2 bg-app-bg border-r border-b border-app-border rotate-45 -mt-1"></div>
+                                        <div class="absolute top-full right-6 w-2 h-2 bg-app-bg border-r border-b border-app-border rotate-45 -mt-1"></div>
                                     </div>
                                 </div>
                             {/if}
