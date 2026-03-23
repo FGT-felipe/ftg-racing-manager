@@ -1040,6 +1040,32 @@ async function runQualifyingLogic() {
               tyreCompound: tyreCompound,
               setupSubmitted: setupSubmitted || team.isBot,
             });
+
+            // --- FITNESS & MORALE IMPACT ---
+            let fitnessPenalty = 0;
+            let moralePenalty = 0;
+            const currentFitness = driver.stats.fitness || 100;
+            const currentMorale = driver.stats.morale || 100;
+
+            // 1. Fitness loss due to qualifying session effort
+            const focusStat = Math.min(Math.max(driver.stats.focus || 10, 1), 20);
+            fitnessPenalty = 1.5 + ((20 - focusStat) / 19) * 1.5;
+
+            // 2. Extra penalty for Managers who didn't submit a setup (excluding AI)
+            if (!team.isBot && !sent) {
+              fitnessPenalty += 2.0;
+              moralePenalty += 2.0;
+            }
+
+            const newFitness = Math.max(0, Math.min(100, currentFitness - fitnessPenalty));
+            const newMorale = Math.max(0, Math.min(100, currentMorale - moralePenalty));
+
+            statsBatch.update(db.collection("drivers").doc(driver.id), {
+              "stats.fitness": newFitness,
+              "stats.morale": newMorale,
+              updatedAt: admin.firestore.FieldValue.serverTimestamp()
+            });
+            // -------------------------------
           }
         }
 

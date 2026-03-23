@@ -196,8 +196,19 @@
                 team,
                 driver,
                 setupToRun,
-                nextEvent?.weatherQualifying || "Sunny"
+                nextEvent?.weatherQualifying || "Sunny",
+                true // isQualifying
             );
+
+            if (result.fitnessPenalty) {
+                const driverRef = doc(db, "drivers", driver.id);
+                const newFitness = Math.max(0, Math.min(100, (driver.stats.fitness || 100) - result.fitnessPenalty));
+                await updateDoc(driverRef, {
+                    'stats.fitness': newFitness
+                });
+                
+                pitBoardMessages = [t('qualy_fitness_impact', {name: driver.name}), ...pitBoardMessages].slice(0, 50);
+            }
 
             // Simulation Narrative
             pitBoardMessages = [t('qualy_pushing_limit'), ...pitBoardMessages].slice(0, 50);

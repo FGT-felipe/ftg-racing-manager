@@ -3,6 +3,7 @@
 Este documento define la normativa técnica que debe seguirse para cualquier modificación o expansión del ecosistema FTG Racing Manager. El incumplimiento de estas premisas compromete la integridad de la simulación y la escalabilidad del producto.
 
 ---
+NUNCA HARDCODEAR NADA, TODO DEBE SER CONFIGURABLE DESDE EL BACKEND
 
 ## 1. Patrones de Reactividad (Svelte 5)
 El proyecto utiliza **Svelte 5 Runes**. Es imperativo evitar el uso de `writable` stores antiguos para estados reactivos en Favor de `$state`.

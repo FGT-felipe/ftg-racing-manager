@@ -16,6 +16,7 @@ export interface PracticeRunResult {
     setupConfidence: number;
     setupUsed: CarSetup;
     isCrashed: boolean;
+    fitnessPenalty?: number;
     setupHints?: {
         frontWing: SetupHint;
         rearWing: SetupHint;
@@ -33,7 +34,8 @@ class PracticeService {
         team: Team,
         driver: Driver,
         setup: CarSetup,
-        weatherOverride?: string
+        weatherOverride?: string,
+        isQualifying: boolean = false
     ): PracticeRunResult {
         const ideal = circuit.idealSetup;
         const carStats = team.carStats[driver.carIndex.toString()] || { aero: 1, powertrain: 1, chassis: 1 };
@@ -191,6 +193,13 @@ class PracticeService {
             gearRatio: generateHint(ideal.gearRatio)
         };
 
+        let fitnessPenalty = 0;
+        if (isQualifying) {
+            // El impacto en la forma debe depender del nivel de foco: a mayor foco, menos impacto en la forma (1.5% a 3%)
+            const focusStat = Math.min(Math.max(driver.stats.focus || 10, 1), 20);
+            fitnessPenalty = 1.5 + ((20 - focusStat) / 19) * 1.5;
+        }
+
         return {
             lapTime: isCrashed ? 999.0 : actualLapTime + (Math.random() - 0.5) * 0.5,
             driverFeedback,
@@ -198,6 +207,7 @@ class PracticeService {
             setupConfidence: confidence,
             setupUsed: { ...setup },
             isCrashed,
+            fitnessPenalty,
             setupHints
         };
     }
