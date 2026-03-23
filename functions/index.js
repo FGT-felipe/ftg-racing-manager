@@ -949,6 +949,8 @@ async function runQualifyingLogic() {
           }
         }
 
+        const statsBatch = db.batch();
+
         for (const tDoc of teamDocs) {
           const team = tDoc.data();
           const dSnap = await db.collection("drivers")
@@ -1068,6 +1070,8 @@ async function runQualifyingLogic() {
             // -------------------------------
           }
         }
+
+        await statsBatch.commit();
 
         // Sort grid
         qualyResults.sort((a, b) => a.lapTime - b.lapTime);
@@ -1671,8 +1675,77 @@ async function runRaceLogic() {
   } catch (err) {
     logger.error("Error in runRaceLogic", err);
   }
+
+  // --- NEW: Sync universe after race logic completes ---
+  await syncUniverseGlobal();
 }
 
+/**
+ * Syncs the global universe document with the real data from driver and team collections.
+ * This should be called after any logic that modifies competition points across leagues.
+ */
+async function syncUniverseGlobal() {
+  logger.info("🔄 Syncing universe document with real data from collections...");
+  try {
+    const uRef = db.collection("universe").doc("game_universe_v1");
+    const uDoc = await uRef.get();
+    if (!uDoc.exists) {
+      logger.warn("Universe document does not exist, skipping sync.");
+      return;
+    }
+    const uData = uDoc.data();
+    const leagues = uData.leagues || [];
+
+    for (let li = 0; li < leagues.length; li++) {
+      const league = leagues[li];
+
+      if (league.drivers) {
+        for (let di = 0; di < league.drivers.length; di++) {
+          const uDriver = league.drivers[di];
+          const dDoc = await db.collection("drivers").doc(uDriver.id).get();
+          if (dDoc.exists) {
+            const real = dDoc.data();
+            leagues[li].drivers[di].points = real.points || 0;
+            leagues[li].drivers[di].seasonPoints = real.seasonPoints || 0;
+            leagues[li].drivers[di].wins = real.wins || 0;
+            leagues[li].drivers[di].seasonWins = real.seasonWins || 0;
+            leagues[li].drivers[di].podiums = real.podiums || 0;
+            leagues[li].drivers[di].seasonPodiums = real.seasonPodiums || 0;
+            leagues[li].drivers[di].races = real.races || 0;
+            leagues[li].drivers[di].seasonRaces = real.seasonRaces || 0;
+            leagues[li].drivers[di].championships = real.championships || 0;
+            leagues[li].drivers[di].championshipForm = real.championshipForm || [];
+            leagues[li].drivers[di].careerHistory = real.careerHistory || [];
+          }
+        }
+      }
+
+      if (league.teams) {
+        for (let ti = 0; ti < league.teams.length; ti++) {
+          const uTeam = league.teams[ti];
+          const tDoc = await db.collection("teams").doc(uTeam.id).get();
+          if (tDoc.exists) {
+            const real = tDoc.data();
+            leagues[li].teams[ti].points = real.points || 0;
+            leagues[li].teams[ti].seasonPoints = real.seasonPoints || 0;
+            leagues[li].teams[ti].wins = real.wins || 0;
+            leagues[li].teams[ti].seasonWins = real.seasonWins || 0;
+            leagues[li].teams[ti].podiums = real.podiums || 0;
+            leagues[li].teams[ti].seasonPodiums = real.seasonPodiums || 0;
+            leagues[li].teams[ti].races = real.races || 0;
+            leagues[li].teams[ti].seasonRaces = real.seasonRaces || 0;
+            if (real.name) leagues[li].teams[ti].name = real.name;
+          }
+        }
+      }
+    }
+
+    await uRef.update({ leagues });
+    logger.info("✅ Universe synced successfully!");
+  } catch (err) {
+    logger.error("Error syncing universe:", err);
+  }
+}
 
 exports.scheduledRace = onSchedule({
   schedule: "0 14 * * 0",
@@ -2541,7 +2614,7 @@ exports.restoreDriversHistory = onCall({
   memory: "512MiB",
   timeoutSeconds: 540,
 }, async (request) => {
-  logger.info("restoreDriversHistory triggered", { auth: request.auth?.uid });
+  logger.info("restoreDriversHistory triggered", { auth: request.auth ? request.auth.uid : null });
   try {
     const driversSnap = await db.collection("drivers").get();
     const teamsSnap = await db.collection("teams").get();
