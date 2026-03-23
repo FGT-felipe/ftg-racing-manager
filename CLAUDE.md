@@ -199,8 +199,6 @@ node sync_universe.js       # 5. Sync Standings UI
 
 ## 9. Flutter Deprecation Status
 
-The Flutter codebase (`lib/`, `android/`, `pubspec.yaml`) is **~95% migrated** to Svelte. It is kept for reference only. **Do not modify any Flutter files.**
+The Flutter codebase (`lib/`, `android/`, `pubspec.yaml`) is **100% migrated** to Svelte. It is kept for reference only. **Do not modify any Flutter files.**
 
-Remaining gaps before full deprecation:
-- `/create-team/+page.svelte` — placeholder stub with unimplemented logic (TODO).
-- Team name editing — partially covered in `/settings`, verify parity with `team_screen.dart`.
+All features previously in Flutter are now implemented in `frontend/`. The Flutter code may be deleted from the repository at any time.

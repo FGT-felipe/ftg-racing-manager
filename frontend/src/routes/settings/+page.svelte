@@ -2,22 +2,61 @@
     import { authStore } from "$lib/stores/auth.svelte";
     import { managerStore } from "$lib/stores/manager.svelte";
     import { teamStore } from "$lib/stores/team.svelte";
-    import { 
-        User, 
-        Settings, 
-        LogOut, 
-        Shield, 
-        Bell, 
-        Moon, 
-        Sun,
-        Activity
+    import {
+        User,
+        Settings,
+        LogOut,
+        Shield,
+        Activity,
+        Pencil,
+        X,
+        Check,
+        Loader2,
+        Flag
     } from "lucide-svelte";
     import { fade } from "svelte/transition";
+
+    const NAME_CHANGE_COST = 500_000;
 
     let profile = $derived(managerStore.profile);
     let team = $derived(teamStore.value.team);
 
-    let isDarkMode = $state(true); // This would ideally sync with a theme store
+    // Team rename state
+    let isEditingName = $state(false);
+    let newTeamName = $state("");
+    let isSavingName = $state(false);
+    let renameError = $state<string | null>(null);
+
+    let isFirstRename = $derived((team?.nameChangeCount ?? 0) === 0);
+    let canAffordRename = $derived(isFirstRename || (team?.budget ?? 0) >= NAME_CHANGE_COST);
+
+    function startEditing() {
+        newTeamName = team?.name ?? "";
+        renameError = null;
+        isEditingName = true;
+    }
+
+    function cancelEditing() {
+        isEditingName = false;
+        renameError = null;
+    }
+
+    async function saveTeamName() {
+        if (!newTeamName.trim() || newTeamName.trim() === team?.name) {
+            cancelEditing();
+            return;
+        }
+        isSavingName = true;
+        renameError = null;
+        try {
+            await teamStore.renameTeam(newTeamName.trim());
+            isEditingName = false;
+        } catch (e: any) {
+            renameError = e.message ?? "Failed to rename team.";
+        } finally {
+            isSavingName = false;
+        }
+    }
 </script>
 
 <div class="max-w-4xl mx-auto p-6 lg:p-10" in:fade>
@@ -69,6 +108,88 @@
                         <div class="px-4 py-3 bg-app-bg border border-app-border rounded-xl text-app-text/60 text-sm">
                             {profile?.country || "Default"}
                         </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Team Identity -->
+            <section class="bg-app-surface border border-app-border rounded-2xl overflow-hidden">
+                <div class="px-6 py-4 border-b border-app-border bg-app-text/5 flex items-center gap-2">
+                    <Flag size={16} class="text-app-primary" />
+                    <span class="text-xs font-black uppercase tracking-widest text-app-text/80">Team Identity</span>
+                </div>
+                <div class="p-6 space-y-4">
+                    <div class="flex flex-col gap-1.5">
+                        <span class="text-[10px] uppercase font-bold text-app-text/40 tracking-widest">Team Name</span>
+
+                        {#if isEditingName}
+                            <div class="flex gap-2">
+                                <input
+                                    type="text"
+                                    bind:value={newTeamName}
+                                    maxlength={40}
+                                    disabled={isSavingName}
+                                    class="flex-1 bg-app-bg border border-app-primary/50 rounded-xl px-4 py-3 text-sm text-app-text focus:outline-none focus:border-app-primary transition-colors disabled:opacity-50"
+                                />
+                                <button
+                                    onclick={saveTeamName}
+                                    disabled={isSavingName || !newTeamName.trim() || !canAffordRename}
+                                    aria-label="Confirm team rename"
+                                    class="p-3 bg-green-500/10 hover:bg-green-500/20 border border-green-500/30 text-green-400 rounded-xl transition-all disabled:opacity-40"
+                                >
+                                    {#if isSavingName}
+                                        <Loader2 size={16} class="animate-spin" />
+                                    {:else}
+                                        <Check size={16} />
+                                    {/if}
+                                </button>
+                                <button
+                                    onclick={cancelEditing}
+                                    disabled={isSavingName}
+                                    aria-label="Cancel team rename"
+                                    class="p-3 bg-app-text/5 hover:bg-app-text/10 border border-app-border text-app-text/50 rounded-xl transition-all"
+                                >
+                                    <X size={16} />
+                                </button>
+                            </div>
+
+                            <!-- Cost indicator -->
+                            <div class="flex items-center justify-between text-[10px] font-bold uppercase tracking-widest mt-1">
+                                <span class="text-app-text/40">Cost</span>
+                                {#if isFirstRename}
+                                    <span class="text-green-400">Free (first change)</span>
+                                {:else if canAffordRename}
+                                    <span class="text-yellow-400">$500,000</span>
+                                {:else}
+                                    <span class="text-red-400">Insufficient budget ($500,000 required)</span>
+                                {/if}
+                            </div>
+
+                            {#if renameError}
+                                <p class="text-[10px] text-red-400 font-bold uppercase tracking-widest">{renameError}</p>
+                            {/if}
+                        {:else}
+                            <div class="flex items-center gap-3">
+                                <div class="flex-1 px-4 py-3 bg-app-bg border border-app-border rounded-xl text-app-text/80 text-sm font-medium">
+                                    {team?.name ?? "—"}
+                                </div>
+                                <button
+                                    onclick={startEditing}
+                                    aria-label="Edit team name"
+                                    id="btn-rename-team"
+                                    class="p-3 bg-app-primary/10 hover:bg-app-primary/20 border border-app-primary/20 text-app-primary rounded-xl transition-all"
+                                >
+                                    <Pencil size={16} />
+                                </button>
+                            </div>
+                            {#if (team?.nameChangeCount ?? 0) > 0}
+                                <p class="text-[10px] text-app-text/30 tracking-widest uppercase">
+                                    Subsequent renames cost $500,000 · {team?.nameChangeCount} change{(team?.nameChangeCount ?? 0) === 1 ? "" : "s"} made
+                                </p>
+                            {:else}
+                                <p class="text-[10px] text-app-text/30 tracking-widest uppercase">First rename is free</p>
+                            {/if}
+                        {/if}
                     </div>
                 </div>
             </section>

@@ -145,7 +145,6 @@
       "/login",
       "/onboarding/create-manager",
       "/onboarding/team-selection",
-      "/create-team",
     ];
     if (onboardingPaths.includes(currentPath)) {
       console.log("All systems active, bypassing onboarding gates.");

@@ -33,19 +33,5 @@
                 "destination": "/index.html"
             }
         ]
-    },
-    "flutter": {
-        "platforms": {
-            "dart": {
-                "lib/firebase_options.dart": {
-                    "projectId": "ftg-racing-manager",
-                    "configurations": {
-                        "android": "1:822361821036:android:ae317c8dd178d51848ed49",
-                        "ios": "1:822361821036:ios:e69aae6344c6e24248ed49",
-                        "web": "1:822361821036:web:54e166db008180e748ed49"
-                    }
-                }
-            }
-        }
     }
 }
