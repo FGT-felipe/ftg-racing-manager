@@ -304,7 +304,7 @@ export async function runPostRaceProcessing(): Promise<void> {
             updates["weeklyStatDiffs"] = statDiffs;
             updates["weeklyEventMessage"] = eventMsg;
 
-            batchA.update(sDoc.ref, updates);
+            batchA.update(sDoc.ref, updates as FirebaseFirestore.UpdateData<object>);
           });
 
           // Academy trainee weekly wages ($10k per trainee)

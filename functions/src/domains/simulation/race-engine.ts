@@ -243,7 +243,7 @@ export async function runRaceLogic(): Promise<void> {
           if (cForm.length > 10) cForm.pop();
           du["championshipForm"] = cForm;
 
-          statsBatch.update(dRef, du);
+          statsBatch.update(dRef, du as FirebaseFirestore.UpdateData<object>);
 
           const tid = dData["teamId"] as string;
           teamPointsAccum[tid] = (teamPointsAccum[tid] ?? 0) + pts;
@@ -271,7 +271,7 @@ export async function runRaceLogic(): Promise<void> {
           if (teamWon) { tu["wins"] = inc(1); tu["seasonWins"] = inc(1); }
           if (teamPod > 0) { tu["podiums"] = inc(teamPod); tu["seasonPodiums"] = inc(teamPod); }
 
-          statsBatch.update(tRef, tu);
+          statsBatch.update(tRef, tu as FirebaseFirestore.UpdateData<object>);
 
           if (earnings > 0) {
             const txRefR = tRef.collection("transactions").doc();

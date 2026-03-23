@@ -64,7 +64,7 @@ export async function chunkedBatchWrite(ops: BatchOperation[]): Promise<void> {
       if (op.type === "set") {
         batch.set(op.ref, op.data, op.options ?? {});
       } else {
-        batch.update(op.ref, op.data);
+        batch.update(op.ref, op.data as FirebaseFirestore.UpdateData<object>);
       }
     }
 
