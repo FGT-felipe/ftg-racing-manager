@@ -244,6 +244,7 @@
                     [`${pathPrefix}.qualifyingDnf`]: true,
                     [`${pathPrefix}.qualifying`]: setup,
                     [`${pathPrefix}.lastQualyResult`]: crashResult,
+                    [`${pathPrefix}.isSetupSent`]: true,
                 });
                 // Only set Parc Fermé if it's NOT a wet session
                 if (!isWetSession) {
@@ -287,6 +288,7 @@
                     [`${pathPrefix}.qualifyingBestCompound`]: bestCompound,
                     [`${pathPrefix}.qualifying`]: setup,
                     [`${pathPrefix}.lastQualyResult`]: finalResult,
+                    [`${pathPrefix}.isSetupSent`]: true,
                 });
                 // Only set Parc Fermé if it's NOT a wet session
                 if (!isWetSession) {

@@ -331,7 +331,10 @@ import { circuitService } from "$lib/services/circuit_service.svelte";
         if (!driver || !teamStore.value.team) return;
         try {
             const teamRef = doc(db, "teams", teamStore.value.team.id);
-            await updateDoc(teamRef, { [`weekStatus.driverSetups.${driver.id}.qualifying`]: { ...setup } });
+            await updateDoc(teamRef, {
+                [`weekStatus.driverSetups.${driver.id}.qualifying`]: { ...setup },
+                [`weekStatus.driverSetups.${driver.id}.isSetupSent`]: true,
+            });
             uiStore.alert(t('set_qualy'), t('copy_practice_to_qualy'), 'success');
         } catch (e) { console.error(e); }
     }

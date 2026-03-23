@@ -11,10 +11,19 @@
     import { doc, getDoc } from "firebase/firestore";
     import { t } from "$lib/utils/i18n";
 
+    import { driverStore } from '$lib/stores/driver.svelte';
+
     let results = $state<any[]>([]);
     let isLoading = $state(true);
     let isCompleted = $derived(results.length > 0);
     let timeLeft = $state("");
+
+    let allSetupsSent = $derived.by(() => {
+        const setups = teamStore.value.team?.weekStatus?.driverSetups || {};
+        const mainDrivers = driverStore.drivers.filter((d: any) => d.carIndex === 0 || d.carIndex === 1);
+        if (mainDrivers.length === 0) return true;
+        return mainDrivers.every((d: any) => setups[d.id]?.isSetupSent === true);
+    });
 
     const nextEvent = $derived(seasonStore.nextEvent);
     let userTeamId = $derived(teamStore.value?.team?.id);
@@ -109,6 +118,19 @@
 </script>
 
 <div class="space-y-6">
+    {#if !allSetupsSent && !isCompleted}
+        <div in:fade class="flex items-start gap-3 px-5 py-4 bg-yellow-500/10 border border-yellow-500/30 rounded-2xl">
+            <span class="text-yellow-400 text-lg leading-none mt-0.5">⚠</span>
+            <div class="flex flex-col gap-0.5">
+                <p class="text-xs font-black uppercase tracking-widest text-yellow-400">Qualifying Setup Pending</p>
+                <p class="text-[11px] text-yellow-300/70 font-medium leading-snug">
+                    Drivers without a submitted qualifying setup will lose extra <strong>Fitness</strong> and <strong>Morale</strong> during qualifying.
+                    Go to <a href="/racing" class="underline underline-offset-2">Practice</a> and send a setup for each driver.
+                </p>
+            </div>
+        </div>
+    {/if}
+
     {#if isLoading}
         <div
             class="flex flex-col items-center justify-center py-20 gap-4 opacity-50"
