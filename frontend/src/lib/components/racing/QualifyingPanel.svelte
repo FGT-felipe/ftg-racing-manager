@@ -6,7 +6,7 @@
     import { seasonStore } from "$lib/stores/season.svelte";
     import { teamStore } from "$lib/stores/team.svelte";
     import { universeStore } from "$lib/stores/universe.svelte";
-    import { timeService } from "$lib/services/time_service.svelte";
+    import { timeService, RaceWeekStatus } from "$lib/services/time_service.svelte";
     import { db } from "$lib/firebase/config";
     import { doc, getDoc } from "firebase/firestore";
     import { t } from "$lib/utils/i18n";
@@ -23,12 +23,18 @@
         loadQualyData();
 
         const timer = setInterval(() => {
-            const timeUntilNext = timeService.getTimeUntilNextEvent();
+            // Always count down to next QUALIFYING (Saturday 14:00), not next status change
+            const qualyCountdown = timeService.getTimeUntil(RaceWeekStatus.QUALIFYING);
+            if (!qualyCountdown) {
+                timeLeft = "00:00";
+                return;
+            }
             
-            const days = Math.floor(timeUntilNext / (1000 * 60 * 60 * 24));
-            const hours = Math.floor((timeUntilNext % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
-            const mins = Math.floor((timeUntilNext % (1000 * 60 * 60)) / (1000 * 60));
-            const secs = Math.floor((timeUntilNext % (1000 * 60)) / 1000);
+            const totalMs = (qualyCountdown.days * 86400000) + (qualyCountdown.hours * 3600000) + (qualyCountdown.minutes * 60000) + (qualyCountdown.seconds * 1000);
+            const days = qualyCountdown.days;
+            const hours = qualyCountdown.hours;
+            const mins = qualyCountdown.minutes;
+            const secs = qualyCountdown.seconds;
 
             if (days > 0) {
                 timeLeft = `${days}d ${hours.toString().padStart(2, "0")}:${mins.toString().padStart(2, "0")}:${secs.toString().padStart(2, "0")}`;
@@ -136,14 +142,14 @@
                         <h3
                             class="font-black text-4xl lg:text-5xl uppercase italic text-app-text tracking-tighter leading-[0.9]"
                         >
-                            {timeService.currentStatus === 'practice' ? t('qualifying_pending') : t('session') + ' ' + t('qualifying_in_progress')}
+                            {timeService.currentStatus === RaceWeekStatus.QUALIFYING ? t('session') + ' ' + t('qualifying_in_progress') : t('qualifying_pending')}
                         </h3>
                         <p
                             class="text-app-text/60 text-sm font-medium leading-relaxed"
                         >
-                            {timeService.currentStatus === 'practice' 
-                                ? t('delegate_preparing')
-                                : t('session_running_wait')}
+                            {timeService.currentStatus === RaceWeekStatus.QUALIFYING
+                                ? t('session_running_wait')
+                                : t('delegate_preparing')}
                         </p>
                     </div>
                 </div>

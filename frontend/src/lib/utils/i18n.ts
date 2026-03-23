@@ -258,6 +258,7 @@ export const translations = {
         qualy_processing_desc: "The servers are currently processing the official Qualifying session. No further setup changes or flying laps can be submitted at this time. Please wait for the session to complete to view the final starting grid.",
         waiting_backend_sim: "Waiting for Backend Sim...",
         qualy_attempts_header: "Qualy Attempts",
+        qualy_fitness_impact: "This qualifying effort has taken a physical toll on {name}.",
         driver_crashed_over: "Driver Crashed - Session Over",
         max_attempts_reached: "Max Attempts Reached",
         pushing: "Pushing...",
@@ -285,7 +286,21 @@ export const translations = {
         race_prep_title: "Race Prep",
         race_readiness: "{n}% Readiness",
         readiness_desc: "Complete all setup phases to maximize performance.",
-        race_setups: "Race Setups"
+        race_setups: "Race Setups",
+        circuit_trait_high_downforce: "High Downforce",
+        circuit_trait_low_downforce: "Low Downforce",
+        circuit_trait_top_speed: "Top Speed",
+        circuit_trait_acceleration: "Acceleration",
+        circuit_trait_stiff: "Stiff",
+        circuit_trait_soft: "Soft",
+        circuit_tooltip_high_downforce: "High-downforce circuit. Aero-heavy cars with max wing angles will excel through corners.",
+        circuit_tooltip_low_downforce: "Low-downforce circuit. Reducing wing angles to cut drag is critical for competitive lap times.",
+        circuit_tooltip_top_speed: "Top speed-focused power demand. Long straights reward high gear ratios and engine power.",
+        circuit_tooltip_acceleration: "Acceleration-focused power demand. Short bursts out of slow corners favor low gear ratios.",
+        circuit_tooltip_stiff: "Stiff chassis required. The surface and corner types favor a rigid, responsive suspension setup.",
+        circuit_tooltip_soft: "Soft chassis required. Bumpy or flowing track sections reward a compliant, softer suspension setup.",
+        circuit_tooltip_tyre_wear: "Indicates the rate of tire degradation on this surface. Higher wear requires careful stint management.",
+        circuit_tooltip_fuel_consumption: "Fuel burn rate ranges between 1.0 and 1.9 liters per lap. Higher consumption demands more pit stops or lighter fuel loads."
     },
     es: {
         career_view: "Vista Profesional",
@@ -543,6 +558,7 @@ export const translations = {
         qualy_processing_desc: "Los servidores están procesando la sesión oficial. No se pueden realizar cambios ni vueltas rápidas ahora. Espera a que termine la sesión para ver la parrilla de salida final.",
         waiting_backend_sim: "Esperando simulación...",
         qualy_attempts_header: "Intentos de Qualy",
+        qualy_fitness_impact: "Este esfuerzo de clasificación ha pasado factura física a {name}.",
         driver_crashed_over: "Piloto Accidentado - Sesión Terminada",
         max_attempts_reached: "Máximo de Intentos Alcanzado",
         pushing: "Empujando...",
@@ -570,7 +586,21 @@ export const translations = {
         race_prep_title: "Prep. de Carrera",
         race_readiness: "{n}% Preparado",
         readiness_desc: "Completa todas las fases de setup para maximizar el rendimiento.",
-        race_setups: "Setups de Carrera"
+        race_setups: "Setups de Carrera",
+        circuit_trait_high_downforce: "Alta Carga Aerod.",
+        circuit_trait_low_downforce: "Baja Carga Aerod.",
+        circuit_trait_top_speed: "Velocidad Punta",
+        circuit_trait_acceleration: "Aceleración",
+        circuit_trait_stiff: "Rígido",
+        circuit_trait_soft: "Suave",
+        circuit_tooltip_high_downforce: "Circuito de alta carga aerodinámica. Coches con máximo ángulo alar sobresalen en curvas.",
+        circuit_tooltip_low_downforce: "Circuito de baja carga aerodinámica. Reducir ángulos alares para cortar drag es crítico.",
+        circuit_tooltip_top_speed: "Demanda de velocidad punta. Las rectas largas premian relaciones de marcha altas y potencia.",
+        circuit_tooltip_acceleration: "Demanda de aceleración. Salidas explosivas de curvas lentas favorecen relaciones de marcha cortas.",
+        circuit_tooltip_stiff: "Chasis rígido requerido. La superficie y tipo de curvas favorecen una suspensión firme y reactiva.",
+        circuit_tooltip_soft: "Chasis suave requerido. Secciones con baches o curvas fluidas premian una suspensión suave.",
+        circuit_tooltip_tyre_wear: "Indica la tasa de degradación de los neumáticos en esta superficie. Mayor desgaste requiere gestión cuidadosa de stints.",
+        circuit_tooltip_fuel_consumption: "El consumo de combustible varía entre 1.0 y 1.9 litros por vuelta. Mayor consumo demanda más paradas o menor carga de combustible."
     }
 };
 
