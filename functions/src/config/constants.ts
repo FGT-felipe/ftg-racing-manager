@@ -61,6 +61,25 @@ export const XP_PER_SKILL_LEVEL = 500;
 /** Additional XP bonus per academy level above 1. */
 export const ACADEMY_XP_BONUS_PER_LEVEL = 8;
 
+// ─── Race prizes ─────────────────────────────────────────────────────────────
+
+/**
+ * Returns the prize money for a given 0-based finishing position.
+ * Mirrors the getRacePrize() function previously inlined in runRaceLogic().
+ * @param posIndex 0-based finishing index (0 = winner).
+ */
+export function getRacePrize(posIndex: number): number {
+  if (posIndex === 0) return 500_000;
+  if (posIndex === 1) return 350_000;
+  if (posIndex === 2) return 250_000;
+  if (posIndex >= 3 && posIndex <= 5) return 150_000;
+  if (posIndex >= 6 && posIndex <= 9) return 100_000;
+  return 25_000;
+}
+
+// ─── Qualy prizes (P1: 50k, P2: 30k, P3: 15k) ───────────────────────────────
+export const QUALY_PRIZES = [50_000, 30_000, 15_000];
+
 // ─── Default car setup ───────────────────────────────────────────────────────
 
 /** Default setup applied when a driver has not submitted a custom one. */
@@ -69,11 +88,11 @@ export const DEFAULT_SETUP = {
   rearWing: 50,
   suspension: 50,
   gearRatio: 50,
-  tyreCompound: "medium",
-  qualifyingStyle: "normal",
-  raceStyle: "normal",
+  tyreCompound: "medium" as import("../shared/types").TyreCompound,
+  qualifyingStyle: "normal" as import("../shared/types").DrivingStyle,
+  raceStyle: "normal" as import("../shared/types").DrivingStyle,
   initialFuel: 50.0,
-  pitStops: ["hard"],
-  pitStopStyles: ["normal"],
+  pitStops: ["hard"] as import("../shared/types").TyreCompound[],
+  pitStopStyles: ["normal"] as import("../shared/types").DrivingStyle[],
   pitStopFuel: [50.0],
-} as const;
+};

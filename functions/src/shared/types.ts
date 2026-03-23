@@ -64,6 +64,8 @@ export interface Team {
   name: string;
   budget: number;
   managerId: string;
+  /** True for AI-controlled bot teams. */
+  isBot?: boolean;
   /** Map of car slot index (as string) to CarStats. */
   carStats?: Record<string, CarStats>;
   sponsors?: Record<string, SponsorContract>;
@@ -114,6 +116,24 @@ export interface QualyResult {
   driverId: string;
   lapTime: number;
   position: number;
+}
+
+/**
+ * Extended qualifying result written to the Race document and used as the
+ * starting grid for the race simulation. Contains all fields produced by
+ * runQualifyingLogic().
+ */
+export interface QualyGridEntry {
+  driverId: string;
+  driverName: string;
+  teamId: string;
+  teamName: string;
+  lapTime: number;
+  isCrashed: boolean;
+  tyreCompound: TyreCompound;
+  setupSubmitted: boolean;
+  position?: number;
+  gap?: number;
 }
 
 export interface LapEvent {
