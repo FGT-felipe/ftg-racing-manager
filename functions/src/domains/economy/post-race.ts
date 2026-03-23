@@ -485,7 +485,7 @@ export async function runPostRaceProcessing(): Promise<void> {
   }
 }
 
-// ─── Internal helpers ─────────────────────────────────────────────────────────
+// ─── Helpers (exported for use by admin tools) ───────────────────────────────
 
 /**
  * Generates and saves a race debrief for a team.
@@ -496,7 +496,7 @@ export async function runPostRaceProcessing(): Promise<void> {
  * @param rData Race document data.
  * @param rEvent Race event from season calendar.
  */
-async function generateTeamDebrief(
+export async function generateTeamDebrief(
   tid: string,
   drivers: Record<string, unknown>[],
   rData: Record<string, unknown>,
