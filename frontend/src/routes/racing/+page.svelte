@@ -25,11 +25,19 @@
         driverStore.init();
     });
 
-    let weekStatus = $derived(
-        teamStore.value.team?.weekStatus?.globalStatus ||
-            timeService.currentStatus ||
-            "practice",
-    );
+    // If globalStatus exists in Firestore, use it (source of truth).
+    // If missing, fall back to time-based status BUT map postRace -> practice,
+    // because a missing globalStatus after the race means post-race processing
+    // already ran and the user should see the Garage for next week prep.
+    let weekStatus = $derived.by(() => {
+        const firestoreStatus = teamStore.value.team?.weekStatus?.globalStatus;
+        if (firestoreStatus) return firestoreStatus;
+        
+        const timeStatus = timeService.currentStatus;
+        // After race is done and postRaceProcessing ran, show Garage not dead RaceLive
+        if (timeStatus === RaceWeekStatus.POST_RACE) return "practice";
+        return timeStatus || "practice";
+    });
     let nextEvent = $derived(seasonStore.nextEvent);
 </script>
 

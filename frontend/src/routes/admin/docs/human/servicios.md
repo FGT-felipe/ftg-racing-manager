@@ -11,6 +11,8 @@ En este ecosistema, los servicios son **Stateless Logic Providers** encargados d
 Es el metrónomo del sistema. Determina el estado de la liga (`practice`, `qualifying`, `race`, etc.) basándose en la zona horaria de Bogotá (UTC-5).
 *   **Responsabilidad**: Lock/Unlock de setups (Parc Fermé) y cálculo de cuentas regresivas.
 *   **Lógica Crítica**: El estado de la semana se deriva de una matriz de tiempo fija. Las prácticas se bloquean (solo lectura) el Sábado a las 13:00 COT o tras el primer intento de Qualy. Qualy inicia el Sábado a las 14:00 y Carrera el Domingo a las 14:00.
+*   **⚠️ Fallback de `weekStatus`**: El campo `weekStatus.globalStatus` NO existe en el backend. La vista `/racing` usa un fallback basado en `timeService.currentStatus`. Cuando el status es `POST_RACE` (domingo 16:00+), el fallback DEBE mapear a `"practice"` para mostrar el GaragePanel, NO el RaceLivePanel vacío. Ver `postmortem_r3_ui.md`.
+*   **Temporizadores**: Para contar tiempo hasta una sesión específica, usar `getTimeUntil(RaceWeekStatus.QUALIFYING)` — NO `getTimeUntilNextEvent()`, que cuenta hasta el próximo cambio de estado (puede ser lunes 00:00).
 
 ### B. SponsorService (Gestor de Contratos)
 Gestiona el sistema de negociación de patrocinios mediante una máquina de estados compleja.

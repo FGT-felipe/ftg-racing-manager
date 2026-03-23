@@ -44,6 +44,9 @@ backend:
   }
 }
 ```
+> **⚠️ CRITICAL**: `weekStatus.globalStatus` does NOT exist in the backend. The frontend `/racing` page falls back to `timeService.currentStatus`. When status is `POST_RACE`, the fallback MUST map to `"practice"` to show GaragePanel. See `postmortem_r3_ui.md`.
+> For countdowns to a specific session, use `getTimeUntil(RaceWeekStatus.QUALIFYING)` — NOT `getTimeUntilNextEvent()`.
+
 
 ## DevOps & Quality Assurance
 - **Deployment**: Firebase Hosting / Cloud Functions v2.
