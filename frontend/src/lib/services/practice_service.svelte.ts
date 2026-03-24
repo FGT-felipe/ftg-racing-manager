@@ -3,6 +3,7 @@ import { collection, addDoc, doc, updateDoc, increment, serverTimestamp } from "
 import { type Driver, type Team, type CarSetup, DriverTrait, TyreCompound } from "../types";
 import { type CircuitProfile } from "./circuit_service.svelte";
 import { t } from "../utils/i18n";
+import { CarSetupSchema } from "../schemas/car-setup.schema";
 
 export interface SetupHint {
     min: number;
@@ -213,13 +214,19 @@ class PracticeService {
     }
 
     async savePracticeRun(
-        team: Team, 
-        driverId: string, 
-        result: PracticeRunResult, 
-        setup: CarSetup, 
+        team: Team,
+        driverId: string,
+        result: PracticeRunResult,
+        setup: CarSetup,
         sessionId?: string,
         lapCount: number = 1
     ) {
+        const parsed = CarSetupSchema.safeParse(setup);
+        if (!parsed.success) {
+            console.error('[PracticeService:savePracticeRun] Invalid CarSetup — aborting Firestore write:', parsed.error.flatten());
+            throw new Error(`Invalid setup: ${parsed.error.issues.map(i => i.message).join(', ')}`);
+        }
+
         // Bypass the subcollection entirely to avoid permission issues reported by the user
         // We still log to console for debugging
         console.debug(`[PracticeService] Skipping subcollection write due to permission errors. Data preserved in team document.`);
