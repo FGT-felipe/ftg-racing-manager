@@ -165,7 +165,7 @@
                 </div>
                 <div>
                     <h4 class="text-[9px] font-black uppercase tracking-[0.3em] text-app-primary leading-none mb-1">{t('circuit_intel')}</h4>
-                    <p class="text-sm font-black italic text-app-text tracking-tight uppercase truncate max-w-[180px]">{circuit.name}</p>
+                    <p class="text-sm font-black italic text-app-text tracking-tight uppercase leading-tight">{circuit.name}</p>
                 </div>
             </div>
 
