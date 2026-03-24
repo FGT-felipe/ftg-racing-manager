@@ -5,6 +5,7 @@
     import { authStore } from "$lib/stores/auth.svelte";
     import { notificationStore } from "$lib/stores/notifications.svelte";
     import NotificationOverlay from "./NotificationOverlay.svelte";
+    import ChangelogOverlay from "./ChangelogOverlay.svelte";
     import {
         Shield,
         CircleUser,
@@ -12,10 +13,13 @@
         Bell,
         Settings,
         Activity,
+        Sparkles,
     } from "lucide-svelte";
     import { fade, slide } from "svelte/transition";
     import { t } from "$lib/utils/i18n";
     import { APP_VERSION } from "$lib/constants/app_constants";
+    import { LATEST_VERSION } from "$lib/constants/changelog";
+    import { browser } from "$app/environment";
 
     let team = $derived(teamStore.value.team);
     let loading = $derived(teamStore.value.loading || authStore.loading);
@@ -24,6 +28,20 @@
 
     let isNotificationsOpen = $state(false);
     let isAccountOpen = $state(false);
+    let isChangelogOpen = $state(false);
+
+    const CHANGELOG_STORAGE_KEY = 'lastSeenChangelog';
+
+    let hasUnreadChangelog = $state(
+        browser ? localStorage.getItem(CHANGELOG_STORAGE_KEY) !== LATEST_VERSION : false
+    );
+
+    function markChangelogSeen() {
+        if (browser) {
+            localStorage.setItem(CHANGELOG_STORAGE_KEY, LATEST_VERSION);
+            hasUnreadChangelog = false;
+        }
+    }
 
     let transferBudgetFmt = $derived.by(() => {
         const t = teamStore.value.team;
@@ -142,11 +160,33 @@
                 </button>
             {/if}
 
+            <!-- Changelog Toggle -->
+            <div class="relative">
+                <button
+                    onclick={() => {
+                        isChangelogOpen = !isChangelogOpen;
+                        isNotificationsOpen = false;
+                        isAccountOpen = false;
+                    }}
+                    class="p-2 relative text-app-primary/70 hover:text-app-primary hover:bg-app-primary/10 rounded-full transition-colors flex items-center justify-center"
+                    title={t('whats_new')}
+                >
+                    <Sparkles size={20} strokeWidth={2} />
+                    {#if hasUnreadChangelog}
+                        <div
+                            class="absolute top-1.5 right-1.5 w-2 h-2 bg-app-primary rounded-full"
+                        ></div>
+                    {/if}
+                </button>
+                <ChangelogOverlay bind:isOpen={isChangelogOpen} onSeen={markChangelogSeen} />
+            </div>
+
             <!-- Notifications Toggle -->
             <div class="relative">
                 <button
                     onclick={() => {
                         isNotificationsOpen = !isNotificationsOpen;
+                        isChangelogOpen = false;
                         isAccountOpen = false;
                     }}
                     class="p-2 relative text-app-primary/70 hover:text-app-primary hover:bg-app-primary/10 rounded-full transition-colors flex items-center justify-center"
@@ -168,6 +208,7 @@
                     onclick={() => {
                         isAccountOpen = !isAccountOpen;
                         isNotificationsOpen = false;
+                        isChangelogOpen = false;
                     }}
                     class="p-2 text-app-primary/70 hover:text-app-primary hover:bg-app-primary/10 rounded-full transition-colors flex items-center justify-center"
                     title="Account"

@@ -351,7 +351,25 @@ export const translations = {
         force_qualifying: "Force Qualifying",
         restore_driver_stats: "Restore Driver Stats",
         bot_manager: "Bot Manager",
-        awaiting_manager: "Awaiting Manager"
+        awaiting_manager: "Awaiting Manager",
+        whats_new: "What's New",
+        changelog_latest: "Latest",
+        changelog_previous: "Previous",
+        changelog_type_feature: "Feature",
+        changelog_type_fix: "Fix",
+        changelog_type_improvement: "Improvement",
+        changelog_type_ui: "UI",
+        changelog_all_up_to_date: "You're up to date!",
+        changelog_up_to_date_desc: "No new updates since your last visit.",
+        changelog_v416_1: "Driver names now use F1-style abbreviated format (L. Hamilton) across all views",
+        changelog_v416_2: "Academy training roster: Promote and Release buttons moved to the top of cards for better visibility",
+        changelog_v416_3: "Target Promotion card highlighted with a purple accent when a driver is marked for graduation",
+        changelog_v416_4: "Driver marked for promotion receives a +25% XP bonus during weekly training",
+        changelog_v416_5: "New random event: Intensive Training — boosts all skills simultaneously for a $25K cost",
+        changelog_v416_6: "Scouting Intel now shows a live countdown until the next weekly academy processing (Sunday 16:00)",
+        changelog_v416_7: "Academy candidate pool now replenishes automatically after signing, releasing, or dismissing a candidate",
+        changelog_v416_8: "Fixed: double currency symbol displayed in Academy facility upgrade cost",
+        changelog_v416_9: "Fixed: real-time budget display in the app header was not updating correctly"
     },
     es: {
         career_view: "Vista Profesional",
@@ -702,7 +720,25 @@ export const translations = {
         force_qualifying: "Forzar Clasificación",
         restore_driver_stats: "Restaurar Estadísticas de Pilotos",
         bot_manager: "Manager Bot",
-        awaiting_manager: "Esperando Manager"
+        awaiting_manager: "Esperando Manager",
+        whats_new: "Novedades",
+        changelog_latest: "Reciente",
+        changelog_previous: "Anterior",
+        changelog_type_feature: "Función",
+        changelog_type_fix: "Corrección",
+        changelog_type_improvement: "Mejora",
+        changelog_type_ui: "UI",
+        changelog_all_up_to_date: "¡Estás al día!",
+        changelog_up_to_date_desc: "Sin actualizaciones nuevas desde tu última visita.",
+        changelog_v416_1: "Los nombres de pilotos usan formato abreviado estilo F1 (L. Hamilton) en todas las vistas",
+        changelog_v416_2: "Roster de la academia: botones Ascender y Liberar movidos a la parte superior de las tarjetas",
+        changelog_v416_3: "Tarjeta de Promoción resaltada con acento morado cuando se marca un piloto para graduación",
+        changelog_v416_4: "El piloto marcado para promoción recibe un bono de +25% XP durante el entrenamiento semanal",
+        changelog_v416_5: "Nuevo evento aleatorio: Entrenamiento Intensivo — mejora todas las habilidades a la vez por $25K",
+        changelog_v416_6: "Scouting Intel ahora muestra una cuenta regresiva en vivo hasta el próximo procesamiento semanal (domingo 16:00)",
+        changelog_v416_7: "El pool de candidatos de la academia se repone automáticamente tras firmar, liberar o descartar un candidato",
+        changelog_v416_8: "Corregido: símbolo de moneda doble mostrado en el coste de mejora de instalaciones de la academia",
+        changelog_v416_9: "Corregido: el presupuesto en tiempo real del header de la app no se actualizaba correctamente"
     }
 };
 
