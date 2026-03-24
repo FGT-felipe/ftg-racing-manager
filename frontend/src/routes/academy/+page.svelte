@@ -20,7 +20,6 @@
         Shield,
         Zap,
         Eye,
-        Activity,
         Repeat,
     } from "lucide-svelte";
     import InstructionCard from "$lib/components/layout/InstructionCard.svelte";
@@ -119,7 +118,6 @@
         consistency: Repeat,
         adaptability: Globe,
         focus: Brain,
-        fitness: Activity,
     };
 </script>
 
@@ -713,7 +711,7 @@
                                                 <button
                                                     class="p-2.5 rounded-2xl transition-all border {driver.isMarkedForPromotion
                                                         ? 'bg-fuchsia-500 border-fuchsia-500 text-black shadow-xl shadow-fuchsia-500/20'
-                                                        : 'bg-transparent border-app-border text-zinc-700 hover:text-fuchsia-500 hover:border-fuchsia-500/30'}"
+                                                        : 'bg-transparent border-app-border text-app-text/40 hover:text-fuchsia-500 hover:border-fuchsia-500/30'}"
                                                     onclick={() =>
                                                         youthAcademyStore.togglePromotion(
                                                             driver.id,
@@ -728,7 +726,7 @@
                                                     />
                                                 </button>
                                                 <button
-                                                    class="p-2.5 rounded-2xl transition-all border bg-transparent border-app-border text-zinc-800 hover:text-red-500 hover:border-red-500/30"
+                                                    class="p-2.5 rounded-2xl transition-all border bg-transparent border-app-border text-app-text/40 hover:text-red-500 hover:border-red-500/30"
                                                     onclick={() =>
                                                         youthAcademyStore.releaseDriver(
                                                             driver.id,
@@ -837,26 +835,21 @@
                                                         </div>
                                                     {/if}
                                                     <div
-                                                        class="flex items-center gap-1.5"
+                                                        class="flex items-center gap-1 bg-app-text/5 border border-app-border rounded-lg px-2 py-0.5"
                                                     >
                                                         <span
-                                                            class="text-xs font-black text-app-text tracking-tighter"
-                                                            >{driver
-                                                                .statRangeMin?.[
-                                                                key
-                                                            ] ?? 0}</span
+                                                            class="text-[11px] font-black text-app-text tabular-nums"
+                                                            >{driver.statRangeMin?.[key] ?? 0}</span
                                                         >
                                                         <span
-                                                            class="text-[10px] font-black text-zinc-700 italic"
-                                                            >...</span
+                                                            class="text-[9px] text-app-text/30"
+                                                            >–</span
                                                         >
                                                         <span
-                                                            class="text-xs font-black text-app-text/60 tracking-tighter"
-                                                            >{driver
-                                                                .statRangeMax?.[
-                                                                key
-                                                            ] ?? 0}</span
+                                                            class="text-[11px] font-black text-app-text/60 tabular-nums"
+                                                            >{driver.statRangeMax?.[key] ?? 0}</span
                                                         >
+                                                        <span class="text-[8px] text-app-text/20">/20</span>
                                                     </div>
                                                 </div>
                                             </div>

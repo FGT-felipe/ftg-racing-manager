@@ -141,13 +141,16 @@ export function createYouthAcademyStore() {
                 if (!data || (data.budget ?? 0) < purchasePrice) throw new Error(`Insufficient budget. Required: $10,000. Available: $${((data?.budget ?? 0) / 1000).toFixed(0)}k`);
                 const budget = data.budget ?? 0;
 
+                // Read seasonId from the team document (authoritative, avoids store timing issues)
+                const resolvedSeasonId = data?.currentSeasonId || currentSeasonId || null;
+
                 transaction.set(configRef, {
                     countryCode: country.code,
                     countryName: country.name,
                     countryFlag: country.flagEmoji || getFlagEmoji(country.code),
                     academyLevel: 1,
-                    scoutsUsedThisSeason: 2, // Initial generation count
-                    lastUpgradeSeasonId: currentSeasonId,
+                    scoutsUsedThisSeason: 2,
+                    lastUpgradeSeasonId: resolvedSeasonId,
                     createdAt: serverTimestamp()
                 });
 
@@ -165,7 +168,7 @@ export function createYouthAcademyStore() {
                         level: 1,
                         isLocked: false,
                         maintenanceCost: 15000,
-                        lastUpgradeSeasonId: currentSeasonId
+                        lastUpgradeSeasonId: resolvedSeasonId
                     }
                 });
 
@@ -208,17 +211,18 @@ export function createYouthAcademyStore() {
                 if (!data || (data.budget ?? 0) < finalPrice) throw new Error("Insufficient budget");
                 const budget = data.budget ?? 0;
 
+                const resolvedSeasonId = data?.currentSeasonId || currentSeasonId || null;
                 const newLevel = config.academyLevel + 1;
 
                 transaction.update(configRef, {
                     academyLevel: newLevel,
-                    lastUpgradeSeasonId: currentSeasonId
+                    lastUpgradeSeasonId: resolvedSeasonId
                 });
 
                 transaction.update(teamRef, {
                     budget: budget - finalPrice,
                     [`facilities.youthAcademy.level`]: newLevel,
-                    [`facilities.youthAcademy.lastUpgradeSeasonId`]: currentSeasonId
+                    [`facilities.youthAcademy.lastUpgradeSeasonId`]: resolvedSeasonId
                 });
             });
 
@@ -289,8 +293,8 @@ export function createYouthAcademyStore() {
                         message = "The sponsor shoot raised adaptability, but cost some focus.";
                         break;
                     case 'TECHNICAL_TEST':
-                        diffs = { cornering: 1, fitness: -1 };
-                        message = "Intense technical testing improved cornering at the cost of physical exhaustion.";
+                        diffs = { cornering: 1, focus: -1 };
+                        message = "Intense technical testing improved cornering but left the driver mentally drained.";
                         break;
                     case 'MENTOR_REQUEST':
                         const stats = ['consistency', 'smoothness', 'focus', 'adaptability'];
@@ -303,13 +307,13 @@ export function createYouthAcademyStore() {
                         message = "Media training improved both focus and adaptability.";
                         break;
                     case 'FITNESS_BOOTCAMP':
-                        diffs = { fitness: 2, focus: -1 };
-                        message = "The intense bootcamp significantly boosted fitness, though the driver is mentally tired.";
+                        diffs = { consistency: 2, focus: -1 };
+                        message = "The intense bootcamp built physical endurance, improving consistency though the driver is mentally tired.";
                         break;
                     default:
                         // Generic reward based on what the driver needs most? 
                         // For now just focus + another random stat
-                        const allStats = ['braking', 'cornering', 'smoothness', 'overtaking', 'consistency', 'adaptability', 'focus', 'fitness'];
+                        const allStats = ['braking', 'cornering', 'smoothness', 'overtaking', 'consistency', 'adaptability', 'focus'];
                         const secondStat = allStats[Math.floor(Math.random() * allStats.length)];
                         diffs = { focus: 1, [secondStat]: 1 };
                         message = "The driver successfully completed the requested flow and gained valuable experience.";
@@ -351,9 +355,14 @@ export function createYouthAcademyStore() {
 
         async dismissCandidate(candidateId: string) {
             const teamId = teamStore.value.team?.id;
-            if (!teamId) return;
+            if (!teamId || !config) return;
             const candidateRef = doc(db, 'teams', teamId, 'academy', 'config', 'candidates', candidateId);
             await deleteDoc(candidateRef);
+
+            // Generate one replacement candidate to keep the scouting pool populated
+            const [replacement] = academyService.generateInitialCandidates(1, config.countryCode, config.academyLevel);
+            const replacementRef = doc(db, 'teams', teamId, 'academy', 'config', 'candidates', replacement.id);
+            await setDoc(replacementRef, replacement);
         },
 
         async releaseDriver(driverId: string) {
