@@ -55,11 +55,14 @@ const post_race_1 = require("../economy/post-race");
  */
 exports.megaFixDebriefs = (0, https_1.onCall)({
     cors: true,
-    invoker: "public",
+    enforceAppCheck: true, // Uncomment after enabling App Check in Firebase Console
     memory: "1GiB",
     timeoutSeconds: 540,
-}, async () => {
-    logger.info("=== MEGA FIX DEBRIEFS START ===");
+}, async (request) => {
+    if (!request.auth) {
+        throw new https_1.HttpsError("unauthenticated", "Authentication required.");
+    }
+    logger.info("=== MEGA FIX DEBRIEFS START ===", { uid: request.auth.uid });
     try {
         const leaguesSnap = await admin_1.db.collection("leagues").get();
         let totalUpdated = 0;
@@ -127,10 +130,13 @@ exports.megaFixDebriefs = (0, https_1.onCall)({
  */
 exports.forceFixGBA = (0, https_1.onCall)({
     cors: true,
-    invoker: "public",
+    enforceAppCheck: true, // Uncomment after enabling App Check in Firebase Console
     timeoutSeconds: 120,
-}, async () => {
-    logger.info("=== FORCE FIX GBA START ===");
+}, async (request) => {
+    if (!request.auth) {
+        throw new https_1.HttpsError("unauthenticated", "Authentication required.");
+    }
+    logger.info("=== FORCE FIX GBA START ===", { uid: request.auth.uid });
     try {
         const teamSnap = await admin_1.db.collection("teams").where("name", "==", "GBA Racing").get();
         if (teamSnap.empty)
@@ -201,13 +207,14 @@ exports.forceFixGBA = (0, https_1.onCall)({
  */
 exports.restoreDriversHistory = (0, https_1.onCall)({
     cors: true,
-    invoker: "public",
+    enforceAppCheck: true, // Uncomment after enabling App Check in Firebase Console
     memory: "512MiB",
     timeoutSeconds: 540,
 }, async (request) => {
-    logger.info("restoreDriversHistory triggered", {
-        auth: request.auth ? request.auth.uid : null,
-    });
+    if (!request.auth) {
+        throw new https_1.HttpsError("unauthenticated", "Authentication required.");
+    }
+    logger.info("restoreDriversHistory triggered", { uid: request.auth.uid });
     try {
         const driversSnap = await admin_1.db.collection("drivers").get();
         const teamsSnap = await admin_1.db.collection("teams").get();

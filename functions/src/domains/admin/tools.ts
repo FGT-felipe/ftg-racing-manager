@@ -7,7 +7,7 @@
  */
 
 import * as logger from "firebase-functions/logger";
-import { onCall } from "firebase-functions/v2/https";
+import { onCall, HttpsError } from "firebase-functions/v2/https";
 import { db, admin } from "../../shared/admin";
 import { addOfficeNews } from "../../shared/notifications";
 import { generateTeamDebrief } from "../economy/post-race";
@@ -22,11 +22,14 @@ import { generateTeamDebrief } from "../economy/post-race";
  */
 export const megaFixDebriefs = onCall({
   cors: true,
-  invoker: "public",
+  enforceAppCheck: true,  // Uncomment after enabling App Check in Firebase Console
   memory: "1GiB",
   timeoutSeconds: 540,
-}, async () => {
-  logger.info("=== MEGA FIX DEBRIEFS START ===");
+}, async (request) => {
+  if (!request.auth) {
+    throw new HttpsError("unauthenticated", "Authentication required.");
+  }
+  logger.info("=== MEGA FIX DEBRIEFS START ===", { uid: request.auth.uid });
   try {
     const leaguesSnap = await db.collection("leagues").get();
     let totalUpdated = 0;
@@ -98,10 +101,13 @@ export const megaFixDebriefs = onCall({
  */
 export const forceFixGBA = onCall({
   cors: true,
-  invoker: "public",
+  enforceAppCheck: true,  // Uncomment after enabling App Check in Firebase Console
   timeoutSeconds: 120,
-}, async () => {
-  logger.info("=== FORCE FIX GBA START ===");
+}, async (request) => {
+  if (!request.auth) {
+    throw new HttpsError("unauthenticated", "Authentication required.");
+  }
+  logger.info("=== FORCE FIX GBA START ===", { uid: request.auth.uid });
   try {
     const teamSnap = await db.collection("teams").where("name", "==", "GBA Racing").get();
     if (teamSnap.empty) return { success: false, error: "GBA Racing not found" };
@@ -174,13 +180,14 @@ export const forceFixGBA = onCall({
  */
 export const restoreDriversHistory = onCall({
   cors: true,
-  invoker: "public",
+  enforceAppCheck: true,  // Uncomment after enabling App Check in Firebase Console
   memory: "512MiB",
   timeoutSeconds: 540,
 }, async (request) => {
-  logger.info("restoreDriversHistory triggered", {
-    auth: request.auth ? request.auth.uid : null,
-  });
+  if (!request.auth) {
+    throw new HttpsError("unauthenticated", "Authentication required.");
+  }
+  logger.info("restoreDriversHistory triggered", { uid: request.auth.uid });
   try {
     const driversSnap = await db.collection("drivers").get();
     const teamsSnap = await db.collection("teams").get();
