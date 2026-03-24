@@ -341,6 +341,9 @@
                     driver.id,
                     result,
                     setupToRun,
+                    undefined,
+                    1,
+                    driver.stats
                 );
 
                 // Also maintain per-driver practiceRuns history used by competitor benchmarks
@@ -373,36 +376,6 @@
             const teamRef = doc(db, "teams", teamStore.value.team.id);
             await updateDoc(teamRef, {
                 budget: teamStore.value.team.budget - PRACTICE_SESSION_COST,
-            });
-
-            // Calculate Stamina (forma) and Morale changes for the Driver
-            const staminaCost = lapsToRun * 1; // 1 pt of stamina reduction per lap
-            let moralePenalty = 0;
-            
-            if (lastResult) {
-                if (lastResult.isCrashed) {
-                    moralePenalty = 5; // -5 for a crash
-                } else if (lastResult.setupConfidence < 0.60) {
-                    moralePenalty = 2; // -2 for a bad setup feeling
-                } else if (lastResult.setupConfidence > 0.85) {
-                    moralePenalty = -1; // +1 if it went exceptionally well
-                }
-            }
-
-            const driverRef = doc(db, "drivers", driver.id);
-            const currentStats = driver.stats || {};
-            const newStamina = Math.max(
-                0,
-                (currentStats.stamina || 100) - staminaCost,
-            );
-            const newMorale = Math.max(
-                0,
-                Math.min(100, (currentStats.morale || 100) - moralePenalty),
-            );
-
-            await updateDoc(driverRef, {
-                "stats.stamina": newStamina,
-                "stats.morale": newMorale,
             });
 
             await refreshStandings();

@@ -290,7 +290,7 @@
                     <!-- Tiny Status Bars -->
                     <div class="flex gap-1 w-full h-0.5">
                         <div class="flex-1 h-full bg-black/10 rounded-full overflow-hidden">
-                            <div class="h-full {getFitnessColor(driver.stats?.stamina || 100).replace('text-', 'bg-')}" style="width: {driver.stats?.stamina || 100}%"></div>
+                            <div class="h-full {getFitnessColor(driver.stats?.fitness || 100).replace('text-', 'bg-')}" style="width: {driver.stats?.fitness || 100}%"></div>
                         </div>
                         <div class="flex-1 h-full bg-black/10 rounded-full overflow-hidden">
                             <div class="h-full {getMoraleColor(driver.stats?.morale || 100).replace('text-', 'bg-')}" style="width: {driver.stats?.morale || 100}%"></div>

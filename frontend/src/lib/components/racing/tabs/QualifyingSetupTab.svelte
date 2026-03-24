@@ -378,7 +378,7 @@
                             <div class="flex items-center justify-between">
                                 <span class="text-[10px] font-black uppercase tracking-[0.3em] text-app-primary leading-none">{driver.name}</span>
                                 <div class="flex items-center gap-4 text-[9px] font-black uppercase text-app-text/30">
-                                    <div class="flex items-center gap-1.5"><Bolt size={10} class="text-emerald-400" /> {driver.stats?.stamina || 100}%</div>
+                                    <div class="flex items-center gap-1.5"><Bolt size={10} class="text-emerald-400" /> {driver.stats?.fitness || 100}%</div>
                                     <div class="flex items-center gap-1.5"><Smile size={10} class="text-yellow-400" /> {driver.stats?.morale || 100}%</div>
                                 </div>
                             </div>
