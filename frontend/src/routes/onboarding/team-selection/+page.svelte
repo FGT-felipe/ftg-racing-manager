@@ -16,6 +16,7 @@
         Briefcase,
     } from "lucide-svelte";
     import { fly, fade } from "svelte/transition";
+    import { formatDriverName } from "$lib/utils/driver";
 
     let liveTeams = $state<any[]>([]);
     let liveDrivers = $state<any[]>([]);
@@ -207,7 +208,8 @@
                                             <CountryFlag countryCode={driver.countryCode} size="sm" />
                                             <span
                                                 class="text-[11px] font-bold text-app-text/60 uppercase tracking-widest"
-                                                >{driver.name}</span
+                                                title={driver.name}
+                                                >{formatDriverName(driver.name)}</span
                                             >
                                         </div>
                                     {/each}
@@ -339,7 +341,8 @@
                                             <CountryFlag countryCode={driver.countryCode} size="sm" customClass="opacity-50" />
                                             <span
                                                 class="text-[11px] font-bold text-app-text uppercase tracking-widest"
-                                                >{driver.name}</span
+                                                title={driver.name}
+                                                >{formatDriverName(driver.name)}</span
                                             >
                                         </div>
                                     {/each}

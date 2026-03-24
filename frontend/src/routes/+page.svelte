@@ -7,6 +7,7 @@
     import { goto } from "$app/navigation";
     import { browser } from "$app/environment";
     import { Factory, Wallet } from "lucide-svelte";
+    import { t } from "$lib/utils/i18n";
     import RaceStatusHero from "$lib/components/dashboard/RaceStatusHero.svelte";
     import OfficeNews from "$lib/components/dashboard/OfficeNews.svelte";
     import StandingsCard from "$lib/components/dashboard/StandingsCard.svelte";
@@ -109,7 +110,7 @@
                     <h3
                         class="text-[10px] font-black uppercase tracking-[0.3em] text-app-primary/40 font-heading px-2"
                     >
-                        Financial Overview
+                        {t('financial_overview')}
                     </h3>
                     <div
                         class="bg-app-surface border border-app-border rounded-2xl p-8 flex flex-col gap-6"
@@ -165,7 +166,7 @@
                             href="/management"
                             class="text-center py-3 rounded-lg border border-app-border text-[10px] font-black uppercase tracking-widest text-app-text/40 hover:bg-app-text/5 hover:text-app-text transition-all mt-2"
                         >
-                            Manage Finances
+                            {t('manage_finances')}
                         </a>
                     </div>
                 </section>

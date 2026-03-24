@@ -12,6 +12,7 @@ import {
     type SponsorOffer,
     type ActiveContract
 } from '$lib/types';
+import { ActiveContractSchema } from '$lib/schemas/sponsor.schema';
 
 export enum NegotiationStatus {
     success = 'success',
@@ -260,6 +261,12 @@ export class SponsorService {
             racesRemaining: offer.contractDuration,
             currentFailures: 0
         };
+
+        const parsed = ActiveContractSchema.safeParse(contract);
+        if (!parsed.success) {
+            console.error('[SponsorService:signContract] Invalid ActiveContract — aborting Firestore write:', parsed.error.flatten());
+            throw new Error(`Invalid contract: ${parsed.error.issues.map(i => i.message).join(', ')}`);
+        }
 
         await runTransaction(db, async (transaction) => {
             const teamDoc = await transaction.get(teamRef);

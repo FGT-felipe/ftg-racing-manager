@@ -3,6 +3,7 @@
     import DriverStars from "$lib/components/DriverStars.svelte";
     import DriverAvatar from "$lib/components/DriverAvatar.svelte";
     import CountryFlag from "$lib/components/ui/CountryFlag.svelte";
+    import { formatDriverName } from "$lib/utils/driver";
 
     let { driver, carIndex } = $props<{
         driver: Driver;
@@ -61,7 +62,7 @@
                 class="text-xs font-black text-app-text uppercase truncate tracking-tight flex items-center gap-1.5"
             >
                 <CountryFlag countryCode={driver.countryCode} size="sm" />
-                <span>{driver.name}</span>
+                <span title={driver.name}>{formatDriverName(driver.name)}</span>
             </h4>
             <span class="text-[9px] font-bold text-app-text/30 uppercase"
                 >Car {carIndex === 0 ? "A" : "B"}</span

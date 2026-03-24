@@ -2,6 +2,8 @@ import { error } from '@sveltejs/kit';
 import fs from 'fs';
 import path from 'path';
 
+export const prerender = true;
+
 export const load = async () => {
     try {
         const docsPath = path.resolve('src/routes/admin/docs');

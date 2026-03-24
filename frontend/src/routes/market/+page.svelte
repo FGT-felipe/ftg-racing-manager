@@ -2,9 +2,11 @@
     import { Users, Gavel, X, ChevronLeft, ChevronRight, Lock, Minus, Plus, CheckCircle } from "lucide-svelte";
     import { fly, fade } from "svelte/transition";
     import { teamStore } from "$lib/stores/team.svelte";
+    import { formatDriverName } from "$lib/utils/driver";
     import DriverAvatar from "$lib/components/DriverAvatar.svelte";
     import CountryFlag from "$lib/components/ui/CountryFlag.svelte";
     import { onDestroy, onMount } from "svelte";
+    import { t } from "$lib/utils/i18n";
 
     // ─── Types ────────────────────────────────────────────────────────────────────
     interface MarketDriver {
@@ -66,11 +68,11 @@
     }
 
     function getLevelInfo(stars: number) {
-        if (stars >= 5) return { label: "Elite", color: "text-yellow-500 border-yellow-500/40" };
-        if (stars >= 4) return { label: "Pro", color: "text-blue-400 border-blue-400/40" };
-        if (stars >= 3) return { label: "Veteran", color: "text-green-400 border-green-400/40" };
-        if (stars >= 2) return { label: "Talent", color: "text-orange-400 border-orange-400/40" };
-        return { label: "Rookie", color: "text-app-text/40 border-app-border" };
+        if (stars >= 5) return { label: t('elite'), color: "text-yellow-500 border-yellow-500/40" };
+        if (stars >= 4) return { label: t('pro'), color: "text-blue-400 border-blue-400/40" };
+        if (stars >= 3) return { label: t('driver_level_veteran'), color: "text-green-400 border-green-400/40" };
+        if (stars >= 2) return { label: t('driver_level_talent'), color: "text-orange-400 border-orange-400/40" };
+        return { label: t('driver_level_rookie'), color: "text-app-text/40 border-app-border" };
     }
 
     function getStatColor(val: number, isPercentage = false): string {
@@ -267,7 +269,7 @@
                 Transfer <span class="text-app-primary">Market</span>
             </h1>
             <div class="flex items-center gap-3 px-4 py-2 bg-app-surface border border-app-border rounded-2xl text-[10px] font-black uppercase tracking-widest">
-                <span class="text-app-text/40">Available Budget</span>
+                <span class="text-app-text/40">{t('available_budget')}</span>
                 <span class="text-app-primary">{formatCurrency(myBudget)}</span>
             </div>
         </div>
@@ -278,8 +280,8 @@
         <div class="flex flex-col items-center justify-center h-64 gap-6 bg-app-surface border border-red-500/20 rounded-3xl text-center">
             <div class="p-6 bg-red-500/10 rounded-full text-red-400"><Lock size={40} /></div>
             <div>
-                <h2 class="text-xl font-black uppercase text-red-400">Transfer Market Closed</h2>
-                <p class="text-sm text-app-text/40 mt-2">The market closes with 1 race remaining in the season.</p>
+                <h2 class="text-xl font-black uppercase text-red-400">{t('market_closed')}</h2>
+                <p class="text-sm text-app-text/40 mt-2">{t('market_closed_desc')}</p>
             </div>
         </div>
 
@@ -290,13 +292,13 @@
             <!-- Table Header -->
             <div class="hidden md:grid px-6 py-3 border-b border-app-border text-[8px] font-black text-app-text/30 uppercase tracking-widest gap-4"
                  style="grid-template-columns: 1fr 40px 80px 100px 100px 100px 80px">
-                <span>Driver</span>
-                <span class="text-center">Age</span>
-                <span>Potential</span>
-                <span class="text-right">Market Value</span>
-                <span class="text-right">Highest Bid</span>
-                <span class="text-center">Time Left</span>
-                <span class="text-right">Action</span>
+                <span>{t('driver')}</span>
+                <span class="text-center">{t('age')}</span>
+                <span>{t('potential')}</span>
+                <span class="text-right">{t('market_value')}</span>
+                <span class="text-right">{t('highest_bid')}</span>
+                <span class="text-center">{t('time_left')}</span>
+                <span class="text-right">{t('actions')}</span>
             </div>
 
             <!-- Loading Skeleton -->
@@ -314,7 +316,7 @@
             {:else if activeDrivers.length === 0}
                 <div class="flex flex-col items-center justify-center h-48 opacity-30 gap-4">
                     <Users size={36} strokeWidth={1} />
-                    <span class="text-sm font-black uppercase tracking-widest">No drivers listed</span>
+                    <span class="text-sm font-black uppercase tracking-widest">{t('market_no_drivers')}</span>
                 </div>
 
             <!-- Rows -->
@@ -341,7 +343,7 @@
                             </div>
                             <div class="flex flex-col min-w-0">
                                 <div class="flex items-center gap-2">
-                                    <span class="text-[11px] font-black text-app-text uppercase italic truncate underline decoration-app-text/10">{driver.name}</span>
+                                    <span class="text-[11px] font-black text-app-text uppercase italic truncate pr-2 underline decoration-app-text/10" title={driver.name}>{formatDriverName(driver.name)}</span>
                                     <CountryFlag countryCode={driver.countryCode} size="xs" />
                                 </div>
                                 <span class="text-[9px] font-black border px-1.5 py-px rounded w-fit mt-0.5 {lvl.color}">{lvl.label}</span>
@@ -378,7 +380,7 @@
                                     onclick={() => cancelTransfer(driver)}
                                     class="text-[9px] font-black uppercase tracking-widest text-red-400 border border-red-400/30 px-2 py-1 rounded-lg hover:bg-red-400/10 transition-colors"
                                 >
-                                    Cancel
+                                    {t('cancel')}
                                 </button>
                             {:else if isMyBid}
                                 <button
@@ -386,7 +388,7 @@
                                     disabled={cancellingBidIds.has(driver.id)}
                                     class="text-[9px] font-black uppercase tracking-widest text-red-400 border border-red-400/30 px-2 py-1 rounded-lg hover:bg-red-400/10 transition-colors disabled:opacity-40"
                                 >
-                                    {cancellingBidIds.has(driver.id) ? '...' : 'Cancel Bid'}
+                                    {cancellingBidIds.has(driver.id) ? t('processing') : t('cancel_bid')}
                                 </button>
                             {:else}
                                 <button
@@ -394,7 +396,7 @@
                                     disabled={expiring || countdownMap[driver.id] === 'Expired'}
                                     class="flex items-center gap-1 text-[9px] font-black uppercase tracking-widest bg-green-500 text-app-text px-3 py-1.5 rounded-lg hover:bg-green-400 transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
                                 >
-                                    <Gavel size={10} /> Bid
+                                    <Gavel size={10} /> {t('bid')}
                                 </button>
                             {/if}
                         </div>
@@ -411,15 +413,15 @@
                     disabled={currentPage === 0}
                     class="flex items-center gap-1 text-[10px] font-black uppercase text-app-text/40 hover:text-app-text disabled:opacity-20 transition-colors"
                 >
-                    <ChevronLeft size={14} /> Prev
+                    <ChevronLeft size={14} /> {t('prev_page')}
                 </button>
-                <span class="text-[10px] font-black text-app-text/30 uppercase tracking-widest">Page {currentPage + 1}</span>
+                <span class="text-[10px] font-black text-app-text/30 uppercase tracking-widest">{t('page_n', { n: String(currentPage + 1) })}</span>
                 <button
                     onclick={() => fetchPage(currentPage + 1)}
                     disabled={!hasNextPage}
                     class="flex items-center gap-1 text-[10px] font-black uppercase text-app-text/40 hover:text-app-text disabled:opacity-20 transition-colors"
                 >
-                    Next <ChevronRight size={14} />
+                    {t('next_page')} <ChevronRight size={14} />
                 </button>
             </div>
         {/if}
@@ -463,7 +465,7 @@
                         <div class="flex flex-col gap-2">
                             <span class="text-[9px] font-black border px-2 py-0.5 rounded-md w-fit {lvl.color} uppercase tracking-widest">{lvl.label}</span>
                             <div class="flex items-center gap-3">
-                                <h2 class="text-3xl font-black text-app-text uppercase italic leading-none tracking-tighter">{d.name}</h2>
+                                <h2 class="text-3xl font-black text-app-text uppercase italic leading-none tracking-tighter" title={d.name}>{formatDriverName(d.name)}</h2>
                                 <CountryFlag countryCode={d.countryCode} size="sm" />
                             </div>
                             <div class="flex items-center gap-2">

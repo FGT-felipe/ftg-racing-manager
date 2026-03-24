@@ -20,7 +20,6 @@
         Shield,
         Zap,
         Eye,
-        Activity,
         Repeat,
     } from "lucide-svelte";
     import InstructionCard from "$lib/components/layout/InstructionCard.svelte";
@@ -30,6 +29,7 @@
     import {
         calculateAcademyCurrentStars,
         calculateAcademyMaxStars,
+        formatDriverName,
     } from "$lib/utils/driver";
     import {
         t,
@@ -38,6 +38,8 @@
     } from "$lib/utils/i18n";
     import CountryFlag from "$lib/components/ui/CountryFlag.svelte";
     import { getFlagEmoji } from "$lib/utils/country";
+    import { timeService, RaceWeekStatus } from "$lib/services/time_service.svelte";
+    import { onDestroy } from "svelte";
 
     function getSpecialtyKey(
         specialty: string | null | undefined,
@@ -74,6 +76,25 @@
     let selectedCountry = $state(countries[0]);
     let isPurchasing = $state(false);
     let isUpgrading = $state(false);
+
+    // Countdown to next POST_RACE processing (Sunday 16:00) — when candidates refresh
+    let nextRefreshTime = $state({ days: 0, hours: 0, minutes: 0, seconds: 0 });
+    let refreshTimer: ReturnType<typeof setInterval>;
+
+    function updateRefreshCountdown() {
+        const t = timeService.getTimeUntil(RaceWeekStatus.POST_RACE);
+        if (t) nextRefreshTime = t;
+    }
+
+    $effect(() => {
+        updateRefreshCountdown();
+        if (refreshTimer) clearInterval(refreshTimer);
+        refreshTimer = setInterval(updateRefreshCountdown, 1000);
+    });
+
+    onDestroy(() => {
+        if (refreshTimer) clearInterval(refreshTimer);
+    });
 
     function formatCurrencyCompact(val: number) {
         if (val >= 1000000) return `$${(val / 1000000).toFixed(1)}M`;
@@ -119,7 +140,6 @@
         consistency: Repeat,
         adaptability: Globe,
         focus: Brain,
-        fitness: Activity,
     };
 </script>
 
@@ -445,7 +465,7 @@
                                     {#if !youthAcademyStore.canUpgrade && !isUpgrading && youthAcademyStore.config?.academyLevel < 5}
                                         Next Season
                                     {:else}
-                                        ${formatCurrencyCompact(
+                                        {formatCurrencyCompact(
                                             1000000 *
                                                 (youthAcademyStore.config
                                                     ?.academyLevel ?? 1),
@@ -492,11 +512,11 @@
                             <div>
                                 <div class="flex items-center gap-2 mb-1.5">
                                     <h5
-                                        class="text-app-text font-black text-lg tracking-tighter leading-none uppercase italic truncate"
+                                        class="text-app-text font-black text-lg tracking-tighter leading-none uppercase italic truncate pr-2"
+                                        title={promoted?.name}
                                     >
-                                        {promoted?.name.split(" ")[0]}
+                                        {formatDriverName(promoted?.name)}
                                     </h5>
-                                    <CountryFlag countryCode={promoted?.countryCode} size="sm" />
                                 </div>
                                 <div class="flex items-center gap-2">
                                     <div
@@ -606,8 +626,31 @@
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
                         {#each youthAcademyStore.selectedDrivers as driver}
                             <div
-                                class="group bg-app-surface/60 border border-app-border rounded-[2.5rem] p-8 backdrop-blur-md relative overflow-hidden transition-all duration-500 hover:border-emerald-500/30 hover:bg-app-surface/80 hover:shadow-2xl hover:shadow-emerald-500/5"
+                                class="group rounded-[2.5rem] backdrop-blur-md relative overflow-hidden transition-all duration-500
+                                    {driver.isMarkedForPromotion
+                                        ? 'bg-fuchsia-500/5 border border-fuchsia-500/30 hover:border-fuchsia-500/50 hover:bg-fuchsia-500/10 hover:shadow-2xl hover:shadow-fuchsia-500/10'
+                                        : 'bg-app-surface/60 border border-app-border hover:border-emerald-500/30 hover:bg-app-surface/80 hover:shadow-2xl hover:shadow-emerald-500/5'}"
                             >
+                                <!-- Action Buttons Row -->
+                                <div class="flex divide-x divide-app-border border-b border-app-border">
+                                    <button
+                                        class="flex-1 py-3 text-[10px] font-black uppercase tracking-widest transition-colors
+                                            {driver.isMarkedForPromotion
+                                                ? 'bg-fuchsia-500/10 text-fuchsia-400'
+                                                : 'text-app-text/30 hover:bg-fuchsia-500/10 hover:text-fuchsia-400'}"
+                                        onclick={() => youthAcademyStore.togglePromotion(driver.id, !driver.isMarkedForPromotion)}
+                                    >
+                                        {t("mark_for_promotion")}
+                                    </button>
+                                    <button
+                                        class="flex-1 py-3 text-[10px] font-black uppercase tracking-widest text-app-text/30 hover:bg-red-500/10 hover:text-red-400 transition-colors"
+                                        onclick={() => youthAcademyStore.releaseDriver(driver.id)}
+                                    >
+                                        {t("release_driver_tooltip")}
+                                    </button>
+                                </div>
+
+                                <div class="p-8">
                                 <!-- Active Decision Banner -->
                                 {#if driver.pendingAction}
                                     <div
@@ -688,11 +731,11 @@
                                         >
                                             <div class="flex items-center gap-2">
                                                 <h4
-                                                    class="text-2xl font-black text-app-text tracking-tighter uppercase leading-none truncate italic"
+                                                    class="text-xl font-black text-app-text tracking-tighter uppercase leading-none truncate italic pr-2"
+                                                    title={driver.name}
                                                 >
-                                                    {driver.name}
+                                                    {formatDriverName(driver.name)}
                                                 </h4>
-                                                <CountryFlag countryCode={driver.countryCode} size="sm" />
                                             </div>
                                             {#if getSpecialtyKey(driver.specialty)}
                                                 <div class="mt-1 flex gap-2">
@@ -707,39 +750,6 @@
                                                     </span>
                                                 </div>
                                             {/if}
-                                            <div
-                                                class="flex items-center gap-2"
-                                            >
-                                                <button
-                                                    class="p-2.5 rounded-2xl transition-all border {driver.isMarkedForPromotion
-                                                        ? 'bg-fuchsia-500 border-fuchsia-500 text-black shadow-xl shadow-fuchsia-500/20'
-                                                        : 'bg-transparent border-app-border text-zinc-700 hover:text-fuchsia-500 hover:border-fuchsia-500/30'}"
-                                                    onclick={() =>
-                                                        youthAcademyStore.togglePromotion(
-                                                            driver.id,
-                                                            !driver.isMarkedForPromotion,
-                                                        )}
-                                                    title={t(
-                                                        "mark_for_promotion",
-                                                    )}
-                                                >
-                                                    <TrendingUp
-                                                        class="w-5 h-5"
-                                                    />
-                                                </button>
-                                                <button
-                                                    class="p-2.5 rounded-2xl transition-all border bg-transparent border-app-border text-zinc-800 hover:text-red-500 hover:border-red-500/30"
-                                                    onclick={() =>
-                                                        youthAcademyStore.releaseDriver(
-                                                            driver.id,
-                                                        )}
-                                                    title={t(
-                                                        "release_driver_tooltip",
-                                                    )}
-                                                >
-                                                    <XCircle class="w-5 h-5" />
-                                                </button>
-                                            </div>
                                         </div>
                                         <DriverStars
                                             currentStars={calculateAcademyCurrentStars(
@@ -837,26 +847,21 @@
                                                         </div>
                                                     {/if}
                                                     <div
-                                                        class="flex items-center gap-1.5"
+                                                        class="flex items-center gap-1 bg-app-text/5 border border-app-border rounded-lg px-2 py-0.5"
                                                     >
                                                         <span
-                                                            class="text-xs font-black text-app-text tracking-tighter"
-                                                            >{driver
-                                                                .statRangeMin?.[
-                                                                key
-                                                            ] ?? 0}</span
+                                                            class="text-[11px] font-black text-app-text tabular-nums"
+                                                            >{driver.statRangeMin?.[key] ?? 0}</span
                                                         >
                                                         <span
-                                                            class="text-[10px] font-black text-zinc-700 italic"
-                                                            >...</span
+                                                            class="text-[9px] text-app-text/30"
+                                                            >–</span
                                                         >
                                                         <span
-                                                            class="text-xs font-black text-app-text/60 tracking-tighter"
-                                                            >{driver
-                                                                .statRangeMax?.[
-                                                                key
-                                                            ] ?? 0}</span
+                                                            class="text-[11px] font-black text-app-text/60 tabular-nums"
+                                                            >{driver.statRangeMax?.[key] ?? 0}</span
                                                         >
+                                                        <span class="text-[8px] text-app-text/20">/20</span>
                                                     </div>
                                                 </div>
                                             </div>
@@ -921,6 +926,7 @@
                                         </div>
                                     </div>
                                 {/if}
+                                </div><!-- end p-8 -->
                             </div>
                         {/each}
                     </div>
@@ -969,11 +975,11 @@
                                     >
                                         <div class="flex items-center gap-2">
                                             <h4
-                                                class="text-lg font-black text-app-text uppercase tracking-tighter italic truncate leading-none"
+                                                class="text-lg font-black text-app-text uppercase tracking-tighter italic truncate leading-none pr-2"
+                                                title={candidate.name}
                                             >
-                                                {candidate.name}
+                                                {formatDriverName(candidate.name)}
                                             </h4>
-                                            <CountryFlag countryCode={candidate.countryCode} size="xs" />
                                         </div>
                                         {#if getSpecialtyKey(candidate.specialty)}
                                             <div
@@ -1063,51 +1069,43 @@
 
                     {#if youthAcademyStore.candidates.length === 0}
                         <div
-                            class="bg-app-bg/20 border border-app-border rounded-[2.5rem] p-16 text-center backdrop-blur-sm"
+                            class="bg-app-bg/20 border border-app-border rounded-[2.5rem] p-10 text-center backdrop-blur-sm"
                         >
                             <div
                                 class="w-12 h-12 bg-app-text/5 rounded-full flex items-center justify-center mx-auto mb-4 border border-app-border"
                             >
                                 <Target class="w-6 h-6 text-zinc-800" />
                             </div>
-                            <p
-                                class="text-zinc-600 text-[10px] font-black uppercase tracking-[0.2em] mb-1 italic"
-                            >
+                            <p class="text-zinc-600 text-[10px] font-black uppercase tracking-[0.2em] mb-4 italic">
                                 {t("program_dormant")}
                             </p>
-                            <p
-                                class="text-zinc-800 text-[9px] font-bold uppercase tracking-widest"
-                            >
+                            <!-- Countdown to next weekly processing (Sunday 16:00) -->
+                            <div class="flex items-center justify-center gap-2">
+                                {#each [
+                                    { value: nextRefreshTime.days, label: 'D' },
+                                    { value: nextRefreshTime.hours, label: 'H' },
+                                    { value: nextRefreshTime.minutes, label: 'M' },
+                                    { value: nextRefreshTime.seconds, label: 'S' }
+                                ] as unit}
+                                    <div class="flex flex-col items-center">
+                                        <span class="text-xl font-black text-app-text/60 tabular-nums w-8 text-center leading-none">
+                                            {String(unit.value).padStart(2, '0')}
+                                        </span>
+                                        <span class="text-[8px] font-black text-app-text/20 uppercase tracking-widest mt-0.5">
+                                            {unit.label}
+                                        </span>
+                                    </div>
+                                    {#if unit.label !== 'S'}
+                                        <span class="text-app-text/20 font-black text-lg leading-none mb-2">:</span>
+                                    {/if}
+                                {/each}
+                            </div>
+                            <p class="text-zinc-700 text-[9px] font-bold uppercase tracking-widest mt-3">
                                 {t("seasons_plural")}
                             </p>
                         </div>
                     {/if}
 
-                    <!-- Regional Highlight Card -->
-                    <div
-                        class="bg-gradient-to-br from-zinc-500/10 via-transparent to-transparent border border-app-border rounded-[2.5rem] p-8 mt-10 relative overflow-hidden group shadow-2xl"
-                    >
-                        <Globe
-                            class="absolute -bottom-6 -right-6 w-32 h-32 text-app-text/5 rotate-12 transition-transform group-hover:scale-110 duration-1000"
-                        />
-                        <div class="relative z-10">
-                            <h5
-                                class="text-app-text/60 text-[11px] font-black uppercase tracking-[0.3em] mb-4 flex items-center gap-3"
-                            >
-                                <Target class="w-5 h-5" />
-                                {t("regional_focus")}
-                            </h5>
-                            <p
-                                class="text-app-text/60 text-xs leading-relaxed font-medium italic opacity-80 group-hover:opacity-100 transition-opacity"
-                            >
-                                {t("scouting_efforts", {
-                                    country:
-                                        youthAcademyStore.config?.countryName?.toUpperCase() ||
-                                        "",
-                                })}
-                            </p>
-                        </div>
-                    </div>
                 </div>
             </div>
         </div>

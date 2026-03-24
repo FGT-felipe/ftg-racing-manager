@@ -23,7 +23,7 @@
     let day = $state("");
     let month = $state("");
     let year = $state("");
-    let selectedRoleId = $state("ex_driver");
+    let selectedRoleId = $state("");
     let isSubmitting = $state(false);
 
     const roles = MANAGER_ROLES;
@@ -314,6 +314,7 @@
                             !day ||
                             !month ||
                             !year ||
+                            !selectedRoleId ||
                             isSubmitting}
                         class="px-12 py-5 bg-app-primary rounded-full hover:shadow-[0_0_40px_rgba(197,160,89,0.3)] transition-all flex items-center gap-4 disabled:opacity-20 disabled:grayscale group"
                     >

@@ -16,6 +16,8 @@
     } from "lucide-svelte";
 
     import { fly, fade } from "svelte/transition";
+    import { t } from "$lib/utils/i18n";
+    import { formatDriverName } from "$lib/utils/driver";
     import { type Driver } from "$lib/types";
     import DriverAvatar from "$lib/components/DriverAvatar.svelte";
     import DriverStars from "$lib/components/DriverStars.svelte";
@@ -112,12 +114,12 @@
             <h1
                 class="text-4xl md:text-5xl font-heading font-black tracking-tighter uppercase italic text-app-text"
             >
-                Driver <span class="text-app-primary">Roster</span>
+                {t('driver_roster')}
             </h1>
             <p
                 class="text-xs font-bold text-app-text/30 uppercase tracking-[0.3em]"
             >
-                Contract management and technical performance
+                {t('drivers_page_subtitle')}
             </p>
         </div>
 
@@ -129,7 +131,7 @@
                 />
                 <input
                     type="text"
-                    placeholder="Search roster..."
+                    placeholder={t('search_roster')}
                     bind:value={searchQuery}
                     class="bg-app-surface border border-app-border rounded-2xl py-3 pl-12 pr-6 text-sm font-bold text-app-text outline-none focus:border-app-primary/30 focus:bg-app-primary/5 transition-all w-64"
                 />
@@ -174,13 +176,13 @@
                     <tr
                         class="bg-app-text/5 text-[10px] font-black uppercase tracking-[0.2em] text-app-text/40"
                     >
-                        <th class="py-6 px-8">Pilot</th>
+                        <th class="py-6 px-8">{t('pilot')}</th>
                         <th class="py-6 px-4">Status</th>
-                        <th class="py-6 px-4">Potential</th>
+                        <th class="py-6 px-4">{t('potential')}</th>
                         <th class="py-6 px-4">Morale</th>
                         <th class="py-6 px-4">Fitness</th>
                         <th class="py-6 px-4">Stats</th>
-                        <th class="py-6 px-8 text-right">Actions</th>
+                        <th class="py-6 px-8 text-right">{t('actions')}</th>
                     </tr>
                 </thead>
                 <tbody class="divide-y divide-white/5">
@@ -204,8 +206,9 @@
                                     <div class="flex flex-col">
                                         <span
                                             class="text-sm font-black text-app-text uppercase tracking-tight group-hover:text-app-primary transition-colors"
+                                            title={driver.name}
                                         >
-                                            {driver.name}
+                                            {formatDriverName(driver.name)}
                                         </span>
                                         <span class="text-app-text/20 uppercase tracking-widest flex items-center gap-1.5">
                                             <CountryFlag countryCode={driver.countryCode} size="sm" />
@@ -277,7 +280,7 @@
                                     onclick={() => openDriverDetail(driver)}
                                     class="px-4 py-2 bg-app-text/5 border border-app-border rounded-xl text-[9px] font-black uppercase tracking-widest text-app-text/60 hover:bg-app-primary hover:text-app-primary-foreground hover:border-app-primary transition-all"
                                 >
-                                    Manage
+                                    {t('manage')}
                                 </button>
                             </td>
                         </tr>
@@ -308,8 +311,9 @@
                             <div class="flex flex-col">
                                 <h3
                                     class="text-lg font-black text-app-text uppercase tracking-tight group-hover:text-app-primary transition-colors"
+                                    title={driver.name}
                                 >
-                                    {driver.name}
+                                    {formatDriverName(driver.name)}
                                 </h3>
                                 <span
                                     class="text-[10px] font-black text-app-text/20 uppercase tracking-[0.2em] flex items-center gap-1.5"
@@ -367,7 +371,7 @@
                     </div>
 
                     <div class="flex items-center justify-between px-2 text-[10px] font-bold text-app-text/30 uppercase tracking-tighter">
-                        <span>Season Record:</span>
+                        <span>{t('season_record')}</span>
                         <span class="text-app-text/60">
                             {driver.seasonWins}W · {driver.seasonPodiums}P · {driver.seasonPoles}L
                         </span>
@@ -381,7 +385,7 @@
                             onclick={() => openDriverDetail(driver)}
                             class="text-[10px] font-black text-app-primary uppercase tracking-[0.2em] flex items-center gap-2 group-hover:gap-3 transition-all"
                         >
-                            Open Profile <ChevronLeft
+                            {t('open_profile')} <ChevronLeft
                                 size={14}
                                 class="rotate-180"
                             />
@@ -398,7 +402,7 @@
             href="/market"
             class="px-10 py-5 bg-app-surface text-black rounded-[32px] font-black text-xs uppercase tracking-[0.3em] shadow-2xl hover:scale-105 transition-all flex items-center gap-3"
         >
-            <Plus size={16} strokeWidth={3} /> Scout Driver Market
+            <Plus size={16} strokeWidth={3} /> {t('scout_driver_market')}
         </a>
     </div>
 

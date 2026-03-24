@@ -2,33 +2,28 @@ import { db } from '$lib/firebase/config';
 import {
     doc,
     updateDoc,
-    getDoc,
     runTransaction,
     increment,
     collection,
-    query,
-    where,
-    getDocs,
-    deleteDoc
 } from 'firebase/firestore';
 import { type Driver } from '$lib/types';
+import { driverRepository } from '$lib/repositories/driver.repository';
+import { teamRepository } from '$lib/repositories/team.repository';
 
 export class StaffService {
     async getTeamDrivers(teamId: string): Promise<Driver[]> {
-        const q = query(collection(db, 'drivers'), where('teamId', '==', teamId));
-        const snapshot = await getDocs(q);
-        return snapshot.docs.map(d => ({ id: d.id, ...d.data() } as Driver));
+        return driverRepository.getTeamDrivers(teamId);
     }
 
     async saveFitnessAssignment(teamId: string, trainerData: any) {
-        const teamRef = doc(db, 'teams', teamId);
+        const teamRef = teamRepository.docRef(teamId);
         await updateDoc(teamRef, {
             'weekStatus.fitnessTrainerAssignedTo': trainerData.assignedToId
         });
     }
 
     async changeTrainerLevel(teamId: string, newLevel: number, cost: number, isUpgrade: boolean) {
-        const teamRef = doc(db, 'teams', teamId);
+        const teamRef = teamRepository.docRef(teamId);
         await runTransaction(db, async (transaction) => {
             const teamDoc = await transaction.get(teamRef);
             if (!teamDoc.exists()) return;
@@ -63,8 +58,8 @@ export class StaffService {
     }
 
     async trainPilot(teamId: string, pilotId: string, bonus: number) {
-        const pilotRef = doc(db, 'drivers', pilotId);
-        const teamRef = doc(db, 'teams', teamId);
+        const pilotRef = driverRepository.docRef(pilotId);
+        const teamRef = teamRepository.docRef(teamId);
 
         await runTransaction(db, async (transaction) => {
             const pilotDoc = await transaction.get(pilotRef);
@@ -82,11 +77,10 @@ export class StaffService {
     }
 
     async dismissDriver(teamId: string, driver: Driver) {
-        const driverRef = doc(db, 'drivers', driver.id);
-        const teamRef = doc(db, 'teams', teamId);
+        const driverRef = driverRepository.docRef(driver.id);
+        const teamRef = teamRepository.docRef(teamId);
 
-        // Calculate 10% fee (port from Flutter)
-        const marketValue = driver.salary * 12; // Simple estimation for now
+        const marketValue = driver.salary * 12;
         const releaseFee = Math.round(marketValue * 0.10);
 
         await runTransaction(db, async (transaction) => {
@@ -100,8 +94,6 @@ export class StaffService {
                 budget: increment(-releaseFee)
             });
 
-            // According to Flutter code, it deletes the driver or set teamId to null.
-            // Let's set teamId to null to keep the record but unassigned.
             transaction.update(driverRef, {
                 teamId: null,
                 carIndex: -1,
@@ -120,10 +112,10 @@ export class StaffService {
     }
 
     async listDriverOnMarket(teamId: string, driver: Driver) {
-        const driverRef = doc(db, 'drivers', driver.id);
-        const teamRef = doc(db, 'teams', teamId);
+        const driverRef = driverRepository.docRef(driver.id);
+        const teamRef = teamRepository.docRef(teamId);
 
-        const marketValue = driver.salary * 12; // Simple estimation
+        const marketValue = driver.salary * 12;
         const listingFee = Math.round(marketValue * 0.10);
 
         await runTransaction(db, async (transaction) => {
@@ -155,8 +147,8 @@ export class StaffService {
     }
 
     async renewContract(teamId: string, driverId: string, years: number) {
-        const driverRef = doc(db, 'drivers', driverId);
-        const teamRef = doc(db, 'teams', teamId);
+        const driverRef = driverRepository.docRef(driverId);
+        const teamRef = teamRepository.docRef(teamId);
 
         await runTransaction(db, async (transaction) => {
             const driverDoc = await transaction.get(driverRef);
@@ -167,7 +159,6 @@ export class StaffService {
             const currentContractEnd = endDateStr ? new Date(endDateStr) : new Date();
             const newContractEnd = new Date(currentContractEnd.setFullYear(currentContractEnd.getFullYear() + years));
 
-            // Example renewal cost: 10% of current annual salary per renewed year
             const renewalCost = Math.round(driverData.salary * 12 * years * 0.10);
 
             const teamDoc = await transaction.get(teamRef);
@@ -182,7 +173,6 @@ export class StaffService {
 
             transaction.update(driverRef, {
                 'contract.endDate': newContractEnd.toISOString(),
-                // Optionally, update salary or other contract terms here
             });
 
             const txRef = doc(collection(teamRef, 'transactions'));

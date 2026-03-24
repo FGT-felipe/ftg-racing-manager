@@ -103,9 +103,11 @@
             
             <div class="relative z-10 prose prose-invert max-w-none prose-headings:font-heading prose-headings:font-black prose-headings:italic prose-headings:uppercase prose-headings:tracking-tighter prose-p:text-app-text/70 prose-p:leading-relaxed prose-strong:text-app-primary prose-code:text-app-primary prose-code:bg-app-primary/10 prose-code:px-2 prose-code:rounded prose-pre:bg-black/60 prose-pre:border prose-pre:border-app-border prose-pre:rounded-3xl">
                 <!-- svelte-ignore svelte_transition_on_initial_render -->
-                <div key={selectedSection + language} in:fade={{ duration: 200 }}>
-                    {@html htmlContent}
-                </div>
+                {#key selectedSection + language}
+                    <div in:fade={{ duration: 200 }}>
+                        {@html htmlContent}
+                    </div>
+                {/key}
             </div>
         </main>
     </div>
@@ -149,7 +151,7 @@
 
     :global(.prose blockquote) {
         border-left: 4px solid var(--app-primary);
-        background: rgba(197, 160, 89, 0.05);
+        background: rgba(var(--primary-color-rgb), 0.05);
         padding: 2rem;
         border-radius: 0 2rem 2rem 0;
         font-style: italic;

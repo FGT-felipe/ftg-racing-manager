@@ -1,8 +1,9 @@
 import { db } from "../firebase/config";
 import { collection, addDoc, doc, updateDoc, increment, serverTimestamp } from "firebase/firestore";
-import { type Driver, type Team, type CarSetup, DriverTrait, TyreCompound } from "../types";
+import { type Driver, type Team, type CarSetup, DriverTrait, TyreCompound, DriverStyle } from "../types";
 import { type CircuitProfile } from "./circuit_service.svelte";
 import { t } from "../utils/i18n";
+import { CarSetupSchema } from "../schemas/car-setup.schema";
 
 export interface SetupHint {
     min: number;
@@ -125,10 +126,25 @@ class PracticeService {
 
         let driverFactor = 1.0 - (braking * 0.02 + cornering * 0.025 + adaptability * 0.015 + focusVal * 0.01 + (morale - 0.5) * 0.01);
 
-        // 6. Accident logic (simplified)
-        const isCrashed = Math.random() < 0.0005;
+        // 6. Driving style modifier (matches race_service logic)
+        const st = setup.qualifyingStyle || DriverStyle.normal;
+        let sBonus = 0;
+        let accProb = 0.001;
 
-        // 7. Tyre compounds
+        if (st === DriverStyle.mostRisky) {
+            sBonus = 0.04; accProb = 0.003;
+        } else if (st === DriverStyle.offensive) {
+            sBonus = 0.02; accProb = 0.0015;
+        } else if (st === DriverStyle.defensive) {
+            sBonus = -0.01; accProb = 0.0005;
+        }
+
+        driverFactor -= sBonus;
+
+        // 7. Accident logic (style-aware)
+        const isCrashed = Math.random() < accProb;
+
+        // 8. Tyre compounds
         let tyreDelta = 0.0;
         const isWet = weatherOverride?.toLowerCase().includes('rain') || weatherOverride?.toLowerCase().includes('wet');
 
@@ -213,13 +229,20 @@ class PracticeService {
     }
 
     async savePracticeRun(
-        team: Team, 
-        driverId: string, 
-        result: PracticeRunResult, 
-        setup: CarSetup, 
+        team: Team,
+        driverId: string,
+        result: PracticeRunResult,
+        setup: CarSetup,
         sessionId?: string,
-        lapCount: number = 1
+        lapCount: number = 1,
+        driverStats?: Record<string, number>
     ) {
+        const parsed = CarSetupSchema.safeParse(setup);
+        if (!parsed.success) {
+            console.error('[PracticeService:savePracticeRun] Invalid CarSetup — aborting Firestore write:', parsed.error.flatten());
+            throw new Error(`Invalid setup: ${parsed.error.issues.map(i => i.message).join(', ')}`);
+        }
+
         // Bypass the subcollection entirely to avoid permission issues reported by the user
         // We still log to console for debugging
         console.debug(`[PracticeService] Skipping subcollection write due to permission errors. Data preserved in team document.`);
@@ -260,6 +283,28 @@ class PracticeService {
 
         const teamRef = doc(db, "teams", team.id);
         await updateDoc(teamRef, updates);
+
+        // Update driver fitness and morale after the session
+        if (driverStats !== undefined) {
+            const fitnessCost = Math.max(3, lapCount * 2);
+            let moralePenalty = 0;
+            if (result.isCrashed) {
+                moralePenalty = 5;
+            } else if (result.setupConfidence < 0.60) {
+                moralePenalty = 2;
+            } else if (result.setupConfidence > 0.85) {
+                moralePenalty = -1;
+            }
+
+            const newFitness = Math.max(0, (driverStats.fitness || 100) - fitnessCost);
+            const newMorale = Math.max(0, Math.min(100, (driverStats.morale || 100) - moralePenalty));
+
+            const driverRef = doc(db, "drivers", driverId);
+            await updateDoc(driverRef, {
+                "stats.fitness": newFitness,
+                "stats.morale": newMorale,
+            });
+        }
     }
 }
 

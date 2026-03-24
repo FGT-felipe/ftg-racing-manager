@@ -19,6 +19,7 @@
     import { staffService } from "$lib/services/staff.svelte";
     import { academyService } from "$lib/services/academy.svelte";
     import type { Driver } from "$lib/types";
+    import { t } from "$lib/utils/i18n";
 
     let team = $derived(teamStore.value.team);
     let transactions = $derived.by(() => {
@@ -272,7 +273,7 @@
                         <span
                             class="text-[10px] font-black tracking-[0.4em] text-app-primary uppercase font-heading"
                         >
-                            Current Liquid Assets
+                            {t('current_liquid_assets')}
                         </span>
                         <h2
                             class="text-6xl lg:text-7xl font-heading font-black tracking-tighter text-app-text"
@@ -285,7 +286,7 @@
                             <Wallet size={14} class="text-app-primary" />
                             <span
                                 class="text-[10px] font-bold text-app-text/40 uppercase tracking-widest"
-                                >Global Treasury</span
+                                >{t('global_treasury')}</span
                             >
                         </div>
                     </div>
@@ -297,7 +298,7 @@
                         <h3
                             class="text-[10px] font-black uppercase tracking-[0.3em] text-app-primary/40 font-heading"
                         >
-                            Recent Movements
+                            {t('recent_movements')}
                         </h3>
                         <History size={14} class="text-app-text/20" />
                     </div>
@@ -359,8 +360,7 @@
                                 <p
                                     class="text-[10px] font-black uppercase tracking-widest"
                                 >
-                                    No transaction records found in the last 7
-                                    days
+                                    {t('no_transactions_7days')}
                                 </p>
                             </div>
                         {/each}
@@ -599,7 +599,7 @@
                             <div class="flex flex-col gap-1">
                                 <span
                                     class="text-[9px] font-black text-app-text/20 uppercase tracking-widest"
-                                    >Transfer Cap</span
+                                    >{t('transfer_cap')}</span
                                 >
                                 <span
                                     class="text-xl font-black text-app-primary italic"
@@ -615,7 +615,7 @@
                             <div class="flex flex-col gap-1">
                                 <span
                                     class="text-[9px] font-black text-app-text/20 uppercase tracking-widest"
-                                    >Operational Reserve</span
+                                    >{t('operational_reserve')}</span
                                 >
                                 <span
                                     class="text-xl font-black text-app-text italic"
@@ -664,7 +664,7 @@
         border-radius: 50%;
         background: #c5a059;
         cursor: pointer;
-        box-shadow: 0 0 10px rgba(197, 160, 89, 0.4);
+        box-shadow: 0 0 10px rgba(var(--primary-color-rgb), 0.4);
         margin-top: -6px;
     }
 

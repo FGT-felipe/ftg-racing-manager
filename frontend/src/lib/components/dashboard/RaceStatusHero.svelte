@@ -120,7 +120,7 @@
                     <span
                         class="text-[10px] font-black tracking-[0.3em] text-app-primary font-heading uppercase"
                     >
-                        Next Grand Prix
+                        {t('next_grand_prix')}
                     </span>
                     {#if weekStatus === "race"}
                         <div
@@ -131,7 +131,7 @@
                             ></div>
                             <span
                                 class="text-[9px] font-black tracking-widest text-red-500 uppercase"
-                                >LIVE</span
+                                >{t('live')}</span
                             >
                         </div>
                     {/if}
@@ -154,7 +154,7 @@
                     <h2
                         class="text-3xl font-heading font-black text-app-text/20 uppercase"
                     >
-                        No Event Scheduled
+                        {t('no_event_scheduled')}
                     </h2>
                 {/if}
             </div>
@@ -185,7 +185,7 @@
                         <div class="flex items-center justify-between">
                             <span
                                 class="text-[9px] font-black tracking-[0.2em] text-app-text/40 uppercase"
-                                >Qualifying</span
+                                >{t('qualifying')}</span
                             >
                             <Trophy size={14} class="text-app-primary/60" />
                         </div>
@@ -205,7 +205,7 @@
                         <div class="flex items-center justify-between">
                             <span
                                 class="text-[9px] font-black tracking-[0.2em] text-app-text/40 uppercase"
-                                >Race Day</span
+                                >{t('race_day')}</span
                             >
                             <Flag size={14} class="text-red-500/60" />
                         </div>
@@ -232,7 +232,7 @@
                     <div class="flex flex-col gap-4">
                         <span
                             class="text-[9px] font-black tracking-[0.3em] text-app-text/30 uppercase"
-                            >Forecast</span
+                            >{t('forecast')}</span
                         >
                         <div class="flex items-center gap-6">
                             <div class="flex items-center gap-3">
@@ -245,7 +245,7 @@
                                 <div class="flex flex-col">
                                     <span
                                         class="text-[8px] font-black text-app-text/40 uppercase"
-                                        >Pract.</span
+                                        >{t('practice_short')}</span
                                     >
                                     <span
                                         class="text-[10px] font-bold text-app-text"
@@ -264,7 +264,7 @@
                                 <div class="flex flex-col">
                                     <span
                                         class="text-[8px] font-black text-app-text/40 uppercase"
-                                        >Qualy</span
+                                        >{t('qualifying_short')}</span
                                     >
                                     <span
                                         class="text-[10px] font-bold text-app-text"
@@ -283,7 +283,7 @@
                                 <div class="flex flex-col">
                                     <span
                                         class="text-[8px] font-black text-app-text/40 uppercase"
-                                        >Race</span
+                                        >{t('race')}</span
                                     >
                                     <span
                                         class="text-[10px] font-bold text-app-text"
@@ -309,14 +309,14 @@
                         ></div>
                         <span
                             class="text-[10px] font-black uppercase text-app-text/40"
-                            >Loading Intel...</span
+                            >{t('loading_intel')}</span
                         >
                     </div>
                 {:else if nextEvent && circuitInfo}
                     <div class="flex items-center justify-between">
                         <span
                             class="text-[10px] font-black tracking-[0.3em] text-app-primary uppercase"
-                            >Circuit Intel</span
+                            >{t('circuit_intel')}</span
                         >
                         <div class="flex items-center gap-2">
                             <span class="text-[10px] font-bold text-app-text/60"
@@ -330,7 +330,7 @@
                         <div class="flex items-center justify-between">
                             <div class="flex items-center gap-3 text-app-text/60">
                                 <Cpu size={16} />
-                                <span class="text-[10px] font-black uppercase tracking-widest">Aero</span>
+                                <span class="text-[10px] font-black uppercase tracking-widest">{t('aero')}</span>
                             </div>
                             {#if componentTraits}
                                 <div class="relative group/trait">
@@ -349,7 +349,7 @@
                         <div class="flex items-center justify-between">
                             <div class="flex items-center gap-3 text-app-text/60">
                                 <Zap size={16} />
-                                <span class="text-[10px] font-black uppercase tracking-widest">Power</span>
+                                <span class="text-[10px] font-black uppercase tracking-widest">{t('power')}</span>
                             </div>
                             {#if componentTraits}
                                 <div class="relative group/trait">
@@ -368,7 +368,7 @@
                         <div class="flex items-center justify-between">
                             <div class="flex items-center gap-3 text-app-text/60">
                                 <Shield size={16} />
-                                <span class="text-[10px] font-black uppercase tracking-widest">Chassis</span>
+                                <span class="text-[10px] font-black uppercase tracking-widest">{t('chassis')}</span>
                             </div>
                             {#if componentTraits}
                                 <div class="relative group/trait">
@@ -423,7 +423,7 @@
                     >
                         <Timer size={32} />
                         <span class="text-[10px] font-black uppercase mt-4"
-                            >Standby</span
+                            >{t('standby')}</span
                         >
                     </div>
                 {/if}

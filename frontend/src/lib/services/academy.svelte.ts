@@ -23,11 +23,10 @@ export class AcademyService {
      */
     generateInitialCandidates(count: number = 2, preferredCountry?: string, academyLevel: number = 1): YoungDriver[] {
         const candidates: YoungDriver[] = [];
-        const genders: ('M' | 'F')[] = ['M', 'F'];
-        
-        for (let i = 0; i < 2; i++) {
+
+        for (let i = 0; i < count; i++) {
             const country = getRandomNationality(preferredCountry);
-            const gender = genders[i];
+            const gender: 'M' | 'F' = Math.random() < 0.5 ? 'M' : 'F';
             
             // Stats balance for "Junior" feel:
             // Level 1: current stars ~1-2 (skill 4-8), potential ~3-4 (skill 10-14)
@@ -61,15 +60,15 @@ export class AcademyService {
                 status: 'candidate',
                 expiresAt: expiresAt,
                 isMarkedForPromotion: false,
-                statRangeMin: { 
-                    braking: baseSkill, cornering: baseSkill, smoothness: baseSkill, 
-                    overtaking: baseSkill, consistency: baseSkill, adaptability: baseSkill, 
-                    fitness: 40, feedback: 40, focus: 40 
+                statRangeMin: {
+                    braking: baseSkill, cornering: baseSkill, smoothness: baseSkill,
+                    overtaking: baseSkill, consistency: baseSkill, adaptability: baseSkill,
+                    focus: baseSkill
                 },
-                statRangeMax: { 
-                    braking: maxSkill, cornering: maxSkill, smoothness: maxSkill, 
-                    overtaking: maxSkill, consistency: maxSkill, adaptability: maxSkill, 
-                    fitness: 80, feedback: 80, focus: 80 
+                statRangeMax: {
+                    braking: maxSkill, cornering: maxSkill, smoothness: maxSkill,
+                    overtaking: maxSkill, consistency: maxSkill, adaptability: maxSkill,
+                    focus: maxSkill
                 }
             };
             candidates.push(candidate);

@@ -45,6 +45,7 @@ import { circuitService } from "$lib/services/circuit_service.svelte";
     import DriverAvatar from "$lib/components/DriverAvatar.svelte";
     import Typewriter from "$lib/components/ui/Typewriter.svelte";
     import { t, type TranslationKey } from "$lib/utils/i18n";
+    import { formatDriverName } from "$lib/utils/driver";
 
     let { driverId = null } = $props();
 
@@ -313,12 +314,13 @@ import { circuitService } from "$lib/services/circuit_service.svelte";
 
                 const sessionId = `${seasonStore.value.season?.id}_${nextEvent?.id}`;
                 await practiceService.savePracticeRun(
-                    teamStore.value.team!, 
-                    currentDriver.id, 
-                    sessionResult, 
-                    setupToRun, 
+                    teamStore.value.team!,
+                    currentDriver.id,
+                    sessionResult,
+                    setupToRun,
                     sessionId,
-                    lapsToRun
+                    lapsToRun,
+                    currentDriver.stats
                 );
                 await refreshStandings();
             }
@@ -398,9 +400,9 @@ import { circuitService } from "$lib/services/circuit_service.svelte";
                         <!-- CONVERSATION BUBBLE -->
                         <div class="flex-1 space-y-3">
                             <div class="flex items-center justify-between">
-                                <span class="text-[10px] font-black uppercase tracking-[0.3em] text-app-primary leading-none">{driver.name}</span>
+                                <span class="text-[10px] font-black uppercase tracking-[0.3em] text-app-primary leading-none" title={driver.name}>{formatDriverName(driver.name)}</span>
                                 <div class="flex items-center gap-4 text-[9px] font-black uppercase text-app-text/30">
-                                    <div class="flex items-center gap-1.5"><Bolt size={10} class="text-emerald-400" /> {driver.stats?.stamina || 100}%</div>
+                                    <div class="flex items-center gap-1.5"><Bolt size={10} class="text-emerald-400" /> {driver.stats?.fitness || 100}%</div>
                                     <div class="flex items-center gap-1.5"><Smile size={10} class="text-yellow-400" /> {driver.stats?.morale || 100}%</div>
                                 </div>
                             </div>
@@ -720,7 +722,7 @@ import { circuitService } from "$lib/services/circuit_service.svelte";
 <style>
     .custom-scrollbar::-webkit-scrollbar { width: 3px; }
     .custom-scrollbar::-webkit-scrollbar-track { background: transparent; }
-    .custom-scrollbar::-webkit-scrollbar-thumb { background: rgba(197, 160, 89, 0.2); border-radius: 10px; }
+    .custom-scrollbar::-webkit-scrollbar-thumb { background: rgba(var(--primary-color-rgb), 0.2); border-radius: 10px; }
     .no-scrollbar::-webkit-scrollbar { display: none; }
     .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
 </style>

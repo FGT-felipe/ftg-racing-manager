@@ -5,6 +5,7 @@
     import { authStore } from "$lib/stores/auth.svelte";
     import { notificationStore } from "$lib/stores/notifications.svelte";
     import NotificationOverlay from "./NotificationOverlay.svelte";
+    import ChangelogOverlay from "./ChangelogOverlay.svelte";
     import {
         Shield,
         CircleUser,
@@ -12,29 +13,49 @@
         Bell,
         Settings,
         Activity,
+        Sparkles,
     } from "lucide-svelte";
     import { fade, slide } from "svelte/transition";
+    import { t } from "$lib/utils/i18n";
+    import { APP_VERSION } from "$lib/constants/app_constants";
+    import { LATEST_VERSION } from "$lib/constants/changelog";
+    import { browser } from "$app/environment";
 
-    let teamData = $derived(teamStore.value);
-    let team = $derived(teamData.team);
-    let loading = $derived(teamData.loading || authStore.loading);
+    let team = $derived(teamStore.value.team);
+    let loading = $derived(teamStore.value.loading || authStore.loading);
     let isAdmin = $derived(authStore.isAdmin);
     let unreadCount = $derived(notificationStore.unreadCount);
 
     let isNotificationsOpen = $state(false);
     let isAccountOpen = $state(false);
+    let isChangelogOpen = $state(false);
+
+    const CHANGELOG_STORAGE_KEY = 'lastSeenChangelog';
+
+    let hasUnreadChangelog = $state(
+        browser ? localStorage.getItem(CHANGELOG_STORAGE_KEY) !== LATEST_VERSION : false
+    );
+
+    function markChangelogSeen() {
+        if (browser) {
+            localStorage.setItem(CHANGELOG_STORAGE_KEY, LATEST_VERSION);
+            hasUnreadChangelog = false;
+        }
+    }
 
     let transferBudgetFmt = $derived.by(() => {
-        if (!team) return "$0.0M";
-        const percentage = team.transferBudgetPercentage || 20;
-        const amount = team.budget * (percentage / 100);
+        const t = teamStore.value.team;
+        if (!t) return "$0.0M";
+        const percentage = t.transferBudgetPercentage || 20;
+        const amount = t.budget * (percentage / 100);
         return `$${(amount / 1000000).toFixed(1)}M`;
     });
 
     let operationalBudgetFmt = $derived.by(() => {
-        if (!team) return "$0.0M";
-        const percentage = team.transferBudgetPercentage || 20;
-        const amount = team.budget * (1 - percentage / 100);
+        const t = teamStore.value.team;
+        if (!t) return "$0.0M";
+        const percentage = t.transferBudgetPercentage || 20;
+        const amount = t.budget * (1 - percentage / 100);
         return `$${(amount / 1000000).toFixed(1)}M`;
     });
 </script>
@@ -48,7 +69,7 @@
         <div
             class="px-2 py-0.5 bg-app-primary/10 border border-app-primary/20 rounded text-[9px] font-black text-app-primary uppercase tracking-tighter"
         >
-            BETA V4.1.3
+            BETA {APP_VERSION}
         </div>
     </div>
 
@@ -62,7 +83,7 @@
         </div>
         <span
             class="text-[10px] font-black uppercase tracking-widest text-red-500/80 group-hover:text-red-500 transition-colors"
-            >Race Day</span
+            >{t('race_day')}</span
         >
     </a>
 
@@ -94,7 +115,7 @@
                 <span
                     class="text-[10px] uppercase font-bold text-app-primary/50 font-heading tracking-widest"
                 >
-                    Operational
+                    {t('operational')}
                 </span>
                 <span
                     class="text-[16px] font-bold text-app-primary font-sans tracking-wide"
@@ -108,7 +129,7 @@
                 <span
                     class="text-[10px] uppercase font-bold text-app-primary/50 font-heading tracking-widest"
                 >
-                    Transfer Cap
+                    {t('transfer_cap')}
                 </span>
                 <span
                     class="text-[16px] font-bold text-app-primary/80 font-sans tracking-wide"
@@ -139,11 +160,33 @@
                 </button>
             {/if}
 
+            <!-- Changelog Toggle -->
+            <div class="relative">
+                <button
+                    onclick={() => {
+                        isChangelogOpen = !isChangelogOpen;
+                        isNotificationsOpen = false;
+                        isAccountOpen = false;
+                    }}
+                    class="p-2 relative text-app-primary/70 hover:text-app-primary hover:bg-app-primary/10 rounded-full transition-colors flex items-center justify-center"
+                    title={t('whats_new')}
+                >
+                    <Sparkles size={20} strokeWidth={2} />
+                    {#if hasUnreadChangelog}
+                        <div
+                            class="absolute top-1.5 right-1.5 w-2 h-2 bg-app-primary rounded-full"
+                        ></div>
+                    {/if}
+                </button>
+                <ChangelogOverlay bind:isOpen={isChangelogOpen} onSeen={markChangelogSeen} />
+            </div>
+
             <!-- Notifications Toggle -->
             <div class="relative">
                 <button
                     onclick={() => {
                         isNotificationsOpen = !isNotificationsOpen;
+                        isChangelogOpen = false;
                         isAccountOpen = false;
                     }}
                     class="p-2 relative text-app-primary/70 hover:text-app-primary hover:bg-app-primary/10 rounded-full transition-colors flex items-center justify-center"
@@ -165,6 +208,7 @@
                     onclick={() => {
                         isAccountOpen = !isAccountOpen;
                         isNotificationsOpen = false;
+                        isChangelogOpen = false;
                     }}
                     class="p-2 text-app-primary/70 hover:text-app-primary hover:bg-app-primary/10 rounded-full transition-colors flex items-center justify-center"
                     title="Account"
@@ -199,7 +243,7 @@
                             <Settings size={14} />
                             <span
                                 class="text-[11px] font-black uppercase tracking-widest"
-                                >Settings</span
+                                >{t('settings')}</span
                             >
                         </button>
                         <button
@@ -212,7 +256,7 @@
                             <LogOut size={14} />
                             <span
                                 class="text-[11px] font-black uppercase tracking-widest"
-                                >Log Out</span
+                                >{t('log_out')}</span
                             >
                         </button>
                     </div>

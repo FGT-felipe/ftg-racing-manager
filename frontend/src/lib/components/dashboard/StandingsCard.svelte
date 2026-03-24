@@ -5,6 +5,8 @@
     import DriverAvatar from "$lib/components/DriverAvatar.svelte";
     import CountryFlag from "$lib/components/ui/CountryFlag.svelte";
     import { fly } from "svelte/transition";
+    import { t } from "$lib/utils/i18n";
+    import { formatDriverName } from "$lib/utils/driver";
 
     let team = $derived(teamStore.value.team);
     let standing = $derived(
@@ -25,7 +27,7 @@
     <h3
         class="text-[10px] font-black uppercase tracking-[0.3em] text-app-primary/40 font-heading px-2"
     >
-        Championship Standings
+        {t('championship_standings')}
     </h3>
 
     <div
@@ -51,7 +53,7 @@
                     <div class="flex flex-col gap-1">
                         <span
                             class="text-[9px] font-black text-app-text/30 uppercase tracking-widest"
-                            >Constructor Position</span
+                            >{t('constructor_position')}</span
                         >
                         <div class="flex items-baseline gap-2">
                             <h4
@@ -76,7 +78,7 @@
                     >
                     <span
                         class="text-[9px] font-black text-app-text/20 uppercase tracking-widest"
-                        >Points Season Total</span
+                        >{t('points_season_total')}</span
                     >
                 </div>
             </div>
@@ -87,7 +89,7 @@
             <div class="flex flex-col gap-4">
                 <span
                     class="text-[9px] font-black text-app-text/30 uppercase tracking-widest"
-                    >Our Pilots</span
+                    >{t('our_pilots')}</span
                 >
 
                 <div class="flex flex-col gap-3">
@@ -109,7 +111,8 @@
                                     <div class="flex items-center gap-1.5">
                                         <span
                                             class="text-[10px] font-black text-app-text uppercase italic"
-                                            >{driver.name}</span
+                                            title={driver.name}
+                                            >{formatDriverName(driver.name)}</span
                                         >
                                         <CountryFlag countryCode={driver.countryCode} size="xs" />
                                     </div>
@@ -134,7 +137,7 @@
                 href="/season"
                 class="flex items-center gap-2 text-[10px] font-black text-app-text/40 uppercase tracking-widest mt-auto group/link hover:text-app-text transition-all pt-4"
             >
-                Full Standings <ChevronRight
+                {t('full_standings')} <ChevronRight
                     size={14}
                     class="group-hover/link:translate-x-1 transition-transform"
                 />
@@ -145,7 +148,7 @@
             >
                 <Users size={32} />
                 <span class="text-[10px] font-black uppercase"
-                    >Standings Unavailable</span
+                    >{t('standings_unavailable')}</span
                 >
             </div>
         {/if}
