@@ -38,6 +38,8 @@
     } from "$lib/utils/i18n";
     import CountryFlag from "$lib/components/ui/CountryFlag.svelte";
     import { getFlagEmoji } from "$lib/utils/country";
+    import { timeService, RaceWeekStatus } from "$lib/services/time_service.svelte";
+    import { onDestroy } from "svelte";
 
     function getSpecialtyKey(
         specialty: string | null | undefined,
@@ -74,6 +76,25 @@
     let selectedCountry = $state(countries[0]);
     let isPurchasing = $state(false);
     let isUpgrading = $state(false);
+
+    // Countdown to next POST_RACE processing (Sunday 16:00) — when candidates refresh
+    let nextRefreshTime = $state({ days: 0, hours: 0, minutes: 0, seconds: 0 });
+    let refreshTimer: ReturnType<typeof setInterval>;
+
+    function updateRefreshCountdown() {
+        const t = timeService.getTimeUntil(RaceWeekStatus.POST_RACE);
+        if (t) nextRefreshTime = t;
+    }
+
+    $effect(() => {
+        updateRefreshCountdown();
+        if (refreshTimer) clearInterval(refreshTimer);
+        refreshTimer = setInterval(updateRefreshCountdown, 1000);
+    });
+
+    onDestroy(() => {
+        if (refreshTimer) clearInterval(refreshTimer);
+    });
 
     function formatCurrencyCompact(val: number) {
         if (val >= 1000000) return `$${(val / 1000000).toFixed(1)}M`;
@@ -491,9 +512,10 @@
                             <div>
                                 <div class="flex items-center gap-2 mb-1.5">
                                     <h5
-                                        class="text-app-text font-black text-lg tracking-tighter leading-none uppercase italic truncate"
+                                        class="text-app-text font-black text-lg tracking-tighter leading-none uppercase italic truncate pr-2"
+                                        title={promoted?.name}
                                     >
-                                        {promoted?.name.split(" ")[0]}
+                                        {formatDriverName(promoted?.name)}
                                     </h5>
                                 </div>
                                 <div class="flex items-center gap-2">
@@ -709,7 +731,7 @@
                                         >
                                             <div class="flex items-center gap-2">
                                                 <h4
-                                                    class="text-2xl font-black text-app-text tracking-tighter uppercase leading-none truncate italic"
+                                                    class="text-xl font-black text-app-text tracking-tighter uppercase leading-none truncate italic pr-2"
                                                     title={driver.name}
                                                 >
                                                     {formatDriverName(driver.name)}
@@ -953,7 +975,7 @@
                                     >
                                         <div class="flex items-center gap-2">
                                             <h4
-                                                class="text-lg font-black text-app-text uppercase tracking-tighter italic truncate leading-none"
+                                                class="text-lg font-black text-app-text uppercase tracking-tighter italic truncate leading-none pr-2"
                                                 title={candidate.name}
                                             >
                                                 {formatDriverName(candidate.name)}
@@ -1047,21 +1069,38 @@
 
                     {#if youthAcademyStore.candidates.length === 0}
                         <div
-                            class="bg-app-bg/20 border border-app-border rounded-[2.5rem] p-16 text-center backdrop-blur-sm"
+                            class="bg-app-bg/20 border border-app-border rounded-[2.5rem] p-10 text-center backdrop-blur-sm"
                         >
                             <div
                                 class="w-12 h-12 bg-app-text/5 rounded-full flex items-center justify-center mx-auto mb-4 border border-app-border"
                             >
                                 <Target class="w-6 h-6 text-zinc-800" />
                             </div>
-                            <p
-                                class="text-zinc-600 text-[10px] font-black uppercase tracking-[0.2em] mb-1 italic"
-                            >
+                            <p class="text-zinc-600 text-[10px] font-black uppercase tracking-[0.2em] mb-4 italic">
                                 {t("program_dormant")}
                             </p>
-                            <p
-                                class="text-zinc-800 text-[9px] font-bold uppercase tracking-widest"
-                            >
+                            <!-- Countdown to next weekly processing (Sunday 16:00) -->
+                            <div class="flex items-center justify-center gap-2">
+                                {#each [
+                                    { value: nextRefreshTime.days, label: 'D' },
+                                    { value: nextRefreshTime.hours, label: 'H' },
+                                    { value: nextRefreshTime.minutes, label: 'M' },
+                                    { value: nextRefreshTime.seconds, label: 'S' }
+                                ] as unit}
+                                    <div class="flex flex-col items-center">
+                                        <span class="text-xl font-black text-app-text/60 tabular-nums w-8 text-center leading-none">
+                                            {String(unit.value).padStart(2, '0')}
+                                        </span>
+                                        <span class="text-[8px] font-black text-app-text/20 uppercase tracking-widest mt-0.5">
+                                            {unit.label}
+                                        </span>
+                                    </div>
+                                    {#if unit.label !== 'S'}
+                                        <span class="text-app-text/20 font-black text-lg leading-none mb-2">:</span>
+                                    {/if}
+                                {/each}
+                            </div>
+                            <p class="text-zinc-700 text-[9px] font-bold uppercase tracking-widest mt-3">
                                 {t("seasons_plural")}
                             </p>
                         </div>

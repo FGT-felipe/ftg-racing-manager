@@ -102,6 +102,16 @@ class TimeService {
                     target.setDate(target.getDate() + 7);
                 }
                 break;
+            case RaceWeekStatus.POST_RACE:
+                // Sunday 16:00 — when weekly academy/economy processing runs
+                const daysUntilPostRace = (0 - weekday + 7) % 7;
+                target.setDate(now.getDate() + daysUntilPostRace);
+                target.setHours(16);
+                // If it's Sunday and past 16:00, move to next week
+                if (daysUntilPostRace === 0 && now.getHours() >= 16) {
+                    target.setDate(target.getDate() + 7);
+                }
+                break;
             default:
                 return null;
         }
