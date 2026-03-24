@@ -5,6 +5,7 @@
     import { teamStore } from "$lib/stores/team.svelte";
     import { seasonStore } from "$lib/stores/season.svelte";
     import { browser } from "$app/environment";
+    import { t } from "$lib/utils/i18n";
 
     let universe = $derived(universeStore.value.universe);
     let loading = $derived(universeStore.value.loading);
@@ -248,9 +249,9 @@
                             {:else if team.managerName}
                                 <span class="text-[9px] font-bold text-app-text/20 uppercase truncate">Mgr: {team.managerName}</span>
                             {:else if team.isBot}
-                                <span class="text-[9px] font-bold text-app-text/20 uppercase tracking-widest italic">Bot Manager</span>
+                                <span class="text-[9px] font-bold text-app-text/20 uppercase tracking-widest italic">{t('bot_manager')}</span>
                             {:else}
-                                <span class="text-[9px] font-bold text-app-text/10 uppercase tracking-widest italic">Awaiting Manager</span>
+                                <span class="text-[9px] font-bold text-app-text/10 uppercase tracking-widest italic">{t('awaiting_manager')}</span>
                             {/if}
                         </div>
 

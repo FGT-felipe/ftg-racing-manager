@@ -164,7 +164,7 @@
                     <CountryFlag countryCode={circuit.countryCode} size="sm" />
                 </div>
                 <div>
-                    <h4 class="text-[9px] font-black uppercase tracking-[0.3em] text-app-primary leading-none mb-1">Circuit Intel</h4>
+                    <h4 class="text-[9px] font-black uppercase tracking-[0.3em] text-app-primary leading-none mb-1">{t('circuit_intel')}</h4>
                     <p class="text-sm font-black italic text-app-text tracking-tight uppercase truncate max-w-[180px]">{circuit.name}</p>
                 </div>
             </div>
@@ -176,7 +176,7 @@
                     <div class="flex flex-col items-center gap-1">
                         <div class="flex items-center gap-1.5 text-app-text/50">
                             <Cpu size={12} />
-                            <span class="text-[7px] font-black uppercase tracking-widest">Aero</span>
+                            <span class="text-[7px] font-black uppercase tracking-widest">{t('aero')}</span>
                         </div>
                         {#if componentTraits}
                             <div class="relative group/trait">
@@ -195,7 +195,7 @@
                     <div class="flex flex-col items-center gap-1">
                         <div class="flex items-center gap-1.5 text-app-text/50">
                             <Zap size={12} />
-                            <span class="text-[7px] font-black uppercase tracking-widest">Power</span>
+                            <span class="text-[7px] font-black uppercase tracking-widest">{t('power')}</span>
                         </div>
                         {#if componentTraits}
                             <div class="relative group/trait">
@@ -214,7 +214,7 @@
                     <div class="flex flex-col items-center gap-1">
                         <div class="flex items-center gap-1.5 text-app-text/50">
                             <Shield size={12} />
-                            <span class="text-[7px] font-black uppercase tracking-widest">Chassis</span>
+                            <span class="text-[7px] font-black uppercase tracking-widest">{t('chassis')}</span>
                         </div>
                         {#if componentTraits}
                             <div class="relative group/trait">
@@ -472,7 +472,7 @@
                         <Flag size={14} />
                         <span
                             class="text-[9px] font-black uppercase tracking-[0.2em] font-heading"
-                            >Race Preparation</span
+                            >{t('race_preparation')}</span
                         >
                         {#if nextEvent?.weatherRace}
                             {@const Icon = getWeatherIcon(nextEvent.weatherRace)}

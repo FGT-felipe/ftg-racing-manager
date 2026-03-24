@@ -151,7 +151,7 @@
 
     :global(.prose blockquote) {
         border-left: 4px solid var(--app-primary);
-        background: rgba(197, 160, 89, 0.05);
+        background: rgba(var(--primary-color-rgb), 0.05);
         padding: 2rem;
         border-radius: 0 2rem 2rem 0;
         font-style: italic;

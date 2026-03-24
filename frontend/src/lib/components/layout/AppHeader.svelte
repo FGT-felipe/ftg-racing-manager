@@ -14,6 +14,8 @@
         Activity,
     } from "lucide-svelte";
     import { fade, slide } from "svelte/transition";
+    import { t } from "$lib/utils/i18n";
+    import { APP_VERSION } from "$lib/constants/app_constants";
 
     let teamData = $derived(teamStore.value);
     let team = $derived(teamData.team);
@@ -48,7 +50,7 @@
         <div
             class="px-2 py-0.5 bg-app-primary/10 border border-app-primary/20 rounded text-[9px] font-black text-app-primary uppercase tracking-tighter"
         >
-            BETA V4.1.3
+            BETA {APP_VERSION}
         </div>
     </div>
 
@@ -62,7 +64,7 @@
         </div>
         <span
             class="text-[10px] font-black uppercase tracking-widest text-red-500/80 group-hover:text-red-500 transition-colors"
-            >Race Day</span
+            >{t('race_day')}</span
         >
     </a>
 
@@ -94,7 +96,7 @@
                 <span
                     class="text-[10px] uppercase font-bold text-app-primary/50 font-heading tracking-widest"
                 >
-                    Operational
+                    {t('operational')}
                 </span>
                 <span
                     class="text-[16px] font-bold text-app-primary font-sans tracking-wide"
@@ -108,7 +110,7 @@
                 <span
                     class="text-[10px] uppercase font-bold text-app-primary/50 font-heading tracking-widest"
                 >
-                    Transfer Cap
+                    {t('transfer_cap')}
                 </span>
                 <span
                     class="text-[16px] font-bold text-app-primary/80 font-sans tracking-wide"
@@ -199,7 +201,7 @@
                             <Settings size={14} />
                             <span
                                 class="text-[11px] font-black uppercase tracking-widest"
-                                >Settings</span
+                                >{t('settings')}</span
                             >
                         </button>
                         <button
@@ -212,7 +214,7 @@
                             <LogOut size={14} />
                             <span
                                 class="text-[11px] font-black uppercase tracking-widest"
-                                >Log Out</span
+                                >{t('log_out')}</span
                             >
                         </button>
                     </div>

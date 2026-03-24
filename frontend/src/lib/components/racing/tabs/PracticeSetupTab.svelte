@@ -912,7 +912,7 @@
         background: rgba(255, 255, 255, 0.05);
     }
     .custom-scrollbar::-webkit-scrollbar-thumb {
-        background: rgba(197, 160, 89, 0.2);
+        background: rgba(var(--primary-color-rgb), 0.2);
         border-radius: 10px;
     }
 </style>

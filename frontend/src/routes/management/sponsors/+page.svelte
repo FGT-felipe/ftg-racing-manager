@@ -177,12 +177,12 @@
                     <h1
                         class="text-3xl font-heading font-black tracking-tighter uppercase italic text-app-text"
                     >
-                        Sponsorship <span class="text-app-primary">Slots</span>
+                        {t('sponsorship_slots')}
                     </h1>
                     <p
                         class="text-xs font-bold text-app-text/30 uppercase tracking-[0.2em]"
                     >
-                        Select a part to manage contracts
+                        {t('select_sponsorship_part')}
                     </p>
                 </header>
 
@@ -218,7 +218,7 @@
                                 >
                                     {contract
                                         ? contract.sponsorName
-                                        : "Unsold Inventory"}
+                                        : t('unsold_inventory')}
                                 </h4>
                             </div>
 
@@ -234,7 +234,7 @@
                                     >
                                     <span
                                         class="text-[8px] font-bold text-app-text/30 uppercase tracking-widest"
-                                        >{contract.racesRemaining} Races Left</span
+                                        >{contract.racesRemaining} {t('races_left')}</span
                                     >
                                 </div>
                             {:else}
@@ -243,7 +243,7 @@
                                 >
                                     <span
                                         class="text-[8px] font-black text-app-text/40 group-hover:text-black uppercase tracking-widest"
-                                        >Manage</span
+                                        >{t('manage')}</span
                                     >
                                 </div>
                             {/if}
