@@ -1106,31 +1106,6 @@
                         </div>
                     {/if}
 
-                    <!-- Regional Highlight Card -->
-                    <div
-                        class="bg-gradient-to-br from-zinc-500/10 via-transparent to-transparent border border-app-border rounded-[2.5rem] p-8 mt-10 relative overflow-hidden group shadow-2xl"
-                    >
-                        <Globe
-                            class="absolute -bottom-6 -right-6 w-32 h-32 text-app-text/5 rotate-12 transition-transform group-hover:scale-110 duration-1000"
-                        />
-                        <div class="relative z-10">
-                            <h5
-                                class="text-app-text/60 text-[11px] font-black uppercase tracking-[0.3em] mb-4 flex items-center gap-3"
-                            >
-                                <Target class="w-5 h-5" />
-                                {t("regional_focus")}
-                            </h5>
-                            <p
-                                class="text-app-text/60 text-xs leading-relaxed font-medium italic opacity-80 group-hover:opacity-100 transition-opacity"
-                            >
-                                {t("scouting_efforts", {
-                                    country:
-                                        youthAcademyStore.config?.countryName?.toUpperCase() ||
-                                        "",
-                                })}
-                            </p>
-                        </div>
-                    </div>
                 </div>
             </div>
         </div>
