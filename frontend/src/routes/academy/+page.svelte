@@ -443,7 +443,7 @@
                                     {#if !youthAcademyStore.canUpgrade && !isUpgrading && youthAcademyStore.config?.academyLevel < 5}
                                         Next Season
                                     {:else}
-                                        ${formatCurrencyCompact(
+                                        {formatCurrencyCompact(
                                             1000000 *
                                                 (youthAcademyStore.config
                                                     ?.academyLevel ?? 1),
@@ -494,7 +494,6 @@
                                     >
                                         {promoted?.name.split(" ")[0]}
                                     </h5>
-                                    <CountryFlag countryCode={promoted?.countryCode} size="sm" />
                                 </div>
                                 <div class="flex items-center gap-2">
                                     <div
@@ -604,8 +603,31 @@
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
                         {#each youthAcademyStore.selectedDrivers as driver}
                             <div
-                                class="group bg-app-surface/60 border border-app-border rounded-[2.5rem] p-8 backdrop-blur-md relative overflow-hidden transition-all duration-500 hover:border-emerald-500/30 hover:bg-app-surface/80 hover:shadow-2xl hover:shadow-emerald-500/5"
+                                class="group rounded-[2.5rem] backdrop-blur-md relative overflow-hidden transition-all duration-500
+                                    {driver.isMarkedForPromotion
+                                        ? 'bg-fuchsia-500/5 border border-fuchsia-500/30 hover:border-fuchsia-500/50 hover:bg-fuchsia-500/10 hover:shadow-2xl hover:shadow-fuchsia-500/10'
+                                        : 'bg-app-surface/60 border border-app-border hover:border-emerald-500/30 hover:bg-app-surface/80 hover:shadow-2xl hover:shadow-emerald-500/5'}"
                             >
+                                <!-- Action Buttons Row -->
+                                <div class="flex divide-x divide-app-border border-b border-app-border">
+                                    <button
+                                        class="flex-1 py-3 text-[10px] font-black uppercase tracking-widest transition-colors
+                                            {driver.isMarkedForPromotion
+                                                ? 'bg-fuchsia-500/10 text-fuchsia-400'
+                                                : 'text-app-text/30 hover:bg-fuchsia-500/10 hover:text-fuchsia-400'}"
+                                        onclick={() => youthAcademyStore.togglePromotion(driver.id, !driver.isMarkedForPromotion)}
+                                    >
+                                        {t("mark_for_promotion")}
+                                    </button>
+                                    <button
+                                        class="flex-1 py-3 text-[10px] font-black uppercase tracking-widest text-app-text/30 hover:bg-red-500/10 hover:text-red-400 transition-colors"
+                                        onclick={() => youthAcademyStore.releaseDriver(driver.id)}
+                                    >
+                                        {t("release_driver_tooltip")}
+                                    </button>
+                                </div>
+
+                                <div class="p-8">
                                 <!-- Active Decision Banner -->
                                 {#if driver.pendingAction}
                                     <div
@@ -690,7 +712,6 @@
                                                 >
                                                     {driver.name}
                                                 </h4>
-                                                <CountryFlag countryCode={driver.countryCode} size="sm" />
                                             </div>
                                             {#if getSpecialtyKey(driver.specialty)}
                                                 <div class="mt-1 flex gap-2">
@@ -705,39 +726,6 @@
                                                     </span>
                                                 </div>
                                             {/if}
-                                            <div
-                                                class="flex items-center gap-2"
-                                            >
-                                                <button
-                                                    class="p-2.5 rounded-2xl transition-all border {driver.isMarkedForPromotion
-                                                        ? 'bg-fuchsia-500 border-fuchsia-500 text-black shadow-xl shadow-fuchsia-500/20'
-                                                        : 'bg-transparent border-app-border text-app-text/40 hover:text-fuchsia-500 hover:border-fuchsia-500/30'}"
-                                                    onclick={() =>
-                                                        youthAcademyStore.togglePromotion(
-                                                            driver.id,
-                                                            !driver.isMarkedForPromotion,
-                                                        )}
-                                                    title={t(
-                                                        "mark_for_promotion",
-                                                    )}
-                                                >
-                                                    <TrendingUp
-                                                        class="w-5 h-5"
-                                                    />
-                                                </button>
-                                                <button
-                                                    class="p-2.5 rounded-2xl transition-all border bg-transparent border-app-border text-app-text/40 hover:text-red-500 hover:border-red-500/30"
-                                                    onclick={() =>
-                                                        youthAcademyStore.releaseDriver(
-                                                            driver.id,
-                                                        )}
-                                                    title={t(
-                                                        "release_driver_tooltip",
-                                                    )}
-                                                >
-                                                    <XCircle class="w-5 h-5" />
-                                                </button>
-                                            </div>
                                         </div>
                                         <DriverStars
                                             currentStars={calculateAcademyCurrentStars(
@@ -914,6 +902,7 @@
                                         </div>
                                     </div>
                                 {/if}
+                                </div><!-- end p-8 -->
                             </div>
                         {/each}
                     </div>
@@ -966,7 +955,6 @@
                                             >
                                                 {candidate.name}
                                             </h4>
-                                            <CountryFlag countryCode={candidate.countryCode} size="xs" />
                                         </div>
                                         {#if getSpecialtyKey(candidate.specialty)}
                                             <div

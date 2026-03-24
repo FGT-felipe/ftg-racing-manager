@@ -268,6 +268,11 @@ export function createYouthAcademyStore() {
                 transaction.update(teamRef, { budget: budget - salary });
             });
 
+            // Generate a replacement candidate so the scouting pool stays populated
+            const [replacement] = academyService.generateInitialCandidates(1, config.countryCode, config.academyLevel);
+            const replacementRef = doc(db, 'teams', teamId, 'academy', 'config', 'candidates', replacement.id);
+            await setDoc(replacementRef, replacement);
+
             notificationStore.addNotification({
                 title: "Driver Signed",
                 message: `${candidate.name} is now training at the academy.`,
@@ -281,12 +286,66 @@ export function createYouthAcademyStore() {
 
             const driverRef = doc(db, 'teams', teamId, 'academy', 'config', 'selected', driverId);
             const driver = selectedDrivers.find(d => d.id === driverId);
+            const type = driver?.pendingActionType || 'GENERAL';
+
+            // INTENSIVE_TRAINING with resolve requires a budget transaction
+            if (decision === 'resolve' && type === 'INTENSIVE_TRAINING') {
+                const intensiveCost = 25000;
+                const teamRef = doc(db, 'teams', teamId);
+                const allSkills = ['braking', 'cornering', 'smoothness', 'overtaking', 'consistency', 'adaptability', 'focus'] as const;
+                const diffs: Record<string, number> = Object.fromEntries(allSkills.map(s => [s, 1]));
+                const message = `Intensive training week completed. All skills improved at a cost of $${(intensiveCost / 1000).toFixed(0)}k.`;
+
+                await runTransaction(db, async (transaction) => {
+                    const teamSnap = await transaction.get(teamRef);
+                    const teamData = teamSnap.data();
+                    if (!teamData || (teamData.budget ?? 0) < intensiveCost) {
+                        throw new Error(`Insufficient budget for intensive training. Required: $${intensiveCost.toLocaleString()}`);
+                    }
+                    const budget = teamData.budget ?? 0;
+
+                    const newMin = { ...driver?.statRangeMin };
+                    const newMax = { ...driver?.statRangeMax };
+                    const statsUpdates: Record<string, any> = {};
+                    for (const key of allSkills) {
+                        newMin[key] = Math.min(20, Math.max(1, (newMin[key] || 8) + 1));
+                        newMax[key] = Math.min(20, Math.max(1, (newMax[key] || 10) + 1));
+                        statsUpdates[`stats.${key}`] = increment(1);
+                    }
+
+                    transaction.update(driverRef, {
+                        pendingAction: false,
+                        weeklyEventMessage: message,
+                        weeklyStatDiffs: diffs,
+                        statRangeMin: newMin,
+                        statRangeMax: newMax,
+                        ...statsUpdates
+                    });
+
+                    transaction.update(teamRef, { budget: budget - intensiveCost });
+
+                    const txRef = doc(collection(db, 'teams', teamId, 'transactions'));
+                    transaction.set(txRef, {
+                        id: txRef.id,
+                        description: `Intensive Training: ${driver?.name || 'Academy Driver'}`,
+                        amount: -intensiveCost,
+                        date: new Date().toISOString(),
+                        type: 'TRAINING'
+                    });
+                });
+
+                notificationStore.addNotification({
+                    title: 'Intensive Training Complete',
+                    message: `${driver?.name || 'Driver'}: all skills +1. Cost: $25k.`,
+                    type: 'SUCCESS'
+                });
+                return;
+            }
 
             let message = "The driver successfully completed the requested flow.";
             let diffs: Record<string, number> = {};
 
             if (decision === 'resolve') {
-                const type = driver?.pendingActionType || 'GENERAL';
                 switch(type) {
                     case 'SPONSOR_SHOOT':
                         diffs = { focus: -1, adaptability: 1 };
@@ -319,7 +378,11 @@ export function createYouthAcademyStore() {
                         message = "The driver successfully completed the requested flow and gained valuable experience.";
                 }
             } else if (decision === 'dismiss') {
-                message = "The matter was dismissed. The driver feels ignored.";
+                if (type === 'INTENSIVE_TRAINING') {
+                    message = "Intensive training was declined. The driver feels unmotivated.";
+                } else {
+                    message = "The matter was dismissed. The driver feels ignored.";
+                }
                 diffs = { focus: -1 };
             }
 
@@ -367,9 +430,14 @@ export function createYouthAcademyStore() {
 
         async releaseDriver(driverId: string) {
             const teamId = teamStore.value.team?.id;
-            if (!teamId) return;
+            if (!teamId || !config) return;
             const driverRef = doc(db, 'teams', teamId, 'academy', 'config', 'selected', driverId);
             await deleteDoc(driverRef);
+
+            // Return a fresh candidate to the scouting pool
+            const [replacement] = academyService.generateInitialCandidates(1, config.countryCode, config.academyLevel);
+            const candidateRef = doc(db, 'teams', teamId, 'academy', 'config', 'candidates', replacement.id);
+            await setDoc(candidateRef, replacement);
 
             notificationStore.addNotification({
                 title: "Driver Released",

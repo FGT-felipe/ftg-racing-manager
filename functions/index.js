@@ -1956,6 +1956,11 @@ exports.postRaceProcessing = onSchedule({
               xpGain = Math.floor(xpGain * 0.95);
             }
 
+            // Promotion focus bonus: +25% XP for the driver marked for promotion
+            if (yDriver.isMarkedForPromotion) {
+              xpGain = Math.floor(xpGain * 1.25);
+            }
+
             curWeekly += xpGain;
 
             let applyBaseGrowth = false;
@@ -1982,8 +1987,8 @@ exports.postRaceProcessing = onSchedule({
                 adaptability: 6, overtaking: 6, focus: 6, fitness: 6,
               };
 
-              // Select a random stat to boost significantly or 2 stats slightly
-              const keys = Object.keys(statsObj);
+              // Select a random stat to boost — exclude fitness (percentual, not a skill)
+              const keys = Object.keys(statsObj).filter(k => k !== 'fitness');
               const boostedStat = keys[Math.floor(Math.random() * keys.length)];
               statsObj[boostedStat] += 1;
               statDiffs[boostedStat] = 1;
@@ -2009,7 +2014,7 @@ exports.postRaceProcessing = onSchedule({
               if (Math.random() < 0.15) {
                 const negativeEvents = [
                   { msg: `${yDriver.name} was distracted by personal matters and their focus dropped.`, stat: "focus", diff: -1 },
-                  { msg: `${yDriver.name} missed physical training sessions.`, stat: "fitness", diff: -1 },
+                  { msg: `${yDriver.name} struggled to adapt to recent circuit changes.`, stat: "adaptability", diff: -1 },
                   { msg: `${yDriver.name} suffered a minor incident, losing confidence in braking.`, stat: "braking", diff: -1 },
                 ];
                 const neg = negativeEvents[Math.floor(Math.random() * negativeEvents.length)];
@@ -2022,10 +2027,17 @@ exports.postRaceProcessing = onSchedule({
               }
             }
 
-            // Chance for "Take Action" event (Manual Event)
-            if (!yDriver.pendingAction && Math.random() < 0.2) {
-              updates.pendingAction = true;
-              updates.pendingActionType = ["SPONSOR_SHOOT", "TECHNICAL_TEST", "MENTOR_REQUEST"][Math.floor(Math.random() * 3)];
+            // Chance for "Take Action" events (Manual Events)
+            // INTENSIVE_TRAINING: 6% chance (rare but high impact), regular events: 20% chance
+            if (!yDriver.pendingAction) {
+              const eventRoll = Math.random();
+              if (eventRoll < 0.06) {
+                updates.pendingAction = true;
+                updates.pendingActionType = "INTENSIVE_TRAINING";
+              } else if (eventRoll < 0.26) {
+                updates.pendingAction = true;
+                updates.pendingActionType = ["SPONSOR_SHOOT", "TECHNICAL_TEST", "MENTOR_REQUEST"][Math.floor(Math.random() * 3)];
+              }
             }
 
             // Specialization Trigger logic

@@ -17,9 +17,8 @@
     import { t } from "$lib/utils/i18n";
     import { APP_VERSION } from "$lib/constants/app_constants";
 
-    let teamData = $derived(teamStore.value);
-    let team = $derived(teamData.team);
-    let loading = $derived(teamData.loading || authStore.loading);
+    let team = $derived(teamStore.value.team);
+    let loading = $derived(teamStore.value.loading || authStore.loading);
     let isAdmin = $derived(authStore.isAdmin);
     let unreadCount = $derived(notificationStore.unreadCount);
 
@@ -27,16 +26,18 @@
     let isAccountOpen = $state(false);
 
     let transferBudgetFmt = $derived.by(() => {
-        if (!team) return "$0.0M";
-        const percentage = team.transferBudgetPercentage || 20;
-        const amount = team.budget * (percentage / 100);
+        const t = teamStore.value.team;
+        if (!t) return "$0.0M";
+        const percentage = t.transferBudgetPercentage || 20;
+        const amount = t.budget * (percentage / 100);
         return `$${(amount / 1000000).toFixed(1)}M`;
     });
 
     let operationalBudgetFmt = $derived.by(() => {
-        if (!team) return "$0.0M";
-        const percentage = team.transferBudgetPercentage || 20;
-        const amount = team.budget * (1 - percentage / 100);
+        const t = teamStore.value.team;
+        if (!t) return "$0.0M";
+        const percentage = t.transferBudgetPercentage || 20;
+        const amount = t.budget * (1 - percentage / 100);
         return `$${(amount / 1000000).toFixed(1)}M`;
     });
 </script>
