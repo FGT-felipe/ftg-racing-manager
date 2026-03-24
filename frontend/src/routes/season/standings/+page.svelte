@@ -6,6 +6,7 @@
     import { seasonStore } from "$lib/stores/season.svelte";
     import { browser } from "$app/environment";
     import { t } from "$lib/utils/i18n";
+    import { formatDriverName } from "$lib/utils/driver";
 
     let universe = $derived(universeStore.value.universe);
     let loading = $derived(universeStore.value.loading);
@@ -194,7 +195,7 @@
                             {getOrdinal(pos)}
                         </span>
                         <div class="flex items-center gap-2">
-                            <span class="text-[11px] font-black text-app-text uppercase italic truncate {mine ? 'text-app-primary' : ''}">{driver.name}</span>
+                            <span class="text-[11px] font-black text-app-text uppercase italic truncate {mine ? 'text-app-primary' : ''}" title={driver.name}>{formatDriverName(driver.name)}</span>
                             <CountryFlag countryCode={driver.countryCode} size="xs" />
                         </div>
                         <span class="text-[10px] font-bold text-app-text/50 truncate">{driverTeamName}</span>

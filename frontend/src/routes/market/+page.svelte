@@ -2,6 +2,7 @@
     import { Users, Gavel, X, ChevronLeft, ChevronRight, Lock, Minus, Plus, CheckCircle } from "lucide-svelte";
     import { fly, fade } from "svelte/transition";
     import { teamStore } from "$lib/stores/team.svelte";
+    import { formatDriverName } from "$lib/utils/driver";
     import DriverAvatar from "$lib/components/DriverAvatar.svelte";
     import CountryFlag from "$lib/components/ui/CountryFlag.svelte";
     import { onDestroy, onMount } from "svelte";
@@ -341,7 +342,7 @@
                             </div>
                             <div class="flex flex-col min-w-0">
                                 <div class="flex items-center gap-2">
-                                    <span class="text-[11px] font-black text-app-text uppercase italic truncate underline decoration-app-text/10">{driver.name}</span>
+                                    <span class="text-[11px] font-black text-app-text uppercase italic truncate underline decoration-app-text/10" title={driver.name}>{formatDriverName(driver.name)}</span>
                                     <CountryFlag countryCode={driver.countryCode} size="xs" />
                                 </div>
                                 <span class="text-[9px] font-black border px-1.5 py-px rounded w-fit mt-0.5 {lvl.color}">{lvl.label}</span>
@@ -463,7 +464,7 @@
                         <div class="flex flex-col gap-2">
                             <span class="text-[9px] font-black border px-2 py-0.5 rounded-md w-fit {lvl.color} uppercase tracking-widest">{lvl.label}</span>
                             <div class="flex items-center gap-3">
-                                <h2 class="text-3xl font-black text-app-text uppercase italic leading-none tracking-tighter">{d.name}</h2>
+                                <h2 class="text-3xl font-black text-app-text uppercase italic leading-none tracking-tighter" title={d.name}>{formatDriverName(d.name)}</h2>
                                 <CountryFlag countryCode={d.countryCode} size="sm" />
                             </div>
                             <div class="flex items-center gap-2">

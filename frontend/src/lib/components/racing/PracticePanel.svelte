@@ -45,6 +45,7 @@ import { circuitService } from "$lib/services/circuit_service.svelte";
     import DriverAvatar from "$lib/components/DriverAvatar.svelte";
     import Typewriter from "$lib/components/ui/Typewriter.svelte";
     import { t, type TranslationKey } from "$lib/utils/i18n";
+    import { formatDriverName } from "$lib/utils/driver";
 
     let { driverId = null } = $props();
 
@@ -399,7 +400,7 @@ import { circuitService } from "$lib/services/circuit_service.svelte";
                         <!-- CONVERSATION BUBBLE -->
                         <div class="flex-1 space-y-3">
                             <div class="flex items-center justify-between">
-                                <span class="text-[10px] font-black uppercase tracking-[0.3em] text-app-primary leading-none">{driver.name}</span>
+                                <span class="text-[10px] font-black uppercase tracking-[0.3em] text-app-primary leading-none" title={driver.name}>{formatDriverName(driver.name)}</span>
                                 <div class="flex items-center gap-4 text-[9px] font-black uppercase text-app-text/30">
                                     <div class="flex items-center gap-1.5"><Bolt size={10} class="text-emerald-400" /> {driver.stats?.fitness || 100}%</div>
                                     <div class="flex items-center gap-1.5"><Smile size={10} class="text-yellow-400" /> {driver.stats?.morale || 100}%</div>

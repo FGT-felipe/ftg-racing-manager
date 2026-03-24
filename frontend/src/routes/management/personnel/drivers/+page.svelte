@@ -17,6 +17,7 @@
 
     import { fly, fade } from "svelte/transition";
     import { t } from "$lib/utils/i18n";
+    import { formatDriverName } from "$lib/utils/driver";
     import { type Driver } from "$lib/types";
     import DriverAvatar from "$lib/components/DriverAvatar.svelte";
     import DriverStars from "$lib/components/DriverStars.svelte";
@@ -205,8 +206,9 @@
                                     <div class="flex flex-col">
                                         <span
                                             class="text-sm font-black text-app-text uppercase tracking-tight group-hover:text-app-primary transition-colors"
+                                            title={driver.name}
                                         >
-                                            {driver.name}
+                                            {formatDriverName(driver.name)}
                                         </span>
                                         <span class="text-app-text/20 uppercase tracking-widest flex items-center gap-1.5">
                                             <CountryFlag countryCode={driver.countryCode} size="sm" />
@@ -309,8 +311,9 @@
                             <div class="flex flex-col">
                                 <h3
                                     class="text-lg font-black text-app-text uppercase tracking-tight group-hover:text-app-primary transition-colors"
+                                    title={driver.name}
                                 >
-                                    {driver.name}
+                                    {formatDriverName(driver.name)}
                                 </h3>
                                 <span
                                     class="text-[10px] font-black text-app-text/20 uppercase tracking-[0.2em] flex items-center gap-1.5"

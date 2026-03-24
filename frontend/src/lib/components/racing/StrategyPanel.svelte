@@ -18,6 +18,7 @@
         Save,
     } from "lucide-svelte";
     import { teamStore } from "$lib/stores/team.svelte";
+    import { formatDriverName } from "$lib/utils/driver";
     import { driverStore } from "$lib/stores/driver.svelte";
     import { seasonStore } from "$lib/stores/season.svelte";
     import { managerStore } from "$lib/stores/manager.svelte";
@@ -198,9 +199,10 @@
                     activeDriverId = d.id;
                     loadDriverStrategy(d.id);
                 }}
+                title={d.name}
             >
                 <User size={12} />
-                {d.name}
+                {formatDriverName(d.name)}
             </button>
         {/each}
     </div>

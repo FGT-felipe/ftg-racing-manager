@@ -29,6 +29,7 @@
     import {
         calculateAcademyCurrentStars,
         calculateAcademyMaxStars,
+        formatDriverName,
     } from "$lib/utils/driver";
     import {
         t,
@@ -709,8 +710,9 @@
                                             <div class="flex items-center gap-2">
                                                 <h4
                                                     class="text-2xl font-black text-app-text tracking-tighter uppercase leading-none truncate italic"
+                                                    title={driver.name}
                                                 >
-                                                    {driver.name}
+                                                    {formatDriverName(driver.name)}
                                                 </h4>
                                             </div>
                                             {#if getSpecialtyKey(driver.specialty)}
@@ -952,8 +954,9 @@
                                         <div class="flex items-center gap-2">
                                             <h4
                                                 class="text-lg font-black text-app-text uppercase tracking-tighter italic truncate leading-none"
+                                                title={candidate.name}
                                             >
-                                                {candidate.name}
+                                                {formatDriverName(candidate.name)}
                                             </h4>
                                         </div>
                                         {#if getSpecialtyKey(candidate.specialty)}

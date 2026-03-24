@@ -60,6 +60,27 @@ export function calculateAcademyMaxStars(candidate: any): number {
 }
 
 /**
+ * Formats a driver's full name to F1-style abbreviated format: "L. Hamilton".
+ * Handles suffixes (Jr, Sr, II, III) by preserving them with the surname.
+ * Returns the original name unchanged when it has only one word.
+ *
+ * @param fullName - The driver's full name (e.g., "Lewis Hamilton")
+ * @returns Abbreviated name (e.g., "L. Hamilton"), or empty string if null/undefined
+ */
+export function formatDriverName(fullName: string | null | undefined): string {
+    if (!fullName) return '';
+    const parts = fullName.trim().split(/\s+/);
+    if (parts.length === 1) return parts[0];
+    const initial = parts[0][0].toUpperCase();
+    const suffixes = new Set(['jr', 'sr', 'ii', 'iii', 'iv', 'v']);
+    const last = parts[parts.length - 1];
+    const surname = suffixes.has(last.toLowerCase()) && parts.length > 2
+        ? `${parts[parts.length - 2]} ${last}`
+        : last;
+    return `${initial}. ${surname}`;
+}
+
+/**
  * Checks if a driver is nearing retirement (Age >= 38)
  */
 export function isNearingRetirement(driver: Driver | YoungDriver): boolean {
