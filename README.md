@@ -2,7 +2,7 @@
 
 > A browser-based F1-style team management simulation. Build your racing operation from the ground up — scout drivers, engineer your car, negotiate sponsors, and compete every weekend in a live, shared league.
 
-**Version:** 4.1.4 (in development) · **Branch:** `feature/v4.1.4`
+**Version:** 4.1.6 · **Live:** https://ftg-racing-manager.web.app
 
 ---
 
