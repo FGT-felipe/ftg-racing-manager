@@ -149,13 +149,13 @@
     {:else if !selectedLeague}
         <div class="flex flex-col items-center justify-center h-64 opacity-30 gap-4">
             <Trophy size={40} strokeWidth={1} />
-            <span class="text-sm font-black uppercase tracking-widest">No league data</span>
+            <span class="text-sm font-black uppercase tracking-widest">{t('no_league_data')}</span>
         </div>
 
     {:else}
         <!-- Tab Bar -->
         <div class="flex items-center gap-1 mb-8 bg-app-surface border border-app-border rounded-2xl p-1 w-fit">
-            {#each [{ id: "drivers", label: "Drivers", icon: Users }, { id: "constructors", label: "Constructors", icon: Medal }] as tab}
+            {#each [{ id: "drivers", label: t('drivers_tab'), icon: Users }, { id: "constructors", label: t('constructors_tab'), icon: Medal }] as tab}
                 <button
                     onclick={() => (activeTab = tab.id as Tab)}
                     class="flex items-center gap-2 px-5 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-[0.15em] transition-all
@@ -173,13 +173,13 @@
                 <!-- Header -->
                 <div class="grid gap-4 px-6 py-3 border-b border-app-border text-[8px] font-black text-app-text/30 uppercase tracking-widest"
                      style="grid-template-columns: 48px 1fr 140px 40px 40px 40px 60px">
-                    <span>Pos</span>
-                    <span>Driver</span>
-                    <span>Team</span>
-                    <span class="text-center">R</span>
-                    <span class="text-center">W</span>
-                    <span class="text-center">Pd</span>
-                    <span class="text-right">Pts</span>
+                    <span>{t('pos')}</span>
+                    <span>{t('driver')}</span>
+                    <span>{t('team')}</span>
+                    <span class="text-center">{t('col_races_abbr')}</span>
+                    <span class="text-center">{t('col_wins_abbr')}</span>
+                    <span class="text-center">{t('col_podiums_abbr')}</span>
+                    <span class="text-right">{t('col_pts_abbr')}</span>
                 </div>
 
                 {#each sortedDrivers as driver, i}
@@ -195,7 +195,7 @@
                             {getOrdinal(pos)}
                         </span>
                         <div class="flex items-center gap-2">
-                            <span class="text-[11px] font-black text-app-text uppercase italic truncate {mine ? 'text-app-primary' : ''}" title={driver.name}>{formatDriverName(driver.name)}</span>
+                            <span class="text-[11px] font-black text-app-text uppercase italic truncate pr-2 {mine ? 'text-app-primary' : ''}" title={driver.name}>{formatDriverName(driver.name)}</span>
                             <CountryFlag countryCode={driver.countryCode} size="xs" />
                         </div>
                         <span class="text-[10px] font-bold text-app-text/50 truncate">{driverTeamName}</span>
@@ -206,7 +206,7 @@
                     </div>
                 {:else}
                     <div class="flex flex-col items-center justify-center h-40 opacity-30 gap-3">
-                        <Users size={32} strokeWidth={1} /><span class="text-xs font-black uppercase">No drivers</span>
+                        <Users size={32} strokeWidth={1} /><span class="text-xs font-black uppercase">{t('standings_no_drivers')}</span>
                     </div>
                 {/each}
             </div>
@@ -217,13 +217,13 @@
                 <!-- Header -->
                 <div class="grid gap-4 px-6 py-3 border-b border-app-border text-[8px] font-black text-app-text/30 uppercase tracking-widest"
                      style="grid-template-columns: 48px 1fr 40px 40px 40px 40px 60px">
-                    <span>Pos</span>
-                    <span>Team</span>
-                    <span class="text-center">R</span>
-                    <span class="text-center">W</span>
-                    <span class="text-center">Pd</span>
-                    <span class="text-center">Pl</span>
-                    <span class="text-right">Pts</span>
+                    <span>{t('pos')}</span>
+                    <span>{t('team')}</span>
+                    <span class="text-center">{t('col_races_abbr')}</span>
+                    <span class="text-center">{t('col_wins_abbr')}</span>
+                    <span class="text-center">{t('col_podiums_abbr')}</span>
+                    <span class="text-center">{t('col_poles_abbr')}</span>
+                    <span class="text-right">{t('col_pts_abbr')}</span>
                 </div>
 
                 {#each sortedTeams as team, i}
@@ -241,7 +241,7 @@
 
                         <!-- Team name + manager -->
                         <div class="flex flex-col min-w-0">
-                            <span class="text-[11px] font-black uppercase italic truncate {mine ? 'text-app-primary' : 'text-app-text'}">{team.name}</span>
+                            <span class="text-[11px] font-black uppercase italic truncate pr-2 {mine ? 'text-app-primary' : 'text-app-text'}">{team.name}</span>
                             {#if mgr}
                                 <div class="flex items-center gap-1.5">
                                     <span class="text-[9px] font-bold text-app-text/20 uppercase truncate">Mgr: {mgr.name}</span>
@@ -264,7 +264,7 @@
                     </div>
                 {:else}
                     <div class="flex flex-col items-center justify-center h-40 opacity-30 gap-3">
-                        <Medal size={32} strokeWidth={1} /><span class="text-xs font-black uppercase">No teams</span>
+                        <Medal size={32} strokeWidth={1} /><span class="text-xs font-black uppercase">{t('standings_no_teams')}</span>
                     </div>
                 {/each}
             </div>

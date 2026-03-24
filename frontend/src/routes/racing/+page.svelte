@@ -13,6 +13,7 @@
         timeService,
         RaceWeekStatus,
     } from "$lib/services/time_service.svelte";
+    import { t } from "$lib/utils/i18n";
 
     // Paddock Panels
     import GaragePanel from "$lib/components/racing/GaragePanel.svelte";
@@ -62,12 +63,12 @@
                 <h1
                     class="text-3xl font-heading font-black tracking-tight uppercase italic leading-none"
                 >
-                    Racing <span class="text-app-primary">Paddock</span>
+                    {t('racing_paddock_title')}
                 </h1>
                 <div class="flex items-center gap-2 mt-1">
                     <span
                         class="text-[10px] font-black uppercase tracking-[0.2em] text-app-text/40"
-                        >Operation Center</span
+                        >{t('operation_center')}</span
                     >
                 </div>
             </div>
@@ -83,14 +84,17 @@
                 >
                     <span
                         class="text-[10px] font-black uppercase tracking-widest text-app-primary mb-1"
-                        >Round {(seasonStore.value.season?.calendar.findIndex(
-                            (r) => r.id === nextEvent.id,
-                        ) ?? 0) + 1} of 9</span
+                        >{t('round_of', {
+                            round: String((seasonStore.value.season?.calendar.findIndex(
+                                (r) => r.id === nextEvent.id,
+                            ) ?? 0) + 1),
+                            total: String(seasonStore.value.season?.calendar.length ?? 9)
+                        })}</span
                     >
                     <span
-                        class="text-2xl font-heading font-black italic uppercase leading-none text-app-text"
+                        class="text-xl font-heading font-black italic uppercase leading-none text-app-text"
                     >
-                        {nextEvent.trackName.split(" ")[0]}
+                        {nextEvent.trackName}
                     </span>
                 </div>
 
@@ -109,7 +113,7 @@
                                 class="flex items-center gap-1 text-[10px] font-bold text-app-text/40 uppercase"
                             >
                                 <Timer size={12} class="text-app-primary" />
-                                {nextEvent.totalLaps} Laps
+                                {t('laps_count', { n: String(nextEvent.totalLaps) })}
                             </div>
                             <span class="text-app-text/10">•</span>
                             <div

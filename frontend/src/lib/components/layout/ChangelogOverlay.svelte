@@ -31,15 +31,6 @@
         }
     }
 
-    function getTypeBadgeClass(type: ChangelogEntryType): string {
-        switch (type) {
-            case "feature":     return "bg-blue-500/15 text-blue-400 border border-blue-500/20";
-            case "fix":         return "bg-red-500/15 text-red-400 border border-red-500/20";
-            case "improvement": return "bg-green-500/15 text-green-400 border border-green-500/20";
-            case "ui":          return "bg-fuchsia-500/15 text-fuchsia-400 border border-fuchsia-500/20";
-        }
-    }
-
     function getTypeIconClass(type: ChangelogEntryType): string {
         switch (type) {
             case "feature":     return "text-blue-400";
@@ -112,18 +103,20 @@
                     <ul class="flex flex-col gap-2">
                         {#each release.entries as entry}
                             {@const Icon = getTypeIcon(entry.type)}
+                            {@const typeLabel = getTypeLabel(entry.type)}
                             <li class="flex items-start gap-2.5">
-                                <div class="shrink-0 mt-0.5 {getTypeIconClass(entry.type)}">
+                                <div
+                                    class="shrink-0 mt-0.5 {getTypeIconClass(entry.type)}"
+                                    title={typeLabel}
+                                >
                                     <Icon size={13} strokeWidth={2.5} />
                                 </div>
-                                <div class="flex-1 min-w-0 flex items-start gap-2">
-                                    <span class="shrink-0 px-1.5 py-0.5 rounded text-[8px] font-black uppercase tracking-wider {getTypeBadgeClass(entry.type)}">
-                                        {getTypeLabel(entry.type)}
-                                    </span>
-                                    <p class="text-[11px] text-app-text/70 leading-snug">
-                                        {t(entry.textKey)}
-                                    </p>
-                                </div>
+                                <p
+                                    class="text-[11px] text-app-text/70 leading-snug"
+                                    title={typeLabel}
+                                >
+                                    {t(entry.textKey)}
+                                </p>
                             </li>
                         {/each}
                     </ul>
