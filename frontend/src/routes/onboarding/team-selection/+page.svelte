@@ -1,10 +1,8 @@
 <script lang="ts">
-    import { onMount } from "svelte";
-    import { db } from "$lib/firebase/config";
-    import { collection, onSnapshot, query, where } from "firebase/firestore";
     import { universeStore } from "$lib/stores/universe.svelte";
     import { teamStore } from "$lib/stores/team.svelte";
     import { authStore } from "$lib/stores/auth.svelte";
+    import { onboardingStore } from "$lib/stores/onboarding.svelte";
     import { goto } from "$app/navigation";
     import {
         Trophy,
@@ -18,11 +16,14 @@
     import { fly, fade } from "svelte/transition";
     import { formatDriverName } from "$lib/utils/driver";
 
-    let liveTeams = $state<any[]>([]);
-    let liveDrivers = $state<any[]>([]);
-    let isLoading = $state(true);
     let isSubmitting = $state(false);
-    let error = $state<string | null>(null);
+
+    // Initialize stores
+    universeStore.init();
+    onboardingStore.init();
+
+    let isLoading = $derived(universeStore.value.loading || onboardingStore.loading);
+    let error = $derived(onboardingStore.error);
 
     // Get leagues from universe store
     let leagues = $derived(universeStore.value.universe?.leagues || []);
@@ -32,8 +33,8 @@
         leagues.map((league) => ({
             ...league,
             teams: (league.teams || []).map((t: any) => {
-                const liveTeam = liveTeams.find((lt) => lt.id === t.id);
-                const teamDrivers = liveDrivers.filter(
+                const liveTeam = onboardingStore.teams.find((lt) => lt.id === t.id);
+                const teamDrivers = onboardingStore.drivers.filter(
                     (d) => d.teamId === t.id,
                 );
                 return {
@@ -58,48 +59,6 @@
         worldLeague?.teams.length > 0 &&
             worldLeague.teams.every((t: any) => !t.isBot),
     );
-
-    onMount(() => {
-        // Initialize stores
-        universeStore.init();
-
-        // Listen to teams
-        const unsubscribeTeams = onSnapshot(
-            collection(db, "teams"),
-            (snapshot) => {
-                liveTeams = snapshot.docs.map((doc) => ({
-                    id: doc.id,
-                    ...doc.data(),
-                }));
-            },
-            (err) => (error = err.message),
-        );
-
-        // Listen to drivers
-        const unsubscribeDrivers = onSnapshot(
-            collection(db, "drivers"),
-            (snapshot) => {
-                liveDrivers = snapshot.docs.map((doc) => ({
-                    id: doc.id,
-                    ...doc.data(),
-                }));
-            },
-            (err) => (error = err.message),
-        );
-
-        return () => {
-            unsubscribeTeams();
-            unsubscribeDrivers();
-        };
-    });
-
-    // Also watch universeStore loading
-    $effect(() => {
-        // We consider it loaded when universe is not loading AND we have some teams
-        if (!universeStore.value.loading && liveTeams.length > 0) {
-            isLoading = false;
-        }
-    });
 
     async function handleSelectTeam(teamId: string) {
         if (isSubmitting) return;

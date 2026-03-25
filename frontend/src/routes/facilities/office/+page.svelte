@@ -3,15 +3,7 @@
     import { managerStore } from "$lib/stores/manager.svelte";
     import { driverStore } from "$lib/stores/driver.svelte";
     import { notificationStore } from "$lib/stores/notifications.svelte";
-    import { db } from "$lib/firebase/config";
-    import {
-        collection,
-        query,
-        orderBy,
-        limit,
-        onSnapshot,
-    } from "firebase/firestore";
-    import { browser } from "$app/environment";
+    import { newsStore } from "$lib/stores/news.svelte";
     import {
         Building2,
         Trophy,
@@ -34,10 +26,12 @@
     let isEditingName = $state(false);
     let newName = $state("");
     let isSavingName = $state(false);
-    let news = $state<any[]>([]);
 
-    // Initialize driver store for stats aggregation
+    // Initialize stores
     driverStore.init();
+    newsStore.init();
+
+    let news = $derived(newsStore.items);
 
     // Stats calculation
     const teamStats = $derived({
@@ -79,35 +73,8 @@
         return getRoleById(bgId);
     });
 
-    // Real-time news subscription
     $effect(() => {
-        const teamId = teamStore.value.team?.id;
-        if (!teamId || !browser) return;
-
         newName = teamStore.value.team?.name || "";
-
-        const q = query(
-            collection(db, "teams", teamId, "news"),
-            orderBy("timestamp", "desc"),
-            limit(10),
-        );
-
-        const unsubscribe = onSnapshot(
-            q,
-            (snapshot) => {
-                news = snapshot.docs.map((doc) => ({
-                    id: doc.id,
-                    ...doc.data(),
-                    timestamp:
-                        (doc.data().timestamp as any)?.toDate?.() || new Date(),
-                }));
-            },
-            (err) => {
-                console.error("News sync error:", err);
-            },
-        );
-
-        return unsubscribe;
     });
 
     async function handleRename() {
