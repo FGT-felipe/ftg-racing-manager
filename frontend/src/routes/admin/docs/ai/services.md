@@ -24,7 +24,8 @@ This document defines the interface and behaviors of core services for automated
 - **Critical Methods**:
   - `trainPilot(teamId, pilotId, bonus)`: Atomic increment of `driver.stats.fitness`. Max 100.
   - `dismissDriver(teamId, driver)`: Penalty: `10% market value`. Nullifies `driver.teamId`.
-  - `listDriverOnMarket(teamId, driver)`: Listing fee applied to `budget`.
+  - `listDriverOnMarket(teamId, driver)`: Listing fee (10% of market value) applied to `budget`. Sets `isTransferListed = true` and `transferListedAt`. Guard: at least 1 non-listed main driver must remain (enforced in UI).
+  - `cancelListing(teamId, driver)`: Clears `isTransferListed` and `transferListedAt`. No refund of listing fee. Throws if `currentHighestBid > 0` (active bids block cancellation).
 
 ### `PracticeService` (Simulation Engine - Client)
 - **Function**: `simulatePracticeRun(circuit, team, driver, setup)` -> `PracticeRunResult`.

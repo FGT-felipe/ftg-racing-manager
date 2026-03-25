@@ -218,11 +218,18 @@
                                 </div>
                             </td>
                             <td class="py-6 px-4">
-                                <span
-                                    class="px-2 py-0.5 rounded-md text-[8px] font-black uppercase tracking-widest border {badge.color}"
-                                >
-                                    {badge.label}
-                                </span>
+                                <div class="flex flex-col gap-1.5">
+                                    <span
+                                        class="px-2 py-0.5 rounded-md text-[8px] font-black uppercase tracking-widest border {badge.color}"
+                                    >
+                                        {badge.label}
+                                    </span>
+                                    {#if driver.isTransferListed}
+                                        <span class="px-2 py-0.5 rounded-md text-[8px] font-black uppercase tracking-widest border bg-yellow-400/10 text-yellow-400 border-yellow-400/20">
+                                            {t('on_market')}
+                                        </span>
+                                    {/if}
+                                </div>
                             </td>
                             <td class="py-6 px-4">
                                 <DriverStars {driver} size={14} />
@@ -325,11 +332,18 @@
                                 >
                             </div>
                         </div>
-                        <span
-                            class="px-2 py-0.5 rounded-md text-[8px] font-black uppercase tracking-widest border {badge.color}"
-                        >
-                            {badge.label}
-                        </span>
+                        <div class="flex flex-col items-end gap-1.5">
+                            <span
+                                class="px-2 py-0.5 rounded-md text-[8px] font-black uppercase tracking-widest border {badge.color}"
+                            >
+                                {badge.label}
+                            </span>
+                            {#if driver.isTransferListed}
+                                <span class="px-2 py-0.5 rounded-md text-[8px] font-black uppercase tracking-widest border bg-yellow-400/10 text-yellow-400 border-yellow-400/20">
+                                    {t('on_market')}
+                                </span>
+                            {/if}
+                        </div>
                     </div>
 
                     <div class="grid grid-cols-3 gap-4">
