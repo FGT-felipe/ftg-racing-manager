@@ -221,6 +221,12 @@ export interface Driver {
     highestBidderTeamName?: string | null;
     negotiationAttempts: number;
     marketValue: number;
+
+    // Post-bid negotiation (set by resolver when auction closes with a bid)
+    pendingNegotiation?: boolean;
+    pendingBuyerTeamId?: string | null;
+    pendingBidAmount?: number;
+    pendingOriginalTeamId?: string | null;
 }
 
 export interface YoungDriver {

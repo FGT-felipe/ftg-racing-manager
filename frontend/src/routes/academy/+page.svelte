@@ -30,7 +30,11 @@
         calculateAcademyCurrentStars,
         calculateAcademyMaxStars,
         formatDriverName,
+        getSpecialtyI18nKey,
     } from "$lib/utils/driver";
+    import { YOUTH_ACADEMY_UPGRADE_COST_PER_LEVEL } from "$lib/constants/economics";
+    import ConfirmationModal from "$lib/components/ui/ConfirmationModal.svelte";
+    import type { YoungDriver } from "$lib/types";
     import {
         t,
         translateAcademyNarrative,
@@ -41,16 +45,8 @@
     import { timeService, RaceWeekStatus } from "$lib/services/time_service.svelte";
     import { onDestroy } from "svelte";
 
-    function getSpecialtyKey(
-        specialty: string | null | undefined,
-    ): TranslationKey | null {
-        if (!specialty) return null;
-        const s = specialty.toLowerCase().replace(/\s+/g, "_");
-        if (s === "rainmaster") return "rain_master";
-        if (s === "tyre_whisperer") return "tyre_whisperer";
-        if (s === "late_braker") return "late_braker";
-        if (s === "defensive_minister") return "defensive_minister";
-        return null;
+    function getSpecialtyKey(specialty: string | null | undefined): TranslationKey | null {
+        return getSpecialtyI18nKey(specialty) as TranslationKey | null;
     }
 
     // Initialize stores
@@ -76,6 +72,9 @@
     let selectedCountry = $state(countries[0]);
     let isPurchasing = $state(false);
     let isUpgrading = $state(false);
+    let isSigning = $state(false);
+    let errorMsg = $state('');
+    let signingCandidate = $state<YoungDriver | null>(null);
 
     // Countdown to next POST_RACE processing (Sunday 16:00) — when candidates refresh
     let nextRefreshTime = $state({ days: 0, hours: 0, minutes: 0, seconds: 0 });
@@ -104,10 +103,11 @@
 
     async function handlePurchase() {
         isPurchasing = true;
+        errorMsg = '';
         try {
             await youthAcademyStore.purchaseAcademy(selectedCountry);
         } catch (e: any) {
-            alert(e.message);
+            errorMsg = e.message;
         } finally {
             isPurchasing = false;
         }
@@ -115,20 +115,31 @@
 
     async function handleUpgrade() {
         isUpgrading = true;
+        errorMsg = '';
         try {
             await youthAcademyStore.upgradeAcademy();
         } catch (e: any) {
-            alert(e.message);
+            errorMsg = e.message;
         } finally {
             isUpgrading = false;
         }
     }
 
-    async function handleSelect(id: string) {
+    function handleSelect(candidate: YoungDriver) {
+        signingCandidate = candidate;
+    }
+
+    async function confirmSign() {
+        if (!signingCandidate) return;
+        isSigning = true;
+        errorMsg = '';
         try {
-            await youthAcademyStore.selectCandidate(id);
+            await youthAcademyStore.selectCandidate(signingCandidate.id);
         } catch (e: any) {
-            alert(e.message);
+            errorMsg = e.message;
+        } finally {
+            isSigning = false;
+            signingCandidate = null;
         }
     }
 
@@ -466,7 +477,7 @@
                                         Next Season
                                     {:else}
                                         {formatCurrencyCompact(
-                                            1000000 *
+                                            YOUTH_ACADEMY_UPGRADE_COST_PER_LEVEL *
                                                 (youthAcademyStore.config
                                                     ?.academyLevel ?? 1),
                                         )}
@@ -1033,7 +1044,7 @@
                                     class="flex items-center justify-center gap-3 py-4 bg-emerald-500 text-black text-[11px] font-black uppercase rounded-2xl hover:scale-105 active:scale-95 transition-all shadow-xl shadow-emerald-500/20 disabled:grayscale disabled:opacity-20 disabled:cursor-not-allowed group/btn overflow-hidden"
                                     disabled={youthAcademyStore.selectedDrivers
                                         .length >= youthAcademyStore.maxSlots}
-                                    onclick={() => handleSelect(candidate.id)}
+                                    onclick={() => handleSelect(candidate)}
                                 >
                                     <UserPlus
                                         class="w-4 h-4 transition-transform group-hover/btn:rotate-12"
@@ -1061,7 +1072,7 @@
                                 >
                                 <span
                                     class="text-[11px] font-black text-app-text italic tracking-tighter"
-                                    >{formatCurrencyCompact(10000)}</span
+                                    >{formatCurrencyCompact(candidate.salary ?? 0)}/wk</span
                                 >
                             </div>
                         </div>
@@ -1111,6 +1122,29 @@
         </div>
     {/if}
 </div>
+
+<!-- Error toast -->
+{#if errorMsg}
+    <div class="fixed bottom-6 left-1/2 -translate-x-1/2 z-[200] px-6 py-3 bg-red-500/90 backdrop-blur-sm rounded-2xl border border-red-500/30 shadow-2xl flex items-center gap-3">
+        <span class="text-sm font-bold text-white">{errorMsg}</span>
+        <button onclick={() => errorMsg = ''} class="text-white/60 hover:text-white text-xs font-black ml-2">✕</button>
+    </div>
+{/if}
+
+<!-- Signing Confirmation Modal -->
+<ConfirmationModal
+    isOpen={signingCandidate !== null}
+    title={t('academy_sign_confirm_title')}
+    message={t('academy_sign_confirm_msg', {
+        name: signingCandidate?.name ?? '',
+        salary: formatCurrencyCompact(signingCandidate?.salary ?? 0),
+    })}
+    confirmLabel={t('sign_contract')}
+    type="info"
+    isLoading={isSigning}
+    onConfirm={confirmSign}
+    onCancel={() => { signingCandidate = null; }}
+/>
 
 <style>
     :global(.animate-fade-in) {

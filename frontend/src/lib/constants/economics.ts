@@ -154,3 +154,52 @@ export const TRANSFER_MARKET_LISTING_FEE_RATE = 0.10;
 
 /** Driver release fee as a fraction of market value (10%). */
 export const TRANSFER_MARKET_RELEASE_FEE_RATE = 0.10;
+
+/** Non-refundable commission charged to the winning bidder (5% of bid amount). Lost even if negotiations fail. */
+export const TRANSFER_MARKET_BID_FEE_RATE = 0.05;
+
+// ---------------------------------------------------------------------------
+// Contract Negotiation
+// ---------------------------------------------------------------------------
+
+/** Fee charged to renew a driver's contract (10% of annualSalary × years). */
+export const DRIVER_RENEWAL_FEE_RATE = 0.10;
+
+/** Morale points deducted from a driver when they are dismissed. */
+export const DISMISS_MORALE_PENALTY = 20;
+
+/** Maximum negotiation attempts before a driver walks away. */
+export const NEGOTIATION_MAX_ATTEMPTS = 3;
+
+/** Morale penalty applied to a driver per failed negotiation attempt. */
+export const NEGOTIATION_MORALE_PENALTY_PER_FAIL = 5;
+
+/** Additional morale penalty when all attempts are exhausted (stacks with per-fail penalties). */
+export const NEGOTIATION_MORALE_PENALTY_TOTAL_FAIL = 15;
+
+/**
+ * Driver counter-proposal multiplier by statusTitle.
+ * Value = additional fraction the driver demands on top of the offered salary.
+ */
+export const NEGOTIATION_TITLE_WEIGHT: Record<string, number> = {
+    'Living Legend':        0.30,
+    'Era Dominator':        0.25,
+    'The Heir':             0.20,
+    'Elite Veteran':        0.15,
+    'Young Wonder':         0.15,
+    'Rising Star':          0.12,
+    'Solid Specialist':     0.10,
+    'Midfield Spark':       0.08,
+    'Last Dance':           0.05,
+    'Stuck Promise':        0.05,
+    'Journeyman':           0.05,
+    'Past Glory':           0.03,
+    'Unsung Driver':        0.02,
+    'Grid Filler':          0.00,
+};
+
+/**
+ * Driver counter-proposal multiplier per star level (currentStars 1–5).
+ * Index = stars value (index 0 unused).
+ */
+export const NEGOTIATION_STARS_WEIGHT = [0, 0.00, 0.05, 0.10, 0.15, 0.20];

@@ -1,5 +1,5 @@
 <script lang="ts">
-    import { Users, Gavel, X, ChevronLeft, ChevronRight, Lock, Minus, Plus, CheckCircle } from "lucide-svelte";
+    import { Users, Gavel, X, ChevronLeft, ChevronRight, Lock, Minus, Plus, CheckCircle, Handshake } from "lucide-svelte";
     import { fly, fade } from "svelte/transition";
     import { teamStore } from "$lib/stores/team.svelte";
     import { formatDriverName, calculateCurrentStars, calculateDriverMarketValue } from "$lib/utils/driver";
@@ -7,6 +7,10 @@
     import CountryFlag from "$lib/components/ui/CountryFlag.svelte";
     import { onDestroy, onMount } from "svelte";
     import { t } from "$lib/utils/i18n";
+    import { managerStore } from "$lib/stores/manager.svelte";
+    import NegotiationModal from "$lib/components/NegotiationModal.svelte";
+    import { staffService } from "$lib/services/staff.svelte";
+    import type { Driver } from "$lib/types";
 
     // ─── Types ────────────────────────────────────────────────────────────────────
     interface MarketDriver {
@@ -58,6 +62,10 @@
     let countdownMap = $state<Record<string, string>>({});
     let activeDrivers = $derived(drivers.filter(d => countdownMap[d.id] !== "Expired"));
     let timerInterval: ReturnType<typeof setInterval> | null = null;
+
+    // Pending negotiations (drivers with pendingNegotiation == true for my team)
+    let pendingNegotiations = $state<Driver[]>([]);
+    let negotiatingDriver = $state<Driver | null>(null);
 
     // ─── Helpers ─────────────────────────────────────────────────────────────────
     function formatCurrency(value: number): string {
@@ -244,13 +252,33 @@
         return diff > 0 && diff < 5 * 60 * 1000;
     }
 
+    async function fetchPendingNegotiations() {
+        if (!db || !firestoreApi || !myTeamId) return;
+        try {
+            const { collection, query, where, getDocs } = firestoreApi;
+            const snap = await getDocs(query(
+                collection(db, "drivers"),
+                where("pendingNegotiation", "==", true),
+                where("pendingBuyerTeamId", "==", myTeamId),
+            ));
+            pendingNegotiations = snap.docs.map((d: any) => {
+                const raw = { id: d.id, ...d.data() } as Driver;
+                raw.currentStars = calculateCurrentStars(raw);
+                if (!raw.marketValue) raw.marketValue = calculateDriverMarketValue(raw);
+                return raw;
+            });
+        } catch (e) {
+            console.error('[Market] fetchPendingNegotiations error:', e);
+        }
+    }
+
     // Initialize lazily in browser only — never during SSR
     onMount(async () => {
         const firestore = await import("firebase/firestore");
         firestoreApi = firestore;
         db = firestore.getFirestore();
         checkMarketWindow();
-        await fetchPage(0);
+        await Promise.all([fetchPage(0), fetchPendingNegotiations()]);
         timerInterval = setInterval(updateCountdowns, 1000);
     });
 
@@ -284,6 +312,41 @@
             </div>
         </div>
     </header>
+
+    <!-- Pending Negotiations -->
+    {#if pendingNegotiations.length > 0}
+        <section class="mb-8">
+            <div class="flex items-center gap-3 mb-4">
+                <div class="p-2 rounded-xl bg-yellow-500/10 text-yellow-500">
+                    <Handshake size={18} />
+                </div>
+                <div>
+                    <h2 class="text-sm font-black uppercase tracking-widest text-yellow-500">{t('pending_negotiations')}</h2>
+                    <p class="text-[10px] text-app-text/40">{t('pending_neg_desc')}</p>
+                </div>
+            </div>
+            <div class="flex flex-col gap-3">
+                {#each pendingNegotiations as pendingDriver}
+                    <div class="flex items-center gap-4 px-5 py-4 bg-yellow-500/5 border border-yellow-500/20 rounded-2xl">
+                        <DriverAvatar id={pendingDriver.id} gender={pendingDriver.gender} class="w-10 h-10 rounded-xl overflow-hidden shrink-0" />
+                        <div class="flex-1 overflow-hidden">
+                            <p class="font-black uppercase tracking-tight text-app-text truncate">{formatDriverName(pendingDriver.name)}</p>
+                            <p class="text-[10px] text-app-text/40">{t('market_value')}: {formatCurrency(pendingDriver.marketValue)}</p>
+                        </div>
+                        <p class="text-[10px] font-bold text-yellow-500 shrink-0">
+                            Fee paid: {formatCurrency(pendingDriver.pendingBidAmount ?? 0)}
+                        </p>
+                        <button
+                            onclick={() => { negotiatingDriver = pendingDriver; }}
+                            class="px-4 py-2 bg-yellow-500 text-black text-[10px] font-black uppercase tracking-widest rounded-xl hover:bg-yellow-400 transition-all shrink-0"
+                        >
+                            {t('negotiate_contract')}
+                        </button>
+                    </div>
+                {/each}
+            </div>
+        </section>
+    {/if}
 
     <!-- Market Closed -->
     {#if !isMarketOpen}
@@ -499,7 +562,7 @@
                                 </div>
                                 <div class="flex flex-col gap-1 text-right">
                                     <span class="text-[9px] font-bold text-app-text/40 uppercase">Salary</span>
-                                    <span class="text-xs font-black text-green-400">{formatCurrency(d.salary)}/WK</span>
+                                    <span class="text-xs font-black text-green-400">{formatCurrency(Math.round(d.salary / 52))}/WK</span>
                                 </div>
                                 <div class="flex flex-col gap-1">
                                     <span class="text-[9px] font-bold text-app-text/40 uppercase">Remaining</span>
@@ -715,4 +778,27 @@
             </div>
         </div>
     {/if}
+{/if}
+
+<!-- Transfer Negotiation Modal -->
+{#if negotiatingDriver && myTeamId}
+    <NegotiationModal
+        driver={negotiatingDriver}
+        teamId={myTeamId}
+        managerBackground={managerStore.profile?.backgroundId ?? ''}
+        isOpen={negotiatingDriver !== null}
+        feeLabel="Contract Cost"
+        onFinalize={async (salary, years, moraleChange) => {
+            await staffService.finalizeTransferAcquisition(negotiatingDriver!, {
+                accepted: true, salary, years, moraleChange,
+            });
+        }}
+        onFailed={async (moraleChange) => {
+            await staffService.finalizeTransferAcquisition(negotiatingDriver!, {
+                accepted: false, moraleChange,
+            });
+        }}
+        onClose={() => { negotiatingDriver = null; fetchPendingNegotiations(); }}
+        onSuccess={() => { negotiatingDriver = null; fetchPendingNegotiations(); }}
+    />
 {/if}

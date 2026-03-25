@@ -320,7 +320,7 @@
                                     >
                                     <CountryFlag countryCode={driver.countryCode} size="sm" />
                                     <span>{driver.age}Y • {driver.salary
-                                        ? formatCurrency(driver.salary)
+                                        ? formatCurrency(Math.round(driver.salary / 52))
                                         : "$0"}/WK</span></span
                                 >
                             </div>
@@ -412,6 +412,7 @@
             isOpen={isDetailModalOpen}
             onClose={() => (isDetailModalOpen = false)}
             onRefresh={refreshDrivers}
+            allDrivers={drivers}
         />
     {/if}
 </div>
