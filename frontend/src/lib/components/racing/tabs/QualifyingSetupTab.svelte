@@ -1,6 +1,6 @@
 <script lang="ts">
-    import { db } from "$lib/firebase/config";
-    import { doc, updateDoc, increment } from "firebase/firestore";
+    import { increment } from "firebase/firestore";
+    import { carSetupService } from "$lib/services/car_setup_service.svelte";
     import { teamStore } from "$lib/stores/team.svelte";
     import { managerStore } from "$lib/stores/manager.svelte";
     import { driverStore } from "$lib/stores/driver.svelte";
@@ -171,10 +171,7 @@
                     isSimulating = false;
                     return;
                 }
-                const teamRef = doc(db, "teams", team.id);
-                await updateDoc(teamRef, {
-                    budget: increment(-cost),
-                });
+                await carSetupService.chargeQualyFee(team.id, cost);
             }
 
             // Copy setup for sim
@@ -202,12 +199,8 @@
             );
 
             if (result.fitnessPenalty) {
-                const driverRef = doc(db, "drivers", driver.id);
                 const newFitness = Math.max(0, Math.min(100, (driver.stats.fitness || 100) - result.fitnessPenalty));
-                await updateDoc(driverRef, {
-                    'stats.fitness': newFitness
-                });
-                
+                await carSetupService.applyFitnessPenalty(driver.id, newFitness);
                 pitBoardMessages = [t('qualy_fitness_impact', {name: driver.name}), ...pitBoardMessages].slice(0, 50);
             }
 
@@ -223,7 +216,6 @@
             pitBoardMessages = [`${t('sector_2')}: ${s2Time.toFixed(3)}s`, ...pitBoardMessages].slice(0, 50);
             await new Promise((r) => setTimeout(r, 1000));
 
-            const teamRef = doc(db, "teams", team.id);
             const pathPrefix = `weekStatus.driverSetups.${driver.id}`;
             const newAttempts = attempts + 1;
 
@@ -239,20 +231,19 @@
                 };
                 lastResult = crashResult;
 
-                await updateDoc(teamRef, {
-                    [`${pathPrefix}.qualifyingAttempts`]: MAX_ATTEMPTS,
-                    [`${pathPrefix}.qualifyingLaps`]: increment(2), // Out + Flying
-                    [`${pathPrefix}.qualifyingDnf`]: true,
-                    [`${pathPrefix}.qualifying`]: setup,
-                    [`${pathPrefix}.lastQualyResult`]: crashResult,
-                    [`${pathPrefix}.isSetupSent`]: true,
-                });
-                // Only set Parc Fermé if it's NOT a wet session
-                if (!isWetSession) {
-                    await updateDoc(teamRef, {
-                        [`${pathPrefix}.qualifyingParcFerme`]: true
-                    });
-                }
+                await carSetupService.saveQualyResult(
+                    team.id,
+                    driver.id,
+                    {
+                        [`${pathPrefix}.qualifyingAttempts`]: MAX_ATTEMPTS,
+                        [`${pathPrefix}.qualifyingLaps`]: increment(2),
+                        [`${pathPrefix}.qualifyingDnf`]: true,
+                        [`${pathPrefix}.qualifying`]: setup,
+                        [`${pathPrefix}.lastQualyResult`]: crashResult,
+                        [`${pathPrefix}.isSetupSent`]: true,
+                    },
+                    !isWetSession,
+                );
                 driverDialogue = t('returning_pits_bad');
                 pitBoardMessages = [driverDialogue, ...pitBoardMessages].slice(0, 50);
                 uiStore.alert(t('qualy_crash_report', { name: driver.name }), t('accident_label'), 'danger');
@@ -282,21 +273,20 @@
                 };
                 lastResult = finalResult;
 
-                await updateDoc(teamRef, {
-                    [`${pathPrefix}.qualifyingAttempts`]: newAttempts,
-                    [`${pathPrefix}.qualifyingBestTime`]: newBest,
-                    [`${pathPrefix}.qualifyingLaps`]: increment(3), // Out + Flying + In
-                    [`${pathPrefix}.qualifyingBestCompound`]: bestCompound,
-                    [`${pathPrefix}.qualifying`]: setup,
-                    [`${pathPrefix}.lastQualyResult`]: finalResult,
-                    [`${pathPrefix}.isSetupSent`]: true,
-                });
-                // Only set Parc Fermé if it's NOT a wet session
-                if (!isWetSession) {
-                    await updateDoc(teamRef, {
-                        [`${pathPrefix}.qualifyingParcFerme`]: true
-                    });
-                }
+                await carSetupService.saveQualyResult(
+                    team.id,
+                    driver.id,
+                    {
+                        [`${pathPrefix}.qualifyingAttempts`]: newAttempts,
+                        [`${pathPrefix}.qualifyingBestTime`]: newBest,
+                        [`${pathPrefix}.qualifyingLaps`]: increment(3), // Out + Flying + In
+                        [`${pathPrefix}.qualifyingBestCompound`]: bestCompound,
+                        [`${pathPrefix}.qualifying`]: setup,
+                        [`${pathPrefix}.lastQualyResult`]: finalResult,
+                        [`${pathPrefix}.isSetupSent`]: true,
+                    },
+                    !isWetSession,
+                );
                 driverDialogue = (result.lapTime < (bestTime || 999)) ? t('returning_pits_good') : t('returning_pits_bad');
                 pitBoardMessages = [driverDialogue, ...pitBoardMessages].slice(0, 50);
                 await refreshStandings();
