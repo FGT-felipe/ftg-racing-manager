@@ -1,5 +1,6 @@
 <script lang="ts">
     import { authStore } from "$lib/stores/auth.svelte";
+    import { APP_VERSION } from "$lib/constants/app_constants";
     import { functions } from "$lib/firebase/config";
     import { httpsCallable } from "firebase/functions";
     import { goto } from "$app/navigation";
@@ -176,7 +177,7 @@
                     </div>
                     <div class="flex flex-col">
                         <span class="text-sm font-heading font-black uppercase italic tracking-tighter">FTG Terminal</span>
-                        <span class="text-[8px] font-black uppercase tracking-widest text-app-text/30">v4.2.0-STABLE</span>
+                        <span class="text-[8px] font-black uppercase tracking-widest text-app-text/30">{APP_VERSION}</span>
                     </div>
                 </div>
 

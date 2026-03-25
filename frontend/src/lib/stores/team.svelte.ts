@@ -3,6 +3,7 @@ import { collection, query, where, onSnapshot, limit } from 'firebase/firestore'
 import { authStore } from '$lib/stores/auth.svelte';
 import { browser } from '$app/environment';
 import type { Team } from '$lib/types';
+import { TEAM_RENAME_COST } from '$lib/constants/economics';
 
 export function createTeamStore() {
     let currentTeam = $state<Team | null>(null);
@@ -123,7 +124,7 @@ export function createTeamStore() {
 
             const { doc, runTransaction } = await import('firebase/firestore');
             const teamRef = doc(db, 'teams', currentTeam.id);
-            const nameChangeCost = 500000;
+            const nameChangeCost = TEAM_RENAME_COST;
 
             await runTransaction(db, async (transaction) => {
                 const teamDoc = await transaction.get(teamRef);
