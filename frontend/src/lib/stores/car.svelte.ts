@@ -3,6 +3,7 @@ import { teamStore } from '$lib/stores/team.svelte';
 import { managerStore } from '$lib/stores/manager.svelte';
 import { notificationStore } from '$lib/stores/notifications.svelte';
 import { doc, runTransaction, collection } from 'firebase/firestore';
+import { CAR_UPGRADE_BASE_COST, CAR_PART_MAX_LEVEL, BUREAUCRAT_UPGRADE_COOLDOWN_WEEKS } from '$lib/constants/economics';
 
 export function createCarStore() {
     return {
@@ -19,7 +20,7 @@ export function createCarStore() {
             const profile = managerStore.profile;
             // Fibonacci sequence for multiplier: 1, 1, 2, 3, 5, 8, 13, 21...
             if (currentLevel <= 2) {
-                const base = 100000;
+                const base = CAR_UPGRADE_BASE_COST;
                 return profile?.role === 'engineer' ? base * 2 : base;
             }
 
@@ -31,7 +32,7 @@ export function createCarStore() {
                 b = temp;
             }
 
-            const base = b * 100000;
+            const base = b * CAR_UPGRADE_BASE_COST;
             return profile?.role === 'engineer' ? base * 2 : base;
         },
 
@@ -43,8 +44,8 @@ export function createCarStore() {
             const currentStats = this.carStats[carIndex.toString()] || {};
             const currentLevel = currentStats[partKey] || 1;
 
-            if (currentLevel >= 20) {
-                throw new Error("Part is already at maximum level (20)");
+            if (currentLevel >= CAR_PART_MAX_LEVEL) {
+                throw new Error(`Part is already at maximum level (${CAR_PART_MAX_LEVEL})`);
             }
 
             const cost = this.getUpgradeCost(currentLevel);
@@ -89,7 +90,7 @@ export function createCarStore() {
                 // Update week status
                 weekStatus.upgradesThisWeek = upgradeCount + 1;
                 if (profile?.role === 'bureaucrat') {
-                    weekStatus.upgradeCooldownWeeksLeft = 2;
+                    weekStatus.upgradeCooldownWeeksLeft = BUREAUCRAT_UPGRADE_COOLDOWN_WEEKS;
                 }
 
                 transaction.update(teamRef, {

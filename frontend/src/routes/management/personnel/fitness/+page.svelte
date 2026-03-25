@@ -2,6 +2,12 @@
     import { teamStore } from "$lib/stores/team.svelte";
     import { staffService } from "$lib/services/staff.svelte";
     import {
+        FITNESS_TRAINER_SALARY_BY_LEVEL,
+        FITNESS_TRAINER_BONUS_BY_LEVEL,
+        FITNESS_TRAINER_UPGRADE_COSTS,
+        FITNESS_TRAINER_MAX_LEVEL,
+    } from "$lib/constants/economics";
+    import {
         ChevronLeft,
         Dumbbell,
         Star,
@@ -43,9 +49,9 @@
     let isUpgrading = $state(false);
     let isSaving = $state(false);
 
-    const salaryByLevel = [0, 0, 50000, 120000, 250000, 500000];
-    const bonusByLevel = [0, 3, 6, 9, 12, 15];
-    const upgradeCosts = [0, 0, 100000, 250000, 500000, 1000000];
+    const salaryByLevel = FITNESS_TRAINER_SALARY_BY_LEVEL;
+    const bonusByLevel = FITNESS_TRAINER_BONUS_BY_LEVEL;
+    const upgradeCosts = FITNESS_TRAINER_UPGRADE_COSTS;
 
     $effect(() => {
         if (team?.id) {

@@ -13,6 +13,15 @@ import {
     type ActiveContract
 } from '$lib/types';
 import { ActiveContractSchema } from '$lib/schemas/sponsor.schema';
+import {
+    SPONSOR_TIER_FINANCES,
+    SPONSOR_OBJECTIVE_BONUSES,
+    SPONSOR_BUSINESS_MULTIPLIER,
+    SPONSOR_MAX_NEGOTIATION_ATTEMPTS,
+    SPONSOR_OFFERS_PER_SLOT,
+    SPONSOR_CONTRACT_DURATION_MIN,
+    SPONSOR_CONTRACT_DURATION_RANGE,
+} from '$lib/constants/economics';
 
 export enum NegotiationStatus {
     success = 'success',
@@ -57,24 +66,24 @@ const SPONSOR_POOL: Record<SponsorTier, { id: string, name: string, countryCode:
 
 const OBJECTIVES_BY_TIER: Record<SponsorTier, { desc: string, bonus: number }[]> = {
     [SponsorTier.title]: [
-        { desc: "Race Win", bonus: 300000 },
-        { desc: "Finish Top 3", bonus: 250000 },
-        { desc: "Double Podium", bonus: 450000 },
-        { desc: "Finish Top 5", bonus: 180000 },
+        { desc: "Race Win",      bonus: SPONSOR_OBJECTIVE_BONUSES.title.race_win },
+        { desc: "Finish Top 3",  bonus: SPONSOR_OBJECTIVE_BONUSES.title.top_3 },
+        { desc: "Double Podium", bonus: SPONSOR_OBJECTIVE_BONUSES.title.double_podium },
+        { desc: "Finish Top 5",  bonus: SPONSOR_OBJECTIVE_BONUSES.title.top_5 },
     ],
     [SponsorTier.major]: [
-        { desc: "Finish Top 5", bonus: 150000 },
-        { desc: "Finish Top 8", bonus: 110000 },
-        { desc: "Finish Top 10", bonus: 100000 },
-        { desc: "Fastest Lap", bonus: 120000 },
-        { desc: "Home Race Win", bonus: 220000 },
+        { desc: "Finish Top 5",  bonus: SPONSOR_OBJECTIVE_BONUSES.major.top_5 },
+        { desc: "Finish Top 8",  bonus: SPONSOR_OBJECTIVE_BONUSES.major.top_8 },
+        { desc: "Finish Top 10", bonus: SPONSOR_OBJECTIVE_BONUSES.major.top_10 },
+        { desc: "Fastest Lap",   bonus: SPONSOR_OBJECTIVE_BONUSES.major.fastest_lap },
+        { desc: "Home Race Win", bonus: SPONSOR_OBJECTIVE_BONUSES.major.home_win },
     ],
     [SponsorTier.partner]: [
-        { desc: "Finish Top 16", bonus: 50000 },
-        { desc: "Finish Race", bonus: 40000 },
-        { desc: "Improve Grid", bonus: 40000 },
-        { desc: "Overtake 3 Cars", bonus: 35000 },
-        { desc: "Home Race Win", bonus: 80000 },
+        { desc: "Finish Top 16",  bonus: SPONSOR_OBJECTIVE_BONUSES.partner.top_16 },
+        { desc: "Finish Race",    bonus: SPONSOR_OBJECTIVE_BONUSES.partner.finish_race },
+        { desc: "Improve Grid",   bonus: SPONSOR_OBJECTIVE_BONUSES.partner.improve_grid },
+        { desc: "Overtake 3 Cars",bonus: SPONSOR_OBJECTIVE_BONUSES.partner.overtake_3 },
+        { desc: "Home Race Win",  bonus: SPONSOR_OBJECTIVE_BONUSES.partner.home_win },
     ]
 };
 
@@ -89,7 +98,7 @@ export class SponsorService {
         let isAdmin = false;
 
         if (role === 'business') {
-            multiplier = 1.15;
+            multiplier = SPONSOR_BUSINESS_MULTIPLIER;
             isAdmin = true;
         }
 
@@ -98,7 +107,7 @@ export class SponsorService {
             return values[Math.floor(Math.random() * values.length)];
         };
 
-        const getRandomDuration = () => 4 + Math.floor(Math.random() * 7);
+        const getRandomDuration = () => SPONSOR_CONTRACT_DURATION_MIN + Math.floor(Math.random() * SPONSOR_CONTRACT_DURATION_RANGE);
 
         // Map slot to Tier
         let targetTier = SponsorTier.partner;
@@ -116,19 +125,12 @@ export class SponsorService {
                 break;
         }
 
-        // Base financial values by tier
-        const TIER_FINANCES = {
-            [SponsorTier.title]: { sign: 900000, weekly: 150000 },
-            [SponsorTier.major]: { sign: 320000, weekly: 50000 },
-            [SponsorTier.partner]: { sign: 65000, weekly: 15000 }
-        };
-
-        const finances = TIER_FINANCES[targetTier];
+        const finances = SPONSOR_TIER_FINANCES[targetTier];
         const activeSponsorIds = new Set(Object.values(activeContracts).map(c => c.sponsorId));
         
         // Pick 3 random sponsors from pool for this tier, avoiding duplicates
         const sponsorPool = SPONSOR_POOL[targetTier].filter(s => !activeSponsorIds.has(s.id));
-        const pickedSponsors = [...sponsorPool].sort(() => 0.5 - Math.random()).slice(0, 3);
+        const pickedSponsors = [...sponsorPool].sort(() => 0.5 - Math.random()).slice(0, SPONSOR_OFFERS_PER_SLOT);
 
         const offers: SponsorOffer[] = pickedSponsors.map((s) => {
             // Pick a random objective for this tier
@@ -174,7 +176,7 @@ export class SponsorService {
     }): Promise<NegotiationResult> {
         const { teamId, offer, tactic, slot } = params;
 
-        if (offer.attemptsMade >= 2) {
+        if (offer.attemptsMade >= SPONSOR_MAX_NEGOTIATION_ATTEMPTS) {
             return { status: NegotiationStatus.locked, message: "Negotiation failed too many times.", remainingAttempts: 0 };
         }
 
@@ -206,10 +208,10 @@ export class SponsorService {
             return { status: NegotiationStatus.success, message: "Deal Signed!", remainingAttempts: 0 };
         } else {
             const attemptsMade = (offer.attemptsMade || 0) + 1;
-            const remaining = 2 - attemptsMade;
+            const remaining = SPONSOR_MAX_NEGOTIATION_ATTEMPTS - attemptsMade;
             let lockedUntil: Date | null = null;
 
-            if (attemptsMade >= 2) {
+            if (attemptsMade >= SPONSOR_MAX_NEGOTIATION_ATTEMPTS) {
                 lockedUntil = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000);
             }
 
@@ -219,7 +221,7 @@ export class SponsorService {
                 lockedUntil
             });
 
-            if (attemptsMade >= 2) {
+            if (attemptsMade >= SPONSOR_MAX_NEGOTIATION_ATTEMPTS) {
                 return { status: NegotiationStatus.locked, message: "Sponsor walked away.", remainingAttempts: 0 };
             }
 
