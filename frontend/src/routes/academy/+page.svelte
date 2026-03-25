@@ -1148,13 +1148,13 @@
         width: 8px;
     }
     :global(body::-webkit-scrollbar-track) {
-        background: #09090b;
+        background: var(--app-bg);
     }
     :global(body::-webkit-scrollbar-thumb) {
-        background: #27272a;
+        background: var(--app-border);
         border-radius: 10px;
     }
     :global(body::-webkit-scrollbar-thumb:hover) {
-        background: #3f3f46;
+        background: var(--app-text);
     }
 </style>

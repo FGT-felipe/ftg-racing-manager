@@ -225,7 +225,7 @@ import { circuitService } from "$lib/services/circuit_service.svelte";
 
         if (!hasPaid) {
             if (team.budget < PRACTICE_SESSION_COST) {
-                uiStore.alert(t('insufficient_funds'), 'Presupuesto Insuficiente', 'danger');
+                uiStore.alert(t('insufficient_funds'), t('insufficient_funds'), 'danger');
                 isSimulating = false;
                 return;
             }
