@@ -32,3 +32,6 @@ firebase-debug.*.log
 
 # Coverage
 /coverage/
+
+# Local planning (not for version control)
+ROADMAP.md

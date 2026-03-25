@@ -297,6 +297,14 @@ async function runPostRaceProcessing() {
                                 updates["specialty"] = "Late Braker";
                             else if (s["overtaking"] >= 11)
                                 updates["specialty"] = "Defensive Minister";
+                            else if (s["cornering"] >= 11)
+                                updates["specialty"] = "Apex Hunter";
+                            else if (s["consistency"] >= 11)
+                                updates["specialty"] = "Iron Nerve";
+                            else if (s["focus"] >= 11)
+                                updates["specialty"] = "Qualy Ace";
+                            else if (s["fitness"] >= 11)
+                                updates["specialty"] = "Iron Wall";
                         }
                         updates["weeklyStatDiffs"] = statDiffs;
                         updates["weeklyEventMessage"] = eventMsg;
@@ -348,7 +356,12 @@ async function runPostRaceProcessing() {
                                     gender: yData["gender"],
                                     nationality: yData["nationality"],
                                     portraitUrl: yData["portraitUrl"],
-                                    salary: yData["salary"] || 520_000,
+                                    salary: (() => {
+                                        const DRIVING = ["cornering","braking","consistency","smoothness","adaptability","overtaking","defending","focus"];
+                                        const avg = DRIVING.reduce((s, k) => s + (yData.stats?.[k] || 5), 0) / DRIVING.length;
+                                        const stars = Math.max(1, Math.min(5, Math.ceil(avg / 4)));
+                                        return constants_1.PROMOTION_SALARY_BY_STARS[stars - 1] ?? constants_1.ACADEMY_PROMOTION_DEFAULT_SALARY;
+                                    })(),
                                     contractYearsRemaining: 1,
                                     role: "Reserve",
                                     specialty: yData["specialty"] || null,

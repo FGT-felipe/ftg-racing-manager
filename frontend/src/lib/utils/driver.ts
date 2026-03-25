@@ -7,7 +7,34 @@ import {
     TRANSFER_MARKET_AGE_PREMIUM_RATE,
     TRANSFER_MARKET_AGE_FLOOR,
     TRANSFER_MARKET_MIN_VALUE,
+    NEGOTIATION_TITLE_WEIGHT,
+    NEGOTIATION_STARS_WEIGHT,
 } from '../constants/economics';
+
+// ---------------------------------------------------------------------------
+// Driver Level
+// ---------------------------------------------------------------------------
+
+export interface DriverLevelInfo {
+    label: string;
+    color: string;
+    borderColor: string;
+}
+
+/**
+ * Returns display label and color classes for a driver's current star level.
+ * Used consistently across all views (market, roster, negotiation, academy).
+ *
+ * @param stars - Current star rating (1–5)
+ * @param t - i18n translation function
+ */
+export function getDriverLevelInfo(stars: number, t: (key: string) => string): DriverLevelInfo {
+    if (stars >= 5) return { label: t('elite'),               color: 'text-yellow-500', borderColor: 'border-yellow-500/40' };
+    if (stars >= 4) return { label: t('pro'),                 color: 'text-blue-400',   borderColor: 'border-blue-400/40' };
+    if (stars >= 3) return { label: t('driver_level_veteran'),color: 'text-green-400',  borderColor: 'border-green-400/40' };
+    if (stars >= 2) return { label: t('driver_level_talent'), color: 'text-orange-400', borderColor: 'border-orange-400/40' };
+    return              { label: t('driver_level_rookie'),    color: 'text-app-text/40', borderColor: 'border-app-border' };
+}
 
 /**
  * Calculates current stars for regular professional drivers.
@@ -77,12 +104,12 @@ export function calculateAcademyMaxStars(candidate: any): number {
  * - currentPerformanceFactor: 0.6× (1-star perf) to 1.0× (5-star perf)
  * - ageFactor: premium below peak age (TRANSFER_MARKET_AGE_PEAK), depreciation above it
  *
- * @param driver - The driver object (must have salary, potential, age, stats)
+ * @param driver - The driver object (must have salary [annual], potential, age, stats)
  * @returns Market value in USD, floored at TRANSFER_MARKET_MIN_VALUE
  */
 export function calculateDriverMarketValue(driver: Driver): number {
     const currentStars = calculateCurrentStars(driver);
-    const annualSalary = driver.salary * 52;
+    const annualSalary = driver.salary; // driver.salary is stored as annual per reglas_negocio.md
 
     // 1.0× for 1-star potential, 3.0× for 5-star potential
     const potentialMultiplier = 1 + (driver.potential - 1) * TRANSFER_MARKET_POTENTIAL_MULTIPLIER_PER_STAR;
@@ -141,4 +168,46 @@ export function isRetiringNextSeason(driver: Driver | YoungDriver): boolean {
 export function rejectsLongContracts(driver: Driver | YoungDriver): boolean {
     if (!driver) return false;
     return driver.age >= 37;
+}
+
+// ---------------------------------------------------------------------------
+// Contract Negotiation
+// ---------------------------------------------------------------------------
+
+/**
+ * Calculates how much a driver raises their counter-proposal above the offered salary.
+ * Formula: offeredSalary × (titleWeight + starsWeight)
+ *
+ * - titleWeight: based on driver.statusTitle (0.00 for Grid Filler → 0.30 for Living Legend)
+ * - starsWeight: based on currentStars (0.00 for 1-star → 0.20 for 5-star)
+ *
+ * @param driver - Driver being negotiated with
+ * @param offeredSalary - Weekly salary offered by the manager
+ * @returns Counter-proposed weekly salary (always >= offeredSalary)
+ */
+export function calculateDriverCounterProposal(driver: Driver, offeredSalary: number): number {
+    const currentStars = calculateCurrentStars(driver);
+    const titleWeight = NEGOTIATION_TITLE_WEIGHT[driver.statusTitle] ?? 0;
+    const starsWeight = NEGOTIATION_STARS_WEIGHT[currentStars] ?? 0;
+    const totalMarkup = titleWeight + starsWeight;
+    return Math.round(offeredSalary * (1 + totalMarkup));
+}
+
+/**
+ * Maps a driver specialty string to its i18n key.
+ * Returns null if no specialty is assigned.
+ */
+export function getSpecialtyI18nKey(specialty: string | null | undefined): string | null {
+    if (!specialty) return null;
+    const map: Record<string, string> = {
+        'Rainmaster':           'rain_master',
+        'Tyre Whisperer':       'tyre_whisperer',
+        'Late Braker':          'late_braker',
+        'Defensive Minister':   'defensive_minister',
+        'Apex Hunter':          'apex_hunter',
+        'Iron Nerve':           'iron_nerve',
+        'Qualy Ace':            'qualy_ace',
+        'Iron Wall':            'iron_wall',
+    };
+    return map[specialty] ?? null;
 }

@@ -11,8 +11,6 @@
         X,
         Activity,
         Smile,
-        TrendingUp,
-        ShieldCheck,
         RefreshCw,
         Info,
         Trash2,
@@ -26,9 +24,15 @@
     import {
         calculateCurrentStars,
         calculateMaxStars,
+        calculateDriverMarketValue,
+        getDriverLevelInfo,
+        getSpecialtyI18nKey,
         isNearingRetirement,
         isRetiringNextSeason,
     } from "$lib/utils/driver";
+    import { TRANSFER_MARKET_LISTING_FEE_RATE, DISMISS_MORALE_PENALTY } from "$lib/constants/economics";
+    import NegotiationModal from "./NegotiationModal.svelte";
+    import { managerStore } from "$lib/stores/manager.svelte";
     import { t } from "$lib/utils/i18n";
     import { getTitleInfo } from "$lib/constants/titles";
     import ConfirmationModal from "./ui/ConfirmationModal.svelte";
@@ -39,14 +43,18 @@
         isOpen: boolean;
         onClose: () => void;
         onRefresh?: () => void;
+        /** Full roster — used to detect reserve availability before dismissal. */
+        allDrivers?: Driver[];
     }
 
-    let { driver, isOpen, onClose, onRefresh }: Props = $props();
+    let { driver, isOpen, onClose, onRefresh, allDrivers = [] }: Props = $props();
 
     let team = $derived(teamStore.value.team);
+    let driverLevel = $derived(getDriverLevelInfo(calculateCurrentStars(driver), t));
     let isFlipped = $state(false);
     let showStatusTooltip = $state(false);
     let isProcessing = $state(false);
+    let showNegotiationModal = $state(false);
 
     // Confirmation Modal State
     let confirmConfig = $state<{
@@ -83,20 +91,20 @@
 
 
     const DRIVING_STATS = [
-        { key: "braking", label: "Braking" },
-        { key: "cornering", label: "Cornering" },
-        { key: "smoothness", label: "Smoothness" },
-        { key: "overtaking", label: "Overtaking" },
-        { key: "defending", label: "Defending" },
-        { key: "consistency", label: "Consistency" },
+        { key: "braking",      label: "Braking" },
+        { key: "cornering",    label: "Cornering" },
+        { key: "smoothness",   label: "Smoothness" },
+        { key: "overtaking",   label: "Overtaking" },
+        { key: "defending",    label: "Defending" },
+        { key: "consistency",  label: "Consistency" },
         { key: "adaptability", label: "Adaptability" },
+        { key: "focus",        label: "Focus" },
+        { key: "feedback",     label: "Feedback" },
     ];
 
     const MENTAL_STATS = [
         { key: "fitness", label: "Fitness", icon: Activity },
-        { key: "focus", label: "Focus", icon: ShieldCheck },
-        { key: "feedback", label: "Feedback", icon: TrendingUp },
-        { key: "morale", label: "Morale", icon: Smile },
+        { key: "morale",  label: "Morale",  icon: Smile },
     ];
 
     function getStatColor(value: number, isPercentage = false) {
@@ -123,11 +131,22 @@
         return "text-red-400";
     }
 
-    async function handleDismiss() {
-        const releaseFee = driver.salary * 12 * 0.1; // 10% fee
+    function handleDismiss() {
+        const dismissFee = driver.salary; // Full annual salary as severance
+        const hasReserve = allDrivers.some(
+            d => d.id !== driver.id && d.role?.toLowerCase() === 'reserve'
+        );
+        const isMainDriver = driver.carIndex >= 0;
+
+        let message = t("dismiss_confirm", { name: driver.name, amount: formatCurrency(dismissFee) });
+        if (isMainDriver && !hasReserve) {
+            message += `\n\n${t("dismiss_no_reserve_warning")}`;
+        }
+        message += `\n\n${t("dismiss_driver_fate", { name: driver.name.split(' ')[0], penalty: String(DISMISS_MORALE_PENALTY) })}`;
+
         showConfirm({
             title: t("dismiss"),
-            message: `${t("dismiss_confirm", { name: driver.name })} ${t("release_fee_warning", { amount: formatCurrency(releaseFee) })}`,
+            message,
             confirmLabel: t("dismiss"),
             type: "danger",
             onConfirm: async () => {
@@ -152,10 +171,17 @@
         });
     }
 
-    async function handleListOnMarket() {
+    function handleListOnMarket() {
+        const marketValue = calculateDriverMarketValue(driver);
+        const listingFee = Math.round(marketValue * TRANSFER_MARKET_LISTING_FEE_RATE);
+
         showConfirm({
             title: t("transfer"),
-            message: t("market_confirm", { name: driver.name }),
+            message: t("market_confirm", {
+                name: driver.name,
+                value: formatCurrency(marketValue),
+                fee: formatCurrency(listingFee),
+            }),
             confirmLabel: t("confirm"),
             type: "warning",
             onConfirm: async () => {
@@ -180,54 +206,9 @@
         });
     }
 
-    async function handleRenew() {
+    function handleRenew() {
         if (!team?.id || !driver) return;
-
-        // Block if retiring next season (38+)
-        if (isRetiringNextSeason(driver)) {
-            showConfirm({
-                title: "Retirement",
-                message: t("retirement_alert", { name: driver.name }),
-                type: "info",
-                onConfirm: closeConfirm
-            });
-            return;
-        }
-
-        // Renewal logic
-        const startRenewal = (years: number) => {
-            showConfirm({
-                title: t("renew_contract"),
-                message: t("renew_confirm_years", { years }),
-                confirmLabel: t("confirm"),
-                onConfirm: async () => {
-                    isProcessing = true;
-                    closeConfirm();
-                    try {
-                        await staffService.renewContract(team.id!, driver.id, years);
-                        onRefresh?.();
-                    } catch (e) {
-                        showConfirm({
-                            title: "Error",
-                            message: e instanceof Error ? e.message : t("error_renew"),
-                            type: "danger",
-                            onConfirm: closeConfirm
-                        });
-                    } finally {
-                        isProcessing = false;
-                    }
-                }
-            });
-        };
-
-        showConfirm({
-            title: t("renew_contract"),
-            message: t("renew_choose_message"),
-            confirmLabel: "3 Seasons",
-            cancelLabel: "1 Season",
-            onConfirm: () => startRenewal(3),
-            onCancel: () => startRenewal(1)
-        });
+        showNegotiationModal = true;
     }
 
     // Mock history generation matching Flutter logic
@@ -344,13 +325,9 @@
                                     />
                                 </div>
                                 <div
-                                    class="absolute -bottom-2 -right-2 bg-app-primary text-app-primary-foreground text-[10px] font-black px-3 py-1 rounded-lg uppercase tracking-widest shadow-lg"
+                                    class="absolute -bottom-2 -right-2 border {driverLevel.borderColor} bg-app-surface text-[10px] font-black px-3 py-1 rounded-lg uppercase tracking-widest shadow-lg {driverLevel.color}"
                                 >
-                                    {driver.potential >= 5
-                                        ? t("elite")
-                                        : driver.potential >= 4
-                                          ? t("pro")
-                                          : t("amateur")}
+                                    {driverLevel.label}
                                 </div>
                             </div>
 
@@ -374,6 +351,16 @@
                                         >{t("potential_peak")}</span
                                     >
                                 </div>
+                                {#if driver.specialty}
+                                    {@const specialtyKey = getSpecialtyI18nKey(driver.specialty)}
+                                    <span class="self-start px-3 py-1.5 rounded-xl bg-yellow-500/10 border border-yellow-500/30 text-[10px] font-black uppercase tracking-widest text-yellow-500">
+                                        ★ {specialtyKey ? t(specialtyKey as any) : driver.specialty}
+                                    </span>
+                                {:else}
+                                    <span class="self-start px-3 py-1.5 rounded-xl bg-app-text/5 border border-app-border text-[10px] font-black uppercase tracking-widest text-app-text/30">
+                                        {t('no_specialty')}
+                                    </span>
+                                {/if}
                             </div>
                         </div>
 
@@ -444,7 +431,7 @@
                                     <span
                                         class="text-sm font-black text-green-400 uppercase tracking-tight"
                                         >{formatCurrency(
-                                            driver.salary,
+                                            Math.round(driver.salary / 52),
                                         )}/WK</span
                                     >
                                 </div>
@@ -464,12 +451,12 @@
                                 <div class="flex flex-col gap-1">
                                     <span
                                         class="text-[10px] font-bold text-app-text/40 uppercase"
-                                        >{t("market_value")}</span
+                                        >{t("annual_salary")}</span
                                     >
                                     <span
                                         class="text-sm font-black text-app-text uppercase tracking-tight"
                                         >{formatCurrency(
-                                            driver.salary * 12,
+                                            driver.salary,
                                         )}</span
                                     >
                                 </div>
@@ -517,34 +504,6 @@
                             </div>
                         </div>
 
-                        <!-- Championship Form -->
-                        <div class="flex flex-col gap-4">
-                            <h3 class="text-[10px] font-black text-app-text/20 uppercase tracking-[0.2em]">
-                                {t("championship_form")}
-                            </h3>
-                            <div class="grid grid-cols-2 gap-3">
-                                <div class="flex flex-col gap-0.5 px-4 py-3 bg-app-text/5 border border-app-border rounded-2xl">
-                                    <span class="text-[9px] font-bold text-app-text/30 uppercase tracking-widest">{t("races")}</span>
-                                    <span class="text-xl font-black text-app-text tabular-nums">{driver.seasonRaces || 0}</span>
-                                </div>
-                                <div class="flex flex-col gap-0.5 px-4 py-3 bg-app-text/5 border border-app-border rounded-2xl">
-                                    <span class="text-[9px] font-bold text-app-text/30 uppercase tracking-widest">{t("wins")}</span>
-                                    <span class="text-xl font-black text-app-primary tabular-nums">{driver.seasonWins || 0}</span>
-                                </div>
-                                <div class="flex flex-col gap-0.5 px-4 py-3 bg-app-text/5 border border-app-border rounded-2xl">
-                                    <span class="text-[9px] font-bold text-app-text/30 uppercase tracking-widest">{t("podiums")}</span>
-                                    <span class="text-xl font-black text-yellow-400 tabular-nums">{driver.seasonPodiums || 0}</span>
-                                </div>
-                                <div class="flex flex-col gap-0.5 px-4 py-3 bg-app-text/5 border border-app-border rounded-2xl">
-                                    <span class="text-[9px] font-bold text-app-text/30 uppercase tracking-widest">{t("poles")}</span>
-                                    <span class="text-xl font-black text-blue-400 tabular-nums">{driver.seasonPoles || 0}</span>
-                                </div>
-                                <div class="col-span-2 flex flex-col gap-0.5 px-4 py-3 bg-app-primary/5 border border-app-primary/20 rounded-2xl">
-                                    <span class="text-[9px] font-bold text-app-primary/50 uppercase tracking-widest">Points</span>
-                                    <span class="text-xl font-black text-app-primary tabular-nums">{driver.seasonPoints || 0} PTS</span>
-                                </div>
-                            </div>
-                        </div>
                     </div>
 
                     <!-- Column 2: Performance Stats -->
@@ -559,31 +518,23 @@
                                 {t("driving_performance")}
                             </h3>
 
-                            <div class="grid grid-cols-1 gap-6">
+                            <div class="grid grid-cols-3 gap-x-6 gap-y-5">
                                 {#each DRIVING_STATS as stat}
-                                    {@const val =
-                                        driver.stats?.[stat.key] || 10}
+                                    {@const val = driver.stats?.[stat.key] || 10}
                                     <div class="flex flex-col gap-2 group">
-                                        <div
-                                            class="flex items-center justify-between"
-                                        >
+                                        <div class="flex items-center justify-between">
                                             <span
-                                                class="text-[10px] font-black text-app-text/40 uppercase tracking-widest group-hover:text-app-text/60 transition-colors"
+                                                class="text-[9px] font-black text-app-text/40 uppercase tracking-widest group-hover:text-app-text/60 transition-colors"
                                                 >{stat.label}</span
                                             >
                                             <span
-                                                class="text-sm font-black font-mono {getStatTextColor(
-                                                    val,
-                                                )}">{val}</span
+                                                class="text-xs font-black font-mono {getStatTextColor(val)}"
+                                                >{val}</span
                                             >
                                         </div>
-                                        <div
-                                            class="h-1.5 w-full bg-app-text/5 rounded-full overflow-hidden"
-                                        >
+                                        <div class="h-1.5 w-full bg-app-text/5 rounded-full overflow-hidden">
                                             <div
-                                                class="h-full transition-all duration-1000 ease-out {getStatColor(
-                                                    val,
-                                                )}"
+                                                class="h-full transition-all duration-1000 ease-out {getStatColor(val)}"
                                                 style="width: {(val / 20) * 100}%"
                                             ></div>
                                         </div>
@@ -605,13 +556,13 @@
                                     {@const val =
                                         driver.stats?.[stat.key] || (isPercentage ? 70 : 10)}
                                     <div
-                                        class="bg-app-text/5 border border-app-border rounded-2xl p-4 flex flex-col gap-3 group hover:border-app-border transition-all"
+                                        class="bg-app-text/5 border border-app-border rounded-2xl p-3 flex flex-col gap-2 group hover:border-app-border transition-all"
                                     >
                                         <div
                                             class="flex items-center justify-between"
                                         >
                                             <stat.icon
-                                                size={16}
+                                                size={14}
                                                 class="text-app-text/20 group-hover:text-app-primary transition-colors"
                                             />
                                             <span
@@ -638,6 +589,35 @@
                                         </div>
                                     </div>
                                 {/each}
+                            </div>
+                        </div>
+
+                        <!-- Championship Form -->
+                        <div class="flex flex-col gap-4">
+                            <h3 class="text-[10px] font-black text-app-text/20 uppercase tracking-[0.2em]">
+                                {t("championship_form")}
+                            </h3>
+                            <div class="grid grid-cols-2 gap-3">
+                                <div class="flex flex-col gap-0.5 px-4 py-3 bg-app-text/5 border border-app-border rounded-2xl">
+                                    <span class="text-[9px] font-bold text-app-text/30 uppercase tracking-widest">{t("races")}</span>
+                                    <span class="text-xl font-black text-app-text tabular-nums">{driver.seasonRaces || 0}</span>
+                                </div>
+                                <div class="flex flex-col gap-0.5 px-4 py-3 bg-app-text/5 border border-app-border rounded-2xl">
+                                    <span class="text-[9px] font-bold text-app-text/30 uppercase tracking-widest">{t("wins")}</span>
+                                    <span class="text-xl font-black text-app-primary tabular-nums">{driver.seasonWins || 0}</span>
+                                </div>
+                                <div class="flex flex-col gap-0.5 px-4 py-3 bg-app-text/5 border border-app-border rounded-2xl">
+                                    <span class="text-[9px] font-bold text-app-text/30 uppercase tracking-widest">{t("podiums")}</span>
+                                    <span class="text-xl font-black text-yellow-400 tabular-nums">{driver.seasonPodiums || 0}</span>
+                                </div>
+                                <div class="flex flex-col gap-0.5 px-4 py-3 bg-app-text/5 border border-app-border rounded-2xl">
+                                    <span class="text-[9px] font-bold text-app-text/30 uppercase tracking-widest">{t("poles")}</span>
+                                    <span class="text-xl font-black text-blue-400 tabular-nums">{driver.seasonPoles || 0}</span>
+                                </div>
+                                <div class="col-span-2 flex flex-col gap-0.5 px-4 py-3 bg-app-primary/5 border border-app-primary/20 rounded-2xl">
+                                    <span class="text-[9px] font-bold text-app-primary/50 uppercase tracking-widest">Points</span>
+                                    <span class="text-xl font-black text-app-primary tabular-nums">{driver.seasonPoints || 0} PTS</span>
+                                </div>
                             </div>
                         </div>
                     </div>
@@ -761,6 +741,17 @@
     onConfirm={confirmConfig.onConfirm}
     onCancel={confirmConfig.onCancel || closeConfirm}
 />
+
+{#if showNegotiationModal && team}
+    <NegotiationModal
+        driver={driver}
+        teamId={team.id}
+        managerBackground={managerStore.profile?.backgroundId ?? ''}
+        isOpen={showNegotiationModal}
+        onClose={() => { showNegotiationModal = false; }}
+        onSuccess={() => { showNegotiationModal = false; onRefresh?.(); onClose(); }}
+    />
+{/if}
 
 <style>
     .font-heading {

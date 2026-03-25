@@ -106,7 +106,7 @@ function generateAcademyCandidate(academyLevel, countryCode, gender) {
         portraitUrl: `https://api.dicebear.com/7.x/notionists/png?seed=${id}&gender=${gender === "M" ? "male" : "female"}`,
         status: "candidate",
         expiresAt,
-        salary: 10_000,
+        salary: Math.round((8_000 + baseSkill * 1_500) / 1_000) * 1_000,
         contractYears: 1,
         statRangeMin,
         statRangeMax,

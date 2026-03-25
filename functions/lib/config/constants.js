@@ -5,7 +5,7 @@
  * Never embed fees, thresholds, or multipliers directly in logic files.
  */
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.DEFAULT_SETUP = exports.QUALY_PRIZES = exports.ACADEMY_XP_BONUS_PER_LEVEL = exports.XP_PER_SKILL_LEVEL = exports.NAME_CHANGE_COST = exports.ACADEMY_TRAINEE_WEEKLY_COST = exports.FITNESS_TRAINER_SALARIES = exports.HQ_MAINTENANCE_PER_LEVEL = exports.EX_DRIVER_SALARY_MULTIPLIER = exports.WEEKS_PER_YEAR = exports.POINT_VALUE = exports.BASE_PRIZE = exports.POINT_SYSTEM = exports.FALLBACK_BONUSES = void 0;
+exports.DEFAULT_SETUP = exports.QUALY_PRIZES = exports.ACADEMY_XP_BONUS_PER_LEVEL = exports.XP_PER_SKILL_LEVEL = exports.NAME_CHANGE_COST = exports.PROMOTION_SALARY_BY_STARS = exports.ACADEMY_PROMOTION_DEFAULT_SALARY = exports.ACADEMY_TRAINEE_WEEKLY_COST = exports.FITNESS_TRAINER_SALARIES = exports.HQ_MAINTENANCE_PER_LEVEL = exports.EX_DRIVER_SALARY_MULTIPLIER = exports.WEEKS_PER_YEAR = exports.POINT_VALUE = exports.BASE_PRIZE = exports.POINT_SYSTEM = exports.FALLBACK_BONUSES = void 0;
 exports.getRacePrize = getRacePrize;
 // ─── Sponsor fallback bonuses ────────────────────────────────────────────────
 /** Fallback bonus amounts per sponsor ID when objectiveBonus is missing. */
@@ -41,6 +41,10 @@ exports.HQ_MAINTENANCE_PER_LEVEL = 15_000;
 exports.FITNESS_TRAINER_SALARIES = [0, 0, 50_000, 120_000, 250_000, 500_000];
 /** Flat weekly cost per active academy trainee. */
 exports.ACADEMY_TRAINEE_WEEKLY_COST = 10_000;
+/** Fallback annual salary for academy graduates when stats-based calculation is unavailable. */
+exports.ACADEMY_PROMOTION_DEFAULT_SALARY = 520_000;
+/** Annual salary by driver star level (index 0 = 1-star) assigned at academy promotion. */
+exports.PROMOTION_SALARY_BY_STARS = [200_000, 400_000, 600_000, 900_000, 1_400_000];
 /** Team rename fee. */
 exports.NAME_CHANGE_COST = 500_000;
 // ─── Academy / XP ────────────────────────────────────────────────────────────

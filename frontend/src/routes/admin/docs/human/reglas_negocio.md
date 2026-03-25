@@ -90,9 +90,18 @@ Sistema de progresión basado en XP acumulado.
 
 ## 6. Mercado de Transferencias
 *   **Ciclo de Subasta**: Las pujas duran **24 horas**.
-*   **Resolución**: Al finalizar, el mejor postor recibe al piloto y el vendedor el dinero.
-*   **Contratos Post-Venta**: Todo piloto vendido resetea su contrato a **1 año**.
+*   **Resolución**: Al finalizar, el mejor postor entra en fase de negociación personal. La tarifa de transferencia se deduce inmediatamente; no se reembolsa aunque fallen las negociaciones.
+*   **Contratos Post-Venta**: El comprador negocia salario y años al finalizar la subasta vía `NegotiationModal`.
 *   **Limpieza**: Los pilotos generados por el sistema que no reciben pujas en 24h son eliminados para mantener el pool fresco.
+*   **Valor de Mercado**: Calculado con `calculateDriverMarketValue` — fórmula basada en potencial, rendimiento actual y edad. NO equivale al salario anual.
+*   **Tarifa de Listado**: 10% del valor de mercado, deducida al publicar (`TRANSFER_MARKET_LISTING_FEE_RATE`).
+
+### Despido de Piloto (Dismiss)
+*   **Coste**: Salario anual completo del piloto (indemnización por rescisión).
+*   **Estado post-despido**: El piloto queda como agente libre (`teamId: null`, `role: 'Unassigned'`).
+*   **Valor de mercado post-despido**: Se resetea al salario anual del piloto (ya no usa la fórmula de potencial).
+*   **Penalización moral**: -20 puntos de moral al ser despedido (`DISMISS_MORALE_PENALTY`).
+*   **Aviso de equipo**: Si el piloto despedido era titular y el equipo no tiene reservas, el equipo compite con un solo coche hasta contratar reemplazo.
 
 ---
 
