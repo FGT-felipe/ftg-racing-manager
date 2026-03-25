@@ -9,6 +9,8 @@ import {
 import { type Driver } from '$lib/types';
 import { driverRepository } from '$lib/repositories/driver.repository';
 import { teamRepository } from '$lib/repositories/team.repository';
+import { calculateDriverMarketValue } from '$lib/utils/driver';
+import { TRANSFER_MARKET_LISTING_FEE_RATE, TRANSFER_MARKET_RELEASE_FEE_RATE } from '$lib/constants/economics';
 
 export class StaffService {
     async getTeamDrivers(teamId: string): Promise<Driver[]> {
@@ -80,8 +82,8 @@ export class StaffService {
         const driverRef = driverRepository.docRef(driver.id);
         const teamRef = teamRepository.docRef(teamId);
 
-        const marketValue = driver.salary * 12;
-        const releaseFee = Math.round(marketValue * 0.10);
+        const marketValue = calculateDriverMarketValue(driver);
+        const releaseFee = Math.round(marketValue * TRANSFER_MARKET_RELEASE_FEE_RATE);
 
         await runTransaction(db, async (transaction) => {
             const teamDoc = await transaction.get(teamRef);
@@ -115,8 +117,8 @@ export class StaffService {
         const driverRef = driverRepository.docRef(driver.id);
         const teamRef = teamRepository.docRef(teamId);
 
-        const marketValue = driver.salary * 12;
-        const listingFee = Math.round(marketValue * 0.10);
+        const marketValue = calculateDriverMarketValue(driver);
+        const listingFee = Math.round(marketValue * TRANSFER_MARKET_LISTING_FEE_RATE);
 
         await runTransaction(db, async (transaction) => {
             const teamDoc = await transaction.get(teamRef);
@@ -132,7 +134,7 @@ export class StaffService {
             transaction.update(driverRef, {
                 isTransferListed: true,
                 transferListedAt: new Date().toISOString(),
-                priceAtListing: marketValue
+                marketValue
             });
 
             const txRef = doc(collection(teamRef, 'transactions'));

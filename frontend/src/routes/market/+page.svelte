@@ -2,7 +2,7 @@
     import { Users, Gavel, X, ChevronLeft, ChevronRight, Lock, Minus, Plus, CheckCircle } from "lucide-svelte";
     import { fly, fade } from "svelte/transition";
     import { teamStore } from "$lib/stores/team.svelte";
-    import { formatDriverName } from "$lib/utils/driver";
+    import { formatDriverName, calculateCurrentStars, calculateDriverMarketValue } from "$lib/utils/driver";
     import DriverAvatar from "$lib/components/DriverAvatar.svelte";
     import CountryFlag from "$lib/components/ui/CountryFlag.svelte";
     import { onDestroy, onMount } from "svelte";
@@ -148,7 +148,16 @@
 
             const snap = await getDocs(query(collection(db, "drivers"), ...constraints));
             const docs = snap.docs;
-            drivers = docs.map((d: any) => ({ id: d.id, ...d.data() } as MarketDriver));
+            drivers = docs.map((d: any) => {
+                const raw = { id: d.id, ...d.data() } as MarketDriver;
+                // currentStars is not stored — always compute from stats
+                raw.currentStars = calculateCurrentStars(raw as any);
+                // marketValue fallback for drivers listed before the formula fix
+                if (!raw.marketValue) {
+                    raw.marketValue = calculateDriverMarketValue(raw as any);
+                }
+                return raw;
+            });
             currentPage = pageIndex;
 
             if (pageHistory.length <= pageIndex + 1) {
@@ -247,7 +256,8 @@
 
     onDestroy(() => { if (timerInterval) clearInterval(timerInterval); });
 
-    const STAT_KEYS = ["braking","cornering","smoothness","overtaking","consistency","adaptability","fitness","feedback","focus"];
+    const DRIVING_STAT_KEYS = ["braking", "cornering", "smoothness", "overtaking", "consistency", "adaptability"];
+    const PHYSICAL_STAT_KEYS = ["fitness", "focus"];
 </script>
 
 <svelte:head>
@@ -558,32 +568,56 @@
                         </div>
                     </div>
 
-                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-x-12 gap-y-8">
-                        {#each STAT_KEYS as key}
-                            {@const isPercentage = key === "fitness" || key === "morale"}
-                            {@const val = (d.stats?.[key] ?? (isPercentage ? 70 : 10))}
-                            <div class="flex flex-col gap-3 group">
-                                <div class="flex items-center justify-between">
-                                    <span class="text-[10px] font-black text-app-text/40 uppercase tracking-widest group-hover:text-app-text/60 transition-colors">{key}</span>
-                                    <span class="text-sm font-black font-mono {getStatLabel(val, isPercentage)}">{val}{isPercentage ? '%' : ''}</span>
-                                </div>
-                                <div class="h-1.5 w-full bg-app-text/5 rounded-full overflow-hidden p-[1px]">
-                                    <div
-                                        class="h-full rounded-full transition-all duration-1000 ease-out {getStatColor(val, isPercentage)}"
-                                        style="width: {isPercentage ? val : (val / 20) * 100}%"
-                                    >
-                                        <div class="w-full h-full bg-gradient-to-r from-white/20 to-transparent"></div>
+                    <div class="space-y-10">
+                        <!-- Driving Skills -->
+                        <div>
+                            <h5 class="text-[9px] font-black uppercase tracking-[0.2em] text-app-text/20 mb-5">{t('driving_performance')}</h5>
+                            <div class="grid grid-cols-1 sm:grid-cols-2 gap-x-12 gap-y-8">
+                                {#each DRIVING_STAT_KEYS as key}
+                                    {@const val = (d.stats?.[key] ?? 10)}
+                                    <div class="flex flex-col gap-3 group">
+                                        <div class="flex items-center justify-between">
+                                            <span class="text-[10px] font-black text-app-text/40 uppercase tracking-widest group-hover:text-app-text/60 transition-colors">{t('stat_' + key)}</span>
+                                            <span class="text-sm font-black font-mono {getStatLabel(val)}">{val}</span>
+                                        </div>
+                                        <div class="h-1.5 w-full bg-app-text/5 rounded-full overflow-hidden p-[1px]">
+                                            <div class="h-full rounded-full transition-all duration-1000 ease-out {getStatColor(val)}" style="width: {(val / 20) * 100}%">
+                                                <div class="w-full h-full bg-gradient-to-r from-white/20 to-transparent"></div>
+                                            </div>
+                                        </div>
                                     </div>
-                                </div>
+                                {/each}
                             </div>
-                        {/each}
+                        </div>
+
+                        <!-- Physical & Mental -->
+                        <div>
+                            <h5 class="text-[9px] font-black uppercase tracking-[0.2em] text-app-text/20 mb-5">{t('mental_physical')}</h5>
+                            <div class="grid grid-cols-1 sm:grid-cols-2 gap-x-12 gap-y-8">
+                                {#each PHYSICAL_STAT_KEYS as key}
+                                    {@const isPercentage = key === "fitness"}
+                                    {@const val = (d.stats?.[key] ?? (isPercentage ? 70 : 10))}
+                                    <div class="flex flex-col gap-3 group">
+                                        <div class="flex items-center justify-between">
+                                            <span class="text-[10px] font-black text-app-text/40 uppercase tracking-widest group-hover:text-app-text/60 transition-colors">{t('stat_' + key)}</span>
+                                            <span class="text-sm font-black font-mono {getStatLabel(val, isPercentage)}">{val}{isPercentage ? '%' : ''}</span>
+                                        </div>
+                                        <div class="h-1.5 w-full bg-app-text/5 rounded-full overflow-hidden p-[1px]">
+                                            <div class="h-full rounded-full transition-all duration-1000 ease-out {getStatColor(val, isPercentage)}" style="width: {isPercentage ? val : (val / 20) * 100}%">
+                                                <div class="w-full h-full bg-gradient-to-r from-white/20 to-transparent"></div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                {/each}
+                            </div>
+                        </div>
                     </div>
 
                     <div class="mt-16 p-8 bg-white/[0.02] border border-app-border rounded-[32px] flex flex-col md:flex-row items-center gap-8">
                         <div class="flex-1 space-y-2">
                              <h4 class="text-sm font-black text-app-text uppercase italic">Scouting Summary</h4>
                              <p class="text-xs text-app-text/40 leading-relaxed">
-                                 A {lvl.label.toLowerCase()} talent with significant potential in {STAT_KEYS[Math.floor(Math.random() * STAT_KEYS.length)]}. 
+                                 A {lvl.label.toLowerCase()} talent with significant potential in {DRIVING_STAT_KEYS[Math.floor(Math.random() * DRIVING_STAT_KEYS.length)]}.
                                  Currently testing the waters of the {d.role || 'driver'} market.
                              </p>
                         </div>
@@ -616,7 +650,7 @@
         >
             <div class="bg-[#1a1a1e] border border-app-border rounded-3xl w-full max-w-md p-8 shadow-2xl relative overflow-hidden" in:fly={{ y: 20, duration: 200 }}>
                 <!-- Decorative Glow -->
-                <div class="absolute -top-24 -right-24 w-48 h-48 bg-app-primary/10 blur-3xl rounded-full"></div>
+                <div class="absolute -top-24 -right-24 w-48 h-48 bg-app-primary/10 blur-3xl rounded-full pointer-events-none"></div>
                 <div class="flex items-center justify-between mb-6">
                     <h3 class="text-lg font-black text-app-text uppercase italic">Place Transfer Bid</h3>
                     <button onclick={() => showBidModal = false} class="text-app-text/40 hover:text-app-text transition-colors"><X size={18} /></button>

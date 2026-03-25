@@ -220,7 +220,7 @@ export interface Driver {
     highestBidderTeamId?: string | null;
     highestBidderTeamName?: string | null;
     negotiationAttempts: number;
-    priceAtListing: number;
+    marketValue: number;
 }
 
 export interface YoungDriver {
