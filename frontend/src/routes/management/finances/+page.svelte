@@ -662,16 +662,16 @@
         height: 16px;
         width: 16px;
         border-radius: 50%;
-        background: #c5a059;
+        background: var(--app-primary);
         cursor: pointer;
-        box-shadow: 0 0 10px rgba(var(--primary-color-rgb), 0.4);
+        box-shadow: 0 0 10px color-mix(in srgb, var(--app-primary) 40%, transparent);
         margin-top: -6px;
     }
 
     input[type="range"]::-webkit-slider-runnable-track {
         width: 100%;
         height: 4px;
-        background: rgba(255, 255, 255, 0.05);
+        background: color-mix(in srgb, var(--app-text) 5%, transparent);
         border-radius: 2px;
     }
 </style>
