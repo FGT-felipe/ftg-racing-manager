@@ -1,6 +1,5 @@
 <script lang="ts">
-    import { db } from "$lib/firebase/config";
-    import { doc, updateDoc, addDoc, collection, serverTimestamp } from "firebase/firestore";
+    import { carSetupService } from "$lib/services/car_setup_service.svelte";
     import { teamStore } from "$lib/stores/team.svelte";
     import { driverStore } from "$lib/stores/driver.svelte";
     import { setupStore, type PracticeHistoryItem } from "$lib/stores/setup.svelte";
@@ -230,12 +229,8 @@ import { circuitService } from "$lib/services/circuit_service.svelte";
                 return;
             }
             try {
-                const teamRef = doc(db, "teams", team.id);
-                await updateDoc(teamRef, {
-                    budget: team.budget - PRACTICE_SESSION_COST,
-                    [`weekStatus.practicePaid.${currentDriver.id}`]: true
-                });
-            } catch (err) { console.error(err); isSimulating = false; return; }
+                await carSetupService.payPracticeFee(team.id, team.budget, currentDriver.id, currentDriver.name);
+            } catch (err) { console.error('[PracticePanel:runPractice] Fee error:', err); isSimulating = false; return; }
         }
 
         const setupToRun = { ...setup, qualifyingStyle: currentDriverStyle };
@@ -332,22 +327,25 @@ import { circuitService } from "$lib/services/circuit_service.svelte";
     async function copyToQualifying() {
         if (!driver || !teamStore.value.team) return;
         try {
-            const teamRef = doc(db, "teams", teamStore.value.team.id);
-            await updateDoc(teamRef, {
-                [`weekStatus.driverSetups.${driver.id}.qualifying`]: { ...setup },
-                [`weekStatus.driverSetups.${driver.id}.isSetupSent`]: true,
-            });
+            await carSetupService.saveQualyResult(
+                teamStore.value.team.id,
+                driver.id,
+                {
+                    [`weekStatus.driverSetups.${driver.id}.qualifying`]: { ...setup },
+                    [`weekStatus.driverSetups.${driver.id}.isSetupSent`]: true,
+                },
+                false,
+            );
             uiStore.alert(t('set_qualy'), t('copy_practice_to_qualy'), 'success');
-        } catch (e) { console.error(e); }
+        } catch (e) { console.error('[PracticePanel:copyToQualifying] Error:', e); }
     }
 
     async function copyToRace() {
         if (!driver || !teamStore.value.team) return;
         try {
-            const teamRef = doc(db, "teams", teamStore.value.team.id);
-            await updateDoc(teamRef, { [`weekStatus.driverSetups.${driver.id}.race`]: { ...setup } });
+            await carSetupService.saveRaceSetup(teamStore.value.team.id, driver.id, setup);
             uiStore.alert(t('set_race'), t('copy_practice_to_race'), 'success');
-        } catch (e) { console.error(e); }
+        } catch (e) { console.error('[PracticePanel:copyToRace] Error:', e); }
     }
 
     function getConfidenceColor(conf: number) {

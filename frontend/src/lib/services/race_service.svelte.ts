@@ -1,6 +1,6 @@
 import { db, functions } from '$lib/firebase/config';
 import { httpsCallable } from 'firebase/functions';
-import { doc, getDoc, collection, query, where, getDocs, orderBy, limit, documentId } from 'firebase/firestore';
+import { doc, getDoc, onSnapshot, collection, query, where, getDocs, orderBy, limit, documentId } from 'firebase/firestore';
 import type { Driver } from '$lib/types';
 import { MAX_PRACTICE_LAPS_PER_DRIVER } from '$lib/constants/app_constants';
 
@@ -333,6 +333,59 @@ export function createRaceService() {
                 console.error("Error forcing race:", error);
                 throw error;
             }
+        },
+
+        /**
+         * Fetches the qualifying results for a given race document.
+         * @param raceDocId - Combined ID in the format `{seasonId}_{eventId}` (e.g. "S1_r3").
+         * @returns Array of qualifying result rows, or empty array if not yet available.
+         */
+        async getQualyResults(raceDocId: string): Promise<any[]> {
+            try {
+                const snap = await getDoc(doc(db, 'races', raceDocId));
+                if (!snap.exists()) return [];
+                return snap.data().qualifyingResults || [];
+            } catch (e) {
+                console.error('[RaceService:getQualyResults] Failed to fetch:', e);
+                return [];
+            }
+        },
+
+        /**
+         * Fetches the full race document data (results, positions, times, DNFs).
+         * @param raceDocId - Combined ID in the format `{seasonId}_{eventId}`.
+         * @returns Race document data, or null if not found.
+         */
+        async getRaceData(raceDocId: string): Promise<any | null> {
+            try {
+                const snap = await getDoc(doc(db, 'races', raceDocId));
+                if (!snap.exists()) return null;
+                return snap.data();
+            } catch (e) {
+                console.error('[RaceService:getRaceData] Failed to fetch:', e);
+                return null;
+            }
+        },
+
+        /**
+         * Opens a real-time subscription to a race document.
+         * Intended for live race tracking. The component is responsible for
+         * calling the returned unsubscribe function on unmount.
+         * @param raceDocId - Combined ID in the format `{seasonId}_{eventId}`.
+         * @param callback - Called with race data whenever the document changes.
+         * @returns Unsubscribe function to call on component destroy.
+         */
+        subscribeToRace(raceDocId: string, callback: (data: any) => void): () => void {
+            const raceRef = doc(db, 'races', raceDocId);
+            return onSnapshot(
+                raceRef,
+                (snap) => {
+                    if (snap.exists()) callback(snap.data());
+                },
+                (err) => {
+                    console.error('[RaceService:subscribeToRace] Snapshot error:', err);
+                }
+            );
         }
     };
 }

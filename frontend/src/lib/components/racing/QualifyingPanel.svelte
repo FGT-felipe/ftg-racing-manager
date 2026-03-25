@@ -7,8 +7,7 @@
     import { teamStore } from "$lib/stores/team.svelte";
     import { universeStore } from "$lib/stores/universe.svelte";
     import { timeService, RaceWeekStatus } from "$lib/services/time_service.svelte";
-    import { db } from "$lib/firebase/config";
-    import { doc, getDoc } from "firebase/firestore";
+    import { raceService } from "$lib/services/race_service.svelte";
     import { t } from "$lib/utils/i18n";
 
     import { driverStore } from '$lib/stores/driver.svelte';
@@ -61,17 +60,8 @@
         if (!nextEvent || !seasonStore.value.season) return;
 
         try {
-            // Find the race document (id pattern: {seasonId}_{eventIndex})
             const raceDocId = `${seasonStore.value.season.id}_${nextEvent.id}`;
-            const raceRef = doc(db, "races", raceDocId);
-            const raceSnap = await getDoc(raceRef);
-
-            if (raceSnap.exists()) {
-                const data = raceSnap.data();
-                if (data.qualifyingResults) {
-                    results = data.qualifyingResults;
-                }
-            }
+            results = await raceService.getQualyResults(raceDocId);
         } catch (e) {
             console.error("[QualifyingPanel:loadQualyData] Error loading qualy data:", e);
         } finally {

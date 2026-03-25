@@ -32,8 +32,7 @@
         DriverStyle,
         type Driver,
     } from "$lib/types";
-    import { db } from "$lib/firebase/config";
-    import { doc, updateDoc, getDoc } from "firebase/firestore";
+    import { carSetupService } from "$lib/services/car_setup_service.svelte";
 
     let { driverId } = $props<{ driverId: string | null }>();
 
@@ -83,31 +82,19 @@
         try {
             const nextEvent = seasonStore.nextEvent;
             if (nextEvent && seasonStore.value.season) {
-                // Check if Qualy was wet
                 isQualyWet = nextEvent.weatherQualifying?.toLowerCase().includes('rain') || nextEvent.weatherQualifying?.toLowerCase().includes('wet') || false;
 
                 const raceDocId = `${seasonStore.value.season.id}_${nextEvent.id}`;
-                const raceSnap = await getDoc(doc(db, "races", raceDocId));
-                if (raceSnap.exists()) {
-                    const data = raceSnap.data();
-                    const grid = data.qualifyingResults || data.qualyGrid;
-                    if (grid && Array.isArray(grid)) {
-                        grid.forEach((row) => {
-                            if (row.driverId && row.tyreCompound) {
-                                qualyCompounds[row.driverId] =
-                                    row.tyreCompound as TyreCompound;
-                            }
-                        });
-
-                        // Force lock tyre if they qualified AND it wasn't wet Qualy
-                        if (qualyCompounds[dId] && !isQualyWet) {
-                            strategy.tyreCompound = qualyCompounds[dId];
-                        }
-                    }
+                const grid = await carSetupService.getQualyGrid(raceDocId);
+                grid.forEach((row) => {
+                    qualyCompounds[row.driverId] = row.tyreCompound as TyreCompound;
+                });
+                if (qualyCompounds[dId] && !isQualyWet) {
+                    strategy.tyreCompound = qualyCompounds[dId];
                 }
             }
         } catch (e) {
-            console.error("Error fetching constraints", e);
+            console.error('[RaceSetupTab:fetchQualyConstraints] Error:', e);
         }
     }
 
@@ -115,14 +102,10 @@
         if (!driver || !team) return;
         isSaving = true;
         try {
-            const teamRef = doc(db, "teams", team.id);
-            const path = `weekStatus.driverSetups.${driver.id}.race`;
-            await updateDoc(teamRef, {
-                [path]: { ...strategy },
-            });
+            await carSetupService.saveRaceSetup(team.id, driver.id, strategy);
             uiStore.alert(`✓ ${t('race_strategy_saved')}`, t('race_strategy_saved'), "success");
         } catch (e) {
-            console.error("Error saving strategy:", e);
+            console.error('[RaceSetupTab:saveStrategy] Error:', e);
             uiStore.alert(t('error_save_strategy'), t('error_renew').split(' ')[0], "danger");
         } finally {
             isSaving = false;

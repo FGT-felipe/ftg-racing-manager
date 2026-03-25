@@ -14,8 +14,7 @@
         Thermometer,
         Wind,
     } from "lucide-svelte";
-    import { db } from "$lib/firebase/config";
-    import { doc, onSnapshot } from "firebase/firestore";
+    import { raceService } from "$lib/services/race_service.svelte";
     import { seasonStore } from "$lib/stores/season.svelte";
     import CountryFlag from "$lib/components/ui/CountryFlag.svelte";
     import { circuitService } from "$lib/services/circuit_service.svelte";
@@ -42,14 +41,10 @@
         }
 
         const raceDocId = `${seasonStore.value.season.id}_${nextEvent.id}`;
-        const unsub = onSnapshot(doc(db, "races", raceDocId), (snap) => {
-            if (snap.exists()) {
-                const data = snap.data();
-                raceInfo = data;
-                results = data.raceResults || [];
-                // Sort events by lap descending
-                events = (data.events || []).sort((a: any, b: any) => b.lap - a.lap);
-            }
+        const unsub = raceService.subscribeToRace(raceDocId, (data) => {
+            raceInfo = data;
+            results = data.raceResults || [];
+            events = (data.events || []).sort((a: any, b: any) => b.lap - a.lap);
             isLoading = false;
         });
 
