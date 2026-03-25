@@ -1,6 +1,7 @@
 <script lang="ts">
     import AppLogo from "$lib/components/AppLogo.svelte";
     import { authStore } from "$lib/stores/auth.svelte";
+    import { APP_VERSION } from "$lib/constants/app_constants";
     import { Mail, Lock, Loader2, AlertCircle } from "lucide-svelte";
 
     let email = $state("");
@@ -78,7 +79,7 @@
                 <div
                     class="px-2 py-0.5 bg-app-primary text-app-primary-foreground font-black text-[9px] rounded uppercase tracking-[0.2em] shadow-lg shadow-app-primary/20"
                 >
-                    BETA V4.1.3
+                    {APP_VERSION}
                 </div>
             </div>
 
