@@ -1,4 +1,13 @@
 import type { Driver, YoungDriver } from '../types';
+import {
+    TRANSFER_MARKET_POTENTIAL_MULTIPLIER_PER_STAR,
+    TRANSFER_MARKET_CURRENT_PERFORMANCE_WEIGHT,
+    TRANSFER_MARKET_AGE_PEAK,
+    TRANSFER_MARKET_AGE_DEPRECIATION_RATE,
+    TRANSFER_MARKET_AGE_PREMIUM_RATE,
+    TRANSFER_MARKET_AGE_FLOOR,
+    TRANSFER_MARKET_MIN_VALUE,
+} from '../constants/economics';
 
 /**
  * Calculates current stars for regular professional drivers.
@@ -57,6 +66,40 @@ export function calculateAcademyMaxStars(candidate: any): number {
     const maxSkill = candidate.maxSkill || 10;
     let stars = Math.round(maxSkill / 4.0);
     return Math.max(1, Math.min(5, stars));
+}
+
+/**
+ * Calculates a driver's market value based on their potential, current performance, and age.
+ *
+ * Formula: annualSalary × potentialMultiplier × currentPerformanceFactor × ageFactor
+ *
+ * - potentialMultiplier: 1.0× (1-star) to 3.0× (5-star potential ceiling)
+ * - currentPerformanceFactor: 0.6× (1-star perf) to 1.0× (5-star perf)
+ * - ageFactor: premium below peak age (TRANSFER_MARKET_AGE_PEAK), depreciation above it
+ *
+ * @param driver - The driver object (must have salary, potential, age, stats)
+ * @returns Market value in USD, floored at TRANSFER_MARKET_MIN_VALUE
+ */
+export function calculateDriverMarketValue(driver: Driver): number {
+    const currentStars = calculateCurrentStars(driver);
+    const annualSalary = driver.salary * 52;
+
+    // 1.0× for 1-star potential, 3.0× for 5-star potential
+    const potentialMultiplier = 1 + (driver.potential - 1) * TRANSFER_MARKET_POTENTIAL_MULTIPLIER_PER_STAR;
+
+    // 0.6× for 1-star current performance, 1.0× for 5-star
+    const currentPerformanceFactor = 0.5 + (currentStars / 5) * TRANSFER_MARKET_CURRENT_PERFORMANCE_WEIGHT;
+
+    // Age factor: premium for youth, depreciation for veterans
+    const ageDiff = driver.age - TRANSFER_MARKET_AGE_PEAK;
+    const ageFactor = ageDiff < 0
+        ? 1 + Math.abs(ageDiff) * TRANSFER_MARKET_AGE_PREMIUM_RATE
+        : Math.max(TRANSFER_MARKET_AGE_FLOOR, 1 - ageDiff * TRANSFER_MARKET_AGE_DEPRECIATION_RATE);
+
+    return Math.max(
+        TRANSFER_MARKET_MIN_VALUE,
+        Math.round(annualSalary * potentialMultiplier * currentPerformanceFactor * ageFactor)
+    );
 }
 
 /**

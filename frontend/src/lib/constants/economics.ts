@@ -123,3 +123,34 @@ export const FITNESS_TRAINER_UPGRADE_COSTS = [0, 0, 100_000, 250_000, 500_000, 1
 
 /** Maximum trainer level. */
 export const FITNESS_TRAINER_MAX_LEVEL = 5;
+
+// ---------------------------------------------------------------------------
+// Transfer Market
+// ---------------------------------------------------------------------------
+
+/** Potential multiplier added per star above 1 (e.g. 5-star → 1 + 4 × 0.5 = 3×). */
+export const TRANSFER_MARKET_POTENTIAL_MULTIPLIER_PER_STAR = 0.5;
+
+/** Weight of current performance in the market value formula (0.5 → contributes 0.6× to 1.0×). */
+export const TRANSFER_MARKET_CURRENT_PERFORMANCE_WEIGHT = 0.5;
+
+/** Peak age for driver value. Drivers younger than this receive a premium. */
+export const TRANSFER_MARKET_AGE_PEAK = 27;
+
+/** Value depreciation rate per year above the age peak (4% per year). */
+export const TRANSFER_MARKET_AGE_DEPRECIATION_RATE = 0.04;
+
+/** Value premium rate per year below the age peak (3% per year). */
+export const TRANSFER_MARKET_AGE_PREMIUM_RATE = 0.03;
+
+/** Minimum age factor floor (prevents value reaching zero for very old drivers). */
+export const TRANSFER_MARKET_AGE_FLOOR = 0.3;
+
+/** Minimum market value for any listed driver (USD). */
+export const TRANSFER_MARKET_MIN_VALUE = 100_000;
+
+/** Listing fee as a fraction of market value (10%). */
+export const TRANSFER_MARKET_LISTING_FEE_RATE = 0.10;
+
+/** Driver release fee as a fraction of market value (10%). */
+export const TRANSFER_MARKET_RELEASE_FEE_RATE = 0.10;

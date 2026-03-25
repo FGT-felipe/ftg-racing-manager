@@ -19,6 +19,15 @@ export interface ChangelogVersion {
  */
 export const CHANGELOG: ChangelogVersion[] = [
     {
+        version: 'V1.1.1',
+        date: '2026-03-25',
+        entries: [
+            { type: 'fix', textKey: 'changelog_v111_1' },
+            { type: 'fix', textKey: 'changelog_v111_2' },
+            { type: 'ui',  textKey: 'changelog_v111_3' },
+        ],
+    },
+    {
         version: 'V1.1.0',
         date: '2026-03-24',
         entries: [
@@ -31,21 +40,6 @@ export const CHANGELOG: ChangelogVersion[] = [
         entries: [
             { type: 'feature', textKey: 'changelog_v100_1' },
             { type: 'ui',      textKey: 'changelog_v100_2' },
-        ],
-    },
-    {
-        version: 'V4.1.6',
-        date: '2026-03-23',
-        entries: [
-            { type: 'ui',          textKey: 'changelog_v416_1' },
-            { type: 'ui',          textKey: 'changelog_v416_2' },
-            { type: 'ui',          textKey: 'changelog_v416_3' },
-            { type: 'feature',     textKey: 'changelog_v416_4' },
-            { type: 'feature',     textKey: 'changelog_v416_5' },
-            { type: 'improvement', textKey: 'changelog_v416_6' },
-            { type: 'improvement', textKey: 'changelog_v416_7' },
-            { type: 'fix',         textKey: 'changelog_v416_8' },
-            { type: 'fix',         textKey: 'changelog_v416_9' },
         ],
     },
 ];
