@@ -35,14 +35,14 @@
     });
 
     let statusText = $derived.by(() => {
-        if (!team || !team.weekStatus) return "FACTORY OPERATIONS";
+        if (!team || !team.weekStatus) return t('status_factory_operations');
         const s = team.weekStatus.globalStatus;
-        if (s === "practice") return "FREE PRACTICE";
-        if (s === "qualifying") return "QUALIFYING";
-        if (s === "raceStrategy") return "RACE PREPARATION";
-        if (s === "race") return "RACE LIVE";
-        if (s === "postRace") return "POST RACE";
-        return "FACTORY OPERATIONS";
+        if (s === "practice") return t('status_free_practice');
+        if (s === "qualifying") return t('status_qualifying');
+        if (s === "raceStrategy") return t('race_preparation');
+        if (s === "race") return t('status_race_live');
+        if (s === "postRace") return t('status_post_race');
+        return t('status_factory_operations');
     });
 </script>
 
