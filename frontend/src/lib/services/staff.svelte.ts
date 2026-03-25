@@ -131,6 +131,32 @@ export class StaffService {
         });
     }
 
+    /**
+     * Removes a driver from the transfer market.
+     * The original 10% listing fee is NOT refunded.
+     * Throws if there is an active bid on the driver (auction must run to completion).
+     *
+     * @param teamId - The team that listed the driver
+     * @param driver - The driver to delist
+     */
+    async cancelListing(teamId: string, driver: Driver) {
+        if ((driver.currentHighestBid ?? 0) > 0) {
+            throw new Error('Cannot cancel listing with active bids');
+        }
+
+        const driverRef = driverRepository.docRef(driver.id);
+
+        await runTransaction(db, async (transaction) => {
+            const driverDoc = await transaction.get(driverRef);
+            if (!driverDoc.exists()) throw new Error('Driver not found');
+
+            transaction.update(driverRef, {
+                isTransferListed: false,
+                transferListedAt: null,
+            });
+        });
+    }
+
     async listDriverOnMarket(teamId: string, driver: Driver) {
         const driverRef = driverRepository.docRef(driver.id);
         const teamRef = teamRepository.docRef(teamId);

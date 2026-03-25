@@ -172,6 +172,27 @@
     }
 
     function handleListOnMarket() {
+        // Guard: ensure at least 1 non-listed main driver will remain after listing
+        const nonListedMainDrivers = allDrivers.filter(
+            d => d.id !== driver.id && (d.carIndex === 0 || d.carIndex === 1) && !d.isTransferListed
+        );
+        const isLastMainDriver = (driver.carIndex === 0 || driver.carIndex === 1) && nonListedMainDrivers.length === 0;
+
+        if (isLastMainDriver) {
+            const hasReserve = allDrivers.some(
+                d => d.id !== driver.id && d.role?.toLowerCase().includes('reserve') && !d.isTransferListed
+            );
+            showConfirm({
+                title: t("transfer"),
+                message: hasReserve
+                    ? t("list_blocked_promote_reserve", { name: driver.name.split(' ')[0] })
+                    : t("list_blocked_no_reserve"),
+                type: "warning",
+                onConfirm: closeConfirm,
+            });
+            return;
+        }
+
         const marketValue = calculateDriverMarketValue(driver);
         const listingFee = Math.round(marketValue * TRANSFER_MARKET_LISTING_FEE_RATE);
 
@@ -196,6 +217,44 @@
                     showConfirm({
                         title: "Error",
                         message: e instanceof Error ? e.message : t("error_market"),
+                        type: "danger",
+                        onConfirm: closeConfirm
+                    });
+                } finally {
+                    isProcessing = false;
+                }
+            }
+        });
+    }
+
+    function handleCancelListing() {
+        if ((driver.currentHighestBid ?? 0) > 0) {
+            showConfirm({
+                title: "Error",
+                message: t("cancel_listing_active_bid"),
+                type: "danger",
+                onConfirm: closeConfirm,
+            });
+            return;
+        }
+
+        showConfirm({
+            title: t("cancel_listing"),
+            message: t("cancel_listing_confirm", { name: driver.name }),
+            confirmLabel: t("confirm"),
+            type: "warning",
+            onConfirm: async () => {
+                if (!team) return;
+                isProcessing = true;
+                closeConfirm();
+                try {
+                    await staffService.cancelListing(team.id, driver);
+                    onRefresh?.();
+                    onClose();
+                } catch (e) {
+                    showConfirm({
+                        title: "Error",
+                        message: e instanceof Error ? e.message : t("error_cancel_listing"),
                         type: "danger",
                         onConfirm: closeConfirm
                     });
@@ -492,13 +551,12 @@
                                 </button>
                                 <button
                                     class="flex-1 flex items-center justify-center gap-3 px-6 py-4 bg-yellow-400/10 border border-yellow-400/20 rounded-2xl text-yellow-400 text-[10px] font-black uppercase tracking-widest hover:bg-yellow-400 hover:text-black transition-all disabled:opacity-50"
-                                    onclick={handleListOnMarket}
-                                    disabled={isProcessing ||
-                                        driver.isTransferListed}
+                                    onclick={driver.isTransferListed ? handleCancelListing : handleListOnMarket}
+                                    disabled={isProcessing}
                                 >
                                     <ShoppingBag size={16} />
                                     {driver.isTransferListed
-                                        ? t("on_market")
+                                        ? t("cancel_listing")
                                         : t("transfer")}
                                 </button>
                             </div>
