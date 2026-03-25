@@ -1,14 +1,11 @@
 <script lang="ts">
-    import { db } from "$lib/firebase/config";
-    import { doc, updateDoc, increment, addDoc, collection, serverTimestamp } from "firebase/firestore";
     import { fade, slide } from "svelte/transition";
     import { teamStore } from "$lib/stores/team.svelte";
     import { managerStore } from "$lib/stores/manager.svelte";
     import { driverStore } from "$lib/stores/driver.svelte";
     import { setupStore, type PracticeHistoryItem } from "$lib/stores/setup.svelte";
-    import {
-        raceService,
-    } from "$lib/services/race_service.svelte";
+    import { raceService } from "$lib/services/race_service.svelte";
+    import { carSetupService } from "$lib/services/car_setup_service.svelte";
     import {
         practiceService,
         type PracticeRunResult,
@@ -38,7 +35,6 @@
     } from "lucide-svelte";
     import { t } from "$lib/utils/i18n";
     import { onMount, untrack } from "svelte";
-    import { getDoc } from "firebase/firestore";
 
     let { driverId } = $props<{ driverId: string | null }>();
 
@@ -107,20 +103,14 @@
 
     async function refreshStandings() {
         if (!nextEvent || !seasonStore.value.season) return;
-        
         try {
             const raceDocId = `${seasonStore.value.season.id}_${nextEvent.id}`;
-            const raceRef = doc(db, "races", raceDocId);
-            const raceSnap = await getDoc(raceRef);
-
-            if (raceSnap.exists()) {
-                const data = raceSnap.data();
-                if (data.practiceResults) {
-                    competitorTimes = data.practiceResults;
-                }
+            const data = await raceService.getRaceData(raceDocId);
+            if (data?.practiceResults) {
+                competitorTimes = data.practiceResults;
             }
         } catch (e) {
-            console.error("Error refreshing standings:", e);
+            console.error('[PracticeSetupTab:refreshStandings] Error:', e);
         }
     }
 
@@ -235,22 +225,9 @@
 
             // Pay the fee
             try {
-                const teamRef = doc(db, "teams", team.id);
-                const txRef = collection(db, "teams", team.id, "transactions");
-
-                await updateDoc(teamRef, {
-                    budget: team.budget - PRACTICE_SESSION_COST,
-                    [`weekStatus.practicePaid.${driver.id}`]: true
-                });
-
-                await addDoc(txRef, {
-                    description: t('practice_fee_description', { name: driver.name }),
-                    amount: -PRACTICE_SESSION_COST,
-                    date: serverTimestamp(),
-                    type: "PRACTICE"
-                });
+                await carSetupService.payPracticeFee(team.id, team.budget, driver.id, driver.name);
             } catch (err) {
-                console.error("Error paying practice fee:", err);
+                console.error('[PracticeSetupTab:runPractice] Error paying practice fee:', err);
                 alert(t('error_payment'));
                 isSimulating = false;
                 return;
@@ -347,22 +324,14 @@
                 );
 
                 // Also maintain per-driver practiceRuns history used by competitor benchmarks
-                const teamRef = doc(db, "teams", teamStore.value.team.id);
-                const currentSetups =
-                    teamStore.value.team.weekStatus?.driverSetups || {};
+                const currentSetups = teamStore.value.team.weekStatus?.driverSetups || {};
                 const driverSetup = currentSetups[driver.id] || {};
-                const practiceRuns = driverSetup.practiceRuns || [];
-
-                practiceRuns.push({
+                const practiceRuns = [...(driverSetup.practiceRuns || []), {
                     time: result.lapTime,
                     setupUsed: setupToRun,
                     isCrashed: result.isCrashed,
-                });
-
-                await updateDoc(teamRef, {
-                    [`weekStatus.driverSetups.${driver.id}.practiceRuns`]:
-                        practiceRuns,
-                });
+                }];
+                await carSetupService.savePracticeRuns(teamStore.value.team.id, driver.id, practiceRuns);
 
                 // Wait for visual feedback
                 await new Promise((r) => setTimeout(r, 800));
@@ -373,10 +342,10 @@
             }
 
             // Calculate team budget cost
-            const teamRef = doc(db, "teams", teamStore.value.team.id);
-            await updateDoc(teamRef, {
-                budget: teamStore.value.team.budget - PRACTICE_SESSION_COST,
-            });
+            await carSetupService.deductTeamBudget(
+                teamStore.value.team.id,
+                teamStore.value.team.budget - PRACTICE_SESSION_COST,
+            );
 
             await refreshStandings();
 

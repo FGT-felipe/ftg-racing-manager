@@ -4,8 +4,7 @@
     import { Trophy, History, Flag, Activity } from "lucide-svelte";
     import { seasonStore } from "$lib/stores/season.svelte";
     import { teamStore } from "$lib/stores/team.svelte";
-    import { db } from "$lib/firebase/config";
-    import { doc, getDoc } from "firebase/firestore";
+    import { raceService } from "$lib/services/race_service.svelte";
     import CountryFlag from "$lib/components/ui/CountryFlag.svelte";
     import { t } from "$lib/utils/i18n";
     import { universeStore } from "$lib/stores/universe.svelte";
@@ -68,11 +67,9 @@
         
         try {
             const raceDocId = `${seasonStore.value.season.id}_${lastEvent.id}`;
-            const raceRef = doc(db, "races", raceDocId);
-            const raceSnap = await getDoc(raceRef);
+            const data = await raceService.getRaceData(raceDocId);
 
-            if (raceSnap.exists()) {
-                const data = raceSnap.data();
+            if (data) {
                 
                 // Robust mapping: Use raceResults if exists, otherwise map finalPositions
                 if (data.raceResults && Array.isArray(data.raceResults)) {

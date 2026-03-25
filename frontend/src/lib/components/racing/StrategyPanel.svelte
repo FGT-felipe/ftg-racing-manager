@@ -28,8 +28,9 @@
         DriverStyle,
         type Driver,
     } from "$lib/types";
-    import { db } from "$lib/firebase/config";
-    import { doc, updateDoc, getDoc } from "firebase/firestore";
+    import { carSetupService } from "$lib/services/car_setup_service.svelte";
+    import { uiStore } from "$lib/stores/ui.svelte";
+    import { t } from "$lib/utils/i18n";
 
     let { carIndex = 0 } = $props();
 
@@ -73,43 +74,26 @@
         if (!teamStore.value.team) return;
         isLoading = true;
         try {
-            const teamSnap = await getDoc(
-                doc(db, "teams", teamStore.value.team.id),
-            );
-            if (teamSnap.exists()) {
-                const data = teamSnap.data();
-                const driverSetup =
-                    data.weekStatus?.driverSetups?.[driverId]?.race;
-                if (driverSetup) {
-                    strategy = { ...strategy, ...driverSetup };
-                }
+            // Team data is already in the store via onSnapshot
+            const driverSetup = teamStore.value.team.weekStatus?.driverSetups?.[driverId]?.race;
+            if (driverSetup) {
+                strategy = { ...strategy, ...driverSetup };
             }
 
             // Fetch Qualifying Grid to lock start tyre
             const nextEvent = seasonStore.nextEvent;
             if (nextEvent && seasonStore.value.season) {
                 const raceDocId = `${seasonStore.value.season.id}_${nextEvent.id}`;
-                const raceSnap = await getDoc(doc(db, "races", raceDocId));
-                if (raceSnap.exists()) {
-                    const data = raceSnap.data();
-                    const grid = data.qualifyingResults || data.qualyGrid;
-                    if (grid && Array.isArray(grid)) {
-                        grid.forEach((row) => {
-                            if (row.driverId && row.tyreCompound) {
-                                qualyCompounds[row.driverId] =
-                                    row.tyreCompound as TyreCompound;
-                            }
-                        });
-
-                        // Force lock
-                        if (qualyCompounds[driverId]) {
-                            strategy.tyreCompound = qualyCompounds[driverId];
-                        }
-                    }
+                const grid = await carSetupService.getQualyGrid(raceDocId);
+                grid.forEach((row) => {
+                    qualyCompounds[row.driverId] = row.tyreCompound as TyreCompound;
+                });
+                if (qualyCompounds[driverId]) {
+                    strategy.tyreCompound = qualyCompounds[driverId];
                 }
             }
         } catch (e) {
-            console.error("Error loading strategy:", e);
+            console.error('[StrategyPanel:loadDriverStrategy] Error:', e);
         } finally {
             isLoading = false;
         }
@@ -119,15 +103,11 @@
         if (!driver || !teamStore.value.team) return;
         isSaving = true;
         try {
-            const teamRef = doc(db, "teams", teamStore.value.team.id);
-            const path = `weekStatus.driverSetups.${driver.id}.race`;
-            await updateDoc(teamRef, {
-                [path]: { ...strategy },
-            });
-            alert("✓ Race Strategy Saved");
+            await carSetupService.saveRaceSetup(teamStore.value.team.id, driver.id, strategy);
+            uiStore.alert(`✓ ${t('race_strategy_saved')}`, t('race_strategy_saved'), 'success');
         } catch (e) {
-            console.error("Error saving strategy:", e);
-            alert("Error saving strategy.");
+            console.error('[StrategyPanel:saveStrategy] Error:', e);
+            uiStore.alert(t('error_save_strategy'), t('error_renew').split(' ')[0], 'danger');
         } finally {
             isSaving = false;
         }
