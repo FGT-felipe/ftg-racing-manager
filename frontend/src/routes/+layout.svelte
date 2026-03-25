@@ -167,7 +167,7 @@
         >
       </div>
     </div>
-  {:else if currentPath === "/login" || currentPath.startsWith("/onboarding")}
+  {:else if currentPath === "/login" || currentPath.startsWith("/onboarding") || currentPath === "/whats-new"}
     {@render children()}
   {:else}
     <div
