@@ -302,8 +302,8 @@ async function runPostRaceProcessing() {
                         updates["weeklyEventMessage"] = eventMsg;
                         batchA.update(sDoc.ref, updates);
                     });
-                    // Academy trainee weekly wages ($10k per trainee)
-                    const traineeWages = selectedSnap.size * 10_000;
+                    // Academy trainee weekly wages
+                    const traineeWages = selectedSnap.size * constants_1.ACADEMY_TRAINEE_WEEKLY_COST;
                     if (traineeWages > 0) {
                         const wageTx = tRef.collection("transactions").doc();
                         batchA.set(wageTx, {
@@ -326,7 +326,7 @@ async function runPostRaceProcessing() {
                                 const yData = marked.data();
                                 const newDriverId = `driver_promoted_${yData["id"]}`;
                                 const newDriverRef = admin_1.db.collection("drivers").doc(newDriverId);
-                                const currentYear = 2026;
+                                const currentYear = new Date().getFullYear();
                                 const historyCount = Math.min(6, (yData["age"] || 18) - 18);
                                 const driverHistory = [];
                                 for (let i = 1; i <= historyCount; i++) {

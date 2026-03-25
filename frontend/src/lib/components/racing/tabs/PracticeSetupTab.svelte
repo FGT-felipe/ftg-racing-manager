@@ -11,6 +11,7 @@
         type PracticeRunResult,
     } from "$lib/services/practice_service.svelte";
     import { MAX_PRACTICE_LAPS_PER_DRIVER, PRACTICE_SESSION_COST } from "$lib/constants/app_constants";
+    import { uiStore } from "$lib/stores/ui.svelte";
     import { seasonStore } from "$lib/stores/season.svelte";
     import { circuitService } from "$lib/services/circuit_service.svelte";
     import {
@@ -218,7 +219,7 @@
 
         if (!hasPaid) {
             if (team.budget < PRACTICE_SESSION_COST) {
-                alert(t('insufficient_funds_practice'));
+                uiStore.alert(t('insufficient_funds_practice'), t('insufficient_funds'), 'danger');
                 isSimulating = false;
                 return;
             }
@@ -228,7 +229,7 @@
                 await carSetupService.payPracticeFee(team.id, team.budget, driver.id, driver.name);
             } catch (err) {
                 console.error('[PracticeSetupTab:runPractice] Error paying practice fee:', err);
-                alert(t('error_payment'));
+                uiStore.alert(t('error_payment'), t('error_payment'), 'danger');
                 isSimulating = false;
                 return;
             }
@@ -243,11 +244,13 @@
         const currentLaps = Math.max(legacyLaps, driverSetupLaps);
 
         if (currentLaps + lapsToRun > MAX_PRACTICE_LAPS_PER_DRIVER) {
-            alert(
+            uiStore.alert(
                 t('practice_aborted_limit', {
                     max: MAX_PRACTICE_LAPS_PER_DRIVER,
                     rem: Math.max(0, MAX_PRACTICE_LAPS_PER_DRIVER - currentLaps)
-                })
+                }),
+                t('practice_limit_title'),
+                'warning'
             );
             isSimulating = false;
             return;
@@ -350,8 +353,8 @@
             await refreshStandings();
 
         } catch (e) {
-            console.error(e);
-            alert(t('error_practice_session'));
+            console.error('[PracticeSetupTab:runPractice] Session error:', e);
+            uiStore.alert(t('error_practice_session'), t('error_practice_session'), 'danger');
         }
 
         isSimulating = false;
