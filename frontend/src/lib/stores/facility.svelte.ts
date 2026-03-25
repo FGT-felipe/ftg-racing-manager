@@ -5,6 +5,13 @@ import { managerStore } from '$lib/stores/manager.svelte';
 import { notificationStore } from '$lib/stores/notifications.svelte';
 import { FacilityType, type Facility } from '$lib/types';
 import { doc, collection, runTransaction, serverTimestamp } from 'firebase/firestore';
+import {
+    FACILITY_UPGRADE_COSTS,
+    FACILITY_MAINTENANCE_COST_PER_LEVEL,
+    FACILITY_ROLE_DISCOUNT,
+    FACILITY_MAX_LEVEL,
+    YOUTH_ACADEMY_UPGRADE_COST_PER_LEVEL,
+} from '$lib/constants/economics';
 
 export function createFacilityStore() {
     const defaultFacilities: Record<string, Facility> = {
@@ -35,25 +42,18 @@ export function createFacilityStore() {
         },
 
         getUpgradePrice(type: FacilityType, currentLevel: number): number {
-            if (currentLevel >= 5) return 0;
+            if (currentLevel >= FACILITY_MAX_LEVEL) return 0;
 
             // Youth Academy overrides base price when upgrading (level > 0).
             if (type === FacilityType.youthAcademy && currentLevel > 0) {
-                return 1500000 * currentLevel;
+                return YOUTH_ACADEMY_UPGRADE_COST_PER_LEVEL * currentLevel;
             }
 
-            switch (currentLevel) {
-                case 0: return 250000;
-                case 1: return 750000;
-                case 2: return 1800000;
-                case 3: return 3500000;
-                case 4: return 6000000;
-                default: return 0;
-            }
+            return FACILITY_UPGRADE_COSTS[currentLevel] ?? 0;
         },
 
         getMaintenanceCost(level: number): number {
-            return level * 15000;
+            return level * FACILITY_MAINTENANCE_COST_PER_LEVEL;
         },
 
         async upgradeFacility(type: FacilityType) {
@@ -66,14 +66,14 @@ export function createFacilityStore() {
 
             // Apply discounts based on role
             if (profile?.role === 'business' || profile?.role === 'bureaucrat') {
-                price = Math.round(price * 0.9);
+                price = Math.round(price * FACILITY_ROLE_DISCOUNT);
             }
 
             if (team.budget < price) {
                 throw new Error(`Insufficient budget. Need $${(price / 1000000).toFixed(1)}M`);
             }
 
-            if (facility.level >= 5) {
+            if (facility.level >= FACILITY_MAX_LEVEL) {
                 throw new Error("Maximum level reached");
             }
 
