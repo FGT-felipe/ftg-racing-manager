@@ -102,6 +102,13 @@ export const SPONSOR_CONTRACT_DURATION_MIN = 4;
 export const SPONSOR_CONTRACT_DURATION_RANGE = 7;
 
 // ---------------------------------------------------------------------------
+// Race Weekend
+// ---------------------------------------------------------------------------
+
+/** One-time entry fee charged on the first qualifying attempt per driver per weekend (USD). */
+export const QUALY_ENTRY_FEE = 10_000;
+
+// ---------------------------------------------------------------------------
 // Fitness Trainer
 // ---------------------------------------------------------------------------
 

@@ -16,6 +16,7 @@
     import { practiceService, type PracticeRunResult } from "$lib/services/practice_service.svelte";
     import { timeService } from "$lib/services/time_service.svelte";
     import { uiStore } from "$lib/stores/ui.svelte";
+    import { QUALY_ENTRY_FEE } from "$lib/constants/economics";
     import {
         Timer,
         Zap,
@@ -161,7 +162,7 @@
         try {
             // First attempt charges the $10,000 Entry Fee
             if (attempts === 0) {
-                const cost = 10000;
+                const cost = QUALY_ENTRY_FEE;
                 if (team.budget < cost) {
                     uiStore.alert(
                         t('insufficient_funds_qualy'),
