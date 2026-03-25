@@ -77,12 +77,12 @@ let extraCrash = 0; // REQUIRED before "if (teamRole === 'ex_driver') { extraCra
 
 ### Emergency Recovery Commands (from `functions/` dir)
 ```bash
-node reset_all.js              # Reset race doc fields for current R2/R3
-node run_simulation.js qualy   # Force qualifying
-node run_simulation.js race    # Force race
-node force_post_race.js        # Force postRaceProcessing
-node sync_universe.js          # Sync denormalized universe document
+node scripts/emergency/force_race_local.js qualy  # 1. Force qualifying
+node scripts/emergency/force_race_local.js race   # 2. Force race (or force_race_wrapper.js)
+node scripts/emergency/force_post_race.js         # 3. Force postRaceProcessing
+node scripts/emergency/sync_universe.js           # 4. Sync denormalized universe document
 ```
+> `reset_all.js` and `run_simulation.js` do not exist. Always use the paths above.
 
 See full spec: [weekend_pipeline.md](weekend_pipeline.md)
 

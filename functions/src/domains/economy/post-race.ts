@@ -16,7 +16,7 @@ import * as logger from "firebase-functions/logger";
 import { onSchedule } from "firebase-functions/v2/scheduler";
 import { db, admin } from "../../shared/admin";
 import { getCircuit } from "../../config/circuits";
-import { FALLBACK_BONUSES, DEFAULT_SETUP, POINT_SYSTEM } from "../../config/constants";
+import { FALLBACK_BONUSES, DEFAULT_SETUP, POINT_SYSTEM, ACADEMY_TRAINEE_WEEKLY_COST } from "../../config/constants";
 import { addOfficeNews } from "../../shared/notifications";
 import { evaluateObjective } from "./sponsors";
 import {
@@ -307,8 +307,8 @@ export async function runPostRaceProcessing(): Promise<void> {
             batchA.update(sDoc.ref, updates as FirebaseFirestore.UpdateData<object>);
           });
 
-          // Academy trainee weekly wages ($10k per trainee)
-          const traineeWages = selectedSnap.size * 10_000;
+          // Academy trainee weekly wages
+          const traineeWages = selectedSnap.size * ACADEMY_TRAINEE_WEEKLY_COST;
           if (traineeWages > 0) {
             const wageTx = tRef.collection("transactions").doc();
             batchA.set(wageTx, {
@@ -335,7 +335,7 @@ export async function runPostRaceProcessing(): Promise<void> {
                 const yData = marked.data() as Record<string, unknown>;
                 const newDriverId = `driver_promoted_${yData["id"]}`;
                 const newDriverRef = db.collection("drivers").doc(newDriverId);
-                const currentYear = 2026;
+                const currentYear = new Date().getFullYear();
                 const historyCount = Math.min(6, ((yData["age"] as number) || 18) - 18);
                 const driverHistory = [];
                 for (let i = 1; i <= historyCount; i++) {
