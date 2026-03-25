@@ -83,4 +83,15 @@
     /* Uses Neon Green #00E676 */
     box-shadow: 0 0 15px 1px rgba(0, 230, 118, 0.5);
   }
+
+  .custom-scrollbar::-webkit-scrollbar {
+    width: 4px;
+  }
+  .custom-scrollbar::-webkit-scrollbar-track {
+    background: rgba(255, 255, 255, 0.05);
+  }
+  .custom-scrollbar::-webkit-scrollbar-thumb {
+    background: rgba(var(--primary-color-rgb), 0.2);
+    border-radius: 10px;
+  }
 }

@@ -75,66 +75,45 @@
             </button>
         </div>
 
-        <!-- Content -->
-        <div class="flex-1 overflow-y-auto custom-scrollbar">
-            {#each CHANGELOG as release, i}
-                <div class="p-4 {i < CHANGELOG.length - 1 ? 'border-b border-app-border/50' : ''}">
-                    <!-- Version header -->
-                    <div class="flex items-center gap-3 mb-3">
-                        <span class="text-[11px] font-black uppercase tracking-widest text-app-primary">
-                            {release.version}
-                        </span>
-                        <div class="flex-1 h-px bg-app-border/50"></div>
-                        <span class="text-[9px] text-app-text/30 font-mono">
-                            {release.date}
-                        </span>
-                        {#if i === 0}
-                            <span class="px-1.5 py-0.5 rounded bg-app-primary/10 text-[8px] font-black uppercase tracking-widest text-app-primary/70">
-                                {t("changelog_latest")}
-                            </span>
-                        {:else}
-                            <span class="px-1.5 py-0.5 rounded bg-app-text/5 text-[8px] font-black uppercase tracking-widest text-app-text/30">
-                                {t("changelog_previous")}
-                            </span>
-                        {/if}
-                    </div>
+        <!-- Content — latest version only -->
+        <div class="p-4">
+            <ul class="flex flex-col gap-2">
+                {#each CHANGELOG[0].entries as entry}
+                    {@const Icon = getTypeIcon(entry.type)}
+                    {@const typeLabel = getTypeLabel(entry.type)}
+                    <li class="flex items-start gap-2.5">
+                        <div
+                            class="shrink-0 mt-0.5 {getTypeIconClass(entry.type)}"
+                            title={typeLabel}
+                        >
+                            <Icon size={13} strokeWidth={2.5} />
+                        </div>
+                        <p
+                            class="text-[11px] text-app-text/70 leading-snug"
+                            title={typeLabel}
+                        >
+                            {t(entry.textKey)}
+                        </p>
+                    </li>
+                {/each}
+            </ul>
+        </div>
 
-                    <!-- Entries -->
-                    <ul class="flex flex-col gap-2">
-                        {#each release.entries as entry}
-                            {@const Icon = getTypeIcon(entry.type)}
-                            {@const typeLabel = getTypeLabel(entry.type)}
-                            <li class="flex items-start gap-2.5">
-                                <div
-                                    class="shrink-0 mt-0.5 {getTypeIconClass(entry.type)}"
-                                    title={typeLabel}
-                                >
-                                    <Icon size={13} strokeWidth={2.5} />
-                                </div>
-                                <p
-                                    class="text-[11px] text-app-text/70 leading-snug"
-                                    title={typeLabel}
-                                >
-                                    {t(entry.textKey)}
-                                </p>
-                            </li>
-                        {/each}
-                    </ul>
-                </div>
-            {/each}
+        <!-- Footer -->
+        <div class="shrink-0 border-t border-app-border px-4 py-3 bg-app-text/10">
+            <a
+                href="/whats-new"
+                target="_blank"
+                rel="noopener noreferrer"
+                class="flex items-center justify-center gap-1.5 text-[11px] font-bold text-app-primary/70 hover:text-app-primary transition-colors"
+                aria-label={t("changelog_view_all")}
+            >
+                {t("changelog_view_all")}
+                <svg xmlns="http://www.w3.org/2000/svg" width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                    <path d="M7 7h10v10"/><path d="M7 17 17 7"/>
+                </svg>
+            </a>
         </div>
     </div>
 {/if}
 
-<style>
-    .custom-scrollbar::-webkit-scrollbar {
-        width: 4px;
-    }
-    .custom-scrollbar::-webkit-scrollbar-track {
-        background: rgba(255, 255, 255, 0.05);
-    }
-    .custom-scrollbar::-webkit-scrollbar-thumb {
-        background: rgba(var(--primary-color-rgb), 0.2);
-        border-radius: 10px;
-    }
-</style>
