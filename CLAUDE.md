@@ -198,7 +198,68 @@ node scripts/emergency/sync_universe.js            # 4. Sync Standings UI
 
 ---
 
-## 9. Flutter Deprecation Status
+## 9. Version Control Conventions
+
+### 9.1 Branch Naming
+
+Every branch must use one of these prefixes — never use `feature/` for work that isn't a new user-facing feature:
+
+| Prefix | When to use |
+|---|---|
+| `feature/` | New user-facing module or functionality |
+| `fix/` | Bug fix (any severity) |
+| `chore/` | Tech debt, refactoring, docs, tooling, deps — no user-facing change |
+| `hotfix/` | Urgent production fix branched directly from `main` |
+
+**Format:** `<type>/<version>-<short-description>` when tied to a version, or `<type>/<short-description>` for isolated work.
+
+```
+feature/v4.2.0-transfer-market-filters
+fix/v4.1.8-driver-name-truncation
+chore/v4.1.7-tech-debt
+hotfix/qualifying-crash-loop
+```
+
+### 9.2 Commit Messages — Conventional Commits
+
+Format: `<type>(<scope>): <imperative description>`
+
+| Type | When |
+|---|---|
+| `feat` | New user-facing feature |
+| `fix` | Bug fix |
+| `chore` | Tooling, deps, config |
+| `refactor` | Code restructure with no behavior change |
+| `docs` | Documentation only |
+| `style` | Formatting, i18n, visual tweaks |
+| `test` | Adding or fixing tests |
+
+### 9.3 Pull Request Structure
+
+Every PR must include these three sections:
+
+```markdown
+## Motivation
+<Why this change was needed — the problem, constraint, or decision behind it.>
+
+## Summary
+<What changed — bullet points.>
+
+## Test plan
+<Checklist of what to verify manually.>
+```
+
+The **Motivation** section is mandatory — it's the long-term record of *why*, which is never obvious from the diff alone.
+
+### 9.4 Versioning Strategy
+
+- **Patch** (`4.1.x`) — fixes and chore branches
+- **Minor** (`4.x.0`) — feature branches adding new functionality
+- **Major** (`x.0.0`) — reserved for architectural rewrites
+
+---
+
+## 10. Flutter Deprecation Status
 
 The Flutter codebase (`lib/`, `android/`, `pubspec.yaml`) is **100% migrated** to Svelte. It is kept for reference only. **Do not modify any Flutter files.**
 
