@@ -69,7 +69,7 @@
         <div
             class="px-2 py-0.5 bg-app-primary/10 border border-app-primary/20 rounded text-[9px] font-black text-app-primary uppercase tracking-tighter"
         >
-            BETA {APP_VERSION}
+            {APP_VERSION}
         </div>
     </div>
 
