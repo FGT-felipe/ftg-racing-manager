@@ -157,3 +157,30 @@ After each step, verify in the Firebase Console → Firestore:
 | `postRaceProcessing` | `*/30 * * * *` (every 30m) | America/Bogota | Processes economy when timer allows |
 | `scheduledDailyFitnessRecovery` | `0 0 * * *` (midnight) | America/Bogota | +1.5 fitness to all active drivers |
 | `sync_universe` | **MANUAL** | N/A | Must be called after any manual race sim |
+
+---
+
+## 7. Morale Event Pipeline (v1.5.0)
+
+Morale changes are applied at multiple points in the pipeline:
+
+| Event | Where | Delta |
+|---|---|---|
+| Race Win | `runRaceLogic` (CF) | +15 |
+| Podium (P2/P3) | `runRaceLogic` (CF) | +8 |
+| Points finish (P4-P9) | `runRaceLogic` (CF) | +3 |
+| P10+ (no points) | `runRaceLogic` (CF) | −5 |
+| DNF | `runRaceLogic` (CF) | −10 |
+| Pole Position | `runQualifyingLogic` (CF) | +10 |
+| Sponsor objective met | `postRaceProcessing` (CF) | +8 per driver |
+| Driver dismissed | `staffService.dismissDriver` | −20 |
+| Driver listed on transfer market | `staffService.listDriverOnMarket` | −10 |
+| Failed negotiation (per attempt) | `staffService.negotiateRenewal` | −5 |
+| Negotiation total collapse | `staffService.applyNegotiationFailPenalty` | −15 |
+| Bad practice setup (confidence < 60%) | `practiceService.savePracticeRun` | −5 |
+| Good practice setup (confidence > 85%) | `practiceService.savePracticeRun` | +1 |
+| Psychologist manual session | `staffService.boostMoralePsychologist` | +5 to +20 (by level) |
+
+**Ex-Driver manager bonus:** +10 morale added to any race result delta.
+
+**Weekly reset:** `psychologistUpgradedThisWeek` and `psychologistSessionDoneThisWeek` are reset to `false` in `postRaceProcessing` weekly weekStatus reset. Level/assignment fields are preserved.

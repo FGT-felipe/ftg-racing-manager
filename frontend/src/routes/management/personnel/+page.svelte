@@ -31,6 +31,15 @@
             color: "text-green-400",
         },
         {
+            id: "hr",
+            title: "HR Manager",
+            description: "Staff morale and recruitment efficiency",
+            icon: Badge,
+            href: "/management/personnel/hr-manager",
+            enabled: true,
+            color: "text-purple-400",
+        },
+        {
             id: "engineer",
             title: "Chief Engineer",
             description: "Technical lead for car development",
@@ -38,15 +47,6 @@
             href: "#",
             enabled: false,
             color: "text-blue-400",
-        },
-        {
-            id: "hr",
-            title: "HR Manager",
-            description: "Staff morale and recruitment efficiency",
-            icon: Badge,
-            href: "#",
-            enabled: false,
-            color: "text-purple-400",
         },
         {
             id: "marketing",

@@ -88,6 +88,45 @@ Sistema de progresión basado en XP acumulado.
 
 ---
 
+## 5.5 Sistema de Moral
+
+**Rango:** 0–100%. Default: **70** (MORALE_DEFAULT) cuando el campo no existe.
+
+**Efecto en simulación:** La moral afecta el laptime via la fórmula:
+```
+moraleFactor = MORALE_LAPTIME_FACTOR * (morale - MORALE_NEUTRAL) / 100
+```
+- `MORALE_LAPTIME_FACTOR = 0.02`, `MORALE_NEUTRAL = 50`
+- A morale=100: −1% en laptime (piloto más rápido)
+- A morale=0: +1% en laptime (piloto más lento)
+- El factor se aplica tanto en la práctica (cliente) como en la carrera (CF)
+
+**Psicólogo (HR Manager):**
+- Instalación en `/management/personnel/hr-manager`
+- Sesión manual: 1 vez por semana → boost de +5 a +20 puntos según nivel
+- Niveles 1–5, mismo esquema de costos que el fitness trainer
+- Salario semanal desde $0 (Nvl 1) hasta $500k (Nvl 5)
+
+**Eventos que modifican la moral:**
+| Evento | Delta |
+|---|---|
+| Ganar carrera | +15 |
+| Podio (P2/P3) | +8 |
+| Pole Position | +10 |
+| Objetivo de patrocinador cumplido | +8 |
+| P10+ (sin puntos) | −5 |
+| DNF | −10 |
+| Despido (`DISMISS_MORALE_PENALTY`) | −20 |
+| Listado en mercado de transferencias | −10 |
+| Negociación fallida (por intento) | −5 |
+| Setup de práctica malo (< 60% confianza) | −5 |
+| Setup de práctica bueno (> 85% confianza) | +1 |
+| Sesión manual con psicólogo | +5 a +20 según nivel |
+
+**Constantes:** `src/lib/constants/economics.ts` — `MORALE_DEFAULT`, `MORALE_NEUTRAL`, `MORALE_LAPTIME_FACTOR`, `MORALE_EVENT_*`
+
+---
+
 ## 6. Mercado de Transferencias
 *   **Ciclo de Subasta**: Las pujas duran **24 horas**.
 *   **Resolución**: Al finalizar, el mejor postor entra en fase de negociación personal. La tarifa de transferencia se deduce inmediatamente; no se reembolsa aunque fallen las negociaciones.

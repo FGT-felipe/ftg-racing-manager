@@ -14,6 +14,9 @@ import {
     TRANSFER_MARKET_LISTING_FEE_RATE,
     DRIVER_RENEWAL_FEE_RATE,
     DISMISS_MORALE_PENALTY,
+    MORALE_DEFAULT,
+    MORALE_EVENT_TRANSFER_LISTED,
+    PSYCHOLOGIST_UPGRADE_COSTS,
 } from '$lib/constants/economics';
 
 export class StaffService {
@@ -175,10 +178,15 @@ export class StaffService {
                 budget: increment(-listingFee)
             });
 
+            const driverDoc = await transaction.get(driverRef);
+            if (!driverDoc.exists()) throw new Error('Driver not found');
+            const currentMorale = driverDoc.data().stats?.morale ?? MORALE_DEFAULT;
+
             transaction.update(driverRef, {
                 isTransferListed: true,
                 transferListedAt: new Date().toISOString(),
-                marketValue
+                marketValue,
+                'stats.morale': Math.max(0, currentMorale + MORALE_EVENT_TRANSFER_LISTED),
             });
 
             const txRef = doc(collection(teamRef, 'transactions'));
@@ -337,6 +345,102 @@ export class StaffService {
                     driverUpdates['stats.morale'] = Math.max(0, Math.min(100, currentMorale + moraleChange));
                 }
                 transaction.update(driverRef, driverUpdates);
+            }
+        });
+    }
+    /**
+     * Applies a morale delta to a driver, clamping the result to [0, 100].
+     * Used by practice service and any other non-transactional morale events.
+     *
+     * @param driverId - Target driver
+     * @param delta - Points to add (negative = penalty)
+     */
+    async applyMoraleEvent(driverId: string, delta: number): Promise<void> {
+        const driverRef = driverRepository.docRef(driverId);
+        await runTransaction(db, async (transaction) => {
+            const driverDoc = await transaction.get(driverRef);
+            if (!driverDoc.exists()) return;
+            const current = driverDoc.data().stats?.morale ?? MORALE_DEFAULT;
+            const next = Math.max(0, Math.min(100, current + delta));
+            transaction.update(driverRef, { 'stats.morale': next });
+        });
+    }
+
+    /**
+     * Performs a manual psychologist morale boost session for the assigned driver.
+     * Can only be used once per week (gated by psychologistSessionDoneThisWeek).
+     *
+     * @param teamId - The team
+     * @param driverId - Target driver
+     * @param bonusPoints - Morale points to add (from PSYCHOLOGIST_BONUS_BY_LEVEL)
+     */
+    async boostMoralePsychologist(teamId: string, driverId: string, bonusPoints: number): Promise<void> {
+        const driverRef = driverRepository.docRef(driverId);
+        const teamRef = teamRepository.docRef(teamId);
+
+        await runTransaction(db, async (transaction) => {
+            const driverDoc = await transaction.get(driverRef);
+            if (!driverDoc.exists()) return;
+            const current = driverDoc.data().stats?.morale ?? MORALE_DEFAULT;
+            transaction.update(driverRef, {
+                'stats.morale': Math.min(100, current + bonusPoints),
+            });
+            transaction.update(teamRef, {
+                'weekStatus.psychologistSessionDoneThisWeek': true,
+            });
+        });
+    }
+
+    /**
+     * Assigns the psychologist to a specific driver for weekly automatic morale processing.
+     *
+     * @param teamId - The team
+     * @param params.assignedToId - Driver ID to assign
+     */
+    async savePsychologistAssignment(teamId: string, params: { assignedToId: string }): Promise<void> {
+        const teamRef = teamRepository.docRef(teamId);
+        await updateDoc(teamRef, {
+            'weekStatus.psychologistAssignedTo': params.assignedToId,
+        });
+    }
+
+    /**
+     * Upgrades or downgrades the psychologist level.
+     * Upgrade deducts cost from budget and locks further changes for the week.
+     * Downgrade is free but also locks changes for the week.
+     *
+     * @param teamId - The team
+     * @param newLevel - Target level (1–5)
+     * @param cost - Upgrade cost in USD (0 for downgrade)
+     * @param isUpgrade - true = upgrade, false = downgrade
+     */
+    async changePsychologistLevel(teamId: string, newLevel: number, cost: number, isUpgrade: boolean): Promise<void> {
+        const teamRef = teamRepository.docRef(teamId);
+        await runTransaction(db, async (transaction) => {
+            const teamDoc = await transaction.get(teamRef);
+            if (!teamDoc.exists()) return;
+
+            if (isUpgrade) {
+                const budget = teamDoc.data().budget || 0;
+                if (budget < cost) throw new Error('Insufficient budget');
+                transaction.update(teamRef, {
+                    budget: increment(-cost),
+                    'weekStatus.psychologistLevel': newLevel,
+                    'weekStatus.psychologistUpgradedThisWeek': true,
+                });
+                const txRef = doc(collection(teamRef, 'transactions'));
+                transaction.set(txRef, {
+                    id: txRef.id,
+                    description: `Staff Upgrade: HR Manager / Psychologist (Lvl ${newLevel})`,
+                    amount: -cost,
+                    date: new Date().toISOString(),
+                    type: 'OTHER',
+                });
+            } else {
+                transaction.update(teamRef, {
+                    'weekStatus.psychologistLevel': newLevel,
+                    'weekStatus.psychologistUpgradedThisWeek': true,
+                });
             }
         });
     }
