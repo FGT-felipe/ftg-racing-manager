@@ -17,7 +17,8 @@
         Save,
         Activity,
         Wind,
-        Navigation
+        Navigation,
+        Lock
     } from "lucide-svelte";
     import { teamStore } from "$lib/stores/team.svelte";
     import { managerStore } from "$lib/stores/manager.svelte";
@@ -58,7 +59,6 @@
 
     let qualyCompounds = $state<Record<string, TyreCompound>>({});
     let isQualyWet = $state(false);
-    const isRaceWet = $derived(seasonStore.nextEvent?.weatherRace?.toLowerCase().includes('rain') || seasonStore.nextEvent?.weatherRace?.toLowerCase().includes('wet'));
 
     // Watch for driver changes to load their RACE setup and Qualy tyre
     $effect(() => {
@@ -82,13 +82,21 @@
         try {
             const nextEvent = seasonStore.nextEvent;
             if (nextEvent && seasonStore.value.season) {
-                isQualyWet = nextEvent.weatherQualifying?.toLowerCase().includes('rain') || nextEvent.weatherQualifying?.toLowerCase().includes('wet') || false;
-
                 const raceDocId = `${seasonStore.value.season.id}_${nextEvent.id}`;
                 const grid = await carSetupService.getQualyGrid(raceDocId);
                 grid.forEach((row) => {
                     qualyCompounds[row.driverId] = row.tyreCompound as TyreCompound;
                 });
+
+                // Fallback: if the grid doesn't have this driver yet (CF hasn't generated it),
+                // read the compound directly from the driver's qualifying session data in the team doc.
+                if (!qualyCompounds[dId]) {
+                    const savedCompound = team?.weekStatus?.driverSetups?.[dId]?.qualifyingBestCompound as TyreCompound | undefined;
+                    if (savedCompound) qualyCompounds[dId] = savedCompound;
+                }
+
+                // Parc fermé exception: if the driver qualified on WET tyres, free compound choice for race start
+                isQualyWet = qualyCompounds[dId] === TyreCompound.wet;
                 if (qualyCompounds[dId] && !isQualyWet) {
                     strategy.tyreCompound = qualyCompounds[dId];
                 }
@@ -220,29 +228,35 @@
                 >
                     {t('race_start_config')}
                 </h3>
-                <div
-                    class="px-3 py-1 bg-green-500/10 border border-green-500/20 rounded flex items-center gap-2"
-                >
-                    <ShieldCheck size={12} class="text-green-500" />
-                    <span class="text-[9px] font-black text-app-text/60 uppercase"
-                        >{t('validated')}</span
-                    >
-                </div>
+                {#if driverId && qualyCompounds[driverId] && !isQualyWet}
+                    <div class="px-3 py-1 bg-green-500/10 border border-green-500/20 rounded flex items-center gap-2">
+                        <ShieldCheck size={12} class="text-green-500" />
+                        <span class="text-[9px] font-black text-green-500/80 uppercase">{t('qualy_locked')}</span>
+                    </div>
+                {:else}
+                    <div class="px-3 py-1 bg-amber-500/10 border border-amber-500/20 rounded flex items-center gap-2">
+                        <ShieldCheck size={12} class="text-amber-400" />
+                        <span class="text-[9px] font-black text-amber-400/80 uppercase">{t('free_choice')}</span>
+                    </div>
+                {/if}
             </div>
 
-            <!-- Setup Sliders -->
+            <!-- Setup Sliders — rearWing is parc fermé locked (cannot be adjusted after qualifying) -->
             <div class="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-5 mb-10 pb-8 border-b border-app-border">
                 {#each [
-                    { label: t("front_wing"), field: "frontWing" as const, icon: Wind, color: "text-cyan-400", hintL: t("top_speed_0"), hintR: t("corner_grip_100") }, 
-                    { label: t("rear_wing"), field: "rearWing" as const, icon: Wind, color: "text-cyan-400", hintL: t("top_speed_0"), hintR: t("corner_grip_100") }, 
-                    { label: t("suspension"), field: "suspension" as const, icon: Navigation, color: "text-purple-400", hintL: t("soft_bumps_0"), hintR: t("stiff_aero_100") }, 
-                    { label: t("gear_ratio"), field: "gearRatio" as const, icon: Zap, color: "text-orange-400", hintL: t("acceleration_0"), hintR: t("top_speed_100") }
+                    { label: t("front_wing"),  field: "frontWing"  as const, icon: Wind,       color: "text-cyan-400",   hintL: t("top_speed_0"),    hintR: t("corner_grip_100"), locked: false },
+                    { label: t("rear_wing"),   field: "rearWing"   as const, icon: Wind,       color: "text-cyan-400",   hintL: t("top_speed_0"),    hintR: t("corner_grip_100"), locked: true  },
+                    { label: t("suspension"),  field: "suspension" as const, icon: Navigation, color: "text-purple-400", hintL: t("soft_bumps_0"),  hintR: t("stiff_aero_100"),  locked: false },
+                    { label: t("gear_ratio"),  field: "gearRatio"  as const, icon: Zap,        color: "text-orange-400", hintL: t("acceleration_0"), hintR: t("top_speed_100"),   locked: false }
                 ] as item}
-                    <div class="space-y-3 group">
+                    <div class="space-y-3 group {item.locked ? 'opacity-50' : ''}">
                         <div class="flex justify-between items-center px-1">
                             <div class="flex items-center gap-2 {item.color}">
                                 <item.icon size={14} />
                                 <span class="text-[10px] font-black uppercase tracking-widest">{item.label}</span>
+                                {#if item.locked}
+                                    <Lock size={10} class="text-app-text/30" />
+                                {/if}
                             </div>
                             <span class="text-sm font-black text-app-text">{strategy[item.field]}</span>
                         </div>
@@ -251,7 +265,8 @@
                             min="0"
                             max="100"
                             bind:value={strategy[item.field]}
-                            class="w-full h-1.5 bg-app-text/5 rounded-full appearance-none cursor-pointer {item.color.replace('text-', 'accent-')} transition-all"
+                            disabled={item.locked}
+                            class="w-full h-1.5 bg-app-text/5 rounded-full appearance-none {item.locked ? 'cursor-not-allowed' : 'cursor-pointer'} {item.color.replace('text-', 'accent-')} transition-all"
                         />
                         <div class="flex justify-between px-1 opacity-0 group-hover:opacity-100 transition-opacity">
                             <span class="text-[8px] font-bold text-app-text/40 uppercase tracking-wider text-left max-w-[45%]">{item.hintL}</span>
