@@ -34,6 +34,10 @@
     // ── State ──────────────────────────────────────────────────────────────────
     type Step = 'offer' | 'counter' | 'success' | 'failed' | 'retired';
 
+    const SALARY_STEP = 10_000;
+    const SALARY_MIN = 50_000;
+    const SALARY_MAX = 2_000_000;
+
     let step = $state<Step>('offer');
     let offeredSalary = $state(Math.max(driver.salary, SALARY_MIN));
     let years = $state(1);
@@ -62,10 +66,6 @@
     const renewalFee = $derived(
         Math.round(offeredSalary * years * DRIVER_RENEWAL_FEE_RATE)
     );
-
-    const SALARY_STEP = 10_000;
-    const SALARY_MIN = 50_000;
-    const SALARY_MAX = 2_000_000;
 
     // ── Helpers ───────────────────────────────────────────────────────────────
     function formatCurrency(v: number) {

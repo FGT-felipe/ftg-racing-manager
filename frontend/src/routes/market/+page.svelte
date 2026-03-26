@@ -263,7 +263,7 @@
             ));
             pendingNegotiations = snap.docs.map((d: any) => {
                 const raw = { id: d.id, ...d.data() } as Driver;
-                raw.currentStars = calculateCurrentStars(raw);
+                (raw as any).currentStars = calculateCurrentStars(raw);
                 if (!raw.marketValue) raw.marketValue = calculateDriverMarketValue(raw);
                 return raw;
             });
