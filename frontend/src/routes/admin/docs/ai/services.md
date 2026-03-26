@@ -27,6 +27,12 @@ This document defines the interface and behaviors of core services for automated
   - `listDriverOnMarket(teamId, driver)`: Listing fee (10% of market value) applied to `budget`. Sets `isTransferListed = true` and `transferListedAt`. Guard: at least 1 non-listed main driver must remain (enforced in UI).
   - `cancelListing(teamId, driver)`: Clears `isTransferListed` and `transferListedAt`. No refund of listing fee. Throws if `currentHighestBid > 0` (active bids block cancellation).
 
+### `StaffService` — New methods (v1.5.0 Morale System)
+- **`applyMoraleEvent(driverId, delta)`**: Applies morale delta to a driver, clamping to [0, 100]. Use for non-transactional morale events from external callers.
+- **`boostMoralePsychologist(teamId, driverId, bonusPoints)`**: Manual psychologist session. Sets `psychologistSessionDoneThisWeek = true`. One per week.
+- **`savePsychologistAssignment(teamId, { assignedToId })`**: Saves which driver the HR Manager/Psychologist is assigned to.
+- **`changePsychologistLevel(teamId, newLevel, cost, isUpgrade)`**: Upgrades or downgrades psychologist level. Deducts `cost` from budget on upgrade. Sets `psychologistUpgradedThisWeek = true`.
+
 ### `PracticeService` (Simulation Engine - Client)
 - **Function**: `simulatePracticeRun(circuit, team, driver, setup)` -> `PracticeRunResult`.
 - **Algorithm**: Deterministic lap time with Gaussian noise.
@@ -83,6 +89,8 @@ interface SimLapParams {
   fatigueLevel?: number;                // NEW: 0–100, current physical fatigue
 }
 ```
+
+- `driverStats.morale` (0–100, default MORALE_DEFAULT=70): applied as `MORALE_LAPTIME_FACTOR * (morale - MORALE_NEUTRAL) / 100` added to the driver skill sum in driverFactor. Positive morale (> 50) reduces driverFactor (faster). Negative morale (< 50) increases driverFactor (slower). Range: ±1% at extremes.
 
 **Specialty effects in `simulateLap`:**
 | Specialty | Effect | Mechanism |

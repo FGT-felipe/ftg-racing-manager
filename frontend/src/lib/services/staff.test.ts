@@ -33,6 +33,9 @@ vi.mock('$lib/constants/economics', () => ({
     TRANSFER_MARKET_LISTING_FEE_RATE: 0.10,
     DRIVER_RENEWAL_FEE_RATE: 0.10,
     DISMISS_MORALE_PENALTY: 20,
+    MORALE_DEFAULT: 70,
+    MORALE_EVENT_TRANSFER_LISTED: -10,
+    PSYCHOLOGIST_UPGRADE_COSTS: [0, 0, 100_000, 250_000, 500_000, 1_000_000],
 }));
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
@@ -124,7 +127,9 @@ describe('StaffService', () => {
     describe('listDriverOnMarket()', () => {
         it('deducts the 10% listing fee from budget', async () => {
             const driver = makeDriver();
+            // listDriverOnMarket reads team first, then driver (for morale)
             mockGet.mockResolvedValueOnce({ exists: () => true, data: () => ({ budget: 2_000_000 }) });
+            mockGet.mockResolvedValueOnce({ exists: () => true, data: () => ({ stats: { morale: 70 } }) });
 
             await staffService.listDriverOnMarket('team-1', driver);
 
@@ -145,6 +150,7 @@ describe('StaffService', () => {
         it('sets isTransferListed to true on the driver', async () => {
             const driver = makeDriver();
             mockGet.mockResolvedValueOnce({ exists: () => true, data: () => ({ budget: 2_000_000 }) });
+            mockGet.mockResolvedValueOnce({ exists: () => true, data: () => ({ stats: { morale: 70 } }) });
 
             await staffService.listDriverOnMarket('team-1', driver);
 

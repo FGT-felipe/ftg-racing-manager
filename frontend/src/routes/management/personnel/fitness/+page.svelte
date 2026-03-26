@@ -22,6 +22,7 @@
     } from "lucide-svelte";
     import { fly, fade } from "svelte/transition";
     import { type Driver } from "$lib/types";
+    import CountryFlag from "$lib/components/ui/CountryFlag.svelte";
 
     let team = $derived(teamStore.value.team);
     let isLoading = $derived(teamStore.value.loading);
@@ -47,7 +48,6 @@
     let selectedPilotId = $state<string | undefined>(undefined);
     let isTraining = $state(false);
     let isUpgrading = $state(false);
-    let isSaving = $state(false);
 
     const salaryByLevel = FITNESS_TRAINER_SALARY_BY_LEVEL;
     const bonusByLevel = FITNESS_TRAINER_BONUS_BY_LEVEL;
@@ -71,28 +71,19 @@
     });
 
     async function handleTrain() {
-        if (!team?.id || !assignedPilotId || hasTrainedThisWeek) return;
+        if (!team?.id || !selectedPilotId || hasTrainedThisWeek) return;
         isTraining = true;
         try {
+            if (selectedPilotId !== assignedPilotId) {
+                await staffService.saveFitnessAssignment(team.id, { assignedToId: selectedPilotId });
+            }
             await staffService.trainPilot(
                 team.id,
-                assignedPilotId,
+                selectedPilotId,
                 bonusByLevel[trainerLevel],
             );
         } finally {
             isTraining = false;
-        }
-    }
-
-    async function handleSaveAssignment() {
-        if (!team?.id || !selectedPilotId || isSaving) return;
-        isSaving = true;
-        try {
-            await staffService.saveFitnessAssignment(team.id, {
-                assignedToId: selectedPilotId,
-            });
-        } finally {
-            isSaving = false;
         }
     }
 
@@ -205,7 +196,7 @@
                                 <div
                                     class="flex items-center justify-center md:justify-start gap-3 mb-1"
                                 >
-                                    <span class="text-xl">🇷🇺</span>
+                                    <CountryFlag countryCode={trainerCountry || "RU"} size="md" />
                                     <span
                                         class="px-3 py-1 rounded-full text-[9px] font-black tracking-widest uppercase {getLevelColor(
                                             trainerLevel,
@@ -281,50 +272,70 @@
                     <div
                         class="bg-app-surface border border-app-border rounded-[32px] p-8 flex flex-col gap-8"
                     >
-                        <div
-                            class="flex flex-col md:flex-row md:items-center justify-between gap-6"
-                        >
-                            <div class="flex flex-col gap-1">
-                                <span
-                                    class="text-[10px] font-black text-app-text/20 uppercase tracking-widest"
-                                    >Target Pilot</span
-                                >
-                                <div class="flex items-center gap-3">
-                                    <select
-                                        bind:value={selectedPilotId}
-                                        disabled={hasTrainedThisWeek ||
-                                            isSaving}
-                                        class="bg-app-surface border border-app-border rounded-xl px-4 py-2 text-sm font-bold text-app-text outline-none focus:border-app-primary/30 transition-all cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
-                                    >
-                                        <option value={undefined} disabled
-                                            >Select a pilot</option
-                                        >
-                                        {#each drivers as pilot}
-                                            <option value={pilot.id}
-                                                >{pilot.name}</option
-                                            >
-                                        {/each}
-                                    </select>
-
-                                    {#if selectedPilotId && selectedPilotId !== assignedPilotId}
+                        <div class="flex flex-col md:flex-row md:items-start justify-between gap-6">
+                            <div class="flex flex-col gap-3 flex-1">
+                                <span class="text-[10px] font-black text-app-text/20 uppercase tracking-widest">Target Pilot</span>
+                                <div class="flex flex-col gap-2">
+                                    {#each drivers as pilot}
+                                        {@const fitness = pilot.stats?.fitness ?? 100}
+                                        {@const form = pilot.form ?? 5}
+                                        {@const isSelected = selectedPilotId === pilot.id}
+                                        {@const isTrained = hasTrainedThisWeek && assignedPilotId === pilot.id}
                                         <button
-                                            onclick={handleSaveAssignment}
-                                            disabled={isSaving}
-                                            class="px-4 py-2 bg-green-400 text-black rounded-xl font-black text-[10px] uppercase tracking-widest hover:scale-105 transition-all disabled:opacity-50"
+                                            onclick={() => { if (!hasTrainedThisWeek) selectedPilotId = pilot.id; }}
+                                            disabled={hasTrainedThisWeek}
+                                            class="w-full text-left px-4 py-3 rounded-2xl border transition-all
+                                                {isSelected
+                                                    ? 'bg-green-400/10 border-green-400/50'
+                                                    : 'bg-app-text/5 border-app-border hover:border-green-400/30'}
+                                                disabled:opacity-50 disabled:cursor-not-allowed"
                                         >
-                                            {#if isSaving}
-                                                Saving...
-                                            {:else}
-                                                Save Assignment
-                                            {/if}
+                                            <div class="flex items-center justify-between gap-4">
+                                                <div class="flex items-center gap-2 min-w-0">
+                                                    <span class="text-xs font-black text-app-text uppercase tracking-tight truncate">
+                                                        {pilot.name}
+                                                    </span>
+                                                    {#if isTrained}
+                                                        <span class="shrink-0 px-1.5 py-0.5 bg-green-400/15 border border-green-400/30 text-green-400 text-[8px] font-black uppercase tracking-widest rounded-full">Trained</span>
+                                                    {/if}
+                                                </div>
+                                                <div class="flex items-center gap-4 shrink-0">
+                                                    <!-- Fitness -->
+                                                    <div class="flex flex-col items-end gap-0.5">
+                                                        <span class="text-[8px] font-bold text-app-text/30 uppercase tracking-widest">Fitness</span>
+                                                        <div class="flex items-center gap-1.5">
+                                                            <div class="w-16 h-1.5 bg-app-text/10 rounded-full overflow-hidden">
+                                                                <div
+                                                                    class="h-full rounded-full transition-all
+                                                                        {fitness >= 70 ? 'bg-green-400' : fitness >= 40 ? 'bg-yellow-400' : 'bg-red-400'}"
+                                                                    style="width: {fitness}%"
+                                                                ></div>
+                                                            </div>
+                                                            <span class="text-[10px] font-black tabular-nums
+                                                                {fitness >= 70 ? 'text-green-400' : fitness >= 40 ? 'text-yellow-400' : 'text-red-400'}">
+                                                                {Math.round(fitness * 10) / 10}%
+                                                            </span>
+                                                        </div>
+                                                    </div>
+                                                    <!-- Form -->
+                                                    <div class="flex flex-col items-end gap-0.5">
+                                                        <span class="text-[8px] font-bold text-app-text/30 uppercase tracking-widest">Forma</span>
+                                                        <span class="text-[10px] font-black tabular-nums
+                                                            {form >= 7 ? 'text-green-400' : form >= 4 ? 'text-yellow-400' : 'text-red-400'}">
+                                                            {form.toFixed(1)}
+                                                        </span>
+                                                    </div>
+                                                </div>
+                                            </div>
                                         </button>
-                                    {/if}
+                                    {/each}
                                 </div>
+
                             </div>
 
                             <div class="flex items-center gap-4">
                                 <button
-                                    disabled={!assignedPilotId ||
+                                    disabled={!selectedPilotId ||
                                         hasTrainedThisWeek ||
                                         isTraining}
                                     onclick={handleTrain}

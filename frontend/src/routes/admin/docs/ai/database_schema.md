@@ -95,6 +95,12 @@ weekStatus: {
   lockAt:                     Timestamp
   fitnessTrainerLevel?:       number  // 0–5
   upgradeCooldownWeeksLeft?:  number
+  psychologistLevel?:             number   // HR Manager level 1–5 (default 1)
+  psychologistName?:              string   // HR Manager display name
+  psychologistCountry?:           string   // HR Manager country code
+  psychologistAssignedTo?:        string   // driverId for weekly morale session
+  psychologistUpgradedThisWeek?:  boolean  // level change lock (resets weekly)
+  psychologistSessionDoneThisWeek?: boolean // session lock (resets weekly)
   driverSetups?: {
     [driverId]: CarSetup
   }
@@ -193,7 +199,7 @@ stats: {                      // all values 1–20
   consistency:  number
   smoothness:   number
   overtaking:   number
-  morale?:      number        // affects negotiation and performance
+  morale?:      number        // 0–100. Default 70 (MORALE_DEFAULT) when absent. Affects lap time via MORALE_LAPTIME_FACTOR formula.
   traits?:      string[]      // e.g. ["rain_master"]
 }
 

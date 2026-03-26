@@ -456,6 +456,9 @@ export const translations = {
         changelog_all_up_to_date: "You're up to date!",
         changelog_up_to_date_desc: "No new updates since your last visit.",
         changelog_view_all: "View full changelog",
+        changelog_v150_1: "New feature: Morale System — driver morale now affects lap times (±1% at extremes). Morale changes based on race results, qualifying poles, sponsor objectives, practice sessions, and transfer listings.",
+        changelog_v150_2: "New feature: HR Manager — hire a psychologist to manually boost driver morale once per week. Upgradeable from Junior to Elite level.",
+        changelog_v150_3: "Improvement: Fitness Trainer and HR Manager pilot selectors now show live fitness and morale bars per driver. Select a pilot and act in one click.",
         changelog_v144_1: "Critical fix: Live Race panel no longer gets stuck on 'Connecting to race control' when no race is active.",
         changelog_v144_2: "Critical fix: Last Results now correctly displays qualifying classifications — the qualifying grid was lost due to an admin tool scope error and has been fully recovered for R1, R2, and R3.",
         changelog_v144_3: "Critical fix: admin reset tool now includes a scope guard that prevents wiping qualifying data from completed historical rounds.",
@@ -611,7 +614,19 @@ export const translations = {
         office_race_debrief_header: "Last Race Debrief",
         office_official_report_badge: "Official Report",
         office_communications_header: "Official Communications",
-        office_no_communications: "No communications received"
+        office_no_communications: "No communications received",
+        // ── HR Manager (Psychologist) ───────────────────────────────────────
+        personnel_hr_title: "HR Manager",
+        personnel_hr_desc: "Boost driver morale through psychological support and team cohesion programs.",
+        personnel_hr_breadcrumb: "Personnel Hub",
+        hr_trainer_manual_header: "HR Manual",
+        hr_operational_control_header: "Operational Control",
+        hr_target_pilot_label: "Target Pilot",
+        hr_weekly_morale_label: "Morale Boost / Session",
+        hr_weekly_salary_label: "Weekly Salary",
+        hr_recovery_bonus_label: "Recovery Bonus",
+        hr_session_completed: "Session completed for this week. Wait for the next race cycle.",
+        hr_strategic_tip: "\"Keeping your drivers mentally sharp reduces performance swings and improves contract negotiations. Never underestimate the power of morale.\""
     },
     es: {
         career_view: "Vista Profesional",
@@ -1067,6 +1082,9 @@ export const translations = {
         changelog_all_up_to_date: "¡Estás al día!",
         changelog_up_to_date_desc: "Sin actualizaciones nuevas desde tu última visita.",
         changelog_view_all: "Ver changelog completo",
+        changelog_v150_1: "Nueva función: Sistema de Moral — la moral del piloto ahora afecta los tiempos de vuelta (±1% en extremos). La moral cambia según resultados de carrera, poles, objetivos de patrocinador, prácticas y transferencias.",
+        changelog_v150_2: "Nueva función: Jefe de RRHH — contrata un psicólogo para subir manualmente la moral de un piloto una vez por semana. Niveles de Junior a Elite.",
+        changelog_v150_3: "Mejora: los selectores de piloto del Trainer y del RRHH ahora muestran barras de fitness y moral en tiempo real. Seleccioná el piloto y actuá en un solo clic.",
         changelog_v144_1: "Fix crítico: el panel de Carrera en Vivo ya no se queda bloqueado en 'Conectando con control de carrera' cuando no hay carrera activa.",
         changelog_v144_2: "Fix crítico: Los Últimos Resultados ahora muestra correctamente la clasificación de qualifying — la grilla se perdió por un error de alcance en una herramienta de administración y ha sido recuperada en R1, R2 y R3.",
         changelog_v144_3: "Fix crítico: la herramienta de reset de qualifying ahora tiene un guard de alcance que impide borrar datos de rondas históricas completadas.",
@@ -1222,7 +1240,19 @@ export const translations = {
         office_race_debrief_header: "Análisis de la Última Carrera",
         office_official_report_badge: "Informe Oficial",
         office_communications_header: "Comunicaciones Oficiales",
-        office_no_communications: "Sin comunicaciones recibidas"
+        office_no_communications: "Sin comunicaciones recibidas",
+        // ── HR Manager (Psicólogo) ──────────────────────────────────────────
+        personnel_hr_title: "Jefe de RRHH",
+        personnel_hr_desc: "Eleva la moral de tus pilotos mediante apoyo psicológico y programas de cohesión.",
+        personnel_hr_breadcrumb: "Personal",
+        hr_trainer_manual_header: "Manual de RRHH",
+        hr_operational_control_header: "Control Operativo",
+        hr_target_pilot_label: "Piloto Objetivo",
+        hr_weekly_morale_label: "Boost de Moral / Sesión",
+        hr_weekly_salary_label: "Salario Semanal",
+        hr_recovery_bonus_label: "Bonus de Recuperación",
+        hr_session_completed: "Sesión completada esta semana. Espera el próximo ciclo de carrera.",
+        hr_strategic_tip: "\"Mantener a tus pilotos mentalmente fuertes reduce los altibajos de rendimiento y mejora las negociaciones de contrato. Nunca subestimes el poder de la moral.\""
     }
 };
 

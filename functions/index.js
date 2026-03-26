@@ -11,6 +11,22 @@ const db = admin.firestore();
 
 setGlobalOptions({ maxInstances: 10 });
 
+// ---------------------------------------------------------------------------
+// Morale constants (mirrors frontend/src/lib/constants/economics.ts)
+// ---------------------------------------------------------------------------
+const MORALE_DEFAULT = 70;        // Used when driver.stats.morale is undefined
+const MORALE_NEUTRAL = 50;        // Neutral — no laptime effect
+const MORALE_LAPTIME_FACTOR = 0.02; // ±1% at morale 0/100 vs neutral 50
+
+const MORALE_EVENT_WIN_RACE         =  15;
+const MORALE_EVENT_PODIUM           =   8;  // P2 or P3
+const MORALE_EVENT_POLE             =  10;
+const MORALE_EVENT_SPONSOR_OBJ      =   8;
+const MORALE_EVENT_DNF              = -10;
+const MORALE_EVENT_FINISH_LOW       =  -5;  // P10 or lower
+
+const PSYCHOLOGIST_SALARY_BY_LEVEL = [0, 0, 50000, 120000, 250000, 500000];
+
 const FALLBACK_BONUSES = {
   "titans_oil": 250000,
   "global_tech": 200000,
@@ -318,7 +334,10 @@ const SimEngine = {
     const crn = (driverStats.cornering || 10) / 20.0;
     const foc = (driverStats.focus || 10) / 20.0;
     const adp = (driverStats.adaptability || 10) / 20.0;
-    let df = 1.0 - (brk * 0.02 + crn * 0.025 + (foc - 0.5) * 0.01);
+    // Morale effect: positive morale > MORALE_NEUTRAL reduces driverFactor (faster), negative increases it (slower)
+    const moraleRaw = (driverStats.morale != null ? driverStats.morale : MORALE_DEFAULT);
+    const moraleFactor = MORALE_LAPTIME_FACTOR * (moraleRaw - MORALE_NEUTRAL) / 100;
+    let df = 1.0 - (brk * 0.02 + crn * 0.025 + (foc - 0.5) * 0.01 + moraleFactor);
 
     const isWet = (p.weather || "").toLowerCase().includes("rain") || (p.weather || "").toLowerCase().includes("wet");
     if (isWet) {
@@ -1104,6 +1123,19 @@ async function runQualifyingLogic() {
           await db.collection("teams")
             .doc(pole.teamId).update({ poles: inc });
 
+          // Morale boost for pole sitter
+          await db.runTransaction(async (tx) => {
+            const poleDriverRef = db.collection("drivers").doc(pole.driverId);
+            const poleSnap = await tx.get(poleDriverRef);
+            if (poleSnap.exists) {
+              const currentMorale = poleSnap.data().stats?.morale != null
+                ? poleSnap.data().stats.morale
+                : MORALE_DEFAULT;
+              const newMorale = Math.min(100, currentMorale + MORALE_EVENT_POLE);
+              tx.update(poleDriverRef, { "stats.morale": newMorale });
+            }
+          });
+
           /*
           await addPressNews(lId, {
             title: `POLE POSITION: ${raceEvent.trackName.toUpperCase()}`,
@@ -1468,25 +1500,26 @@ async function runRaceLogic() {
           }
 
           // Morale & Form Update
-          let mDelta = -5;
+          let mDelta = MORALE_EVENT_FINISH_LOW; // Default: P10+ or unscored finish
           let fDelta = -0.01;
           if (isDnf) {
-            mDelta = -15; fDelta = -0.1;
+            mDelta = MORALE_EVENT_DNF; fDelta = -0.1;
           } else if (isWin) {
-            mDelta = 10; fDelta = 0.1;
+            mDelta = MORALE_EVENT_WIN_RACE; fDelta = 0.1;
           } else if (isPodium) {
-            mDelta = 7; fDelta = 0.05;
+            mDelta = MORALE_EVENT_PODIUM; fDelta = 0.05;
           } else if (pts > 0) {
-            mDelta = 3; fDelta = 0.02;
+            mDelta = 3; fDelta = 0.02; // Points finish (P4-P9): subtle positive
           }
 
           const mRoleForStats = dData.teamId ? (managerRoles[dData.teamId] || "") : "";
           if (mRoleForStats === "ex_driver") {
-            mDelta += 10;
+            mDelta += 10; // Ex-Driver manager boosts morale during race
           }
 
           const curStats = dData.stats || {};
-          const newMorale = Math.min(100, Math.max(0, (curStats.morale || 50) + mDelta));
+          const currentMorale = curStats.morale != null ? curStats.morale : MORALE_DEFAULT;
+          const newMorale = Math.min(100, Math.max(0, currentMorale + mDelta));
           const newForm = Math.min(10, Math.max(1, (dData.form || 5.0) + fDelta));
 
           du["stats.morale"] = newMorale;
@@ -1872,6 +1905,22 @@ exports.postRaceProcessing = onSchedule({
                   message: `Congratulations! We met the ${contract.sponsorName} objective: "${contract.objectiveDescription}". A bonus of $${bonus.toLocaleString()} has been awarded.`,
                   type: "SUCCESS",
                 });
+
+                // Morale boost for all team drivers when a sponsor objective is met
+                for (const dId of teamDriverIds) {
+                  await db.runTransaction(async (tx) => {
+                    const dRef = db.collection("drivers").doc(dId);
+                    const dSnap = await tx.get(dRef);
+                    if (dSnap.exists) {
+                      const curMorale = dSnap.data().stats?.morale != null
+                        ? dSnap.data().stats.morale
+                        : MORALE_DEFAULT;
+                      tx.update(dRef, {
+                        "stats.morale": Math.min(100, curMorale + MORALE_EVENT_SPONSOR_OBJ),
+                      });
+                    }
+                  });
+                }
               }
             }
 
@@ -1923,6 +1972,15 @@ exports.postRaceProcessing = onSchedule({
 
         if (trainerSalary > 0) {
           weeklyExpense += trainerSalary;
+        }
+
+        // 3.6 Psychologist (HR Manager) Salary
+        const psychLevel = curWs.psychologistLevel || 1;
+        const psychSalary = (psychLevel >= 0 && psychLevel < PSYCHOLOGIST_SALARY_BY_LEVEL.length)
+          ? PSYCHOLOGIST_SALARY_BY_LEVEL[psychLevel]
+          : 0;
+        if (psychSalary > 0) {
+          weeklyExpense += psychSalary;
         }
 
         // 4. Academy Processing
@@ -2189,8 +2247,20 @@ exports.postRaceProcessing = onSchedule({
             upgradesThisWeek: 0,
             upgradeCooldownWeeksLeft: cooldown,
             isLockedForProcessing: false,
+            // Fitness trainer: reset weekly flags, preserve persistent fields
+            fitnessTrainerLevel: curWs.fitnessTrainerLevel || 1,
+            fitnessTrainerName: curWs.fitnessTrainerName || null,
+            fitnessTrainerCountry: curWs.fitnessTrainerCountry || null,
+            fitnessTrainerAssignedTo: curWs.fitnessTrainerAssignedTo || null,
             fitnessTrainerUpgradedThisWeek: false,
             fitnessTrainerTrainedThisWeek: false,
+            // Psychologist (HR Manager): reset weekly flags, preserve persistent fields
+            psychologistLevel: curWs.psychologistLevel || 1,
+            psychologistName: curWs.psychologistName || null,
+            psychologistCountry: curWs.psychologistCountry || null,
+            psychologistAssignedTo: curWs.psychologistAssignedTo || null,
+            psychologistUpgradedThisWeek: false,
+            psychologistSessionDoneThisWeek: false,
           },
           "sponsors": updatedSponsors,
           "budget": newBudget,

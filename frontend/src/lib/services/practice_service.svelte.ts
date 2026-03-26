@@ -4,6 +4,7 @@ import { type Driver, type Team, type CarSetup, DriverTrait, TyreCompound, Drive
 import { type CircuitProfile } from "./circuit_service.svelte";
 import { t } from "../utils/i18n";
 import { CarSetupSchema } from "../schemas/car-setup.schema";
+import { MORALE_DEFAULT, MORALE_NEUTRAL, MORALE_LAPTIME_FACTOR, MORALE_EVENT_BAD_PRACTICE, MORALE_EVENT_GOOD_PRACTICE } from "../constants/economics";
 
 export interface SetupHint {
     min: number;
@@ -122,9 +123,10 @@ class PracticeService {
         const cornering = (driver.stats.cornering || 10) / 20.0;
         const focusVal = (driver.stats.focus || 10) / 20.0;
         const adaptability = (driver.stats.adaptability || 10) / 20.0;
-        const morale = (driver.stats.morale || 70) / 100.0;
+        const moraleRaw = driver.stats.morale ?? MORALE_DEFAULT;
+        const moraleFactor = MORALE_LAPTIME_FACTOR * (moraleRaw - MORALE_NEUTRAL) / 100;
 
-        let driverFactor = 1.0 - (braking * 0.02 + cornering * 0.025 + adaptability * 0.015 + focusVal * 0.01 + (morale - 0.5) * 0.01);
+        let driverFactor = 1.0 - (braking * 0.02 + cornering * 0.025 + adaptability * 0.015 + focusVal * 0.01 + moraleFactor);
 
         // 6. Driving style modifier (matches race_service logic)
         const st = setup.qualifyingStyle || DriverStyle.normal;
@@ -294,17 +296,18 @@ class PracticeService {
         // Update driver fitness and morale after the session
         if (driverStats !== undefined) {
             const fitnessCost = Math.max(3, lapCount * 2);
-            let moralePenalty = 0;
+            let moraleDelta = 0;
             if (result.isCrashed) {
-                moralePenalty = 5;
+                moraleDelta = MORALE_EVENT_BAD_PRACTICE;
             } else if (result.setupConfidence < 0.60) {
-                moralePenalty = 2;
+                // Bad setup — driver can't find a good balance
+                moraleDelta = MORALE_EVENT_BAD_PRACTICE;
             } else if (result.setupConfidence > 0.85) {
-                moralePenalty = -1;
+                moraleDelta = MORALE_EVENT_GOOD_PRACTICE;
             }
 
             const newFitness = Math.max(0, (driverStats.fitness || 100) - fitnessCost);
-            const newMorale = Math.max(0, Math.min(100, (driverStats.morale || 100) - moralePenalty));
+            const newMorale = Math.max(0, Math.min(100, (driverStats.morale ?? MORALE_DEFAULT) + moraleDelta));
 
             const driverRef = doc(db, "drivers", driverId);
             await updateDoc(driverRef, {

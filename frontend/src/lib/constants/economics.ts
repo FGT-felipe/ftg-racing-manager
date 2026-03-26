@@ -125,6 +125,50 @@ export const FITNESS_TRAINER_UPGRADE_COSTS = [0, 0, 100_000, 250_000, 500_000, 1
 export const FITNESS_TRAINER_MAX_LEVEL = 5;
 
 // ---------------------------------------------------------------------------
+// HR Manager (Psychologist)
+// ---------------------------------------------------------------------------
+
+/** Weekly salary per psychologist level (index = level). Level 0-1 are free. */
+export const PSYCHOLOGIST_SALARY_BY_LEVEL = [0, 0, 50_000, 120_000, 250_000, 500_000];
+
+/** Morale points added per manual session at each psychologist level (index = level). */
+export const PSYCHOLOGIST_BONUS_BY_LEVEL = [0, 5, 8, 12, 16, 20];
+
+/** One-time upgrade cost per psychologist level (index = target level). */
+export const PSYCHOLOGIST_UPGRADE_COSTS = [0, 0, 100_000, 250_000, 500_000, 1_000_000];
+
+/** Maximum psychologist level. */
+export const PSYCHOLOGIST_MAX_LEVEL = 5;
+
+// ---------------------------------------------------------------------------
+// Morale System
+// ---------------------------------------------------------------------------
+
+/** Default morale value for drivers that have no morale field (lazy init). */
+export const MORALE_DEFAULT = 70;
+
+/** Neutral morale value — no laptime effect above or below this point. */
+export const MORALE_NEUTRAL = 50;
+
+/**
+ * Laptime multiplier factor for morale deviation from neutral.
+ * Formula: lap *= (1 + MORALE_LAPTIME_FACTOR * (MORALE_NEUTRAL - morale) / 100)
+ * At morale=0 → +1% slower. At morale=100 → −1% faster.
+ */
+export const MORALE_LAPTIME_FACTOR = 0.02;
+
+// Morale event deltas (positive = boost, negative = decay)
+export const MORALE_EVENT_WIN_RACE          =  15;
+export const MORALE_EVENT_PODIUM            =   8;  // P2 or P3
+export const MORALE_EVENT_POLE              =  10;
+export const MORALE_EVENT_SPONSOR_OBJECTIVE =   8;
+export const MORALE_EVENT_DNF               = -10;
+export const MORALE_EVENT_FINISH_LOW        =  -5;  // P10 or lower
+export const MORALE_EVENT_TRANSFER_LISTED   = -10;
+export const MORALE_EVENT_BAD_PRACTICE      =  -5;
+export const MORALE_EVENT_GOOD_PRACTICE     =   1;  // Well-dialled setup in practice
+
+// ---------------------------------------------------------------------------
 // Transfer Market
 // ---------------------------------------------------------------------------
 
