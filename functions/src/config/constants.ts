@@ -58,6 +58,73 @@ export const NAME_CHANGE_COST = 500_000;
 /** XP points required to trigger a skill level-up for academy drivers. */
 export const XP_PER_SKILL_LEVEL = 500;
 
+// ─── Specialization — Fatigue model ──────────────────────────────────────────
+
+/**
+ * Per-lap fatigue drain per driving style.
+ * Applied each race lap to reduce the driver's current fatigue (0–100).
+ * Iron Wall specialty bypasses this drain entirely.
+ */
+export const FATIGUE_DRAIN_BY_STYLE: Record<string, number> = {
+  defensive: 0.3,
+  normal:    0.5,
+  offensive: 0.8,
+  mostRisky: 1.2,
+};
+
+/**
+ * Fatigue level (0–100) below which lap time penalties start applying.
+ * Represents physical exhaustion visibly affecting performance.
+ */
+export const FATIGUE_PENALTY_THRESHOLD = 30;
+
+/**
+ * Penalty applied to the driver factor (df) per fatigue point below threshold.
+ * Formula: df *= (1 + (threshold - fatigue) * FACTOR)
+ * At fatigue=0 with threshold=30: df is multiplied by (1 + 30 * 0.005) = 1.15 (+15% slower).
+ */
+export const FATIGUE_PENALTY_FACTOR = 0.005;
+
+// ─── Specialization — sim effects ────────────────────────────────────────────
+
+/** Qualy Ace: lap time multiplier applied during qualifying sessions (1.5% faster). */
+export const QUALY_ACE_LAPTIME_BONUS = 0.015;
+
+/** Iron Nerve: fraction by which random lap noise is reduced (60% less variance). */
+export const IRON_NERVE_NOISE_REDUCTION = 0.6;
+
+/**
+ * Late Braker: multiplier boost applied to the braking stat contribution in df.
+ * 0.5 = braking contributes 50% more to the driver factor.
+ */
+export const LATE_BRAKER_STAT_BOOST = 0.5;
+
+/**
+ * Apex Hunter: multiplier boost applied to the cornering stat contribution in df.
+ * 0.5 = cornering contributes 50% more to the driver factor.
+ */
+export const APEX_HUNTER_STAT_BOOST = 0.5;
+
+/** Defensive Minister: fraction by which crash probability is reduced. */
+export const DEFENSIVE_MINISTER_CRASH_REDUCTION = 0.35;
+
+/** Tyre Whisperer: fraction by which tyre wear accumulation is reduced each lap. */
+export const TYRE_WHISPERER_WEAR_REDUCTION = 0.15;
+
+/** Rainmaster: additional df reduction (speed bonus) in wet conditions. */
+export const RAINMASTER_WET_DF_BONUS = 0.015;
+
+// ─── Specialization — academy trigger threshold ───────────────────────────────
+
+/**
+ * Minimum baseSkill an academy trainee must have to be eligible for a specialty.
+ * Mirrors the guard in post-race.ts: `if (!yDriver.specialty && baseSkill >= THRESHOLD)`.
+ */
+export const SPECIALTY_BASESKILL_THRESHOLD = 8;
+
+/** Stat value (on 1–20 scale) a trainee must reach to trigger a specialization. */
+export const SPECIALTY_STAT_THRESHOLD = 11;
+
 /** Additional XP bonus per academy level above 1. */
 export const ACADEMY_XP_BONUS_PER_LEVEL = 8;
 

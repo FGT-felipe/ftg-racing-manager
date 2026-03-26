@@ -180,6 +180,8 @@ export async function runQualifyingLogic(): Promise<void> {
                 style: (setup["qualifyingStyle"] as string) || "normal",
                 teamRole: managerRoles[team["id"] as string] ?? "",
                 weather: raceEvent["weatherQualifying"] as string,
+                specialty: driver["specialty"] as string | undefined,
+                isQualifying: true,
               });
 
               finalLapTime = res.lapTime;

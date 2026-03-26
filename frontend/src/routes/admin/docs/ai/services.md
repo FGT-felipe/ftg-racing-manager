@@ -29,11 +29,11 @@ This document defines the interface and behaviors of core services for automated
 
 ### `PracticeService` (Simulation Engine - Client)
 - **Function**: `simulatePracticeRun(circuit, team, driver, setup)` -> `PracticeRunResult`.
-- **Algorithm**: Deterministic lap time with Gaussian noise. 
+- **Algorithm**: Deterministic lap time with Gaussian noise.
   - `Wet` Surface Penalty: `+1.5s` base.
   - Incorrect Tyre Penalty: `+8.0s` (if dry tyres in rain) or `+3.0s` (if wet tyres in dry).
 - **Feedback Generation**: Derived from `setup_gap` vs `driver.feedback_skill`.
-- **Setup Hints**: Genera rangos visuales dinámicos. Un piloto con alta `Adaptability` proporciona rangos más estrechos y precisos.
+- **Setup Hints**: Generates dynamic visual ranges. High `feedback` stat = narrower ranges. **Qualy Ace specialty** simulates `feedbackStat + 0.35` boost → significantly tighter hints (better qualifying precision).
 - **Qualifying Integration**: Per-driver `lastQualyResult` persists setup hints and allows fallback to `practice` results for managers to optimize during qualifying attempts.
 - **State Writes**: Updates `weekStatus.driverSetups.{id}.practice` or `qualifying` for persistence. Stores `bestLapSetup` upon achieving a new personal best lap.
 
@@ -66,6 +66,41 @@ This document defines the interface and behaviors of core services for automated
 - `runRaceLogic()` updates individual `drivers/{id}` and `teams/{id}` documents.
 - **These are NOT the same.** The universe document requires an explicit sync step.
 - **Script:** `node functions/sync_universe.js` (must be run after any manual race simulation).
+
+### SimLapParams — Extended Interface (v1.4.0+)
+
+```typescript
+interface SimLapParams {
+  circuit: Circuit;
+  carStats: Partial<CarStats>;
+  driverStats: Partial<DriverStats>;
+  setup: Partial<CarSetup>;
+  style?: string;
+  teamRole?: string;
+  weather?: string;
+  specialty?: DriverSpecialty | string;  // NEW: driver's current specialty
+  isQualifying?: boolean;               // NEW: true when called from qualifying
+  fatigueLevel?: number;                // NEW: 0–100, current physical fatigue
+}
+```
+
+**Specialty effects in `simulateLap`:**
+| Specialty | Effect | Mechanism |
+|---|---|---|
+| Rainmaster | +speed in wet | `df -= RAINMASTER_WET_DF_BONUS` (wet only) |
+| Late Braker | +speed | braking weight × (1 + LATE_BRAKER_STAT_BOOST) |
+| Apex Hunter | +speed | cornering weight × (1 + APEX_HUNTER_STAT_BOOST) |
+| Defensive Minister | fewer crashes | `accProb *= (1 - DEFENSIVE_MINISTER_CRASH_REDUCTION)` |
+| Iron Nerve | less variance | noise scale × (1 - IRON_NERVE_NOISE_REDUCTION) |
+| Qualy Ace | faster in qualifying | `lap *= (1 - QUALY_ACE_LAPTIME_BONUS)` when `isQualifying=true` |
+
+**Fatigue model in `simulateRace`:**
+- `fatigue[id]` initialized from `driver.stats.fitness` (0–100 scale)
+- Per lap: `fatigue[id] -= FATIGUE_DRAIN_BY_STYLE[currentStyle]`
+- `Iron Wall` specialty: drain skipped entirely
+- `Tyre Whisperer`: wear accumulation × (1 - TYRE_WHISPERER_WEAR_REDUCTION)
+- When `fatigue < FATIGUE_PENALTY_THRESHOLD`: `df *= (1 + (threshold - fatigue) * FATIGUE_PENALTY_FACTOR)`
+- Fatigue floors at 0 (no DNF from fatigue, only performance penalty)
 
 ### Guard Conditions (CRITICAL)
 ```js

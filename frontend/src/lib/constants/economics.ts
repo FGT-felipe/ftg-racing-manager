@@ -203,3 +203,19 @@ export const NEGOTIATION_TITLE_WEIGHT: Record<string, number> = {
  * Index = stars value (index 0 unused).
  */
 export const NEGOTIATION_STARS_WEIGHT = [0, 0.00, 0.05, 0.10, 0.15, 0.20];
+
+// ---------------------------------------------------------------------------
+// Specializations — Academy
+// ---------------------------------------------------------------------------
+
+/**
+ * Minimum baseSkill an academy trainee must have to be eligible for a specialty.
+ * Mirrors SPECIALTY_BASESKILL_THRESHOLD in functions/src/config/constants.ts.
+ */
+export const SPECIALTY_BASESKILL_THRESHOLD = 8;
+
+/**
+ * Stat value (on 1–20 scale) a trainee must reach to trigger a specialization.
+ * Mirrors SPECIALTY_STAT_THRESHOLD in functions/src/config/constants.ts.
+ */
+export const SPECIALTY_STAT_THRESHOLD = 11;

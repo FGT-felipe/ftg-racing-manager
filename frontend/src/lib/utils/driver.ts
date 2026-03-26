@@ -9,6 +9,8 @@ import {
     TRANSFER_MARKET_MIN_VALUE,
     NEGOTIATION_TITLE_WEIGHT,
     NEGOTIATION_STARS_WEIGHT,
+    SPECIALTY_BASESKILL_THRESHOLD,
+    SPECIALTY_STAT_THRESHOLD,
 } from '../constants/economics';
 
 // ---------------------------------------------------------------------------
@@ -193,6 +195,110 @@ export function calculateDriverCounterProposal(driver: Driver, offeredSalary: nu
     return Math.round(offeredSalary * (1 + totalMarkup));
 }
 
+// ---------------------------------------------------------------------------
+// Specialty Forecast
+// ---------------------------------------------------------------------------
+
+/**
+ * Describes a projected specialty for an academy trainee who doesn't have one yet.
+ */
+export interface SpecialtyForecast {
+    /** The specialty name that will be (or could be) assigned. */
+    specialty: string;
+    /** i18n key for the specialty name. */
+    i18nKey: string;
+    /** i18n key for the specialty description (tooltip text). */
+    descI18nKey: string;
+    /**
+     * 'confirmed' — trainee qualifies RIGHT NOW (baseSkill >= threshold AND stat >= 11).
+     *               Will be assigned at next post-race processing.
+     * 'developing' — stat is 8–10, approaching the trigger threshold.
+     */
+    status: 'confirmed' | 'developing';
+    /** The stat key that drives this specialty (e.g. "focus"). */
+    statKey: string;
+    /** Current stat value (from statRangeMin, the trainee's current level). */
+    currentValue: number;
+    /** Points still needed to reach the trigger threshold (0 if confirmed). */
+    pointsNeeded: number;
+}
+
+/**
+ * Ordered list of (statKey → specialty) mappings that mirrors the priority in post-race.ts.
+ * First match wins — same as the server-side assignment logic.
+ */
+const SPECIALTY_PRIORITY: { statKey: string; specialty: string; i18nKey: string; descI18nKey: string }[] = [
+    { statKey: 'adaptability', specialty: 'Rainmaster',         i18nKey: 'rain_master',         descI18nKey: 'specialty_desc_rain_master'         },
+    { statKey: 'smoothness',   specialty: 'Tyre Whisperer',     i18nKey: 'tyre_whisperer',      descI18nKey: 'specialty_desc_tyre_whisperer'      },
+    { statKey: 'braking',      specialty: 'Late Braker',        i18nKey: 'late_braker',         descI18nKey: 'specialty_desc_late_braker'         },
+    { statKey: 'overtaking',   specialty: 'Defensive Minister', i18nKey: 'defensive_minister',  descI18nKey: 'specialty_desc_defensive_minister'  },
+    { statKey: 'cornering',    specialty: 'Apex Hunter',        i18nKey: 'apex_hunter',         descI18nKey: 'specialty_desc_apex_hunter'         },
+    { statKey: 'consistency',  specialty: 'Iron Nerve',         i18nKey: 'iron_nerve',          descI18nKey: 'specialty_desc_iron_nerve'          },
+    { statKey: 'focus',        specialty: 'Qualy Ace',          i18nKey: 'qualy_ace',           descI18nKey: 'specialty_desc_qualy_ace'           },
+    { statKey: 'fitness',      specialty: 'Iron Wall',          i18nKey: 'iron_wall',           descI18nKey: 'specialty_desc_iron_wall'           },
+];
+
+/**
+ * Returns the projected specialty for an academy trainee who doesn't have one yet.
+ *
+ * Priority-aware: returns the FIRST specialty in the assignment order whose stat
+ * is either already at the trigger threshold ('confirmed') or approaching it ('developing').
+ * Returns null if the trainee already has a specialty or no stat is close enough.
+ *
+ * Uses `statRangeMin` as the current stat value (what the UI shows as "current level").
+ * Mirrors the trigger logic in functions/src/domains/economy/post-race.ts.
+ *
+ * @param trainee - The YoungDriver (academy trainee) to evaluate.
+ * @returns The highest-priority specialty forecast, or null if none applicable.
+ */
+export function getSpecialtyForecast(trainee: YoungDriver): SpecialtyForecast | null {
+    if (trainee.specialty) return null; // already assigned
+
+    const stats = trainee.statRangeMin ?? {};
+    const baseSkill = trainee.baseSkill ?? 0;
+    const meetsBaseSkill = baseSkill >= SPECIALTY_BASESKILL_THRESHOLD;
+
+    // First pass: look for a 'confirmed' specialty (stat already >= threshold)
+    if (meetsBaseSkill) {
+        for (const entry of SPECIALTY_PRIORITY) {
+            const value = stats[entry.statKey] ?? 0;
+            if (value >= SPECIALTY_STAT_THRESHOLD) {
+                return {
+                    specialty: entry.specialty,
+                    i18nKey: entry.i18nKey,
+                    descI18nKey: entry.descI18nKey,
+                    status: 'confirmed',
+                    statKey: entry.statKey,
+                    currentValue: value,
+                    pointsNeeded: 0,
+                };
+            }
+        }
+    }
+
+    // Second pass: look for the closest 'developing' stat (8–10 range)
+    // Return the one with the highest current value (closest to threshold).
+    let bestDeveloping: SpecialtyForecast | null = null;
+    for (const entry of SPECIALTY_PRIORITY) {
+        const value = stats[entry.statKey] ?? 0;
+        if (value >= 8 && value < SPECIALTY_STAT_THRESHOLD) {
+            const candidate: SpecialtyForecast = {
+                specialty: entry.specialty,
+                i18nKey: entry.i18nKey,
+                descI18nKey: entry.descI18nKey,
+                status: 'developing',
+                statKey: entry.statKey,
+                currentValue: value,
+                pointsNeeded: SPECIALTY_STAT_THRESHOLD - value,
+            };
+            // Prefer the priority-first match (already iterating in priority order).
+            if (!bestDeveloping) bestDeveloping = candidate;
+        }
+    }
+
+    return bestDeveloping;
+}
+
 /**
  * Maps a driver specialty string to its i18n key.
  * Returns null if no specialty is assigned.
@@ -208,6 +314,25 @@ export function getSpecialtyI18nKey(specialty: string | null | undefined): strin
         'Iron Nerve':           'iron_nerve',
         'Qualy Ace':            'qualy_ace',
         'Iron Wall':            'iron_wall',
+    };
+    return map[specialty] ?? null;
+}
+
+/**
+ * Maps a driver specialty string to its description i18n key (for tooltips).
+ * Returns null if no specialty is assigned.
+ */
+export function getSpecialtyDescI18nKey(specialty: string | null | undefined): string | null {
+    if (!specialty) return null;
+    const map: Record<string, string> = {
+        'Rainmaster':           'specialty_desc_rain_master',
+        'Tyre Whisperer':       'specialty_desc_tyre_whisperer',
+        'Late Braker':          'specialty_desc_late_braker',
+        'Defensive Minister':   'specialty_desc_defensive_minister',
+        'Apex Hunter':          'specialty_desc_apex_hunter',
+        'Iron Nerve':           'specialty_desc_iron_nerve',
+        'Qualy Ace':            'specialty_desc_qualy_ace',
+        'Iron Wall':            'specialty_desc_iron_wall',
     };
     return map[specialty] ?? null;
 }
