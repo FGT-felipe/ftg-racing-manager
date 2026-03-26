@@ -62,15 +62,27 @@ exports.megaFixDebriefs = (0, https_1.onCall)({
     if (!request.auth) {
         throw new https_1.HttpsError("unauthenticated", "Authentication required.");
     }
-    logger.info("=== MEGA FIX DEBRIEFS START ===", { uid: request.auth.uid });
+    const isDryRun = !!request.data?.["dryRun"];
+    logger.info("=== MEGA FIX DEBRIEFS START ===", { uid: request.auth.uid, dryRun: isDryRun });
     try {
         const leaguesSnap = await admin_1.db.collection("leagues").get();
         let totalUpdated = 0;
+        const affectedDocIds = [];
         // Fetch all drivers once to avoid per-loop Firestore reads
         const dSnap = await admin_1.db.collection("drivers").get();
         const driversMap = {};
         dSnap.forEach((doc) => {
             driversMap[doc.id] = { ...doc.data(), id: doc.id };
+        });
+        // Group drivers by team once
+        const teamGrp = {};
+        Object.values(driversMap).forEach((d) => {
+            const tid = d["teamId"];
+            if (!tid)
+                return;
+            if (!teamGrp[tid])
+                teamGrp[tid] = [];
+            teamGrp[tid].push(d);
         });
         for (const lDoc of leaguesSnap.docs) {
             const league = lDoc.data();
@@ -102,18 +114,22 @@ exports.megaFixDebriefs = (0, https_1.onCall)({
                 continue;
             }
             const rData = rSnap.data();
-            // Group drivers by team
-            const teamGrp = {};
-            Object.values(driversMap).forEach((d) => {
-                const tid = d["teamId"];
-                if (!teamGrp[tid])
-                    teamGrp[tid] = [];
-                teamGrp[tid].push(d);
-            });
             for (const tid of Object.keys(teamGrp)) {
-                await (0, post_race_1.generateTeamDebrief)(tid, teamGrp[tid], rData, rEvent);
+                if (isDryRun) {
+                    affectedDocIds.push(`teams/${tid}`);
+                }
+                else {
+                    await (0, post_race_1.generateTeamDebrief)(tid, teamGrp[tid], rData, rEvent);
+                }
                 totalUpdated++;
             }
+        }
+        if (isDryRun) {
+            return {
+                dryRun: true,
+                affectedDocIds,
+                summary: `${affectedDocIds.length} teams across ${leaguesSnap.size} leagues`,
+            };
         }
         logger.info(`=== MEGA FIX COMPLETED: ${totalUpdated} updated ===`);
         return { success: true, updated: totalUpdated };
@@ -214,7 +230,8 @@ exports.restoreDriversHistory = (0, https_1.onCall)({
     if (!request.auth) {
         throw new https_1.HttpsError("unauthenticated", "Authentication required.");
     }
-    logger.info("restoreDriversHistory triggered", { uid: request.auth.uid });
+    const isDryRun = !!request.data?.["dryRun"];
+    logger.info("restoreDriversHistory triggered", { uid: request.auth.uid, dryRun: isDryRun });
     try {
         const driversSnap = await admin_1.db.collection("drivers").get();
         const teamsSnap = await admin_1.db.collection("teams").get();
@@ -224,11 +241,17 @@ exports.restoreDriversHistory = (0, https_1.onCall)({
         });
         const batch = admin_1.db.batch();
         let count = 0;
+        const affectedDocIds = [];
         for (const dDoc of driversSnap.docs) {
             const data = dDoc.data();
             const isActive = data["teamId"] != null || data["isTransferListed"] === true;
             if (!isActive)
                 continue;
+            affectedDocIds.push(`drivers/${dDoc.id}`);
+            if (isDryRun) {
+                count++;
+                continue;
+            }
             const age = data["age"] || 25;
             const potential = data["potential"] || 3;
             const teamN = teamsMap[data["teamId"]] || "Independent";
@@ -288,6 +311,13 @@ exports.restoreDriversHistory = (0, https_1.onCall)({
                 careerHistory,
             });
             count++;
+        }
+        if (isDryRun) {
+            return {
+                dryRun: true,
+                affectedDocIds,
+                summary: `${affectedDocIds.length} active drivers`,
+            };
         }
         await batch.commit();
         return { success: true, count };

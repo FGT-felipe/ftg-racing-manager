@@ -24,10 +24,23 @@ import {
     QUALY_ENTRY_FEE,
 } from '$lib/constants/economics';
 
+/**
+ * Result returned by any admin dry-run operation.
+ * When dryRun=true, no writes are committed — only this summary is returned.
+ */
+export interface AdminPreflightResult {
+    /** Full Firestore paths of documents that would be written/updated, e.g. "teams/abc123" */
+    affectedDocIds: string[];
+    /** Human-readable aggregate, e.g. "8 teams · 14 drivers · 2 race docs" */
+    summary: string;
+}
+
 export const adminService = {
     /**
      * DANGEROUS: Port of DatabaseSeeder.nukeAndReseed
      * Wipes historical data and resets the universe.
+     *
+     * @deprecated No longer exposed in the admin UI. Kept as emergency reference only.
      */
     async nukeAndReseed() {
         try {
@@ -67,7 +80,7 @@ export const adminService = {
 
             return true;
         } catch (e: any) {
-            console.error('Admin operation failed:', e.message || 'Unknown error');
+            console.error('[AdminService:nukeAndReseed] Failed:', e.message || 'Unknown error');
             throw e;
         }
     },
@@ -75,6 +88,9 @@ export const adminService = {
     /**
      * Port of MaintenanceService.fixRaceCalendars
      * Synchronizes calendars with the absolute truth from ftg_world.
+     *
+     * SCOPE: Uncompleted calendar entries (isCompleted=false) in target seasons only.
+     * Does NOT touch completed race entries.
      */
     async fixRaceCalendars() {
         const worldSeasonId = '3sh7fStGc55XxwmQHaJu';
@@ -128,19 +144,26 @@ export const adminService = {
             }
             return true;
         } catch (e: any) {
-            console.error('Calendar sync failed:', e.message || 'Unknown error');
+            console.error('[AdminService:fixRaceCalendars] Failed:', e.message || 'Unknown error');
             throw e;
         }
     },
 
     /**
      * Port of FinanceService.applyGreatRebalanceTax
+     *
+     * SCOPE: All team documents (human + bot). Adjusts budget to configured thresholds,
+     * clears all sponsor slots, and resets sponsorNegotiations. Irreversible for sponsors.
+     *
+     * @param dryRun - If true, performs all reads and returns preflight summary without writing.
      */
-    async applyGreatRebalanceTax() {
+    async applyGreatRebalanceTax(dryRun = false): Promise<true | AdminPreflightResult> {
         try {
             const teamsSnap = await getDocs(collection(db, 'teams'));
             let batch = writeBatch(db);
             let opCount = 0;
+
+            const affectedDocIds: string[] = [];
 
             for (const tDoc of teamsSnap.docs) {
                 const teamData = tDoc.data();
@@ -153,49 +176,60 @@ export const adminService = {
                     newBudget = BUDGET_REBALANCE_THRESHOLD_LOW;
                 }
 
-                if (newBudget !== currentBudget) {
-                    const txRef = doc(collection(db, 'teams', tDoc.id, 'transactions'));
-                    batch.set(txRef, {
-                        id: txRef.id,
-                        description: 'Great Economic Rebalance 2026',
-                        amount: newBudget - currentBudget,
-                        date: new Date().toISOString(),
-                        type: 'TAX'
+                affectedDocIds.push(`teams/${tDoc.id}`);
+
+                if (!dryRun) {
+                    if (newBudget !== currentBudget) {
+                        const txRef = doc(collection(db, 'teams', tDoc.id, 'transactions'));
+                        batch.set(txRef, {
+                            id: txRef.id,
+                            description: 'Great Economic Rebalance 2026',
+                            amount: newBudget - currentBudget,
+                            date: new Date().toISOString(),
+                            type: 'TAX'
+                        });
+                        opCount++;
+                    }
+
+                    const weekStatus = { ...(teamData.weekStatus || {}) };
+                    weekStatus.sponsorNegotiations = {};
+
+                    batch.update(tDoc.ref, {
+                        budget: newBudget,
+                        sponsors: {},
+                        weekStatus
                     });
                     opCount++;
+
+                    const notifRef = doc(collection(db, 'teams', tDoc.id, 'notifications'));
+                    batch.set(notifRef, {
+                        teamId: tDoc.id,
+                        title: 'Economic Rebalance',
+                        message: `The Racing Federation has applied an economic rebalance. Your budget is now $${(newBudget / 1000000).toFixed(1)}M. Previous sponsors have been terminated.`,
+                        type: 'INFO',
+                        timestamp: serverTimestamp()
+                    });
+                    opCount++;
+
+                    if (opCount >= 450) {
+                        await batch.commit();
+                        batch = writeBatch(db);
+                        opCount = 0;
+                    }
                 }
+            }
 
-                const weekStatus = { ...(teamData.weekStatus || {}) };
-                weekStatus.sponsorNegotiations = {};
-
-                batch.update(tDoc.ref, {
-                    budget: newBudget,
-                    sponsors: {},
-                    weekStatus
-                });
-                opCount++;
-
-                const notifRef = doc(collection(db, 'teams', tDoc.id, 'notifications'));
-                batch.set(notifRef, {
-                    teamId: tDoc.id,
-                    title: 'Economic Rebalance',
-                    message: `The Racing Federation has applied an economic rebalance. Your budget is now $${(newBudget / 1000000).toFixed(1)}M. Previous sponsors have been terminated.`,
-                    type: 'INFO',
-                    timestamp: serverTimestamp()
-                });
-                opCount++;
-
-                if (opCount >= 450) {
-                    await batch.commit();
-                    batch = writeBatch(db);
-                    opCount = 0;
-                }
+            if (dryRun) {
+                return {
+                    affectedDocIds,
+                    summary: `${affectedDocIds.length} teams`
+                };
             }
 
             if (opCount > 0) await batch.commit();
             return true;
         } catch (e: any) {
-            console.error('Rebalance operation failed:', e.message || 'Unknown error');
+            console.error('[AdminService:applyGreatRebalanceTax] Failed:', e.message || 'Unknown error');
             throw e;
         }
     },
@@ -215,26 +249,31 @@ export const adminService = {
      * Emergency recovery tool after a qualifying data corruption incident.
      * Resets all qualifying fields for every human (non-bot) team's drivers,
      * refunds the QUALY_ENTRY_FEE per affected driver, and clears the qualyGrid
-     * from all race documents so Force Qualifying can regenerate a clean grid.
-     * @returns Object with teamsFixed and driversFixed counts.
+     * from all unfinished race documents so Force Qualifying can regenerate a clean grid.
+     *
+     * SCOPE: Human teams (isBot=false) that have drivers with qualifyingAttempts > 0.
+     *        Race documents where isFinished !== true AND qualyGrid.length > 0.
+     *        Completed races (isFinished=true) are NEVER touched — they are permanent records.
+     *
+     * @param dryRun - If true, performs all reads and returns preflight summary without writing.
+     * @returns Preflight summary (dryRun=true) or operation counts (dryRun=false).
      */
-    async resetQualifyingSession(): Promise<{ teamsFixed: number; driversFixed: number }> {
+    async resetQualifyingSession(dryRun = false): Promise<{ teamsFixed: number; driversFixed: number } | AdminPreflightResult> {
         try {
             const teamsSnap = await getDocs(collection(db, 'teams'));
 
-            // --- Step 1: Reset qualifying data on all human teams ---
+            // --- Step 1: Identify human teams with active qualifying data ---
             let teamsBatch = writeBatch(db);
             let batchOps = 0;
             let teamsFixed = 0;
             let driversFixed = 0;
 
-            const humanTeamIds = new Set<string>();
+            const affectedTeamIds: string[] = [];
+            const affectedRaceIds: string[] = [];
 
             for (const tDoc of teamsSnap.docs) {
                 const teamData = tDoc.data();
                 if (teamData.isBot) continue;
-
-                humanTeamIds.add(tDoc.id);
 
                 const driverSetups: Record<string, any> = teamData.weekStatus?.driverSetups ?? {};
                 const updates: Record<string, any> = {};
@@ -258,25 +297,30 @@ export const adminService = {
                 }
 
                 if (affectedDrivers > 0) {
-                    // Refund entry fee so players can redo attempt 1 without extra cost
-                    updates['budget'] = increment(QUALY_ENTRY_FEE * affectedDrivers);
-                    teamsBatch.update(tDoc.ref, updates);
-                    batchOps++;
-                    teamsFixed++;
-                    driversFixed += affectedDrivers;
+                    affectedTeamIds.push(`teams/${tDoc.id}`);
 
-                    if (batchOps >= 400) {
-                        await teamsBatch.commit();
-                        teamsBatch = writeBatch(db);
-                        batchOps = 0;
+                    if (!dryRun) {
+                        updates['budget'] = increment(QUALY_ENTRY_FEE * affectedDrivers);
+                        teamsBatch.update(tDoc.ref, updates);
+                        batchOps++;
+                        teamsFixed++;
+                        driversFixed += affectedDrivers;
+
+                        if (batchOps >= 400) {
+                            await teamsBatch.commit();
+                            teamsBatch = writeBatch(db);
+                            batchOps = 0;
+                        }
+                    } else {
+                        teamsFixed++;
+                        driversFixed += affectedDrivers;
                     }
                 }
             }
-            if (batchOps > 0) await teamsBatch.commit();
+            if (!dryRun && batchOps > 0) await teamsBatch.commit();
 
-            // --- Step 2: Clear qualyGrid ONLY from the current (unfinished) race document ---
-            // CRITICAL: Never touch completed race documents — isFinished=true races are permanent records.
-            // qualyGrid.length > 0 is the guard that prevents CF from re-running.
+            // --- Step 2: Identify unfinished race documents with a qualifying grid ---
+            // SCOPE: Only unfinished races (isFinished !== true). Completed races are permanent records.
             const racesSnap = await getDocs(collection(db, 'races'));
             let racesBatch = writeBatch(db);
             let racesOps = 0;
@@ -288,16 +332,26 @@ export const adminService = {
                 const grid = rData?.qualyGrid;
                 if (!grid || grid.length === 0) continue;
 
-                racesBatch.update(rDoc.ref, { qualyGrid: [], qualifyingResults: [] });
-                racesOps++;
+                affectedRaceIds.push(`races/${rDoc.id}`);
 
-                if (racesOps >= 400) {
-                    await racesBatch.commit();
-                    racesBatch = writeBatch(db);
-                    racesOps = 0;
+                if (!dryRun) {
+                    racesBatch.update(rDoc.ref, { qualyGrid: [], qualifyingResults: [] });
+                    racesOps++;
+
+                    if (racesOps >= 400) {
+                        await racesBatch.commit();
+                        racesBatch = writeBatch(db);
+                        racesOps = 0;
+                    }
                 }
             }
-            if (racesOps > 0) await racesBatch.commit();
+            if (!dryRun && racesOps > 0) await racesBatch.commit();
+
+            if (dryRun) {
+                const affectedDocIds = [...affectedTeamIds, ...affectedRaceIds];
+                const summary = `${affectedTeamIds.length} teams · ${driversFixed} drivers · ${affectedRaceIds.length} race docs`;
+                return { affectedDocIds, summary };
+            }
 
             console.log(`[AdminService:resetQualifyingSession] Reset ${driversFixed} drivers across ${teamsFixed} teams. Cleared ${racesOps} race documents.`);
             return { teamsFixed, driversFixed };
@@ -309,8 +363,13 @@ export const adminService = {
 
     /**
      * Recovery tool for teams that purchased an academy but have no candidates.
+     *
+     * SCOPE: Teams where facilities.youthAcademy.level > 0 AND selected sub-collection is empty.
+     *        Only fixes academies with zero active trainees — existing trainee progress is protected.
+     *
+     * @param dryRun - If true, performs all reads and returns preflight summary without writing.
      */
-    async fixBrokenAcademies() {
+    async fixBrokenAcademies(dryRun = false): Promise<{ count: number; teams: string[] } | AdminPreflightResult> {
         try {
             const { academyService } = await import('./academy.svelte');
             const teamsSnap = await getDocs(collection(db, 'teams'));
@@ -321,13 +380,12 @@ export const adminService = {
                 const teamData = tDoc.data();
                 const academy = teamData.facilities?.youthAcademy;
 
-                // If they have an academy level > 0
                 if (academy && academy.level > 0) {
                     const teamId = tDoc.id;
                     const candidatesRef = collection(db, 'teams', teamId, 'academy', 'config', 'candidates');
                     const selectedRef = collection(db, 'teams', teamId, 'academy', 'config', 'selected');
                     const configRef = doc(db, 'teams', teamId, 'academy', 'config');
-                    
+
                     const [candSnap, selectedSnap, configSnap] = await Promise.all([
                         getDocs(candidatesRef),
                         getDocs(selectedRef),
@@ -337,51 +395,57 @@ export const adminService = {
                     // SAFETY: Only fix if they have NO selected pilots (trainees)
                     // This protects existing user progress.
                     if (selectedSnap.empty) {
-                        const countryCode = configSnap.exists() ? configSnap.data().countryCode : 'ES';
-                        const countryName = configSnap.exists() ? configSnap.data().countryName : 'Spain';
-                        const countryFlag = configSnap.exists() ? configSnap.data().countryFlag : '🇪🇸';
-
-                        // Check if we need to fix (either empty OR doesn't match the new 1M/1F 2-candidate rule)
                         const needsFix = candSnap.empty || candSnap.size !== 2 || !configSnap.exists();
 
                         if (needsFix) {
-                            const batch = writeBatch(db);
+                            fixedTeamIds.push(`teams/${teamId}`);
 
-                            // 1. Ensure config document exists
-                            if (!configSnap.exists()) {
-                                batch.set(configRef, {
-                                    countryCode,
-                                    countryName,
-                                    countryFlag,
-                                    academyLevel: academy.level || 1,
-                                    scoutsUsedThisSeason: 2,
-                                    createdAt: serverTimestamp()
+                            if (!dryRun) {
+                                const countryCode = configSnap.exists() ? configSnap.data().countryCode : 'ES';
+                                const countryName = configSnap.exists() ? configSnap.data().countryName : 'Spain';
+                                const countryFlag = configSnap.exists() ? configSnap.data().countryFlag : '🇪🇸';
+
+                                const batch = writeBatch(db);
+
+                                if (!configSnap.exists()) {
+                                    batch.set(configRef, {
+                                        countryCode,
+                                        countryName,
+                                        countryFlag,
+                                        academyLevel: academy.level || 1,
+                                        scoutsUsedThisSeason: 2,
+                                        createdAt: serverTimestamp()
+                                    });
+                                }
+
+                                candSnap.docs.forEach(d => batch.delete(d.ref));
+
+                                const newCandidates = academyService.generateInitialCandidates(2, configSnap.exists() ? configSnap.data().countryCode : 'ES', academy.level || 1);
+                                newCandidates.forEach(c => {
+                                    const cRef = doc(candidatesRef, c.id);
+                                    batch.set(cRef, c);
                                 });
+
+                                await batch.commit();
+                                console.debug(`[AdminService:fixBrokenAcademies] Fixed academy for team ${teamId}`);
                             }
-
-                            // 2. Clear all existing candidates
-                            candSnap.docs.forEach(d => batch.delete(d.ref));
-
-                            // 3. Generate and set new 1M/1F pair
-                            const newCandidates = academyService.generateInitialCandidates(2, countryCode, academy.level || 1);
-                            newCandidates.forEach(c => {
-                                const cRef = doc(candidatesRef, c.id);
-                                batch.set(cRef, c);
-                            });
-
-                            await batch.commit();
                             fixedCount++;
-                            fixedTeamIds.push(teamId);
-                            console.debug(`[AdminService] Fixed/Reset academy for team ${teamId}`);
                         }
                     }
                 }
             }
 
-            console.log(`[AdminService] Finished fixing academies. Total fixed: ${fixedCount}`, fixedTeamIds);
+            if (dryRun) {
+                return {
+                    affectedDocIds: fixedTeamIds,
+                    summary: `${fixedTeamIds.length} teams`
+                };
+            }
+
+            console.log(`[AdminService:fixBrokenAcademies] Finished. Total fixed: ${fixedCount}`, fixedTeamIds);
             return { count: fixedCount, teams: fixedTeamIds };
         } catch (e: any) {
-            console.error('Fix academies operation failed:', e.message || 'Unknown error');
+            console.error('[AdminService:fixBrokenAcademies] Failed:', e.message || 'Unknown error');
             throw e;
         }
     }

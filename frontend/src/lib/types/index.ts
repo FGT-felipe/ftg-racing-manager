@@ -207,6 +207,7 @@ export interface Driver {
     countryCode: string;
 
     role: string;
+    form?: number;
     salary: number;
     contractYearsRemaining: number;
     weeklyGrowth: Record<string, number>;
