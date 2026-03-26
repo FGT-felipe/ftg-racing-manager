@@ -806,8 +806,8 @@
                                                 >
                                                 <span
                                                     class="text-[11px] font-black text-app-text uppercase tracking-tighter"
-                                                    >+{driver.growthPotential ??
-                                                        0}%</span
+                                                    >+{Math.round(driver.growthPotential ??
+                                                        0)}%</span
                                                 >
                                             </div>
                                         </div>

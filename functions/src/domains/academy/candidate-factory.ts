@@ -34,7 +34,35 @@ const ALL_STATS = [
 
 const M_NAMES = ["John", "David", "Liam", "Carlos", "Mateo", "Luis", "Oliver", "Lucas"];
 const F_NAMES = ["Emma", "Olivia", "Sophia", "Isabella", "Mia", "Ana", "Sofia", "Maria"];
-const L_NAMES = ["Smith", "Garcia", "Silva", "Mueller", "Rossi", "Wang", "Kim", "Olsen", "Santos"];
+
+const L_NAMES_LATAM = [
+  "Rodríguez", "García", "Martínez", "López", "González", "Gómez", "Herrera",
+  "Pérez", "Torres", "Vargas", "Morales", "Castillo", "Silva", "Ferreira",
+  "Santos", "Oliveira", "Souza", "Lima", "Alves", "Rojas",
+];
+const L_NAMES_SOUTH_EUROPE = [
+  "Rossi", "Ferrari", "Russo", "Romano", "Esposito", "Bianchi", "Costa",
+  "García", "Alonso", "Sainz", "Fernández", "Jiménez", "Molina", "Moreno",
+];
+const L_NAMES_BRITISH = [
+  "Smith", "Jones", "Williams", "Brown", "Taylor", "Davies", "Evans",
+  "Wilson", "Thomas", "Roberts", "Walker", "Wright", "Harris", "Clarke",
+];
+const L_NAMES_GERMAN = [
+  "Müller", "Schmidt", "Schneider", "Fischer", "Weber", "Meyer", "Wagner",
+  "Becker", "Hoffmann", "Richter", "Koch", "Bauer", "Schäfer", "Wolf",
+];
+
+const LATAM_CODES = new Set(["CO", "BR", "AR", "MX", "PE", "CL", "VE", "EC"]);
+const SOUTH_EUROPE_CODES = new Set(["ES", "IT", "PT"]);
+const GERMAN_CODES = new Set(["DE", "AT", "CH"]);
+
+function getLastNamePool(countryCode: string): string[] {
+  if (LATAM_CODES.has(countryCode)) return L_NAMES_LATAM;
+  if (SOUTH_EUROPE_CODES.has(countryCode)) return L_NAMES_SOUTH_EUROPE;
+  if (GERMAN_CODES.has(countryCode)) return L_NAMES_GERMAN;
+  return L_NAMES_BRITISH;
+}
 
 /**
  * Generates a new academy driver candidate for scouting.
@@ -108,7 +136,8 @@ export function generateAcademyCandidate(
 
   const firstPool = gender === "M" ? M_NAMES : F_NAMES;
   const firstName = firstPool[Math.floor(Math.random() * firstPool.length)];
-  const lastName = L_NAMES[Math.floor(Math.random() * L_NAMES.length)];
+  const lastPool = getLastNamePool(countryCode);
+  const lastName = lastPool[Math.floor(Math.random() * lastPool.length)];
   const fullName = `${firstName} ${lastName}`;
 
   const timestamp = Date.now();
