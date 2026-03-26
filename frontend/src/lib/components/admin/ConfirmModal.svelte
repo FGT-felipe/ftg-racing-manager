@@ -1,14 +1,17 @@
 <script lang="ts">
-    import { X, AlertTriangle } from "lucide-svelte";
+    import { X, AlertTriangle, FileSearch } from "lucide-svelte";
     import { fade, scale } from "svelte/transition";
     import { t } from "$lib/utils/i18n";
+    import type { AdminPreflightResult } from "$lib/services/admin.svelte";
 
-    let { 
-        show = $bindable(false), 
-        title = "Confirm Dangerous Action", 
+    let {
+        show = $bindable(false),
+        title = "Confirm Dangerous Action",
         description = "This action cannot be undone. Please confirm you want to proceed.",
         confirmText = "Execute",
         requireWord = "",
+        /** When provided, renders a pre-flight summary section above the confirmation input. */
+        preflightData = null as AdminPreflightResult | null,
         onConfirm
     } = $props();
 
@@ -31,12 +34,12 @@
 {#if show}
     <!-- svelte-ignore a11y_click_events_have_key_events -->
     <!-- svelte-ignore a11y_no_static_element_interactions -->
-    <div 
+    <div
         class="fixed inset-0 z-[100] flex items-center justify-center p-6 bg-black/80 backdrop-blur-sm"
         transition:fade={{ duration: 200 }}
         onclick={handleClose}
     >
-        <div 
+        <div
             class="bg-app-surface border border-app-border rounded-[2rem] w-full max-w-md overflow-hidden shadow-2xl"
             transition:scale={{ duration: 200, start: 0.95 }}
             onclick={(e) => e.stopPropagation()}
@@ -56,6 +59,25 @@
                     {description}
                 </p>
 
+                {#if preflightData}
+                    <div class="flex flex-col gap-3 rounded-2xl border border-amber-500/20 bg-amber-500/5 p-4">
+                        <div class="flex items-center gap-2">
+                            <FileSearch size={14} class="text-amber-400 shrink-0" />
+                            <span class="text-[10px] font-black uppercase tracking-widest text-amber-400">Pre-flight Summary</span>
+                        </div>
+                        <p class="text-sm font-bold text-amber-300">{preflightData.summary}</p>
+                        {#if preflightData.affectedDocIds.length > 0}
+                            <div class="max-h-36 overflow-y-auto rounded-xl bg-black/40 p-3 flex flex-col gap-1">
+                                {#each preflightData.affectedDocIds as docId}
+                                    <span class="text-[11px] font-mono text-app-text/50 truncate">{docId}</span>
+                                {/each}
+                            </div>
+                        {:else}
+                            <span class="text-[11px] text-app-text/40 italic">No documents would be affected.</span>
+                        {/if}
+                    </div>
+                {/if}
+
                 {#if requireWord}
                     <div class="flex flex-col gap-2">
                         <label for="confirm-word" class="text-[10px] font-black uppercase tracking-widest text-app-text/40">
@@ -72,13 +94,13 @@
                 {/if}
 
                 <div class="grid grid-cols-2 gap-4 mt-2">
-                    <button 
+                    <button
                         onclick={handleClose}
                         class="p-4 rounded-2xl border border-app-border text-[10px] font-black uppercase tracking-widest hover:bg-app-text/5 transition-all"
                     >
                         {t('cancel')}
                     </button>
-                    <button 
+                    <button
                         onclick={handleConfirm}
                         disabled={!isConfirmed}
                         class="p-4 rounded-2xl bg-red-600 text-white text-[10px] font-black uppercase tracking-widest disabled:opacity-30 disabled:grayscale transition-all hover:bg-red-500 shadow-lg shadow-red-900/20"

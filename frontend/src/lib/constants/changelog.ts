@@ -19,6 +19,16 @@ export interface ChangelogVersion {
  */
 export const CHANGELOG: ChangelogVersion[] = [
     {
+        version: 'V1.5.1',
+        date: '2026-03-26',
+        entries: [
+            { type: 'feature',     textKey: 'changelog_v151_1' },
+            { type: 'feature',     textKey: 'changelog_v151_2' },
+            { type: 'improvement', textKey: 'changelog_v151_3' },
+            { type: 'improvement', textKey: 'changelog_v151_4' },
+        ],
+    },
+    {
         version: 'V1.5.0',
         date: '2026-03-26',
         entries: [

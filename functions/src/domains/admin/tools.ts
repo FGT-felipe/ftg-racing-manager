@@ -29,16 +29,27 @@ export const megaFixDebriefs = onCall({
   if (!request.auth) {
     throw new HttpsError("unauthenticated", "Authentication required.");
   }
-  logger.info("=== MEGA FIX DEBRIEFS START ===", { uid: request.auth.uid });
+  const isDryRun = !!(request.data as Record<string, unknown>)?.["dryRun"];
+  logger.info("=== MEGA FIX DEBRIEFS START ===", { uid: request.auth.uid, dryRun: isDryRun });
   try {
     const leaguesSnap = await db.collection("leagues").get();
     let totalUpdated = 0;
+    const affectedDocIds: string[] = [];
 
     // Fetch all drivers once to avoid per-loop Firestore reads
     const dSnap = await db.collection("drivers").get();
     const driversMap: Record<string, Record<string, unknown>> = {};
     dSnap.forEach((doc) => {
       driversMap[doc.id] = { ...(doc.data() as Record<string, unknown>), id: doc.id };
+    });
+
+    // Group drivers by team once
+    const teamGrp: Record<string, Record<string, unknown>[]> = {};
+    Object.values(driversMap).forEach((d) => {
+      const tid = d["teamId"] as string;
+      if (!tid) return;
+      if (!teamGrp[tid]) teamGrp[tid] = [];
+      teamGrp[tid].push(d);
     });
 
     for (const lDoc of leaguesSnap.docs) {
@@ -71,18 +82,22 @@ export const megaFixDebriefs = onCall({
 
       const rData = rSnap.data() as Record<string, unknown>;
 
-      // Group drivers by team
-      const teamGrp: Record<string, Record<string, unknown>[]> = {};
-      Object.values(driversMap).forEach((d) => {
-        const tid = d["teamId"] as string;
-        if (!teamGrp[tid]) teamGrp[tid] = [];
-        teamGrp[tid].push(d);
-      });
-
       for (const tid of Object.keys(teamGrp)) {
-        await generateTeamDebrief(tid, teamGrp[tid], rData, rEvent);
+        if (isDryRun) {
+          affectedDocIds.push(`teams/${tid}`);
+        } else {
+          await generateTeamDebrief(tid, teamGrp[tid], rData, rEvent);
+        }
         totalUpdated++;
       }
+    }
+
+    if (isDryRun) {
+      return {
+        dryRun: true,
+        affectedDocIds,
+        summary: `${affectedDocIds.length} teams across ${leaguesSnap.size} leagues`,
+      };
     }
 
     logger.info(`=== MEGA FIX COMPLETED: ${totalUpdated} updated ===`);
@@ -187,7 +202,8 @@ export const restoreDriversHistory = onCall({
   if (!request.auth) {
     throw new HttpsError("unauthenticated", "Authentication required.");
   }
-  logger.info("restoreDriversHistory triggered", { uid: request.auth.uid });
+  const isDryRun = !!(request.data as Record<string, unknown>)?.["dryRun"];
+  logger.info("restoreDriversHistory triggered", { uid: request.auth.uid, dryRun: isDryRun });
   try {
     const driversSnap = await db.collection("drivers").get();
     const teamsSnap = await db.collection("teams").get();
@@ -198,11 +214,19 @@ export const restoreDriversHistory = onCall({
 
     const batch = db.batch();
     let count = 0;
+    const affectedDocIds: string[] = [];
 
     for (const dDoc of driversSnap.docs) {
       const data = dDoc.data() as Record<string, unknown>;
       const isActive = data["teamId"] != null || data["isTransferListed"] === true;
       if (!isActive) continue;
+
+      affectedDocIds.push(`drivers/${dDoc.id}`);
+
+      if (isDryRun) {
+        count++;
+        continue;
+      }
 
       const age = (data["age"] as number) || 25;
       const potential = (data["potential"] as number) || 3;
@@ -256,6 +280,14 @@ export const restoreDriversHistory = onCall({
         careerHistory,
       });
       count++;
+    }
+
+    if (isDryRun) {
+      return {
+        dryRun: true,
+        affectedDocIds,
+        summary: `${affectedDocIds.length} active drivers`,
+      };
     }
 
     await batch.commit();

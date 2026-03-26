@@ -52,10 +52,26 @@ This document defines the interface and behaviors of core services for automated
 
 ## 3. System Administration
 ### `AdminService`
-- **Capabilities**: Full reseed (`nuke`), calendar sync, global economic rebalancing.
-- **Recovery Tools**:
-  - `fixBrokenAcademies()`: Repairs teams with unlocked facilities but missing setup/candidates. Atomic sync of `config` document and initial batch.
-- **Patterns**: High-performance batch writes (450 ops/chunk).
+- **Capabilities**: Calendar sync, global economic rebalancing, qualifying recovery, academy repair.
+- **`nukeAndReseed`**: Deprecated — removed from admin UI. Kept as emergency reference only.
+- **Dry-Run Pattern (v1.5.1+)**: All destructive methods accept `dryRun?: boolean`. When `true`, all reads execute but no `batch.commit()` is called. Returns `AdminPreflightResult` instead of the normal result.
+
+```typescript
+interface AdminPreflightResult {
+  affectedDocIds: string[];  // Full Firestore paths, e.g. "teams/abc123"
+  summary: string;           // Human-readable, e.g. "8 teams · 14 drivers · 2 race docs"
+}
+```
+
+- **Methods with dry-run support**:
+  - `resetQualifyingSession(dryRun?)`: Scope — human teams with `qualifyingAttempts > 0` + unfinished races with `qualyGrid.length > 0`. Completed races (`isFinished=true`) are never touched.
+  - `applyGreatRebalanceTax(dryRun?)`: Scope — all teams (human + bot). Adjusts budget, clears sponsors, resets sponsorNegotiations.
+  - `fixBrokenAcademies(dryRun?)`: Scope — teams where `youthAcademy.level > 0` AND no active trainees in `selected` sub-collection.
+- **CF tools with dry-run support** (`request.data.dryRun = true`):
+  - `restoreDriversHistory`: Scope — all active drivers. Returns `{ dryRun: true, affectedDocIds, summary }` without committing.
+  - `megaFixDebriefs`: Scope — all teams with drivers in leagues that have completed races. Returns `{ dryRun: true, affectedDocIds, summary }` without committing.
+- **Scope guards**: Every method that iterates a collection has a `// SCOPE:` comment documenting exactly which documents it touches.
+- **Patterns**: High-performance batch writes (450 ops/chunk). Two-phase UI flow: dry-run → pre-flight modal → confirmed execute.
 
 ## 4. Cloud Functions — Weekend Event Pipeline
 

@@ -4,24 +4,25 @@
     import { functions } from "$lib/firebase/config";
     import { httpsCallable } from "firebase/functions";
     import { goto } from "$app/navigation";
-    import { 
-        Shield, 
-        Database, 
-        Zap, 
-        TrendingUp, 
-        BookOpen, 
-        LogOut, 
-        AlertOctagon, 
-        RefreshCw, 
+    import {
+        Shield,
+        Database,
+        Zap,
+        TrendingUp,
+        BookOpen,
+        LogOut,
+        RefreshCw,
         History,
         Lock,
         ChevronRight,
-        Activity
+        Activity,
+        Loader
     } from "lucide-svelte";
     import { fade, fly } from "svelte/transition";
     import ConfirmModal from "$lib/components/admin/ConfirmModal.svelte";
     import { enhance } from "$app/forms";
     import { uiStore } from "$lib/stores/ui.svelte";
+    import type { AdminPreflightResult } from "$lib/services/admin.svelte";
 
     let { form } = $props();
 
@@ -29,11 +30,19 @@
     let isAuthenticated = $state(false);
     let error = $state("");
     let processingAction = $state<string | null>(null);
+    /** Action currently running its dry-run phase (spinner on card, no modal yet) */
+    let runningDryRun = $state<string | null>(null);
     let activeTab = $state("simulation");
 
     // Modal State
     let showConfirmModal = $state(false);
-    let pendingActionData = $state<{ name: string, description: string, requireWord?: string, confirmText?: string }>({
+    let pendingActionData = $state<{
+        name: string;
+        description: string;
+        requireWord?: string;
+        confirmText?: string;
+        preflightData?: AdminPreflightResult | null;
+    }>({
         name: "",
         description: ""
     });
@@ -48,13 +57,71 @@
         }
     });
 
-    function triggerAction(name: string, description: string, dangerous = false) {
+    /**
+     * Tools that require a two-phase dry-run → confirm flow before executing writes.
+     * Each entry maps the action name to a flag: true = supports dryRun parameter.
+     */
+    const DRY_RUN_TOOLS = new Set([
+        "resetQualifyingSession",
+        "applyGreatRebalanceTax",
+        "fixBrokenAcademies",
+        "restoreDriversHistory",
+        "megaFixDebriefs",
+    ]);
+
+    async function triggerAction(name: string, description: string, dangerous = false) {
+        if (runningDryRun || processingAction) return;
+
+        if (DRY_RUN_TOOLS.has(name)) {
+            // Phase 1: Run dry-run first to compute pre-flight summary
+            runningDryRun = name;
+            let preflightData: AdminPreflightResult | null = null;
+            try {
+                const { adminService } = await import("$lib/services/admin.svelte");
+
+                if (name === "restoreDriversHistory" || name === "megaFixDebriefs") {
+                    // CF tools — call with dryRun: true via httpsCallable
+                    const func = httpsCallable(functions, name);
+                    const result = await func({ dryRun: true });
+                    const data = result.data as any;
+                    if (data?.dryRun) {
+                        preflightData = { affectedDocIds: data.affectedDocIds, summary: data.summary };
+                    }
+                } else {
+                    // Frontend service tools
+                    const method = adminService[name as keyof typeof adminService] as (dryRun: boolean) => Promise<any>;
+                    const result = await method.call(adminService, true);
+                    if (result && 'affectedDocIds' in result) {
+                        preflightData = result as AdminPreflightResult;
+                    }
+                }
+            } catch (e: any) {
+                console.error(`[Admin:dryRun:${name}] Failed:`, e.message || e);
+                uiStore.alert(e.message, 'Dry-Run Error', 'danger');
+                runningDryRun = null;
+                return;
+            } finally {
+                runningDryRun = null;
+            }
+
+            // Phase 2: Show modal with pre-flight data
+            pendingActionData = {
+                name,
+                description,
+                requireWord: "CONFIRM",
+                confirmText: "Execute",
+                preflightData
+            };
+            showConfirmModal = true;
+            return;
+        }
+
         if (dangerous) {
-            pendingActionData = { 
-                name, 
-                description, 
-                requireWord: name === "nukeAndReseed" ? "NUKE" : "CONFIRM",
-                confirmText: "Execute Action" 
+            pendingActionData = {
+                name,
+                description,
+                requireWord: "CONFIRM",
+                confirmText: "Execute Action"
             };
             showConfirmModal = true;
         } else {
@@ -64,35 +131,36 @@
 
     async function runAction(name: string, description: string) {
         if (processingAction) return;
-        
+
         processingAction = name;
         try {
             if (
-                name === "nukeAndReseed" ||
                 name === "fixRaceCalendars" ||
-                name === "applyGreatRebalanceTax" ||
-                name === "fixBrokenAcademies" ||
                 name === "generate_market_drivers" ||
-                name === "resetQualifyingSession"
+                name === "resetQualifyingSession" ||
+                name === "applyGreatRebalanceTax" ||
+                name === "fixBrokenAcademies"
             ) {
                 const { adminService } = await import("$lib/services/admin.svelte");
                 const methodName = name === "generate_market_drivers" ? "generateMarketDrivers" : name;
-                const result = await adminService[methodName as keyof typeof adminService]();
+                const method = adminService[methodName as keyof typeof adminService] as (dryRun: boolean) => Promise<any>;
+                const result = await method.call(adminService, false);
+
                 if (result && typeof result === 'object' && 'count' in result) {
-                    uiStore.alert(`Success: ${name} executed. Fixed ${result.count} academies.`, 'Success', 'success');
+                    uiStore.alert(`Success: ${name} executed. Fixed ${(result as any).count} academies.`, 'Success', 'success');
                     return;
                 }
                 if (result && typeof result === 'object' && 'driversFixed' in result) {
-                    uiStore.alert(`Qualifying reset complete. ${result.driversFixed} drivers across ${result.teamsFixed} teams. Entry fees refunded. Run Force Qualifying to regenerate the grid.`, 'Success', 'success');
+                    uiStore.alert(`Qualifying reset complete. ${(result as any).driversFixed} drivers across ${(result as any).teamsFixed} teams. Entry fees refunded. Run Force Qualifying to regenerate the grid.`, 'Success', 'success');
                     return;
                 }
             } else {
                 const func = httpsCallable(functions, name);
-                await func();
+                await func({ dryRun: false });
             }
             uiStore.alert(`Success: ${name} executed.`, 'Success', 'success');
         } catch (e: any) {
-            console.error('Admin action failed:', e.message || 'Unknown error');
+            console.error('[Admin:runAction] Failed:', e.message || 'Unknown error');
             uiStore.alert(e.message, 'Error', 'danger');
         } finally {
             processingAction = null;
@@ -126,7 +194,7 @@
         <div class="auth-layer fixed inset-0 flex items-center justify-center p-6 bg-black/60 backdrop-blur-xl z-50">
             <div class="auth-card p-10 bg-app-surface border border-app-border rounded-[2.5rem] w-full max-w-sm shadow-2xl relative overflow-hidden" in:fly={{ y: 20, duration: 400 }}>
                 <div class="absolute -top-24 -right-24 w-48 h-48 bg-app-primary/10 blur-3xl rounded-full"></div>
-                
+
                 <div class="flex flex-col items-center text-center gap-6 relative z-10">
                     <div class="p-4 rounded-3xl bg-app-primary/10 text-app-primary">
                         <Lock size={32} />
@@ -136,10 +204,10 @@
                         <p class="text-[10px] font-black uppercase tracking-widest text-app-text/40 mt-1">Authorized Personnel Only</p>
                     </div>
 
-                    <form 
-                        method="POST" 
-                        action="?/login" 
-                        use:enhance 
+                    <form
+                        method="POST"
+                        action="?/login"
+                        use:enhance
                         class="w-full flex flex-col gap-4"
                     >
                         <div class="flex flex-col gap-2 text-left">
@@ -156,8 +224,8 @@
                                 <span class="text-[9px] text-red-500 font-black uppercase text-center mt-1 animate-pulse">{error}</span>
                             {/if}
                         </div>
-                        
-                        <button 
+
+                        <button
                             type="submit"
                             class="w-full p-4 rounded-2xl bg-app-primary text-black font-black uppercase text-[10px] tracking-widest hover:scale-[1.02] active:scale-95 transition-all shadow-lg shadow-app-primary/10"
                         >
@@ -199,7 +267,7 @@
                         <div class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></div>
                         <span class="text-[9px] font-black uppercase tracking-widest text-app-text/60">System Online</span>
                     </div>
-                    <button 
+                    <button
                         onclick={() => (isAuthenticated = false)}
                         class="flex items-center gap-3 p-4 rounded-2xl text-[10px] font-black uppercase tracking-widest text-red-500/60 hover:text-red-500 hover:bg-red-500/5 transition-all"
                     >
@@ -221,9 +289,10 @@
 
                     {#if activeTab === 'simulation'}
                         <div class="grid grid-cols-1 md:grid-cols-2 gap-6" in:fly={{ y: 20 }}>
-                            <button 
+                            <button
                                 class="action-card group"
                                 onclick={() => triggerAction("forceQualy", "Trigger Qualifying simulation for all active leagues", true)}
+                                disabled={!!processingAction || !!runningDryRun}
                             >
                                 <div class="card-icon bg-amber-500/10 text-amber-500"><Zap size={24} /></div>
                                 <div class="card-body">
@@ -233,9 +302,10 @@
                                 <ChevronRight class="opacity-10 group-hover:opacity-100 group-hover:translate-x-1 transition-all" />
                             </button>
 
-                            <button 
+                            <button
                                 class="action-card group"
                                 onclick={() => triggerAction("forceRace", "Trigger Race simulation for all active leagues", true)}
+                                disabled={!!processingAction || !!runningDryRun}
                             >
                                 <div class="card-icon bg-emerald-500/10 text-emerald-500"><Activity size={24} /></div>
                                 <div class="card-body">
@@ -247,11 +317,18 @@
                         </div>
                     {:else if activeTab === 'database'}
                         <div class="grid grid-cols-1 md:grid-cols-2 gap-6" in:fly={{ y: 20 }}>
-                            <button 
+                            <button
                                 class="action-card group"
                                 onclick={() => triggerAction("fixBrokenAcademies", "Identify and repair academies with no candidates.")}
+                                disabled={!!processingAction || !!runningDryRun}
                             >
-                                <div class="card-icon bg-amber-500/10 text-amber-500"><Zap size={24} /></div>
+                                <div class="card-icon bg-amber-500/10 text-amber-500">
+                                    {#if runningDryRun === 'fixBrokenAcademies' || processingAction === 'fixBrokenAcademies'}
+                                        <Loader size={24} class="animate-spin" />
+                                    {:else}
+                                        <Zap size={24} />
+                                    {/if}
+                                </div>
                                 <div class="card-body">
                                     <h3>Fix Broken Academies</h3>
                                     <p>Scan all teams and generate missing candidates for established academies.</p>
@@ -261,9 +338,16 @@
 
                             <button
                                 class="action-card group dangerous"
-                                onclick={() => triggerAction("resetQualifyingSession", "Reset all qualifying data for human teams. Refunds entry fees and clears qualyGrid so Force Qualifying can re-run.", true)}
+                                onclick={() => triggerAction("resetQualifyingSession", "Reset all qualifying data for human teams. Refunds entry fees and clears qualyGrid so Force Qualifying can re-run.")}
+                                disabled={!!processingAction || !!runningDryRun}
                             >
-                                <div class="card-icon bg-orange-500/10 text-orange-500"><RefreshCw size={24} /></div>
+                                <div class="card-icon bg-orange-500/10 text-orange-500">
+                                    {#if runningDryRun === 'resetQualifyingSession' || processingAction === 'resetQualifyingSession'}
+                                        <Loader size={24} class="animate-spin" />
+                                    {:else}
+                                        <RefreshCw size={24} />
+                                    {/if}
+                                </div>
                                 <div class="card-body">
                                     <h3>Reset Qualifying Session</h3>
                                     <p class="text-orange-500/60 font-medium">Clears all human qualifying data and refunds entry fees. Run Force Qualifying after.</p>
@@ -272,20 +356,9 @@
                             </button>
 
                             <button
-                                class="action-card group dangerous"
-                                onclick={() => triggerAction("nukeAndReseed", "DANGEROUS: Wipes ALL collections and recreates the simulation state.", true)}
-                            >
-                                <div class="card-icon bg-red-500/10 text-red-500"><AlertOctagon size={24} /></div>
-                                <div class="card-body">
-                                    <h3>Nuke & Reseed</h3>
-                                    <p class="text-red-500/60 font-medium">Critical: Irreversible database reset.</p>
-                                </div>
-                                <ChevronRight class="opacity-20 group-hover:opacity-100" />
-                            </button>
-
-                            <button 
                                 class="action-card group"
                                 onclick={() => triggerAction("fixRaceCalendars", "Sync all league schedule arrays with the master circuit config.")}
+                                disabled={!!processingAction || !!runningDryRun}
                             >
                                 <div class="card-icon bg-blue-500/10 text-blue-500"><RefreshCw size={24} /></div>
                                 <div class="card-body">
@@ -295,11 +368,18 @@
                                 <ChevronRight class="opacity-10 group-hover:opacity-100" />
                             </button>
 
-                            <button 
+                            <button
                                 class="action-card group"
-                                onclick={() => triggerAction("restoreDriversHistory", "Clean up career history and fix 'F1 Team' naming issues.", true)}
+                                onclick={() => triggerAction("restoreDriversHistory", "Regenerate synthetic career history for all active drivers.")}
+                                disabled={!!processingAction || !!runningDryRun}
                             >
-                                <div class="card-icon bg-purple-500/10 text-purple-500"><History size={24} /></div>
+                                <div class="card-icon bg-purple-500/10 text-purple-500">
+                                    {#if runningDryRun === 'restoreDriversHistory' || processingAction === 'restoreDriversHistory'}
+                                        <Loader size={24} class="animate-spin" />
+                                    {:else}
+                                        <History size={24} />
+                                    {/if}
+                                </div>
                                 <div class="card-body">
                                     <h3>Restore Driver Stats</h3>
                                     <p>Fix legacy data issues in the drivers collection.</p>
@@ -309,11 +389,18 @@
                         </div>
                     {:else if activeTab === 'economy'}
                         <div class="grid grid-cols-1 md:grid-cols-2 gap-6" in:fly={{ y: 20 }}>
-                            <button 
+                            <button
                                 class="action-card group dangerous"
-                                onclick={() => triggerAction("applyGreatRebalanceTax", "Execute a massive economy rebalance across all teams.", true)}
+                                onclick={() => triggerAction("applyGreatRebalanceTax", "Execute a massive economy rebalance across all teams.")}
+                                disabled={!!processingAction || !!runningDryRun}
                             >
-                                <div class="card-icon bg-red-500/10 text-red-500"><TrendingUp size={24} /></div>
+                                <div class="card-icon bg-red-500/10 text-red-500">
+                                    {#if runningDryRun === 'applyGreatRebalanceTax' || processingAction === 'applyGreatRebalanceTax'}
+                                        <Loader size={24} class="animate-spin" />
+                                    {:else}
+                                        <TrendingUp size={24} />
+                                    {/if}
+                                </div>
                                 <div class="card-body">
                                     <h3>Rebalance Tax</h3>
                                     <p>Apply global tax to equalize team budgets.</p>
@@ -321,9 +408,10 @@
                                 <ChevronRight class="opacity-10 group-hover:opacity-100" />
                             </button>
 
-                            <button 
+                            <button
                                 class="action-card group"
                                 onclick={() => triggerAction("generate_market_drivers", "Force the generation of 20+ new market drivers.")}
+                                disabled={!!processingAction || !!runningDryRun}
                             >
                                 <div class="card-icon bg-emerald-500/10 text-emerald-500"><RefreshCw size={24} /></div>
                                 <div class="card-body">
@@ -342,7 +430,7 @@
                                 <h3 class="text-2xl font-black uppercase italic tracking-tighter">Documentation Hub</h3>
                                 <p class="text-app-text/40 text-sm mt-2 max-w-sm mx-auto">Access internal architectural blueprints, business rules, and technical standards.</p>
                             </div>
-                            <button 
+                            <button
                                 onclick={navigateToDocs}
                                 class="px-8 py-4 rounded-2xl bg-app-primary text-black font-black uppercase text-[11px] tracking-widest hover:scale-105 transition-all shadow-xl shadow-app-primary/10 flex items-center gap-3"
                             >
@@ -357,12 +445,13 @@
     {/if}
 </div>
 
-<ConfirmModal 
+<ConfirmModal
     bind:show={showConfirmModal}
     title={pendingActionData.name === "nukeAndReseed" ? "☢️ SYSTEM RESET" : "Confirm Action"}
     description={pendingActionData.description}
     requireWord={pendingActionData.requireWord}
     confirmText={pendingActionData.confirmText || "Execute"}
+    preflightData={pendingActionData.preflightData ?? null}
     onConfirm={() => runAction(pendingActionData.name, pendingActionData.description)}
 />
 
@@ -384,13 +473,19 @@
         cursor: pointer;
     }
 
-    .action-card:hover {
+    .action-card:disabled {
+        opacity: 0.5;
+        cursor: not-allowed;
+        transform: none !important;
+    }
+
+    .action-card:not(:disabled):hover {
         background: var(--bg-color);
         border-color: var(--app-primary);
         transform: translateY(-4px);
     }
 
-    .action-card.dangerous:hover {
+    .action-card.dangerous:not(:disabled):hover {
         border-color: var(--error-color);
         box-shadow: 0 10px 30px rgba(255, 68, 68, 0.05);
     }
@@ -425,7 +520,6 @@
         line-height: 1.4;
     }
 
-    /* Override for lucide icons inside buttons if needed */
     :global(.lucide) {
         stroke-width: 2.5px;
     }
