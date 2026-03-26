@@ -3,6 +3,7 @@
     import { managerStore } from "$lib/stores/manager.svelte";
     import { driverStore } from "$lib/stores/driver.svelte";
     import { notificationStore } from "$lib/stores/notifications.svelte";
+    import { uiStore } from "$lib/stores/ui.svelte";
     import { newsStore } from "$lib/stores/news.svelte";
     import {
         Building2,
@@ -22,6 +23,7 @@
     } from "lucide-svelte";
     import InstructionCard from "$lib/components/layout/InstructionCard.svelte";
     import { getRoleById } from "$lib/constants/manager";
+    import { t } from "$lib/utils/i18n";
 
     let isEditingName = $state(false);
     let newName = $state("");
@@ -93,7 +95,7 @@
             });
             isEditingName = false;
         } catch (e: any) {
-            alert(e.message);
+            uiStore.alert(e.message, 'Error', 'danger');
         } finally {
             isSavingName = false;
         }
@@ -125,8 +127,8 @@
     <!-- Header -->
     <InstructionCard
         icon={Building2}
-        title="Headquarters Office"
-        description="The administrative nerve center of your racing organization. Manage team identity, review historical performance, and monitor official communications from the league."
+        title={t('office_header_title')}
+        description={t('office_header_desc')}
     />
 
     <div class="mt-10 grid grid-cols-1 lg:grid-cols-12 gap-8">
@@ -143,7 +145,7 @@
                 <div class="flex items-center justify-between mb-6 relative">
                     <span
                         class="text-[10px] font-black uppercase tracking-widest text-app-primary"
-                        >Team Identity</span
+                        >{t('office_team_identity_label')}</span
                     >
                     {#if !isEditingName}
                         <button
@@ -163,14 +165,14 @@
                             <label
                                 for="team-name"
                                 class="text-[10px] font-bold text-app-text/40 uppercase ml-1"
-                                >New Name</label
+                                >{t('office_new_name_label')}</label
                             >
                             <input
                                 id="team-name"
                                 type="text"
                                 bind:value={newName}
                                 class="w-full bg-app-text/5 border border-app-border rounded-xl px-4 py-3 font-black text-app-text focus:outline-none focus:border-app-primary/50 transition-all"
-                                placeholder="Enter team name..."
+                                placeholder={t('office_team_name_placeholder')}
                             />
                         </div>
                         <div class="flex gap-2">
@@ -179,7 +181,7 @@
                                 disabled={isSavingName}
                                 class="flex-1 py-2.5 bg-app-primary text-app-primary-foreground font-black uppercase text-[10px] tracking-widest rounded-lg hover:scale-[1.02] active:scale-95 transition-all disabled:opacity-50"
                             >
-                                {isSavingName ? "Saving..." : "Confirm"}
+                                {isSavingName ? t('saving') : t('confirm')}
                             </button>
                             <button
                                 onclick={() => {
@@ -212,13 +214,13 @@
                         <div class="flex flex-col">
                             <span
                                 class="text-[9px] font-bold text-app-text/30 uppercase"
-                                >Renaming Policy</span
+                                >{t('office_renaming_policy_label')}</span
                             >
                             <span
                                 class="text-[11px] font-bold text-app-text/60"
                             >
                                 {teamStore.value.team?.nameChangeCount === 0
-                                    ? "First change is FREE"
+                                    ? t('office_first_change_free')
                                     : "Cost: $500,000"}
                             </span>
                         </div>
@@ -235,7 +237,7 @@
                     <h3
                         class="text-xs font-black uppercase text-app-text tracking-widest"
                     >
-                        Career Stats
+                        {t('office_career_stats_header')}
                     </h3>
                 </div>
 
@@ -245,7 +247,7 @@
                     >
                         <span
                             class="text-[9px] font-bold text-app-text/30 uppercase block mb-1"
-                            >Titles</span
+                            >{t('stat_titles')}</span
                         >
                         <span
                             class="text-2xl font-black text-app-primary italic"
@@ -257,7 +259,7 @@
                     >
                         <span
                             class="text-[9px] font-bold text-app-text/30 uppercase block mb-1"
-                            >Wins</span
+                            >{t('wins')}</span
                         >
                         <span class="text-2xl font-black text-app-text italic"
                             >{teamStats.wins}</span
@@ -268,7 +270,7 @@
                     >
                         <span
                             class="text-[9px] font-bold text-app-text/30 uppercase block mb-1"
-                            >Podiums</span
+                            >{t('podiums')}</span
                         >
                         <span class="text-2xl font-black text-app-text italic"
                             >{teamStats.podiums}</span
@@ -279,7 +281,7 @@
                     >
                         <span
                             class="text-[9px] font-bold text-app-text/30 uppercase block mb-1"
-                            >Races</span
+                            >{t('races')}</span
                         >
                         <span
                             class="text-2xl font-black text-app-text/20 italic"
@@ -334,7 +336,7 @@
                     <!-- Background Benefits & Drawbacks -->
                     <div class="space-y-4">
                         <div class="flex items-center justify-between">
-                            <h5 class="text-[10px] font-black text-app-text/30 uppercase tracking-[0.2em]">Management Edge</h5>
+                            <h5 class="text-[10px] font-black text-app-text/30 uppercase tracking-[0.2em]">{t('office_management_edge_label')}</h5>
                             <span class="text-[10px] font-black text-app-primary/40 uppercase italic">{managerRole?.title}</span>
                         </div>
                         
@@ -365,7 +367,7 @@
                     <!-- Market Presence & Reputation -->
                     <div class="pt-6 border-t border-app-border/40 grid grid-cols-2 gap-4">
                         <div class="bg-white/[0.02] border border-app-border/40 rounded-2xl p-4 flex flex-col gap-1">
-                            <span class="text-[8px] font-bold text-app-text/20 uppercase tracking-widest">Global Ranking</span>
+                            <span class="text-[8px] font-bold text-app-text/20 uppercase tracking-widest">{t('office_global_ranking_label')}</span>
                             <span class="text-sm font-black text-app-text uppercase tracking-tight italic">
                                 {managerStore.profile?.reputation && managerStore.profile.reputation > 80 ? "Elite Executive" : "Regional Lead"}
                             </span>
@@ -396,11 +398,11 @@
                         <h3
                             class="text-sm font-black uppercase text-app-text tracking-widest"
                         >
-                            Last Race Debrief
+                            {t('office_race_debrief_header')}
                         </h3>
                         <span
                             class="ml-auto text-[10px] font-bold text-app-text/30 uppercase bg-app-text/5 px-2 py-1 rounded"
-                            >Official Report</span
+                            >{t('office_official_report_badge')}</span
                         >
                     </div>
 
@@ -428,7 +430,7 @@
                         <h3
                             class="text-xs font-black uppercase text-app-text tracking-[0.2em]"
                         >
-                            Official Communications
+                            {t('office_communications_header')}
                         </h3>
                     </div>
                     <div class="flex items-center gap-2">
@@ -436,7 +438,7 @@
                         <h3
                             class="text-xs font-black uppercase text-app-text tracking-[0.2em]"
                         >
-                            Official Communications
+                            {t('office_communications_header')}
                         </h3>
                     </div>
                 </div>
@@ -450,7 +452,7 @@
                             <p
                                 class="text-[10px] font-black uppercase tracking-widest"
                             >
-                                No communications received
+                                {t('office_no_communications')}
                             </p>
                         </div>
                     {:else}

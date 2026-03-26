@@ -1,6 +1,7 @@
 <script lang="ts">
     import { X, AlertTriangle } from "lucide-svelte";
     import { fade, scale } from "svelte/transition";
+    import { t } from "$lib/utils/i18n";
 
     let { 
         show = $bindable(false), 
@@ -46,7 +47,7 @@
                 </div>
                 <div>
                     <h3 class="text-xl font-heading font-black tracking-tighter uppercase italic">{title}</h3>
-                    <p class="text-[10px] text-red-500/60 font-black uppercase tracking-widest mt-1">Security Verification Required</p>
+                    <p class="text-[10px] text-red-500/60 font-black uppercase tracking-widest mt-1">{t('confirm_security_label')}</p>
                 </div>
             </div>
 
@@ -58,13 +59,13 @@
                 {#if requireWord}
                     <div class="flex flex-col gap-2">
                         <label for="confirm-word" class="text-[10px] font-black uppercase tracking-widest text-app-text/40">
-                            Type <span class="text-app-primary">"{requireWord}"</span> to confirm:
+                            {t('confirm_type_to_confirm', { word: requireWord })}
                         </label>
-                        <input 
+                        <input
                             id="confirm-word"
-                            type="text" 
+                            type="text"
                             bind:value={userInput}
-                            placeholder="Type here..."
+                            placeholder={t('confirm_type_placeholder')}
                             class="bg-black/40 border border-app-border rounded-xl p-4 text-sm focus:border-red-500/50 outline-none transition-all font-mono"
                         />
                     </div>
@@ -75,7 +76,7 @@
                         onclick={handleClose}
                         class="p-4 rounded-2xl border border-app-border text-[10px] font-black uppercase tracking-widest hover:bg-app-text/5 transition-all"
                     >
-                        Cancel
+                        {t('cancel')}
                     </button>
                     <button 
                         onclick={handleConfirm}

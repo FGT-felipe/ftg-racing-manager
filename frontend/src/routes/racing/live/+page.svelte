@@ -13,15 +13,16 @@
     import RaceLivePanel from "$lib/components/racing/RaceLivePanel.svelte";
     import ResultsPanel from "$lib/components/racing/ResultsPanel.svelte";
     import { seasonStore } from "$lib/stores/season.svelte";
+    import { t } from "$lib/utils/i18n";
     import { circuitService } from "$lib/services/circuit_service.svelte";
     import CountryFlag from "$lib/components/ui/CountryFlag.svelte";
 
     let activeTab = $state<"qualy" | "race" | "results">("qualy");
 
     const tabs = [
-        { id: "qualy" as const, label: "Qualy Live", icon: Trophy, color: "text-app-primary" },
-        { id: "race" as const, label: "Live Race", icon: Flag, color: "text-red-500" },
-        { id: "results" as const, label: "Last Results", icon: History, color: "text-blue-400" }
+        { id: "qualy" as const, label: t('tab_qualy_live'), icon: Trophy, color: "text-app-primary" },
+        { id: "race" as const, label: t('tab_live_race'), icon: Flag, color: "text-red-500" },
+        { id: "results" as const, label: t('tab_last_results'), icon: History, color: "text-blue-400" }
     ];
 
     let nextEvent = $derived(seasonStore.nextEvent);
@@ -40,10 +41,10 @@
             </div>
             <div>
                 <h1 class="text-3xl lg:text-4xl font-heading font-black tracking-tighter uppercase italic text-app-text leading-none">
-                    Race <span class="text-red-600">Day</span> Center
+                    {t('live_center_title')}
                 </h1>
                 <div class="flex items-center gap-2 mt-2">
-                    <span class="text-[10px] font-black uppercase tracking-[0.3em] text-app-text/40">Broadcasting Live Telemetry</span>
+                    <span class="text-[10px] font-black uppercase tracking-[0.3em] text-app-text/40">{t('live_telemetry_label')}</span>
                     <div class="w-2 h-2 rounded-full bg-red-600 animate-pulse"></div>
                 </div>
             </div>
@@ -53,7 +54,7 @@
             <div class="flex items-center gap-4 px-6 py-4 bg-app-surface border border-app-border rounded-2xl shadow-lg">
                 <CountryFlag countryCode={circuitService.getCircuitProfile(nextEvent.circuitId || '').countryCode} size="lg" />
                <div class="flex flex-col">
-                   <span class="text-[10px] font-black uppercase tracking-widest text-app-text/40 leading-none mb-1">Current Venue</span>
+                   <span class="text-[10px] font-black uppercase tracking-widest text-app-text/40 leading-none mb-1">{t('current_venue_label')}</span>
                    <span class="text-sm font-black uppercase italic text-app-text">{nextEvent.trackName}</span>
                </div>
             </div>
@@ -104,7 +105,7 @@
                         <div class="space-y-8">
                             <div class="flex items-center gap-3 border-b border-app-border pb-6">
                                 <Trophy class="text-app-primary" size={24} />
-                                <h2 class="text-xl font-heading font-black uppercase italic">Qualifying Session</h2>
+                                <h2 class="text-xl font-heading font-black uppercase italic">{t('qualifying_session_title')}</h2>
                             </div>
                             <QualifyingPanel />
                         </div>
@@ -112,7 +113,7 @@
                         <div class="space-y-8">
                             <div class="flex items-center gap-3 border-b border-app-border pb-6">
                                 <Flag class="text-red-500" size={24} />
-                                <h2 class="text-xl font-heading font-black uppercase italic">Live Grand Prix</h2>
+                                <h2 class="text-xl font-heading font-black uppercase italic">{t('live_grand_prix_title')}</h2>
                             </div>
                             <RaceLivePanel />
                         </div>
@@ -120,7 +121,7 @@
                         <div class="space-y-8">
                             <div class="flex items-center gap-3 border-b border-app-border pb-6">
                                 <History class="text-blue-400" size={24} />
-                                <h2 class="text-xl font-heading font-black uppercase italic">Last Weekend Archives</h2>
+                                <h2 class="text-xl font-heading font-black uppercase italic">{t('last_weekend_archives_title')}</h2>
                             </div>
                             <ResultsPanel />
                         </div>

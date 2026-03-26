@@ -1,5 +1,6 @@
 <script lang="ts">
     import { CalendarDays, ChevronLeft, CheckCircle, Clock } from "lucide-svelte";
+    import { t } from "$lib/utils/i18n";
     import { fly } from "svelte/transition";
     import { seasonStore } from "$lib/stores/season.svelte";
     import { circuitService } from "$lib/services/circuit_service.svelte";
@@ -68,7 +69,7 @@
     {:else if calendar.length === 0}
         <div class="flex flex-col items-center justify-center h-64 text-center opacity-30 gap-4">
             <CalendarDays size={48} strokeWidth={1} />
-            <p class="text-sm font-black uppercase tracking-widest">No events scheduled</p>
+            <p class="text-sm font-black uppercase tracking-widest">{t('calendar_no_events')}</p>
         </div>
 
     <!-- Calendar Grid -->
@@ -100,14 +101,14 @@
                             {#if event.isCompleted}
                                 <div class="flex items-center gap-1 text-green-500">
                                     <CheckCircle size={16} />
-                                    <span class="text-[9px] font-black uppercase tracking-wider">Done</span>
+                                    <span class="text-[9px] font-black uppercase tracking-wider">{t('event_status_done')}</span>
                                 </div>
                             {:else if isCurrent}
-                                <div class="px-2 py-1 bg-app-primary text-app-primary-foreground rounded-md text-[8px] font-black uppercase tracking-widest">Upcoming</div>
+                                <div class="px-2 py-1 bg-app-primary text-app-primary-foreground rounded-md text-[8px] font-black uppercase tracking-widest">{t('event_status_upcoming')}</div>
                             {:else}
                                 <div class="flex items-center gap-1 text-app-text/30">
                                     <Clock size={12} />
-                                    <span class="text-[9px] font-black uppercase tracking-wider">Scheduled</span>
+                                    <span class="text-[9px] font-black uppercase tracking-wider">{t('event_status_scheduled')}</span>
                                 </div>
                             {/if}
                         </div>
@@ -125,16 +126,16 @@
                         <!-- Circuit intel rows -->
                         <div class="flex flex-col gap-2">
                             <div class="flex items-center justify-between text-[9px]">
-                                <span class="font-black uppercase tracking-widest text-app-text/40">Laps</span>
+                                <span class="font-black uppercase tracking-widest text-app-text/40">{t('laps')}</span>
                                 <span class="font-bold text-app-text">{event.totalLaps ?? circuit.laps}</span>
                             </div>
                             {#if circuit.characteristics}
                                 <div class="flex items-center justify-between text-[9px]">
-                                    <span class="font-black uppercase tracking-widest text-app-text/40">Tyre Wear</span>
+                                    <span class="font-black uppercase tracking-widest text-app-text/40">{t('circuit_tyre_wear_label')}</span>
                                     <span class="font-bold text-app-text">{circuit.characteristics['Tyre Wear'] ?? 'N/A'}</span>
                                 </div>
                                 <div class="flex items-center justify-between text-[9px]">
-                                    <span class="font-black uppercase tracking-widest text-app-text/40">Fuel</span>
+                                    <span class="font-black uppercase tracking-widest text-app-text/40">{t('circuit_fuel_label')}</span>
                                     <span class="font-bold text-app-text">{circuit.characteristics['Fuel Consumption'] ?? 'N/A'}</span>
                                 </div>
                             {/if}
@@ -143,7 +144,7 @@
                         <!-- Difficulty Bar -->
                         <div class="flex flex-col gap-2 mt-auto">
                             <div class="flex items-center justify-between text-[8px] font-black uppercase tracking-widest text-app-text/30">
-                                <span>Tech. Difficulty</span>
+                                <span>{t('circuit_difficulty_label')}</span>
                                 <span>{(circuit.difficulty * 10).toFixed(0)}/10</span>
                             </div>
                             <div class="h-1 w-full bg-app-text/10 rounded-full overflow-hidden">
@@ -159,11 +160,11 @@
         {@const completed = calendar.filter((r: any) => r.isCompleted).length}
         <div class="mt-16 pt-8 border-t border-app-border flex flex-wrap gap-12 opacity-50">
             <div class="flex flex-col gap-1">
-                <span class="text-[9px] font-black uppercase tracking-widest text-app-text/50">Completed</span>
+                <span class="text-[9px] font-black uppercase tracking-widest text-app-text/50">{t('season_progress_completed')}</span>
                 <span class="text-sm font-bold text-app-text">{completed} / {calendar.length}</span>
             </div>
             <div class="flex flex-col gap-1">
-                <span class="text-[9px] font-black uppercase tracking-widest text-app-text/50">Remaining</span>
+                <span class="text-[9px] font-black uppercase tracking-widest text-app-text/50">{t('season_progress_remaining')}</span>
                 <span class="text-sm font-bold text-app-text">{calendar.length - completed}</span>
             </div>
         </div>

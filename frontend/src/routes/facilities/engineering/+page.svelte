@@ -4,6 +4,7 @@
     import { managerStore } from "$lib/stores/manager.svelte";
     import { driverStore } from "$lib/stores/driver.svelte";
     import { timeService } from "$lib/services/time_service.svelte";
+    import { uiStore } from "$lib/stores/ui.svelte";
     import {
         Wrench,
         Zap,
@@ -50,7 +51,7 @@
         try {
             await carStore.upgradePart(selectedCar, partKey);
         } catch (e: any) {
-            alert(e.message);
+            uiStore.alert(e.message, 'Error', 'danger');
         }
     }
 

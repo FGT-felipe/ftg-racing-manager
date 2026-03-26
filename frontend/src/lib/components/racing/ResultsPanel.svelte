@@ -142,8 +142,8 @@
     }
 
     function formatGap(gap: number) {
-        if (gap === 0) return "LEADER";
-        if (gap >= 999 || isNaN(gap)) return "DNF";
+        if (gap === 0) return t('results_leader');
+        if (gap >= 999 || isNaN(gap)) return t('results_dnf');
         return `+${gap.toFixed(3)}s`;
     }
 
@@ -246,14 +246,14 @@
     {#if isLoading}
         <div class="flex flex-col items-center justify-center py-20 gap-4 opacity-50">
             <div class="w-10 h-10 border-4 border-app-primary border-t-transparent rounded-full animate-spin"></div>
-            <span class="text-[10px] font-black uppercase tracking-widest text-app-primary">Retrieving Historical Data...</span>
+            <span class="text-[10px] font-black uppercase tracking-widest text-app-primary">{t('results_retrieving_data')}</span>
         </div>
     {:else if !lastResults || (!lastResults.qualifyingResults && !lastResults.raceResults)}
         <div class="bg-app-surface border border-app-border rounded-2xl p-12 flex flex-col items-center justify-center text-center gap-6 shadow-xl opacity-50">
             <History size={40} class="text-app-text/20" />
             <div class="max-w-md space-y-2">
-                <h3 class="font-black text-xl uppercase italic text-app-text tracking-tight">No Historical Data</h3>
-                <p class="text-app-text/40 text-sm font-medium">The season hasn't yielded any official results yet. Complete your first race weekend to see historical telemetry here.</p>
+                <h3 class="font-black text-xl uppercase italic text-app-text tracking-tight">{t('results_no_data_title')}</h3>
+                <p class="text-app-text/40 text-sm font-medium">{t('results_no_data_desc')}</p>
             </div>
         </div>
     {:else}
@@ -265,7 +265,7 @@
                         <History size={20} />
                     </div>
                     <div>
-                        <h3 class="font-black text-sm uppercase tracking-widest italic text-app-text leading-none">Last Event Archives</h3>
+                        <h3 class="font-black text-sm uppercase tracking-widest italic text-app-text leading-none">{t('results_last_event_header')}</h3>
                         <p class="text-[10px] font-bold text-app-primary uppercase tracking-widest mt-1">
                             {lastEvent?.trackName || 'Unknown Track'} • Round {lastEvent?.id?.toString().replace('r', '') || '—'}
                         </p>
@@ -274,12 +274,12 @@
 
                 {#if teamSummary}
                     <div class="text-right" in:fade>
-                        <p class="text-[10px] font-black uppercase tracking-widest text-app-text/30 leading-none mb-1">Constructor Position</p>
+                        <p class="text-[10px] font-black uppercase tracking-widest text-app-text/30 leading-none mb-1">{t('results_constructor_position')}</p>
                         <div class="flex items-center justify-end gap-2">
                             <span class="text-xl font-black italic text-app-text uppercase leading-none">{teamSummary.rank}</span>
                             <div class="flex flex-col items-start">
                                 <span class="text-[9px] font-black uppercase text-app-text/20 leading-none mb-0.5">of {teamSummary.totalTeams} Teams</span>
-                                <span class="text-[10px] font-black italic text-app-primary leading-none">{teamSummary.points} PTS RESULT</span>
+                                <span class="text-[10px] font-black italic text-app-primary leading-none">{teamSummary.points} {t('results_pts_result')}</span>
                             </div>
                         </div>
                     </div>
@@ -291,7 +291,7 @@
                 <div class="bg-app-surface border border-app-border rounded-2xl overflow-hidden shadow-2xl">
                     <div class="p-4 border-b border-app-border bg-app-surface flex items-center gap-3">
                         <Trophy size={16} class="text-app-primary" />
-                        <h4 class="font-black text-[10px] uppercase tracking-widest italic">Qualifying Classification</h4>
+                        <h4 class="font-black text-[10px] uppercase tracking-widest italic">{t('results_qualifying_header')}</h4>
                     </div>
                     <div class="divide-y divide-white/5 max-h-[400px] overflow-y-auto custom-scrollbar">
                         {#if lastResults.qualifyingResults && lastResults.qualifyingResults.length > 0}
@@ -325,7 +325,7 @@
                                 {/each}
                             {/each}
                         {:else}
-                            <div class="p-8 text-center text-app-text/20 text-[10px] uppercase font-black tracking-widest">No Qualy Data Found</div>
+                            <div class="p-8 text-center text-app-text/20 text-[10px] uppercase font-black tracking-widest">{t('results_no_qualy_data')}</div>
                         {/if}
                     </div>
                 </div>
@@ -335,12 +335,12 @@
                     <div class="p-4 border-b border-app-border bg-app-surface flex items-center justify-between">
                         <div class="flex items-center gap-3">
                             <Flag size={16} class="text-red-500" />
-                            <h4 class="font-black text-[10px] uppercase tracking-widest italic">Race Results</h4>
+                            <h4 class="font-black text-[10px] uppercase tracking-widest italic">{t('results_race_header')}</h4>
                         </div>
                         {#if lastResults?.fast_lap_time}
                             <div class="flex items-center gap-4">
                                 <div class="flex items-center gap-2 px-3 py-1 bg-white/[0.03] border border-white/5 rounded-full">
-                                    <span class="text-[9px] font-bold text-app-text/40 uppercase tracking-tighter">Fastest Lap:</span>
+                                    <span class="text-[9px] font-bold text-app-text/40 uppercase tracking-tighter">{t('results_fastest_lap_label')}</span>
                                     <span class="text-[10px] font-black text-app-text italic">
                                         {formatTime(lastResults.fast_lap_time)}
                                     </span>
@@ -351,7 +351,7 @@
                                 {#if fastestLapObjective}
                                     <div class="flex items-center gap-1.5 px-2 py-0.5 rounded border {fastestLapObjective.isMet ? 'bg-app-success/10 border-app-success/20 text-app-success' : 'bg-app-error/10 border-app-error/20 text-app-error'}">
                                         <div class="w-1.5 h-1.5 rounded-full {fastestLapObjective.isMet ? 'bg-app-success' : 'bg-app-error'} animate-pulse"></div>
-                                        <span class="text-[8px] font-black uppercase tracking-widest">Objective</span>
+                                        <span class="text-[8px] font-black uppercase tracking-widest">{t('results_objective_label')}</span>
                                     </div>
                                 {/if}
                             </div>
@@ -362,7 +362,7 @@
                             {#each lastResults.raceResults as row, i}
                                 <div class="p-3 flex items-center gap-4 transition-colors {row.teamId === userTeamId ? 'bg-app-primary/5' : 'hover:bg-white/[0.02]'}">
                                     <div class="w-6 h-6 rounded bg-app-text/10 flex items-center justify-center font-black italic text-[10px] {row.isDnf ? 'text-red-500' : (i < 3 ? 'text-red-500' : (row.teamId === userTeamId ? 'text-app-primary' : 'text-app-text/20'))}">
-                                        {row.isDnf ? 'DNF' : i + 1}
+                                        {row.isDnf ? t('results_dnf') : i + 1}
                                     </div>
                                     <div class="flex-1 min-w-0">
                                         <div class="flex items-center gap-2">
@@ -376,13 +376,13 @@
                                     </div>
                                     <div class="text-right">
                                         <p class="text-xs font-black italic text-app-text tabular-nums">
-                                            {row.isDnf ? 'DNF' : (i === 0 ? formatTime(lastResults.totalTimes?.[row.driverId]) : formatGap(row.gapToLeader))}
+                                            {row.isDnf ? t('results_dnf') : (i === 0 ? formatTime(lastResults.totalTimes?.[row.driverId]) : formatGap(row.gapToLeader))}
                                         </p>
                                         {#if row.isDnf}
-                                            <p class="text-[8px] font-bold text-red-500/50 uppercase italic">Retired</p>
+                                            <p class="text-[8px] font-bold text-red-500/50 uppercase italic">{t('results_retired')}</p>
                                         {:else}
                                             <p class="text-[8px] font-bold text-app-text/30 uppercase tabular-nums">
-                                                {lastResults.fast_lap_driver === row.driverId ? '★ Fastest Lap' : `Best Lap: ${formatTime(row.lastLapTime)}`}
+                                                {lastResults.fast_lap_driver === row.driverId ? t('results_fastest_lap_badge') : `${t('results_best_lap_prefix')} ${formatTime(row.lastLapTime)}`}
                                             </p>
                                         {/if}
                                     </div>
@@ -401,7 +401,7 @@
                                 {/each}
                             {/each}
                         {:else}
-                            <div class="p-8 text-center text-app-text/20 text-[10px] uppercase font-black tracking-widest">No Race Data Found</div>
+                            <div class="p-8 text-center text-app-text/20 text-[10px] uppercase font-black tracking-widest">{t('results_no_race_data')}</div>
                         {/if}
                     </div>
                 </div>

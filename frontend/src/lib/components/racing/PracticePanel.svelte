@@ -461,7 +461,7 @@ import { circuitService } from "$lib/services/circuit_service.svelte";
                     <button onclick={copyToQualifying} class="px-3 py-1.5 rounded-lg border border-app-primary/20 bg-app-primary/5 text-app-primary text-[9px] font-black uppercase hover:bg-app-primary hover:text-black transition-all flex items-center gap-1.5">
                         <Timer size={12} /> {t('set_qualy')}
                     </button>
-                    <button onclick={copyToRace} class="px-3 py-1.5 rounded-lg border border-[#E040FB]/20 bg-[#E040FB]/5 text-[#E040FB] text-[9px] font-black uppercase hover:bg-[#E040FB] hover:text-white transition-all flex items-center gap-1.5">
+                    <button onclick={copyToRace} class="px-3 py-1.5 rounded-lg border border-app-fastest/20 bg-app-fastest/5 text-app-fastest text-[9px] font-black uppercase hover:bg-app-fastest hover:text-white transition-all flex items-center gap-1.5">
                         <Flag size={12} /> {t('set_race')}
                     </button>
                 </div>
@@ -483,7 +483,7 @@ import { circuitService } from "$lib/services/circuit_service.svelte";
                             {#if lastResult?.setupHints?.[item.field]}
                                 {@const hint = lastResult.setupHints[item.field]}
                                 <div 
-                                    class="absolute h-1.5 bg-[#E040FB]/30 rounded-full blur-[1px] border-x border-[#E040FB]/50 transition-all duration-500"
+                                    class="absolute h-1.5 bg-app-fastest/30 rounded-full blur-[1px] border-x border-app-fastest/50 transition-all duration-500"
                                     style="left: {hint.min}%; width: {hint.max - hint.min}%"
                                     title="Estimated ideal range"
                                 ></div>

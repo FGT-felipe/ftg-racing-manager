@@ -475,7 +475,7 @@
                             {#if lastResult?.setupHints && (item.field in lastResult.setupHints) && (!isParcFerme || item.field === 'frontWing')}
                                 {@const hint = (lastResult.setupHints as any)[item.field]}
                                 <div 
-                                    class="absolute h-1.5 bg-[#E040FB]/30 rounded-full blur-[1px] border-x border-[#E040FB]/50 transition-all duration-500"
+                                    class="absolute h-1.5 bg-app-fastest/30 rounded-full blur-[1px] border-x border-app-fastest/50 transition-all duration-500"
                                     style="left: {hint.min}%; width: {hint.max - hint.min}%"
                                     title="Estimated ideal range"
                                 ></div>

@@ -2,6 +2,7 @@
     import AppLogo from "$lib/components/AppLogo.svelte";
     import { authStore } from "$lib/stores/auth.svelte";
     import { APP_VERSION } from "$lib/constants/app_constants";
+    import { t } from "$lib/utils/i18n";
     import { Mail, Lock, Loader2, AlertCircle } from "lucide-svelte";
 
     let email = $state("");
@@ -13,7 +14,7 @@
     async function handleEmailAuth(e: Event) {
         e.preventDefault();
         if (!email || !password) {
-            errorMsg = "Please fill in all fields.";
+            errorMsg = t('login_fill_all_fields');
             return;
         }
 
@@ -28,7 +29,7 @@
             }
         } catch (error: any) {
             console.error("Auth error:", error);
-            errorMsg = error.message || "Authentication failed.";
+            errorMsg = error.message || t('login_auth_failed');
         } finally {
             isProcessing = false;
         }
@@ -41,7 +42,7 @@
             await authStore.loginWithGoogle();
         } catch (error: any) {
             console.error("Google Auth error:", error);
-            errorMsg = error.message || "Google authentication failed.";
+            errorMsg = error.message || t('login_google_failed');
         } finally {
             isProcessing = false;
         }
@@ -66,7 +67,7 @@
             <p
                 class="font-raleway text-sm text-app-primary italic uppercase tracking-[0.25em] font-bold drop-shadow-sm text-center"
             >
-                Your team, your strategy, your glory.
+                {t('app_tagline')}
             </p>
         </div>
 
@@ -95,7 +96,7 @@
                     alt="G"
                     class="w-5 h-5 group-hover:scale-110 transition-transform"
                 />
-                <span>Sign in with Google</span>
+                <span>{t('login_google_button')}</span>
             </button>
 
             <!-- Separator -->
@@ -103,7 +104,7 @@
                 <div class="h-[1px] flex-1 bg-app-primary/20"></div>
                 <span
                     class="text-[10px] uppercase font-bold tracking-[0.2em] text-app-primary/40 whitespace-nowrap"
-                    >Or Use Email</span
+                    >{t('login_email_separator')}</span
                 >
                 <div class="h-[1px] flex-1 bg-app-primary/20"></div>
             </div>
@@ -132,7 +133,7 @@
                         type="email"
                         bind:value={email}
                         disabled={isProcessing}
-                        placeholder="Email Address"
+                        placeholder={t('login_email_placeholder')}
                         class="w-full bg-app-surface/60 border border-app-border rounded-2xl py-4.5 pl-16 pr-6 text-sm focus:outline-none focus:border-app-primary transition-all disabled:opacity-50 placeholder:text-app-text/30"
                         required
                     />
@@ -148,7 +149,7 @@
                         type="password"
                         bind:value={password}
                         disabled={isProcessing}
-                        placeholder="Password"
+                        placeholder={t('login_password_placeholder')}
                         class="w-full bg-app-surface/60 border border-app-border rounded-2xl py-4.5 pl-16 pr-6 text-sm focus:outline-none focus:border-app-primary transition-all disabled:opacity-50 placeholder:text-app-text/30"
                         required
                     />
@@ -165,9 +166,9 @@
                             size={18}
                             class="animate-spin text-app-primary-foreground"
                         />
-                        <span>PROCESSING...</span>
+                        <span>{t('login_processing')}</span>
                     {:else}
-                        <span>{isRegistering ? "Register Now" : "SIGN IN"}</span
+                        <span>{isRegistering ? t('login_register_button') : t('login_signin_button')}</span
                         >
                     {/if}
                 </button>
@@ -187,12 +188,12 @@
             <span
                 class="text-app-text/30 text-[10px] font-bold tracking-[0.3em] uppercase"
             >
-                {isRegistering ? "Already a Member?" : "New Manager?"}
+                {isRegistering ? t('login_existing_member') : t('login_new_manager')}
             </span>
             <span
                 class="text-app-text/50 group-hover:text-app-primary transition-colors text-[11px] font-black tracking-[0.25em] uppercase border-b-2 border-app-primary/20 group-hover:border-app-primary pb-1"
             >
-                {isRegistering ? "Back to Login" : "Join Here"}
+                {isRegistering ? t('login_back_to_login') : t('login_join_here')}
             </span>
         </button>
     </div>

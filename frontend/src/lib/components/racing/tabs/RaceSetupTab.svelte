@@ -180,14 +180,14 @@
 {#if timeService.currentStatus === 'qualifying'}
     <!-- Qualy in Progress Holding View -->
     <div class="flex flex-col items-center justify-center p-12 text-center min-h-[400px]">
-        <Activity size={64} class="text-[#FFB800] mb-6 animate-pulse" />
+        <Activity size={64} class="text-app-qualifying mb-6 animate-pulse" />
         <h2 class="text-3xl font-black italic text-app-text uppercase tracking-widest mb-4">
             {t('qualy_in_progress_header')}
         </h2>
         <p class="text-sm text-app-text/60 max-w-lg mb-8 leading-relaxed">
             {t('qualy_locked_desc')}
         </p>
-        <div class="flex items-center gap-2 text-[#FFB800] px-4 py-2 bg-[#FFB800]/10 rounded-lg">
+        <div class="flex items-center gap-2 text-app-qualifying px-4 py-2 bg-app-qualifying/10 rounded-lg">
             <Timer size={16} />
             <span class="text-[10px] font-black uppercase tracking-widest">{t('awaiting_grid')}</span>
         </div>
@@ -195,14 +195,14 @@
 {:else if timeService.currentStatus === 'race'}
     <!-- Race in Progress Holding View -->
     <div class="flex flex-col items-center justify-center p-12 text-center min-h-[400px]">
-        <Flag size={64} class="text-[#E040FB] mb-6 animate-bounce" />
+        <Flag size={64} class="text-app-fastest mb-6 animate-bounce" />
         <h2 class="text-3xl font-black italic text-app-text uppercase tracking-widest mb-4">
             {t('race_in_progress_header')}
         </h2>
         <p class="text-sm text-app-text/60 max-w-lg mb-8 leading-relaxed">
             {t('race_ongoing_desc')}
         </p>
-        <div class="flex items-center gap-2 text-[#E040FB] px-4 py-2 bg-[#E040FB]/10 rounded-lg">
+        <div class="flex items-center gap-2 text-app-fastest px-4 py-2 bg-app-fastest/10 rounded-lg">
             <Timer size={16} />
             <span class="text-[10px] font-black uppercase tracking-widest">{t('simulating_race')}</span>
         </div>

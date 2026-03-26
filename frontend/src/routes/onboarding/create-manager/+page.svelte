@@ -15,6 +15,7 @@
     } from "lucide-svelte";
     import { fly, fade } from "svelte/transition";
     import { MANAGER_ROLES } from "$lib/constants/manager";
+    import { t } from "$lib/utils/i18n";
 
     let firstName = $state("");
     let lastName = $state("");
@@ -68,20 +69,18 @@
             >
                 <Users size={32} />
                 <span class="text-xs font-black uppercase tracking-[0.4em]"
-                    >Career Path Initiation</span
+                    >{t('onboarding_career_path_label')}</span
                 >
             </div>
             <h1
                 class="text-5xl md:text-7xl font-heading font-black tracking-tighter uppercase italic leading-none"
             >
-                Create Your <span class="text-app-primary">Manager</span> Profile
+                {t('onboarding_create_manager_title')}
             </h1>
             <p
                 class="text-app-text/40 font-bold uppercase tracking-widest text-xs max-w-2xl"
             >
-                Define your professional background and personal details to
-                begin your journey in the world of professional racing
-                management.
+                {t('onboarding_create_manager_subtitle')}
             </p>
         </header>
 
@@ -99,7 +98,7 @@
                         <h2
                             class="text-sm font-black uppercase tracking-widest"
                         >
-                            Personal Identification
+                            {t('onboarding_personal_id_section')}
                         </h2>
                     </div>
 
@@ -108,7 +107,7 @@
                             <label
                                 for="firstName"
                                 class="text-[10px] font-black text-app-text/30 uppercase tracking-widest"
-                                >First Name</label
+                                >{t('onboarding_first_name_label')}</label
                             >
                             <input
                                 id="firstName"
@@ -122,7 +121,7 @@
                             <label
                                 for="lastName"
                                 class="text-[10px] font-black text-app-text/30 uppercase tracking-widest"
-                                >Last Name</label
+                                >{t('onboarding_last_name_label')}</label
                             >
                             <input
                                 id="lastName"
@@ -138,7 +137,7 @@
                         <label
                             for="nationality"
                             class="text-[10px] font-black text-app-text/30 uppercase tracking-widest"
-                            >Nationality</label
+                            >{t('profile_nationality_label')}</label
                         >
                         <div class="relative">
                             <Globe
@@ -166,16 +165,16 @@
                         <label
                             for="gender"
                             class="text-[10px] font-black text-app-text/30 uppercase tracking-widest"
-                            >Gender Identity</label
+                            >{t('onboarding_gender_label')}</label
                         >
                         <select
                             id="gender"
                             bind:value={gender}
                             class="w-full bg-app-surface border border-app-border rounded-xl px-4 py-3 text-sm focus:border-app-primary outline-none appearance-none transition-all"
                         >
-                            <option>Male</option>
-                            <option>Female</option>
-                            <option>Non-binary</option>
+                            <option>{t('onboarding_gender_male')}</option>
+                            <option>{t('onboarding_gender_female')}</option>
+                            <option>{t('onboarding_gender_nonbinary')}</option>
                         </select>
                     </div>
 
@@ -183,7 +182,7 @@
                         <label
                             for="dob"
                             class="text-[10px] font-black text-app-text/30 uppercase tracking-widest"
-                            >Date of Birth</label
+                            >{t('onboarding_dob_label')}</label
                         >
                         <div class="grid grid-cols-3 gap-2">
                             <input
@@ -220,7 +219,7 @@
                         <h2
                             class="text-sm font-black uppercase tracking-widest"
                         >
-                            Select Your Professional Background
+                            {t('onboarding_background_section')}
                         </h2>
                     </div>
 
@@ -301,9 +300,7 @@
                         <p
                             class="text-xs font-bold text-app-text/30 uppercase tracking-widest italic leading-relaxed"
                         >
-                            "The first step towards greatness is choosing the
-                            path that defines you. Your background will
-                            influence every decision from this moment on."
+                            {t('onboarding_background_quote')}
                         </p>
                     </div>
 
@@ -324,12 +321,12 @@
                             ></div>
                             <span
                                 class="font-heading font-black text-app-primary-foreground text-sm uppercase tracking-widest italic"
-                                >Wait...</span
+                                >{t('onboarding_submit_wait')}</span
                             >
                         {:else}
                             <span
                                 class="font-heading font-black text-app-primary-foreground text-sm uppercase tracking-widest italic"
-                                >Establish Career</span
+                                >{t('onboarding_submit_button')}</span
                             >
                             <ChevronRight
                                 size={18}

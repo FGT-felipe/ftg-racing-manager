@@ -11,34 +11,10 @@
     import NegotiationModal from "$lib/components/NegotiationModal.svelte";
     import { staffService } from "$lib/services/staff.svelte";
     import type { Driver } from "$lib/types";
-
-    // ─── Types ────────────────────────────────────────────────────────────────────
-    interface MarketDriver {
-        id: string;
-        name: string;
-        age: number;
-        gender?: string;
-        countryCode?: string;
-        role?: string;
-        currentStars: number;
-        potential: number;
-        salary: number;
-        contractYearsRemaining: number;
-        marketValue: number;
-        currentHighestBid: number;
-        highestBidderTeamId?: string;
-        teamId?: string;
-        transferListedAt?: any;
-        isTransferListed?: boolean;
-        stats?: Record<string, number>;
-    }
+    import { transferMarketService, MARKET_PAGE_SIZE, type MarketDriver } from "$lib/services/transfer_market.svelte";
+    import { TRANSFER_MARKET_BID_INCREMENT } from "$lib/constants/economics";
 
     // ─── State ────────────────────────────────────────────────────────────────────
-    const PAGE_SIZE = 15;
-    // Firestore is loaded lazily in onMount to prevent SSR crash
-    let firestoreApi: any = null;
-    let db: any = null;
-
     let myTeamId = $derived(teamStore.value.team?.id ?? null);
     let myBudget = $derived(teamStore.value.team?.budget ?? 0);
     let isMarketOpen = $state(true);
@@ -46,7 +22,7 @@
     let drivers = $state<MarketDriver[]>([]);
     let currentPage = $state(0);
     let pageHistory = $state<any[]>([null]);
-    let hasNextPage = $derived(drivers.length === PAGE_SIZE);
+    let hasNextPage = $derived(drivers.length === MARKET_PAGE_SIZE);
     let cancellingBidIds = $state<Set<string>>(new Set());
 
     // Modal state
@@ -137,42 +113,17 @@
     }
 
     async function fetchPage(pageIndex: number) {
-        if (!db || !firestoreApi) return;
         loading = true;
         try {
-            const { collection, query, where, orderBy, limit, startAfter, getDocs } = firestoreApi;
-            const twentyFourHoursAgo = new Date(Date.now() - 24 * 3600 * 1000).toISOString();
-            const constraints: any[] = [
-                where("isTransferListed", "==", true),
-                where("transferListedAt", ">", twentyFourHoursAgo),
-                orderBy("transferListedAt"),
-                limit(PAGE_SIZE),
-            ];
-
-            const cursor = pageHistory[pageIndex];
-            if (pageIndex > 0 && cursor) {
-                constraints.push(startAfter(cursor));
-            }
-
-            const snap = await getDocs(query(collection(db, "drivers"), ...constraints));
-            const docs = snap.docs;
-            drivers = docs.map((d: any) => {
-                const raw = { id: d.id, ...d.data() } as MarketDriver;
-                // currentStars is not stored — always compute from stats
-                raw.currentStars = calculateCurrentStars(raw as any);
-                // marketValue fallback for drivers listed before the formula fix
-                if (!raw.marketValue) {
-                    raw.marketValue = calculateDriverMarketValue(raw as any);
-                }
-                return raw;
-            });
+            const { drivers: fetched, lastDoc } = await transferMarketService.fetchPage(pageIndex, pageHistory);
+            drivers = fetched;
             currentPage = pageIndex;
 
             if (pageHistory.length <= pageIndex + 1) {
-                pageHistory = [...pageHistory, docs.length > 0 ? docs[docs.length - 1] : null];
+                pageHistory = [...pageHistory, lastDoc];
             } else {
                 const copy = [...pageHistory];
-                copy[pageIndex + 1] = docs.length > 0 ? docs[docs.length - 1] : null;
+                copy[pageIndex + 1] = lastDoc;
                 pageHistory = copy;
             }
 
@@ -185,25 +136,12 @@
     }
 
     async function placeBid() {
-        if (!selectedDriver || !myTeamId || !db || !firestoreApi) return;
+        if (!selectedDriver || !myTeamId) return;
         bidLoading = true;
         bidError = "";
         bidSuccess = false;
         try {
-            const { doc, runTransaction } = firestoreApi;
-            const driverRef = doc(db, "drivers", selectedDriver.id);
-            await runTransaction(db, async (txn: any) => {
-                const snap = await txn.get(driverRef);
-                if (!snap.exists()) throw new Error("Driver not found");
-                const data = snap.data();
-                const minBid = data.currentHighestBid === 0 ? data.marketValue : data.currentHighestBid + 50_000;
-                if (bidAmount < minBid) throw new Error(`Bid must be at least ${formatCurrency(minBid)}`);
-                if (bidAmount > myBudget) throw new Error("Insufficient budget");
-                txn.update(driverRef, {
-                    currentHighestBid: bidAmount,
-                    highestBidderTeamId: myTeamId,
-                });
-            });
+            await transferMarketService.placeBid(selectedDriver.id, bidAmount, myTeamId, myBudget);
             bidSuccess = true;
             setTimeout(() => { showBidModal = false; fetchPage(currentPage); }, 1200);
         } catch (e: any) {
@@ -214,11 +152,10 @@
     }
 
     async function cancelBid(driver: MarketDriver) {
-        if (!myTeamId || !db || !firestoreApi) return;
+        if (!myTeamId) return;
         cancellingBidIds = new Set([...cancellingBidIds, driver.id]);
         try {
-            const { doc, updateDoc } = firestoreApi;
-            await updateDoc(doc(db, "drivers", driver.id), { currentHighestBid: 0, highestBidderTeamId: null });
+            await transferMarketService.cancelBid(driver.id);
             fetchPage(currentPage);
         } catch (e) { console.error(e); } finally {
             cancellingBidIds = new Set([...cancellingBidIds].filter(x => x !== driver.id));
@@ -226,10 +163,8 @@
     }
 
     async function cancelTransfer(driver: MarketDriver) {
-        if (!db || !firestoreApi) return;
         try {
-            const { doc, updateDoc } = firestoreApi;
-            await updateDoc(doc(db, "drivers", driver.id), { isTransferListed: false, transferListedAt: null });
+            await transferMarketService.cancelTransfer(driver.id);
             selectedDriver = null;
             showDetail = false;
             fetchPage(currentPage);
@@ -239,7 +174,7 @@
     function openBidModal(driver: MarketDriver) {
         selectedDriver = driver;
         showDetail = false;
-        bidAmount = driver.currentHighestBid === 0 ? driver.marketValue : driver.currentHighestBid + 50_000;
+        bidAmount = driver.currentHighestBid === 0 ? driver.marketValue : driver.currentHighestBid + TRANSFER_MARKET_BID_INCREMENT;
         bidError = "";
         bidSuccess = false;
         showBidModal = true;
@@ -253,30 +188,16 @@
     }
 
     async function fetchPendingNegotiations() {
-        if (!db || !firestoreApi || !myTeamId) return;
+        if (!myTeamId) return;
         try {
-            const { collection, query, where, getDocs } = firestoreApi;
-            const snap = await getDocs(query(
-                collection(db, "drivers"),
-                where("pendingNegotiation", "==", true),
-                where("pendingBuyerTeamId", "==", myTeamId),
-            ));
-            pendingNegotiations = snap.docs.map((d: any) => {
-                const raw = { id: d.id, ...d.data() } as Driver;
-                (raw as any).currentStars = calculateCurrentStars(raw);
-                if (!raw.marketValue) raw.marketValue = calculateDriverMarketValue(raw);
-                return raw;
-            });
+            pendingNegotiations = await transferMarketService.fetchPendingNegotiations(myTeamId);
         } catch (e) {
             console.error('[Market] fetchPendingNegotiations error:', e);
         }
     }
 
-    // Initialize lazily in browser only — never during SSR
+    // Initialize in browser only — never during SSR
     onMount(async () => {
-        const firestore = await import("firebase/firestore");
-        firestoreApi = firestore;
-        db = firestore.getFirestore();
         checkMarketWindow();
         await Promise.all([fetchPage(0), fetchPendingNegotiations()]);
         timerInterval = setInterval(updateCountdowns, 1000);
@@ -300,7 +221,7 @@
             <div class="p-2 rounded-lg bg-app-primary/10 text-app-primary">
                 <Users size={24} />
             </div>
-            <span class="text-[10px] font-black tracking-[0.3em] text-app-primary/60 uppercase font-heading">Driver Acquisition</span>
+            <span class="text-[10px] font-black tracking-[0.3em] text-app-primary/60 uppercase font-heading">{t('market_driver_acquisition')}</span>
         </div>
         <div class="flex flex-wrap items-end justify-between gap-4">
             <h1 class="text-4xl lg:text-5xl font-heading font-black tracking-tighter uppercase italic text-app-text mt-1">
@@ -517,7 +438,7 @@
         onkeydown={(e) => { if (e.key === 'Escape') showDetail = false; }}
     >
         <div
-            class="bg-[#121216] border border-app-border rounded-[32px] w-full max-w-5xl overflow-hidden shadow-[0_0_50px_rgba(0,0,0,0.5)] relative"
+            class="bg-app-bg border border-app-border rounded-[32px] w-full max-w-5xl overflow-hidden shadow-[0_0_50px_rgba(0,0,0,0.5)] relative"
             in:fly={{ y: 30, duration: 400 }}
         >
             <!-- Close -->
@@ -554,7 +475,7 @@
 
                     <div class="space-y-6">
                         <div class="bg-white/[0.02] border border-app-border rounded-3xl p-6 space-y-4">
-                            <h4 class="text-[10px] font-black uppercase tracking-[0.2em] text-app-text/20">Contract Status</h4>
+                            <h4 class="text-[10px] font-black uppercase tracking-[0.2em] text-app-text/20">{t('market_contract_status')}</h4>
                             <div class="grid grid-cols-2 gap-4">
                                 <div class="flex flex-col gap-1">
                                     <span class="text-[9px] font-bold text-app-text/40 uppercase">Role</span>
@@ -577,7 +498,7 @@
 
                         <div class="bg-app-primary/5 border border-app-primary/10 rounded-3xl p-6">
                             <div class="flex items-center justify-between mb-4">
-                                <span class="text-[10px] font-black uppercase tracking-[0.2em] text-app-primary/40">Current Bidding</span>
+                                <span class="text-[10px] font-black uppercase tracking-[0.2em] text-app-primary/40">{t('market_current_bidding')}</span>
                                 <Gavel size={14} class="text-app-primary/40" />
                             </div>
                             <div class="flex flex-col gap-1">
@@ -599,7 +520,7 @@
                                 <div class="flex flex-col gap-3">
                                     <div class="flex items-center justify-center gap-2 py-4 bg-green-500/10 border border-green-500/20 rounded-2xl">
                                         <CheckCircle size={16} class="text-green-500" />
-                                        <span class="text-[10px] font-black text-green-500 uppercase tracking-widest">Highest Bidder</span>
+                                        <span class="text-[10px] font-black text-green-500 uppercase tracking-widest">{t('market_highest_bidder')}</span>
                                     </div>
                                     <button onclick={() => cancelBid(d)} disabled={cancellingBidIds.has(d.id)} class="w-full py-3 text-red-400/40 text-[9px] font-bold uppercase tracking-widest hover:text-red-400 transition-colors disabled:opacity-40">
                                         {cancellingBidIds.has(d.id) ? 'Processing...' : 'Cancel active bid'}
@@ -622,12 +543,12 @@
                 <div class="flex-1 p-8 md:p-12 bg-white/[0.01] overflow-y-auto custom-scrollbar">
                     <div class="flex items-center justify-between mb-10">
                         <div class="flex flex-col gap-1">
-                            <h3 class="text-xs font-black text-app-text uppercase tracking-[0.3em]">Performance Profile</h3>
+                            <h3 class="text-xs font-black text-app-text uppercase tracking-[0.3em]">{t('market_performance_profile')}</h3>
                             <span class="text-[9px] font-bold text-app-text/20 uppercase tracking-widest">Official scouting report • Season 2026</span>
                         </div>
                         <div class="bg-app-text/5 px-4 py-2 rounded-xl border border-app-border">
                              <span class="text-[10px] font-black text-app-text/40 uppercase tracking-widest">Status: </span>
-                             <span class="text-[10px] font-black text-yellow-500 uppercase tracking-widest">Active Listing</span>
+                             <span class="text-[10px] font-black text-yellow-500 uppercase tracking-widest">{t('market_active_listing')}</span>
                         </div>
                     </div>
 
@@ -678,7 +599,7 @@
 
                     <div class="mt-16 p-8 bg-white/[0.02] border border-app-border rounded-[32px] flex flex-col md:flex-row items-center gap-8">
                         <div class="flex-1 space-y-2">
-                             <h4 class="text-sm font-black text-app-text uppercase italic">Scouting Summary</h4>
+                             <h4 class="text-sm font-black text-app-text uppercase italic">{t('market_scouting_summary')}</h4>
                              <p class="text-xs text-app-text/40 leading-relaxed">
                                  A {lvl.label.toLowerCase()} talent with significant potential in {DRIVING_STAT_KEYS[Math.floor(Math.random() * DRIVING_STAT_KEYS.length)]}.
                                  Currently testing the waters of the {d.role || 'driver'} market.
@@ -686,7 +607,7 @@
                         </div>
                         <div class="w-px h-12 bg-app-border hidden md:block"></div>
                         <div class="flex flex-col items-center md:items-end gap-1">
-                            <span class="text-[9px] font-black text-app-text/20 uppercase tracking-widest">Time Remaining</span>
+                            <span class="text-[9px] font-black text-app-text/20 uppercase tracking-widest">{t('market_time_remaining')}</span>
                             <span class="text-2xl font-black font-mono {isExpiringSoon(d) ? 'text-red-500 animate-pulse' : 'text-app-text'}">
                                 {countdownMap[d.id] ?? "—"}
                             </span>
@@ -711,11 +632,11 @@
             onclick={(e) => { if (e.target === e.currentTarget) showBidModal = false; }}
             onkeydown={(e) => { if (e.key === 'Escape') showBidModal = false; }}
         >
-            <div class="bg-[#1a1a1e] border border-app-border rounded-3xl w-full max-w-md p-8 shadow-2xl relative overflow-hidden" in:fly={{ y: 20, duration: 200 }}>
+            <div class="bg-app-surface border border-app-border rounded-3xl w-full max-w-md p-8 shadow-2xl relative overflow-hidden" in:fly={{ y: 20, duration: 200 }}>
                 <!-- Decorative Glow -->
                 <div class="absolute -top-24 -right-24 w-48 h-48 bg-app-primary/10 blur-3xl rounded-full pointer-events-none"></div>
                 <div class="flex items-center justify-between mb-6">
-                    <h3 class="text-lg font-black text-app-text uppercase italic">Place Transfer Bid</h3>
+                    <h3 class="text-lg font-black text-app-text uppercase italic">{t('market_place_bid_title')}</h3>
                     <button onclick={() => showBidModal = false} class="text-app-text/40 hover:text-app-text transition-colors"><X size={18} /></button>
                 </div>
 
@@ -755,7 +676,7 @@
                 {#if bidSuccess}
                     <div class="flex items-center gap-2 justify-center text-green-500 mb-4">
                         <CheckCircle size={16} />
-                        <span class="text-[10px] font-black uppercase">Bid placed successfully!</span>
+                        <span class="text-[10px] font-black uppercase">{t('market_bid_success')}</span>
                     </div>
                 {/if}
 
