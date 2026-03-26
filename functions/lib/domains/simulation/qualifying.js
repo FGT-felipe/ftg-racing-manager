@@ -201,6 +201,8 @@ async function runQualifyingLogic() {
                                 style: setup["qualifyingStyle"] || "normal",
                                 teamRole: managerRoles[team["id"]] ?? "",
                                 weather: raceEvent["weatherQualifying"],
+                                specialty: driver["specialty"],
+                                isQualifying: true,
                             });
                             finalLapTime = res.lapTime;
                             // Ex-Engineer: +5% qualy success (5% faster lap)

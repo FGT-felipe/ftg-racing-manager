@@ -5,7 +5,7 @@
  * Never embed fees, thresholds, or multipliers directly in logic files.
  */
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.DEFAULT_SETUP = exports.QUALY_PRIZES = exports.ACADEMY_XP_BONUS_PER_LEVEL = exports.XP_PER_SKILL_LEVEL = exports.NAME_CHANGE_COST = exports.PROMOTION_SALARY_BY_STARS = exports.ACADEMY_PROMOTION_DEFAULT_SALARY = exports.ACADEMY_TRAINEE_WEEKLY_COST = exports.FITNESS_TRAINER_SALARIES = exports.HQ_MAINTENANCE_PER_LEVEL = exports.EX_DRIVER_SALARY_MULTIPLIER = exports.WEEKS_PER_YEAR = exports.POINT_VALUE = exports.BASE_PRIZE = exports.POINT_SYSTEM = exports.FALLBACK_BONUSES = void 0;
+exports.DEFAULT_SETUP = exports.QUALY_PRIZES = exports.ACADEMY_XP_BONUS_PER_LEVEL = exports.SPECIALTY_STAT_THRESHOLD = exports.SPECIALTY_BASESKILL_THRESHOLD = exports.RAINMASTER_WET_DF_BONUS = exports.TYRE_WHISPERER_WEAR_REDUCTION = exports.DEFENSIVE_MINISTER_CRASH_REDUCTION = exports.APEX_HUNTER_STAT_BOOST = exports.LATE_BRAKER_STAT_BOOST = exports.IRON_NERVE_NOISE_REDUCTION = exports.QUALY_ACE_LAPTIME_BONUS = exports.FATIGUE_PENALTY_FACTOR = exports.FATIGUE_PENALTY_THRESHOLD = exports.FATIGUE_DRAIN_BY_STYLE = exports.XP_PER_SKILL_LEVEL = exports.NAME_CHANGE_COST = exports.ACADEMY_TRAINEE_WEEKLY_COST = exports.FITNESS_TRAINER_SALARIES = exports.HQ_MAINTENANCE_PER_LEVEL = exports.EX_DRIVER_SALARY_MULTIPLIER = exports.WEEKS_PER_YEAR = exports.POINT_VALUE = exports.BASE_PRIZE = exports.POINT_SYSTEM = exports.FALLBACK_BONUSES = void 0;
 exports.getRacePrize = getRacePrize;
 // ─── Sponsor fallback bonuses ────────────────────────────────────────────────
 /** Fallback bonus amounts per sponsor ID when objectiveBonus is missing. */
@@ -41,15 +41,63 @@ exports.HQ_MAINTENANCE_PER_LEVEL = 15_000;
 exports.FITNESS_TRAINER_SALARIES = [0, 0, 50_000, 120_000, 250_000, 500_000];
 /** Flat weekly cost per active academy trainee. */
 exports.ACADEMY_TRAINEE_WEEKLY_COST = 10_000;
-/** Fallback annual salary for academy graduates when stats-based calculation is unavailable. */
-exports.ACADEMY_PROMOTION_DEFAULT_SALARY = 520_000;
-/** Annual salary by driver star level (index 0 = 1-star) assigned at academy promotion. */
-exports.PROMOTION_SALARY_BY_STARS = [200_000, 400_000, 600_000, 900_000, 1_400_000];
 /** Team rename fee. */
 exports.NAME_CHANGE_COST = 500_000;
 // ─── Academy / XP ────────────────────────────────────────────────────────────
 /** XP points required to trigger a skill level-up for academy drivers. */
 exports.XP_PER_SKILL_LEVEL = 500;
+// ─── Specialization — Fatigue model ──────────────────────────────────────────
+/**
+ * Per-lap fatigue drain per driving style.
+ * Applied each race lap to reduce the driver's current fatigue (0–100).
+ * Iron Wall specialty bypasses this drain entirely.
+ */
+exports.FATIGUE_DRAIN_BY_STYLE = {
+    defensive: 0.3,
+    normal: 0.5,
+    offensive: 0.8,
+    mostRisky: 1.2,
+};
+/**
+ * Fatigue level (0–100) below which lap time penalties start applying.
+ * Represents physical exhaustion visibly affecting performance.
+ */
+exports.FATIGUE_PENALTY_THRESHOLD = 30;
+/**
+ * Penalty applied to the driver factor (df) per fatigue point below threshold.
+ * Formula: df *= (1 + (threshold - fatigue) * FACTOR)
+ * At fatigue=0 with threshold=30: df is multiplied by (1 + 30 * 0.005) = 1.15 (+15% slower).
+ */
+exports.FATIGUE_PENALTY_FACTOR = 0.005;
+// ─── Specialization — sim effects ────────────────────────────────────────────
+/** Qualy Ace: lap time multiplier applied during qualifying sessions (1.5% faster). */
+exports.QUALY_ACE_LAPTIME_BONUS = 0.015;
+/** Iron Nerve: fraction by which random lap noise is reduced (60% less variance). */
+exports.IRON_NERVE_NOISE_REDUCTION = 0.6;
+/**
+ * Late Braker: multiplier boost applied to the braking stat contribution in df.
+ * 0.5 = braking contributes 50% more to the driver factor.
+ */
+exports.LATE_BRAKER_STAT_BOOST = 0.5;
+/**
+ * Apex Hunter: multiplier boost applied to the cornering stat contribution in df.
+ * 0.5 = cornering contributes 50% more to the driver factor.
+ */
+exports.APEX_HUNTER_STAT_BOOST = 0.5;
+/** Defensive Minister: fraction by which crash probability is reduced. */
+exports.DEFENSIVE_MINISTER_CRASH_REDUCTION = 0.35;
+/** Tyre Whisperer: fraction by which tyre wear accumulation is reduced each lap. */
+exports.TYRE_WHISPERER_WEAR_REDUCTION = 0.15;
+/** Rainmaster: additional df reduction (speed bonus) in wet conditions. */
+exports.RAINMASTER_WET_DF_BONUS = 0.015;
+// ─── Specialization — academy trigger threshold ───────────────────────────────
+/**
+ * Minimum baseSkill an academy trainee must have to be eligible for a specialty.
+ * Mirrors the guard in post-race.ts: `if (!yDriver.specialty && baseSkill >= THRESHOLD)`.
+ */
+exports.SPECIALTY_BASESKILL_THRESHOLD = 8;
+/** Stat value (on 1–20 scale) a trainee must reach to trigger a specialization. */
+exports.SPECIALTY_STAT_THRESHOLD = 11;
 /** Additional XP bonus per academy level above 1. */
 exports.ACADEMY_XP_BONUS_PER_LEVEL = 8;
 // ─── Race prizes ─────────────────────────────────────────────────────────────
