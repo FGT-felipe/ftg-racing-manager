@@ -287,23 +287,25 @@ async function runPostRaceProcessing() {
                             updates["pendingActionType"] = ["SPONSOR_SHOOT", "TECHNICAL_TEST", "MENTOR_REQUEST"][Math.floor(Math.random() * 3)];
                         }
                         // Specialization trigger (baseSkill >= 8 required)
-                        if (!yDriver["specialty"] && yDriver["baseSkill"] >= 8) {
+                        // Priority order is fixed: first match wins. A trainee with multiple
+                        // stats >= 11 will receive the highest-priority specialty.
+                        if (!yDriver["specialty"] && yDriver["baseSkill"] >= constants_1.SPECIALTY_BASESKILL_THRESHOLD) {
                             const s = yDriver["stats"] ?? {};
-                            if (s["adaptability"] >= 11)
+                            if (s["adaptability"] >= constants_1.SPECIALTY_STAT_THRESHOLD)
                                 updates["specialty"] = "Rainmaster";
-                            else if (s["smoothness"] >= 11)
+                            else if (s["smoothness"] >= constants_1.SPECIALTY_STAT_THRESHOLD)
                                 updates["specialty"] = "Tyre Whisperer";
-                            else if (s["braking"] >= 11)
+                            else if (s["braking"] >= constants_1.SPECIALTY_STAT_THRESHOLD)
                                 updates["specialty"] = "Late Braker";
-                            else if (s["overtaking"] >= 11)
+                            else if (s["overtaking"] >= constants_1.SPECIALTY_STAT_THRESHOLD)
                                 updates["specialty"] = "Defensive Minister";
-                            else if (s["cornering"] >= 11)
+                            else if (s["cornering"] >= constants_1.SPECIALTY_STAT_THRESHOLD)
                                 updates["specialty"] = "Apex Hunter";
-                            else if (s["consistency"] >= 11)
+                            else if (s["consistency"] >= constants_1.SPECIALTY_STAT_THRESHOLD)
                                 updates["specialty"] = "Iron Nerve";
-                            else if (s["focus"] >= 11)
+                            else if (s["focus"] >= constants_1.SPECIALTY_STAT_THRESHOLD)
                                 updates["specialty"] = "Qualy Ace";
-                            else if (s["fitness"] >= 11)
+                            else if (s["fitness"] >= constants_1.SPECIALTY_STAT_THRESHOLD)
                                 updates["specialty"] = "Iron Wall";
                         }
                         updates["weeklyStatDiffs"] = statDiffs;
@@ -356,12 +358,7 @@ async function runPostRaceProcessing() {
                                     gender: yData["gender"],
                                     nationality: yData["nationality"],
                                     portraitUrl: yData["portraitUrl"],
-                                    salary: (() => {
-                                        const DRIVING = ["cornering","braking","consistency","smoothness","adaptability","overtaking","defending","focus"];
-                                        const avg = DRIVING.reduce((s, k) => s + (yData.stats?.[k] || 5), 0) / DRIVING.length;
-                                        const stars = Math.max(1, Math.min(5, Math.ceil(avg / 4)));
-                                        return constants_1.PROMOTION_SALARY_BY_STARS[stars - 1] ?? constants_1.ACADEMY_PROMOTION_DEFAULT_SALARY;
-                                    })(),
+                                    salary: yData["salary"] || 520_000,
                                     contractYearsRemaining: 1,
                                     role: "Reserve",
                                     specialty: yData["specialty"] || null,

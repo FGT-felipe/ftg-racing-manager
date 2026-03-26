@@ -76,41 +76,31 @@ async function runTransferMarketResolver() {
             const highestBidderId = driver["highestBidderTeamId"];
             const originalTeamId = driver["teamId"];
             if (highestBid > 0 && highestBidderId) {
-                // ── Bid won — enter pending negotiation phase ──
-                // Transfer fee flows immediately: deducted from buyer, credited to seller.
-                // If personal-terms negotiation fails, money is not refunded.
+                // ── Driver sold ──
                 currentBatch.update(doc.ref, {
                     isTransferListed: false,
                     transferListedAt: admin_1.admin.firestore.FieldValue.delete(),
                     currentHighestBid: admin_1.admin.firestore.FieldValue.delete(),
                     highestBidderTeamId: admin_1.admin.firestore.FieldValue.delete(),
-                    // Pending negotiation metadata
-                    pendingNegotiation: true,
-                    pendingBuyerTeamId: highestBidderId,
-                    pendingBidAmount: highestBid,
-                    pendingOriginalTeamId: originalTeamId || null,
+                    teamId: highestBidderId,
+                    salary: Math.max(driver["salary"] || 10_000, 10_000),
+                    contractYearsRemaining: 1,
                 });
                 opCount++;
-                // Deduct transfer fee from buyer's budget
-                currentBatch.update(admin_1.db.collection("teams").doc(highestBidderId), {
-                    budget: admin_1.admin.firestore.FieldValue.increment(-highestBid),
-                });
-                opCount++;
-                // Credit seller's budget immediately (they get paid regardless of negotiation outcome)
                 if (originalTeamId) {
                     currentBatch.update(admin_1.db.collection("teams").doc(originalTeamId), {
                         budget: admin_1.admin.firestore.FieldValue.increment(highestBid),
                     });
                     opCount++;
                     await (0, notifications_1.addOfficeNews)(originalTeamId, {
-                        title: "Driver Transfer Agreed",
-                        message: `${driver["name"]} has been sold for $${highestBid.toLocaleString()}. Funds added to your budget.`,
+                        title: "Driver Sold",
+                        message: `${driver["name"]} was successfully sold in the transfer market for $${highestBid.toLocaleString()}.`,
                         type: "TRANSFER_SOLD",
                     });
                 }
                 await (0, notifications_1.addOfficeNews)(highestBidderId, {
-                    title: "Bid Won — Negotiate Contract",
-                    message: `You won the bid for ${driver["name"]} ($${highestBid.toLocaleString()} paid). Go to the Transfer Market to negotiate their personal terms.`,
+                    title: "Transfer Bid Won",
+                    message: `You won the bid for ${driver["name"]} for $${highestBid.toLocaleString()}! They have joined your team.`,
                     type: "TRANSFER_WON",
                 });
             }
