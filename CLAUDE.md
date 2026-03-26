@@ -15,8 +15,8 @@ frontend/src/routes/admin/docs/ai/
 | `services.md` | When touching services, stores, or Cloud Functions |
 | `database_schema.md` | When touching Firestore reads/writes |
 | `weekend_pipeline.md` | When touching race simulation or scheduled functions |
-| `postmortem_r2.md` / `postmortem_r3.md` | When modifying `functions/index.js` |
-| `postmortem_admin_qualy_wipe.md` | When creating or modifying any admin tool |
+| `human/postmortem_r2.md` / `human/postmortem_r3.md` | When modifying `functions/index.js` |
+| `human/postmortem_admin_qualy_wipe.md` | When creating or modifying any admin tool |
 
 ---
 
