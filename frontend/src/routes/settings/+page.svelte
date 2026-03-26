@@ -2,6 +2,8 @@
     import { authStore } from "$lib/stores/auth.svelte";
     import { managerStore } from "$lib/stores/manager.svelte";
     import { teamStore } from "$lib/stores/team.svelte";
+    import { TEAM_RENAME_COST } from "$lib/constants/economics";
+    import { t } from "$lib/utils/i18n";
     import {
         User,
         Settings,
@@ -16,8 +18,6 @@
     } from "lucide-svelte";
     import { fade } from "svelte/transition";
 
-    const NAME_CHANGE_COST = 500_000;
-
     let profile = $derived(managerStore.profile);
     let team = $derived(teamStore.value.team);
 
@@ -28,7 +28,7 @@
     let renameError = $state<string | null>(null);
 
     let isFirstRename = $derived((team?.nameChangeCount ?? 0) === 0);
-    let canAffordRename = $derived(isFirstRename || (team?.budget ?? 0) >= NAME_CHANGE_COST);
+    let canAffordRename = $derived(isFirstRename || (team?.budget ?? 0) >= TEAM_RENAME_COST);
 
     function startEditing() {
         newTeamName = team?.name ?? "";
@@ -66,9 +66,9 @@
         </div>
         <div>
             <h1 class="text-3xl font-black uppercase tracking-widest text-app-text font-heading italic">
-                Account Settings
+                {t('settings_title')}
             </h1>
-            <p class="text-sm text-app-text/60">Manage your manager profile and application preferences.</p>
+            <p class="text-sm text-app-text/60">{t('settings_subtitle')}</p>
         </div>
     </div>
 
@@ -94,17 +94,17 @@
             <section class="bg-app-surface border border-app-border rounded-2xl overflow-hidden">
                 <div class="px-6 py-4 border-b border-app-border bg-app-text/5 flex items-center gap-2">
                     <Activity size={16} class="text-app-primary" />
-                    <span class="text-xs font-black uppercase tracking-widest text-app-text/80">Profile Information</span>
+                    <span class="text-xs font-black uppercase tracking-widest text-app-text/80">{t('profile_section_title')}</span>
                 </div>
                 <div class="p-6 space-y-4">
                     <div class="flex flex-col gap-1.5">
-                        <span class="text-[10px] uppercase font-bold text-app-text/40 tracking-widest">Full Name</span>
+                        <span class="text-[10px] uppercase font-bold text-app-text/40 tracking-widest">{t('profile_full_name_label')}</span>
                         <div class="px-4 py-3 bg-app-bg border border-app-border rounded-xl text-app-text/60 text-sm">
                             {profile?.firstName} {profile?.lastName}
                         </div>
                     </div>
                     <div class="flex flex-col gap-1.5">
-                        <span class="text-[10px] uppercase font-bold text-app-text/40 tracking-widest">Nationality</span>
+                        <span class="text-[10px] uppercase font-bold text-app-text/40 tracking-widest">{t('profile_nationality_label')}</span>
                         <div class="px-4 py-3 bg-app-bg border border-app-border rounded-xl text-app-text/60 text-sm">
                             {profile?.country || "Default"}
                         </div>
@@ -116,11 +116,11 @@
             <section class="bg-app-surface border border-app-border rounded-2xl overflow-hidden">
                 <div class="px-6 py-4 border-b border-app-border bg-app-text/5 flex items-center gap-2">
                     <Flag size={16} class="text-app-primary" />
-                    <span class="text-xs font-black uppercase tracking-widest text-app-text/80">Team Identity</span>
+                    <span class="text-xs font-black uppercase tracking-widest text-app-text/80">{t('team_identity_section_title')}</span>
                 </div>
                 <div class="p-6 space-y-4">
                     <div class="flex flex-col gap-1.5">
-                        <span class="text-[10px] uppercase font-bold text-app-text/40 tracking-widest">Team Name</span>
+                        <span class="text-[10px] uppercase font-bold text-app-text/40 tracking-widest">{t('team_name_label')}</span>
 
                         {#if isEditingName}
                             <div class="flex gap-2">
@@ -155,13 +155,13 @@
 
                             <!-- Cost indicator -->
                             <div class="flex items-center justify-between text-[10px] font-bold uppercase tracking-widest mt-1">
-                                <span class="text-app-text/40">Cost</span>
+                                <span class="text-app-text/40">{t('team_rename_cost_label')}</span>
                                 {#if isFirstRename}
-                                    <span class="text-green-400">Free (first change)</span>
+                                    <span class="text-green-400">{t('team_rename_free')}</span>
                                 {:else if canAffordRename}
                                     <span class="text-yellow-400">$500,000</span>
                                 {:else}
-                                    <span class="text-red-400">Insufficient budget ($500,000 required)</span>
+                                    <span class="text-red-400">{t('team_rename_insufficient_budget')}</span>
                                 {/if}
                             </div>
 
@@ -187,7 +187,7 @@
                                     Subsequent renames cost $500,000 · {team?.nameChangeCount} change{(team?.nameChangeCount ?? 0) === 1 ? "" : "s"} made
                                 </p>
                             {:else}
-                                <p class="text-[10px] text-app-text/30 tracking-widest uppercase">First rename is free</p>
+                                <p class="text-[10px] text-app-text/30 tracking-widest uppercase">{t('team_rename_first_free')}</p>
                             {/if}
                         {/if}
                     </div>
@@ -197,7 +197,7 @@
             <section class="bg-app-surface border border-app-border rounded-2xl overflow-hidden">
                 <div class="px-6 py-4 border-b border-app-border bg-app-text/5 flex items-center gap-2">
                     <Shield size={16} class="text-red-500" />
-                    <span class="text-xs font-black uppercase tracking-widest text-app-text/80">Security</span>
+                    <span class="text-xs font-black uppercase tracking-widest text-app-text/80">{t('security_section_title')}</span>
                 </div>
                 <div class="p-6">
                     <button 
@@ -205,7 +205,7 @@
                         class="px-6 py-3 bg-red-500/10 hover:bg-red-500/20 border border-red-500/30 text-red-500 rounded-xl transition-all flex items-center gap-3 w-full justify-center group"
                     >
                         <LogOut size={18} class="group-hover:-translate-x-1 transition-transform" />
-                        <span class="font-black uppercase tracking-widest text-xs">Sign Out from Session</span>
+                        <span class="font-black uppercase tracking-widest text-xs">{t('signout_label')}</span>
                     </button>
                     <p class="text-[10px] text-center text-app-text/30 mt-4 italic">
                         Session managed via Firebase Authentication

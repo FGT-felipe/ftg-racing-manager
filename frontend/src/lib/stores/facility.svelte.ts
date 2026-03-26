@@ -15,8 +15,8 @@ import {
 
 export function createFacilityStore() {
     const defaultFacilities: Record<string, Facility> = {
-        [FacilityType.teamOffice]: { type: FacilityType.teamOffice, level: 1, isLocked: false, maintenanceCost: 15000 },
-        [FacilityType.garage]: { type: FacilityType.garage, level: 1, isLocked: false, maintenanceCost: 15000 },
+        [FacilityType.teamOffice]: { type: FacilityType.teamOffice, level: 1, isLocked: false, maintenanceCost: FACILITY_MAINTENANCE_COST_PER_LEVEL },
+        [FacilityType.garage]: { type: FacilityType.garage, level: 1, isLocked: false, maintenanceCost: FACILITY_MAINTENANCE_COST_PER_LEVEL },
         [FacilityType.youthAcademy]: { type: FacilityType.youthAcademy, level: 0, isLocked: false, maintenanceCost: 0 },
         [FacilityType.pressRoom]: { type: FacilityType.pressRoom, level: 0, isLocked: false, maintenanceCost: 0 },
         [FacilityType.scoutingOffice]: { type: FacilityType.scoutingOffice, level: 0, isLocked: false, maintenanceCost: 0 },

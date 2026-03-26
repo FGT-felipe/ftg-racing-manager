@@ -18,6 +18,14 @@ import { seasonStore } from './season.svelte';
 import { driverStore } from './driver.svelte';
 import type { YoungDriver } from '$lib/types';
 import { untrack } from 'svelte';
+import {
+    ACADEMY_PURCHASE_COST,
+    ACADEMY_MAINTENANCE_COST,
+    ACADEMY_TRAINEE_WEEKLY_SALARY,
+    ACADEMY_UPGRADE_COST_MULTIPLIER,
+    ACADEMY_INTENSIVE_TRAINING_COST,
+    FACILITY_ROLE_DISCOUNT,
+} from '$lib/constants/economics';
 import { getFlagEmoji } from '$lib/utils/country';
 import { academyService } from '$lib/services/academy.svelte';
 
@@ -129,7 +137,7 @@ export function createYouthAcademyStore() {
 
             if (!teamId) throw new Error("Team context missing. Please try again.");
 
-            const purchasePrice = 10000;
+            const purchasePrice = ACADEMY_PURCHASE_COST;
             const teamRef = doc(db, 'teams', teamId);
             const configRef = doc(db, 'teams', teamId, 'academy', 'config');
 
@@ -167,7 +175,7 @@ export function createYouthAcademyStore() {
                         type: 'youthAcademy',
                         level: 1,
                         isLocked: false,
-                        maintenanceCost: 15000,
+                        maintenanceCost: ACADEMY_MAINTENANCE_COST,
                         lastUpgradeSeasonId: resolvedSeasonId
                     }
                 });
@@ -198,9 +206,9 @@ export function createYouthAcademyStore() {
             if (config.academyLevel >= 5) throw new Error("Maximum level reached");
             if (currentSeasonId && config.lastUpgradeSeasonId === currentSeasonId) throw new Error("Already upgraded this season");
 
-            const upgradePrice = 1000000 * config.academyLevel;
+            const upgradePrice = ACADEMY_UPGRADE_COST_MULTIPLIER * config.academyLevel;
             const role = managerStore.profile?.role;
-            const finalPrice = (role === 'business' || role === 'bureaucrat') ? Math.round(upgradePrice * 0.9) : upgradePrice;
+            const finalPrice = (role === 'business' || role === 'bureaucrat') ? Math.round(upgradePrice * FACILITY_ROLE_DISCOUNT) : upgradePrice;
 
             const teamRef = doc(db, 'teams', teamId);
             const configRef = doc(db, 'teams', teamId, 'academy', 'config');
@@ -252,7 +260,7 @@ export function createYouthAcademyStore() {
             await runTransaction(db, async (transaction) => {
                 const teamSnap = await transaction.get(teamRef);
                 const data = teamSnap.data();
-                const salary = candidate.salary ?? 10000;
+                const salary = candidate.salary ?? ACADEMY_TRAINEE_WEEKLY_SALARY;
                 if (!data || (data.budget ?? 0) < salary) throw new Error("Insufficient budget for hiring");
                 const budget = data.budget ?? 0;
 
@@ -290,7 +298,7 @@ export function createYouthAcademyStore() {
 
             // INTENSIVE_TRAINING with resolve requires a budget transaction
             if (decision === 'resolve' && type === 'INTENSIVE_TRAINING') {
-                const intensiveCost = 25000;
+                const intensiveCost = ACADEMY_INTENSIVE_TRAINING_COST;
                 const teamRef = doc(db, 'teams', teamId);
                 const allSkills = ['braking', 'cornering', 'smoothness', 'overtaking', 'consistency', 'adaptability', 'focus'] as const;
                 const diffs: Record<string, number> = Object.fromEntries(allSkills.map(s => [s, 1]));

@@ -80,6 +80,7 @@
     }
 
     import CountryFlag from "$lib/components/ui/CountryFlag.svelte";
+    import { t } from "$lib/utils/i18n";
 </script>
 
 <div class="min-h-screen bg-app-bg text-app-text p-6 md:p-12 overflow-x-hidden">
@@ -94,20 +95,18 @@
             >
                 <Briefcase size={32} />
                 <span class="text-xs font-black uppercase tracking-[0.4em]"
-                    >Team Selection Hub</span
+                    >{t('onboarding_team_hub_label')}</span
                 >
             </div>
             <h1
                 class="text-5xl md:text-7xl font-heading font-black tracking-tighter uppercase italic leading-none"
             >
-                Select Your <span class="text-app-primary">Command</span>
+                {t('onboarding_select_team_title')}
             </h1>
             <p
                 class="text-app-text/40 font-bold uppercase tracking-widest text-xs max-w-2xl"
             >
-                Choose an available team to begin your management career.
-                High-tier leagues offer more prestige but demand immediate
-                results.
+                {t('onboarding_team_selection_subtitle')}
             </p>
         </header>
 
@@ -118,7 +117,7 @@
                 ></div>
                 <span
                     class="text-[10px] font-black tracking-[0.3em] text-app-primary uppercase"
-                    >Analyzing Market Vacancies...</span
+                    >{t('team_selection_loading')}</span
                 >
             </div>
         {:else}
@@ -155,7 +154,7 @@
                                         <div
                                             class="bg-app-text/5 px-3 py-1 rounded-full border border-app-border text-[10px] font-black uppercase tracking-widest text-app-text/30"
                                         >
-                                            Occupied
+                                            {t('team_status_occupied')}
                                         </div>
                                     {/if}
                                 </div>
@@ -187,7 +186,7 @@
                                     <div class="flex flex-col">
                                         <span
                                             class="text-[10px] font-black text-app-text/20 uppercase tracking-widest"
-                                            >Budget</span
+                                            >{t('team_budget_label')}</span
                                         >
                                         <span
                                             class="text-lg font-heading font-black italic"
@@ -197,7 +196,7 @@
                                     <div class="flex flex-col items-end">
                                         <span
                                             class="text-[10px] font-black text-app-text/20 uppercase tracking-widest"
-                                            >Points</span
+                                            >{t('points')}</span
                                         >
                                         <span
                                             class="text-lg font-heading font-black italic"
@@ -215,7 +214,7 @@
                                     >
                                         <span
                                             class="font-heading font-black text-xs text-app-primary-foreground uppercase tracking-widest italic z-10 transition-transform group-hover/btn:scale-110"
-                                            >Sign Contract</span
+                                            >{t('team_sign_contract_button')}</span
                                         >
                                         <ChevronRight
                                             size={16}
@@ -229,7 +228,7 @@
                                         <Lock size={16} class="text-app-text" />
                                         <span
                                             class="font-heading font-black text-xs text-app-text uppercase tracking-widest italic"
-                                            >Position Taken</span
+                                            >{t('team_position_taken')}</span
                                         >
                                     </div>
                                 {/if}
@@ -259,7 +258,7 @@
                             <Lock size={12} class="text-amber-500" />
                             <span
                                 class="text-[9px] font-black uppercase tracking-widest text-amber-500"
-                                >Locked until Tier 1 Full</span
+                                >{t('team_division_locked')}</span
                             >
                         </div>
                     {/if}
@@ -288,7 +287,7 @@
                                         <div
                                             class="bg-app-text/5 px-3 py-1 rounded-full border border-app-border text-[10px] font-black uppercase tracking-widest text-app-text/30"
                                         >
-                                            Occupied
+                                            {t('team_status_occupied')}
                                         </div>
                                     {/if}
                                 </div>
@@ -316,7 +315,7 @@
                                     >
                                         <span
                                             class="font-heading font-black text-xs text-app-primary-foreground uppercase tracking-widest italic"
-                                            >Sign Contract</span
+                                            >{t('team_sign_contract_button')}</span
                                         >
                                     </button>
                                 {:else}
@@ -327,8 +326,8 @@
                                         <span
                                             class="text-[8px] font-black text-app-text/20 uppercase tracking-widest"
                                             >{team.isBot
-                                                ? "Division Restricted"
-                                                : "Position Taken"}</span
+                                                ? t('team_division_restricted')
+                                                : t('team_position_taken')}</span
                                         >
                                     </div>
                                 {/if}
@@ -359,12 +358,12 @@
                 <h3
                     class="font-heading font-black text-3xl uppercase italic tracking-tighter text-app-primary"
                 >
-                    Negotiating Terms
+                    {t('team_selection_negotiating')}
                 </h3>
                 <p
                     class="text-app-text/40 font-bold uppercase tracking-widest text-[10px]"
                 >
-                    Please wait while we finalize your contract...
+                    {t('team_selection_finalizing')}
                 </p>
             </div>
         </div>

@@ -8,12 +8,18 @@ import {
     query,
     collectionGroup,
     serverTimestamp,
+    addDoc,
     setDoc,
     getDoc,
     where,
     updateDoc,
     limit
 } from 'firebase/firestore';
+import {
+    BUDGET_REBALANCE_THRESHOLD_HIGH,
+    BUDGET_REBALANCE_THRESHOLD_LOW,
+    BUDGET_REBALANCE_REDUCTION_RATE,
+} from '$lib/constants/economics';
 
 export const adminService = {
     /**
@@ -138,10 +144,10 @@ export const adminService = {
                 const currentBudget = teamData.budget || 0;
                 let newBudget = currentBudget;
 
-                if (currentBudget > 3000000) {
-                    newBudget = 3000000 + Math.floor((currentBudget - 3000000) * 0.2);
-                } else if (currentBudget < 1500000) {
-                    newBudget = 1500000;
+                if (currentBudget > BUDGET_REBALANCE_THRESHOLD_HIGH) {
+                    newBudget = BUDGET_REBALANCE_THRESHOLD_HIGH + Math.floor((currentBudget - BUDGET_REBALANCE_THRESHOLD_HIGH) * BUDGET_REBALANCE_REDUCTION_RATE);
+                } else if (currentBudget < BUDGET_REBALANCE_THRESHOLD_LOW) {
+                    newBudget = BUDGET_REBALANCE_THRESHOLD_LOW;
                 }
 
                 if (newBudget !== currentBudget) {
@@ -189,6 +195,17 @@ export const adminService = {
             console.error('Rebalance operation failed:', e.message || 'Unknown error');
             throw e;
         }
+    },
+
+    /**
+     * Enqueues a market driver generation command via Firestore for the CF trigger.
+     */
+    async generateMarketDrivers() {
+        await addDoc(collection(db, 'commands'), {
+            type: 'generate_market_drivers',
+            timestamp: serverTimestamp(),
+            executed: false,
+        });
     },
 
     /**

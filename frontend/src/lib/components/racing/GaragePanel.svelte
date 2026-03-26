@@ -371,7 +371,7 @@
                 {isQualyLocked
                     ? 'bg-app-text/50 border-app-border cursor-not-allowed grayscale'
                     : activeTab === 'qualy'
-                      ? 'bg-[#FFB800] text-black border-[#FFB800] shadow-[0_0_20px_rgba(255,184,0,0.2)]'
+                      ? 'bg-app-qualifying text-black border-app-qualifying shadow-[0_0_20px_rgba(255,184,0,0.2)]'
                       : 'bg-app-surface border-app-border hover:border-app-border'}"
                 onclick={() => {
                     if (!isQualyLocked) activeTab = "qualy";
@@ -384,7 +384,7 @@
                             ? 'text-app-text/20'
                             : activeTab === 'qualy'
                               ? 'text-black/60'
-                              : 'text-[#FFB800]'}"
+                              : 'text-app-qualifying'}"
                     >
                         <Activity size={14} />
                         <span
@@ -454,7 +454,7 @@
                 {isRaceLocked
                     ? 'bg-app-text/50 border-app-border cursor-not-allowed grayscale'
                     : activeTab === 'race'
-                      ? 'bg-[#E040FB] text-app-text border-[#E040FB] shadow-[0_0_20px_rgba(224,64,251,0.2)]'
+                      ? 'bg-app-fastest text-app-text border-app-fastest shadow-[0_0_20px_rgba(224,64,251,0.2)]'
                       : 'bg-app-surface border-app-border hover:border-app-border'}"
                 onclick={() => {
                     if (!isRaceLocked) activeTab = "race";
@@ -467,7 +467,7 @@
                             ? 'text-app-text/20'
                             : activeTab === 'race'
                               ? 'text-app-text/60'
-                              : 'text-[#E040FB]'}"
+                              : 'text-app-fastest'}"
                     >
                         <Flag size={14} />
                         <span

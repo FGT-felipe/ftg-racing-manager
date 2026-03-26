@@ -20,6 +20,11 @@
     import { academyService } from "$lib/services/academy.svelte";
     import type { Driver } from "$lib/types";
     import { t } from "$lib/utils/i18n";
+    import {
+        FITNESS_TRAINER_SALARY_BY_LEVEL,
+        ACADEMY_TRAINEE_WEEKLY_SALARY,
+        FACILITY_MAINTENANCE_COST_PER_LEVEL,
+    } from "$lib/constants/economics";
 
     let team = $derived(teamStore.value.team);
     let transactions = $derived.by(() => {
@@ -104,9 +109,8 @@
         // 3. Fitness Trainer (Payroll)
         if (team.weekStatus) {
             const trainerLvl = team.weekStatus.fitnessTrainerLevel || 1;
-            const trainerSalaries = [0, 0, 50000, 120000, 250000, 500000];
-            if (trainerLvl >= 1 && trainerLvl < trainerSalaries.length) {
-                const weekly = trainerSalaries[trainerLvl];
+            if (trainerLvl >= 1 && trainerLvl < FITNESS_TRAINER_SALARY_BY_LEVEL.length) {
+                const weekly = FITNESS_TRAINER_SALARY_BY_LEVEL[trainerLvl];
                 if (weekly > 0) {
                     payroll += weekly;
                     breakdown.push({
@@ -122,8 +126,7 @@
 
         // 4. Academy Trainees (Academy)
         if (traineeCount > 0) {
-            const ACADEMY_WAGE = 10000;
-            const weekly = traineeCount * ACADEMY_WAGE;
+            const weekly = traineeCount * ACADEMY_TRAINEE_WEEKLY_SALARY;
             academy += weekly;
             breakdown.push({
                 name: `${traineeCount} Academy Trainees`,
@@ -149,7 +152,7 @@
 
         Object.entries(team.facilities || {}).forEach(([type, f]) => {
             if (f.level > 0) {
-                const fMaintenance = f.maintenanceCost || f.level * 15000;
+                const fMaintenance = f.maintenanceCost || f.level * FACILITY_MAINTENANCE_COST_PER_LEVEL;
                 maintenance += fMaintenance;
                 breakdown.push({
                     name: `${FACILITY_NAMES[type] || type} Maint.`,

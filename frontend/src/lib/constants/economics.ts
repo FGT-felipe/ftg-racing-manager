@@ -158,6 +158,12 @@ export const TRANSFER_MARKET_RELEASE_FEE_RATE = 0.10;
 /** Non-refundable commission charged to the winning bidder (5% of bid amount). Lost even if negotiations fail. */
 export const TRANSFER_MARKET_BID_FEE_RATE = 0.05;
 
+/** Minimum increment above the current highest bid required to place a new bid (USD). */
+export const TRANSFER_MARKET_BID_INCREMENT = 50_000;
+
+/** Duration a transfer listing remains active before expiring (hours). */
+export const TRANSFER_LISTING_DURATION_HOURS = 24;
+
 // ---------------------------------------------------------------------------
 // Contract Negotiation
 // ---------------------------------------------------------------------------
@@ -203,6 +209,44 @@ export const NEGOTIATION_TITLE_WEIGHT: Record<string, number> = {
  * Index = stars value (index 0 unused).
  */
 export const NEGOTIATION_STARS_WEIGHT = [0, 0.00, 0.05, 0.10, 0.15, 0.20];
+
+// ---------------------------------------------------------------------------
+// Academy
+// ---------------------------------------------------------------------------
+
+/** One-time cost to establish a Youth Academy (USD). */
+export const ACADEMY_PURCHASE_COST = 10_000;
+
+/** Weekly maintenance cost for a level-1 Youth Academy facility (USD). */
+export const ACADEMY_MAINTENANCE_COST = 15_000;
+
+/** Fallback weekly salary when a trainee has no stored salary value (USD). */
+export const ACADEMY_TRAINEE_WEEKLY_SALARY = 10_000;
+
+/** Base salary for a newly generated academy candidate (USD). */
+export const ACADEMY_SALARY_BASE = 5_000;
+
+/** Random range added on top of ACADEMY_SALARY_BASE when generating a candidate salary (USD). */
+export const ACADEMY_SALARY_RANGE = 10_000;
+
+/** Per-level cost multiplier for academy upgrades: total = multiplier × currentLevel (USD). */
+export const ACADEMY_UPGRADE_COST_MULTIPLIER = 1_000_000;
+
+/** Cost charged to accept an Intensive Training event for an academy driver (USD). */
+export const ACADEMY_INTENSIVE_TRAINING_COST = 25_000;
+
+// ---------------------------------------------------------------------------
+// Budget Rebalance (Admin)
+// ---------------------------------------------------------------------------
+
+/** Budget threshold above which teams receive a rebalance tax reduction (USD). */
+export const BUDGET_REBALANCE_THRESHOLD_HIGH = 3_000_000;
+
+/** Minimum budget floor applied to teams below this threshold (USD). */
+export const BUDGET_REBALANCE_THRESHOLD_LOW = 1_500_000;
+
+/** Fraction of excess budget above the high threshold that a team retains after the tax. */
+export const BUDGET_REBALANCE_REDUCTION_RATE = 0.2;
 
 // ---------------------------------------------------------------------------
 // Specializations — Academy

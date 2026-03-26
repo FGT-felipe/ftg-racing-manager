@@ -48,7 +48,7 @@
                 xmlns="http://www.w3.org/2000/svg"
                 viewBox="0 0 24 24"
                 fill="currentColor"
-                class="text-[#448AFF]"
+                class="text-app-star"
                 style="width: {size}px; height: {size}px;"
             >
                 <path
@@ -61,7 +61,7 @@
                 xmlns="http://www.w3.org/2000/svg"
                 viewBox="0 0 24 24"
                 fill="currentColor"
-                class="text-[#FFC107]/50"
+                class="text-app-potential/50"
                 style="width: {size}px; height: {size}px;"
             >
                 <path

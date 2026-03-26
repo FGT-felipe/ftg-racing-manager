@@ -34,7 +34,7 @@
         getSpecialtyDescI18nKey,
         getSpecialtyForecast,
     } from "$lib/utils/driver";
-    import { YOUTH_ACADEMY_UPGRADE_COST_PER_LEVEL } from "$lib/constants/economics";
+    import { YOUTH_ACADEMY_UPGRADE_COST_PER_LEVEL, ACADEMY_PURCHASE_COST } from "$lib/constants/economics";
     import ConfirmationModal from "$lib/components/ui/ConfirmationModal.svelte";
     import type { YoungDriver } from "$lib/types";
     import {
@@ -258,7 +258,7 @@
                         >
                         <span
                             class="text-2xl font-black text-app-text italic tracking-tighter"
-                            >{formatCurrencyCompact(10000)}</span
+                            >{formatCurrencyCompact(ACADEMY_PURCHASE_COST)}</span
                         >
                     </div>
                     <div class="flex flex-col">
@@ -316,12 +316,12 @@
             <button
                 class="w-full py-5 rounded-2xl font-black tracking-[0.3em] uppercase transition-all relative overflow-hidden group
                 {selectedCountry &&
-                (teamStore.value.team?.budget ?? 0) >= 10000 &&
+                (teamStore.value.team?.budget ?? 0) >= ACADEMY_PURCHASE_COST &&
                 !isPurchasing
                     ? 'bg-emerald-500 hover:bg-emerald-400 text-black shadow-2xl shadow-emerald-500/20 active:scale-[0.98]'
                     : 'bg-zinc-800 text-zinc-600 cursor-not-allowed'}"
                 disabled={!selectedCountry ||
-                    (teamStore.value.team?.budget ?? 0) < 10000 ||
+                    (teamStore.value.team?.budget ?? 0) < ACADEMY_PURCHASE_COST ||
                     isPurchasing}
                 onclick={handlePurchase}
             >

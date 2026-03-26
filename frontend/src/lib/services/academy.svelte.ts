@@ -10,6 +10,7 @@ import {
 } from 'firebase/firestore';
 import type { YoungDriver } from '$lib/types';
 import { getRandomName, getRandomNationality } from '../utils/names';
+import { ACADEMY_SALARY_BASE, ACADEMY_SALARY_RANGE } from '../constants/economics';
 
 export class AcademyService {
     async getSelectedTraineesCount(teamId: string): Promise<number> {
@@ -56,7 +57,7 @@ export class AcademyService {
                 maxSkill: maxSkill,
                 growthPotential: maxSkill - baseSkill,
                 potentialStars: potentialStars,
-                salary: 5000 + Math.floor(Math.random() * 10000),
+                salary: ACADEMY_SALARY_BASE + Math.floor(Math.random() * ACADEMY_SALARY_RANGE),
                 status: 'candidate',
                 expiresAt: expiresAt,
                 isMarkedForPromotion: false,

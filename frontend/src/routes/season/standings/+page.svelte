@@ -7,6 +7,7 @@
     import { browser } from "$app/environment";
     import { t } from "$lib/utils/i18n";
     import { formatDriverName } from "$lib/utils/driver";
+    import { managerService } from "$lib/services/manager.svelte";
 
     let universe = $derived(universeStore.value.universe);
     let loading = $derived(universeStore.value.loading);
@@ -73,28 +74,7 @@
 
     async function fetchManagers(teams: { id: string; managerId: string }[]) {
         try {
-            const { getFirestore, collection, query, where, getDocs } = await import("firebase/firestore");
-            const db = getFirestore();
-            const managerIds = teams.map(t => t.managerId);
-            const map: Record<string, { name: string; country: string }> = {};
-
-            for (let i = 0; i < managerIds.length; i += 30) {
-                const chunk = managerIds.slice(i, i + 30);
-                const snap = await getDocs(
-                    query(collection(db, "managers"), where("uid", "in", chunk))
-                );
-                for (const docSnap of snap.docs) {
-                    const d = docSnap.data();
-                    const matchedTeam = teams.find(t => t.managerId === docSnap.id);
-                    if (matchedTeam) {
-                        map[matchedTeam.id] = {
-                            name: `${d.firstName ?? ''} ${d.lastName ?? ''}`.trim(),
-                            country: d.country ?? '',
-                        };
-                    }
-                }
-            }
-            managerMap = map;
+            managerMap = await managerService.fetchManagerProfiles(teams);
         } catch (e) {
             console.warn("Could not fetch managers:", e);
         }

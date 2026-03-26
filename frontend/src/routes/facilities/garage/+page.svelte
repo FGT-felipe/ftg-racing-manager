@@ -17,6 +17,7 @@
         Timer,
     } from "lucide-svelte";
     import { fade } from "svelte/transition";
+    import { uiStore } from "$lib/stores/ui.svelte";
     import InstructionCard from "$lib/components/layout/InstructionCard.svelte";
     import CarSchematic from "$lib/components/dashboard/CarSchematic.svelte";
     import DriverSmallCard from "$lib/components/dashboard/DriverSmallCard.svelte";
@@ -52,7 +53,7 @@
         try {
             await carStore.upgradePart(selectedCar, partKey);
         } catch (e: any) {
-            alert(e.message);
+            uiStore.alert(e.message, 'Error', 'danger');
         }
     }
 

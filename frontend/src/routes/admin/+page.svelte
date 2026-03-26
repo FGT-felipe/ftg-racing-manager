@@ -21,6 +21,7 @@
     import { fade, fly } from "svelte/transition";
     import ConfirmModal from "$lib/components/admin/ConfirmModal.svelte";
     import { enhance } from "$app/forms";
+    import { uiStore } from "$lib/stores/ui.svelte";
 
     let { form } = $props();
 
@@ -70,30 +71,24 @@
                 name === "nukeAndReseed" ||
                 name === "fixRaceCalendars" ||
                 name === "applyGreatRebalanceTax" ||
-                name === "fixBrokenAcademies"
+                name === "fixBrokenAcademies" ||
+                name === "generate_market_drivers"
             ) {
                 const { adminService } = await import("$lib/services/admin.svelte");
-                const result = await adminService[name as keyof typeof adminService]();
+                const methodName = name === "generate_market_drivers" ? "generateMarketDrivers" : name;
+                const result = await adminService[methodName as keyof typeof adminService]();
                 if (result && typeof result === 'object' && 'count' in result) {
-                    alert(`Success: ${name} executed. Fixed ${result.count} academies.`);
+                    uiStore.alert(`Success: ${name} executed. Fixed ${result.count} academies.`, 'Success', 'success');
                     return;
                 }
-            } else if (name === "generate_market_drivers") {
-                const { db } = await import("$lib/firebase/config");
-                const { collection, addDoc, serverTimestamp } = await import("firebase/firestore");
-                await addDoc(collection(db, "commands"), {
-                    type: "generate_market_drivers",
-                    timestamp: serverTimestamp(),
-                    executed: false,
-                });
             } else {
                 const func = httpsCallable(functions, name);
                 await func();
             }
-            alert(`Success: ${name} executed.`);
+            uiStore.alert(`Success: ${name} executed.`, 'Success', 'success');
         } catch (e: any) {
             console.error('Admin action failed:', e.message || 'Unknown error');
-            alert(`Error: ${e.message}`);
+            uiStore.alert(e.message, 'Error', 'danger');
         } finally {
             processingAction = null;
         }
@@ -379,7 +374,7 @@
     }
 
     .action-card.dangerous:hover {
-        border-color: #ff4444;
+        border-color: var(--error-color);
         box-shadow: 0 10px 30px rgba(255, 68, 68, 0.05);
     }
 
