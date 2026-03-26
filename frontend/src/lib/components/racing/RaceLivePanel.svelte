@@ -42,9 +42,11 @@
 
         const raceDocId = `${seasonStore.value.season.id}_${nextEvent.id}`;
         const unsub = raceService.subscribeToRace(raceDocId, (data) => {
-            raceInfo = data;
-            results = data.raceResults || [];
-            events = (data.events || []).sort((a: any, b: any) => b.lap - a.lap);
+            if (data) {
+                raceInfo = data;
+                results = data.raceResults || [];
+                events = (data.events || []).sort((a: any, b: any) => b.lap - a.lap);
+            }
             isLoading = false;
         });
 
@@ -98,7 +100,7 @@
                     <h3
                         class="font-black text-4xl lg:text-6xl uppercase italic text-app-text tracking-tighter leading-[0.9]"
                     >
-                        {t('live_leaderboard')} <span class="text-app-error">{t('dnf')}</span>
+                        {t('waiting_race_start')}
                     </h3>
                 </div>
             </div>

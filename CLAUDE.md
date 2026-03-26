@@ -16,6 +16,7 @@ frontend/src/routes/admin/docs/ai/
 | `database_schema.md` | When touching Firestore reads/writes |
 | `weekend_pipeline.md` | When touching race simulation or scheduled functions |
 | `postmortem_r2.md` / `postmortem_r3.md` | When modifying `functions/index.js` |
+| `postmortem_admin_qualy_wipe.md` | When creating or modifying any admin tool |
 
 ---
 
@@ -127,7 +128,29 @@ After ANY fix to `functions/index.js`, remind the user to:
 
 A local-only fix is **not** a deployed fix. See `postmortem_r3.md` — R2's fix was applied locally but never deployed, causing an identical failure 5 days later.
 
-### 4.4 Universe Sync (Manual Step)
+### 4.4 Admin Tool Safety Rules (Postmortem admin_qualy_wipe — Critical)
+
+**Every admin tool that iterates a collection must have an explicit scope guard and a `// SCOPE:` comment.**
+
+```ts
+// WRONG — touches ALL race documents including completed historical rounds
+for (const rDoc of racesSnap.docs) {
+    racesBatch.update(rDoc.ref, { qualyGrid: [] });
+}
+
+// CORRECT — scope guard protects completed documents
+// SCOPE: Only unfinished races (isFinished !== true)
+for (const rDoc of racesSnap.docs) {
+    if (rDoc.data()?.isFinished === true) continue;
+    racesBatch.update(rDoc.ref, { qualyGrid: [] });
+}
+```
+
+**All admin tools that write to Firestore must support dry-run mode** and print a pre-flight summary of affected document IDs before executing any writes.
+
+**Data durability rule:** Any field that feeds statistics, economic history, or classification records must be written to at least two places: the operational collection (mutable) and an immutable append-only collection. Example: `races/{id}.qualyGrid` (operational) + `qualifying_results/{id}` (immutable backup). See T-020.
+
+### 4.5 Universe Sync (Manual Step)
 
 The `/season/standings` page reads from `universe/game_universe_v1` (a denormalized aggregate). After any manual race simulation:
 

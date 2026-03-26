@@ -70,31 +70,37 @@
             const data = await raceService.getRaceData(raceDocId);
 
             if (data) {
-                
-                // Robust mapping: Use raceResults if exists, otherwise map finalPositions
-                if (data.raceResults && Array.isArray(data.raceResults)) {
-                    lastResults = data;
-                } else if (data.finalPositions) {
-                    const POINT_SYSTEM = [25, 18, 15, 12, 10, 8, 6, 4, 2, 1];
-                    const leaderId = Object.keys(data.finalPositions).find(k => data.finalPositions[k] === 1);
-                    const leaderTime = leaderId ? (data.totalTimes?.[leaderId] || 0) : 0;
+                // Normalize qualy field: old docs may only have qualyGrid, new ones have both
+                const qualifyingResults = data.qualifyingResults?.length > 0
+                    ? data.qualifyingResults
+                    : (data.qualyGrid || []);
+                const normalizedData = { ...data, qualifyingResults };
 
-                    const mappedRaceResults = Object.entries(data.finalPositions)
+                // Robust mapping: Use raceResults if exists, otherwise map finalPositions
+                if (normalizedData.raceResults && Array.isArray(normalizedData.raceResults)) {
+                    lastResults = normalizedData;
+                } else if (normalizedData.finalPositions) {
+                    const POINT_SYSTEM = [25, 18, 15, 12, 10, 8, 6, 4, 2, 1];
+                    const leaderId = Object.keys(normalizedData.finalPositions).find(k => normalizedData.finalPositions[k] === 1);
+                    const leaderTime = leaderId ? (normalizedData.totalTimes?.[leaderId] || 0) : 0;
+
+                    const mappedRaceResults = Object.entries(normalizedData.finalPositions)
                         .map(([driverId, position]: [string, any]) => {
-                            // Find metadata from qualifyingResults which usually has the names
-                            const qInfo = data.qualifyingResults?.find((q: any) => q.driverId === driverId);
+                            // Find metadata from qualifyingResults; fall back to universeStore for names
+                            const qInfo = normalizedData.qualifyingResults?.find((q: any) => q.driverId === driverId);
+                            const universeDriver = universeStore.getDriverById(driverId);
                             const posInt = parseInt(position);
                             const pts = posInt <= POINT_SYSTEM.length ? POINT_SYSTEM[posInt - 1] : 0;
-                            const isDnf = data.dnfs?.includes(driverId);
-                            const driverTime = data.totalTimes?.[driverId] || 0;
+                            const isDnf = normalizedData.dnfs?.includes(driverId);
+                            const driverTime = normalizedData.totalTimes?.[driverId] || 0;
                             // Use totalLaps from event or approximate from typical race length (70 laps)
-                            const laps = lastEvent.totalLaps || 50; 
+                            const laps = lastEvent.totalLaps || 50;
 
                             return {
                                 driverId,
-                                driverName: qInfo?.driverName || "Unknown Driver",
-                                countryCode: qInfo?.countryCode,
-                                teamId: qInfo?.teamId,
+                                driverName: qInfo?.driverName || universeDriver?.name || "Unknown Driver",
+                                countryCode: qInfo?.countryCode || universeDriver?.countryCode,
+                                teamId: qInfo?.teamId || universeDriver?.teamId,
                                 teamName: qInfo?.teamName || "Privateer",
                                 position: isDnf ? 999 : posInt,
                                 pts,
@@ -106,13 +112,13 @@
                         .sort((a, b) => a.position - b.position);
 
                     lastResults = {
-                        ...data,
+                        ...normalizedData,
                         raceResults: mappedRaceResults,
-                        fast_lap_time: data.fast_lap_time,
-                        fast_lap_driver: data.fast_lap_driver
+                        fast_lap_time: normalizedData.fast_lap_time,
+                        fast_lap_driver: normalizedData.fast_lap_driver
                     };
                 } else {
-                    lastResults = data;
+                    lastResults = normalizedData;
                 }
             }
         } catch (e) {

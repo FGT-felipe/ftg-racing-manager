@@ -375,15 +375,16 @@ export function createRaceService() {
          * @param callback - Called with race data whenever the document changes.
          * @returns Unsubscribe function to call on component destroy.
          */
-        subscribeToRace(raceDocId: string, callback: (data: any) => void): () => void {
+        subscribeToRace(raceDocId: string, callback: (data: any | null) => void): () => void {
             const raceRef = doc(db, 'races', raceDocId);
             return onSnapshot(
                 raceRef,
                 (snap) => {
-                    if (snap.exists()) callback(snap.data());
+                    callback(snap.exists() ? snap.data() : null);
                 },
                 (err) => {
                     console.error('[RaceService:subscribeToRace] Snapshot error:', err);
+                    callback(null);
                 }
             );
         }

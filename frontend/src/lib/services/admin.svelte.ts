@@ -274,14 +274,18 @@ export const adminService = {
             }
             if (batchOps > 0) await teamsBatch.commit();
 
-            // --- Step 2: Clear qualyGrid from races so Force Qualifying can re-run ---
+            // --- Step 2: Clear qualyGrid ONLY from the current (unfinished) race document ---
+            // CRITICAL: Never touch completed race documents — isFinished=true races are permanent records.
             // qualyGrid.length > 0 is the guard that prevents CF from re-running.
             const racesSnap = await getDocs(collection(db, 'races'));
             let racesBatch = writeBatch(db);
             let racesOps = 0;
 
             for (const rDoc of racesSnap.docs) {
-                const grid = rDoc.data()?.qualyGrid;
+                const rData = rDoc.data();
+                // Skip any race that has already finished — those are historical records
+                if (rData?.isFinished === true) continue;
+                const grid = rData?.qualyGrid;
                 if (!grid || grid.length === 0) continue;
 
                 racesBatch.update(rDoc.ref, { qualyGrid: [], qualifyingResults: [] });
