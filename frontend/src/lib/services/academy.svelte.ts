@@ -43,7 +43,7 @@ export class AcademyService {
 
             const candidate: YoungDriver = {
                 id: crypto.randomUUID(),
-                name: getRandomName(),
+                name: getRandomName(gender, country.code),
                 age: 15 + Math.floor(Math.random() * 4), // 15-18
                 gender: gender,
                 nationality: {
@@ -54,7 +54,7 @@ export class AcademyService {
                 countryCode: country.code,
                 baseSkill: baseSkill,
                 maxSkill: maxSkill,
-                growthPotential: 0.8 + (Math.random() * 0.7), // 0.8 - 1.5
+                growthPotential: maxSkill - baseSkill,
                 potentialStars: potentialStars,
                 salary: 5000 + Math.floor(Math.random() * 10000),
                 status: 'candidate',

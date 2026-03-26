@@ -1,22 +1,54 @@
 /**
- * Simple name pools for generating randomized pilots.
- * Focus on variety and regional representation.
+ * Name pools for generating randomized pilots.
+ * First names are split by gender; last names are grouped by cultural region.
  */
 
-const FIRST_NAMES = [
+const M_FIRST_NAMES = [
     "Lucas", "Mateo", "Max", "Sebastian", "Lewis", "Carlos", "Fernando", "Lando",
     "Pierre", "Charles", "Esteban", "Valtteri", "George", "Nico", "Daniel", "Oscar",
     "Logan", "Felipe", "Juan", "Diego", "Enzo", "Antonio", "Guillaume", "Hans",
-    "Oliver", "Jack", "Noah", "Leo", "Theo", "Arthur", "Mick", "Frederic",
-    "Elena", "Sophia", "Maya", "Isabella", "Camila", "Valentina", "Martina", "Lucia"
+    "Oliver", "Jack", "Noah", "Leo", "Theo", "Arthur", "Mick", "Frederic"
 ];
 
-const LAST_NAMES = [
-    "Rossi", "Garcia", "Smith", "Muller", "Vettel", "Alonso", "Sainz", "Hamilton",
-    "Verstappen", "Leclerc", "Russell", "Norris", "Gasly", "Ocon", "Bottas", "Perez",
-    "Ricciardo", "Piastri", "Sargeant", "Drogba", "Silva", "Bianchi", "Montoya",
-    "Prost", "Senna", "Schumacher", "Berger", "Hulkenberg", "Magnussen", "Stroll"
+const F_FIRST_NAMES = [
+    "Elena", "Sophia", "Maya", "Isabella", "Camila", "Valentina", "Martina", "Lucia",
+    "Sofia", "Ana", "Emma", "Olivia", "Mia", "Maria", "Laura", "Paula"
 ];
+
+// Last name pools by cultural region
+const LAST_NAMES_LATAM = [
+    "Rodríguez", "García", "Martínez", "López", "González", "Gómez", "Herrera",
+    "Pérez", "Torres", "Vargas", "Morales", "Castillo", "Silva", "Ferreira",
+    "Santos", "Oliveira", "Souza", "Lima", "Alves", "Rojas"
+];
+
+const LAST_NAMES_SOUTH_EUROPE = [
+    "Rossi", "Ferrari", "Russo", "Romano", "Esposito", "Bianchi", "Costa",
+    "García", "Alonso", "Sainz", "Fernández", "Jiménez", "Molina", "Moreno"
+];
+
+const LAST_NAMES_BRITISH = [
+    "Smith", "Jones", "Williams", "Brown", "Taylor", "Davies", "Evans",
+    "Wilson", "Thomas", "Roberts", "Walker", "Wright", "Harris", "Clarke"
+];
+
+const LAST_NAMES_GERMAN = [
+    "Müller", "Schmidt", "Schneider", "Fischer", "Weber", "Meyer", "Wagner",
+    "Becker", "Hoffmann", "Richter", "Koch", "Bauer", "Schäfer", "Wolf"
+];
+
+// Countries that map to each region
+const LATAM_CODES = new Set(["CO", "BR", "AR", "MX", "PE", "CL", "VE", "EC"]);
+const SOUTH_EUROPE_CODES = new Set(["ES", "IT", "PT"]);
+const GERMAN_CODES = new Set(["DE", "AT", "CH"]);
+
+function getLastNamePool(countryCode?: string): string[] {
+    if (!countryCode) return LAST_NAMES_BRITISH;
+    if (LATAM_CODES.has(countryCode)) return LAST_NAMES_LATAM;
+    if (SOUTH_EUROPE_CODES.has(countryCode)) return LAST_NAMES_SOUTH_EUROPE;
+    if (GERMAN_CODES.has(countryCode)) return LAST_NAMES_GERMAN;
+    return LAST_NAMES_BRITISH;
+}
 
 const NATIONALITIES = [
     { code: 'GB', name: 'United Kingdom', emoji: '🇬🇧' },
@@ -36,9 +68,16 @@ const NATIONALITIES = [
     { code: 'FI', name: 'Finland', emoji: '🇫🇮' }
 ];
 
-export function getRandomName(): string {
-    const first = FIRST_NAMES[Math.floor(Math.random() * FIRST_NAMES.length)];
-    const last = LAST_NAMES[Math.floor(Math.random() * LAST_NAMES.length)];
+/**
+ * Returns a random full name matching the given gender and cultural region.
+ * @param gender 'M' for male, 'F' for female
+ * @param countryCode ISO country code used to select culturally appropriate last name
+ */
+export function getRandomName(gender: 'M' | 'F', countryCode?: string): string {
+    const firstPool = gender === 'M' ? M_FIRST_NAMES : F_FIRST_NAMES;
+    const lastPool = getLastNamePool(countryCode);
+    const first = firstPool[Math.floor(Math.random() * firstPool.length)];
+    const last = lastPool[Math.floor(Math.random() * lastPool.length)];
     return `${first} ${last}`;
 }
 
