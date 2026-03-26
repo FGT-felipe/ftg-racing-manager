@@ -132,9 +132,16 @@
                 if (existing) {
                     setup = { ...setup, ...existing };
                 } else {
-                    // Fallback to practice if Qualy doesn't exist yet
+                    // Fallback to practice for mechanical settings only.
+                    // tyreCompound is intentionally excluded: the qualifying default (soft)
+                    // should not be overwritten by practice data, and this fallback
+                    // re-runs on every Firestore snapshot (e.g. chargeQualyFee budget update)
+                    // which would silently reset a compound the user already selected.
                     const prac = driverData?.practice;
-                    if (prac) setup = { ...setup, ...prac };
+                    if (prac) {
+                        const { tyreCompound: _prac, ...pracMechanicals } = prac;
+                        setup = { ...setup, ...pracMechanicals };
+                    }
                 }
 
                 // Load last result if available, fallback to practice hints if no Qualy results yet
@@ -518,7 +525,6 @@
                                   'bg-blue-600 border-blue-600 text-white shadow-[0_0_20px_rgba(37,99,235,0.3)]'
                                 : 'bg-app-text/5 border-app-border text-app-text/40 hover:bg-app-text/10'}"
                             onclick={() => (setup.tyreCompound = tc)}
-                            disabled={isParcFerme}
                         >
                             <div
                                 class="w-2.5 h-2.5 rounded-full {tc === TyreCompound.soft
