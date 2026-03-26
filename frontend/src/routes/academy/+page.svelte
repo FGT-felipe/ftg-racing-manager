@@ -31,6 +31,8 @@
         calculateAcademyMaxStars,
         formatDriverName,
         getSpecialtyI18nKey,
+        getSpecialtyDescI18nKey,
+        getSpecialtyForecast,
     } from "$lib/utils/driver";
     import { YOUTH_ACADEMY_UPGRADE_COST_PER_LEVEL } from "$lib/constants/economics";
     import ConfirmationModal from "$lib/components/ui/ConfirmationModal.svelte";
@@ -636,6 +638,7 @@
                 {:else}
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
                         {#each youthAcademyStore.selectedDrivers as driver}
+                            {@const forecast = getSpecialtyForecast(driver)}
                             <div
                                 class="group rounded-[2.5rem] backdrop-blur-md relative overflow-hidden transition-all duration-500
                                     {driver.isMarkedForPromotion
@@ -752,6 +755,7 @@
                                                 <div class="mt-1 flex gap-2">
                                                     <span
                                                         class="px-2 py-0.5 bg-fuchsia-500/10 text-fuchsia-400 text-[9px] font-black rounded border border-fuchsia-500/20 tracking-wider uppercase"
+                                                        title={getSpecialtyDescI18nKey(driver.specialty) ? t(getSpecialtyDescI18nKey(driver.specialty) as TranslationKey) : undefined}
                                                     >
                                                         {t(
                                                             getSpecialtyKey(
@@ -904,6 +908,41 @@
                                         </div>
                                     {/each}
                                 </div>
+
+                                <!-- Specialty Forecast — only for trainees marked for promotion -->
+                                {#if forecast && driver.isMarkedForPromotion}
+                                    <div class="mt-6 p-4 rounded-2xl border flex items-center gap-4
+                                        {forecast.status === 'confirmed'
+                                            ? 'bg-app-primary/5 border-app-primary/30'
+                                            : 'bg-app-primary/5 border-app-primary/15'}"
+                                        title={t(forecast.descI18nKey as TranslationKey)}>
+                                        <div class="shrink-0 w-8 h-8 rounded-xl flex items-center justify-center
+                                            {forecast.status === 'confirmed'
+                                                ? 'bg-app-primary/20 border border-app-primary/30'
+                                                : 'bg-app-primary/10 border border-app-primary/20'}">
+                                            {#if forecast.status === 'confirmed'}
+                                                <Zap size={14} class="text-app-primary" />
+                                            {:else}
+                                                <Eye size={14} class="text-app-primary/50" />
+                                            {/if}
+                                        </div>
+                                        <div class="flex-1 min-w-0">
+                                            <p class="text-[9px] font-black uppercase tracking-widest mb-0.5
+                                                {forecast.status === 'confirmed' ? 'text-app-primary' : 'text-app-primary/50'}">
+                                                {forecast.status === 'confirmed' ? t('specialty_incoming' as TranslationKey) : t('specialty_developing' as TranslationKey)}
+                                            </p>
+                                            <p class="text-xs font-black text-app-text truncate">
+                                                {t(forecast.i18nKey as TranslationKey)}
+                                            </p>
+                                        </div>
+                                        {#if forecast.status === 'developing'}
+                                            <div class="shrink-0 text-right">
+                                                <span class="text-[10px] font-black text-app-text/40">+{forecast.pointsNeeded}</span>
+                                                <p class="text-[8px] text-app-text/20 uppercase tracking-widest">{forecast.statKey}</p>
+                                            </div>
+                                        {/if}
+                                    </div>
+                                {/if}
 
                                 {#if driver.weeklyEventMessage}
                                     <div

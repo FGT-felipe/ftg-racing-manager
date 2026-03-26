@@ -210,6 +210,14 @@ transferListedAt?:  Timestamp
 marketValue:        number
 currentHighestBid:  number
 highestBidderTeamId?: string
+
+specialty?:  string    // assigned via academy pipeline when a stat >= 11 (see DriverSpecialty type)
+             // Values: "Rainmaster" | "Tyre Whisperer" | "Late Braker" | "Defensive Minister"
+             //       | "Apex Hunter" | "Iron Nerve" | "Qualy Ace" | "Iron Wall"
+             // Once assigned, never changes. Only one specialty per driver.
+             // Triggers in post-race.ts when: !specialty AND baseSkill >= 8 AND stat >= 11.
+             // Priority order: adaptability > smoothness > braking > overtaking > cornering
+             //                > consistency > focus > fitness
 ```
 
 ---

@@ -5,6 +5,24 @@
 
 import type { CircuitIdealSetup } from "../config/circuits";
 
+// ─── Driver specializations ──────────────────────────────────────────────────
+
+/**
+ * All valid driver specializations.
+ * Assigned to academy trainees during post-race processing when a stat reaches
+ * the trigger threshold (>= 11 on the 1–20 scale). Only one specialty per driver.
+ * Priority order matches the assignment logic in post-race.ts (first match wins).
+ */
+export type DriverSpecialty =
+  | "Rainmaster"          // adaptability >= 11 — wet weather specialist
+  | "Tyre Whisperer"      // smoothness >= 11 — reduced tyre wear
+  | "Late Braker"         // braking >= 11 — stronger braking contribution
+  | "Defensive Minister"  // overtaking >= 11 — lower crash probability
+  | "Apex Hunter"         // cornering >= 11 — stronger cornering contribution
+  | "Iron Nerve"          // consistency >= 11 — reduced lap time variance
+  | "Qualy Ace"           // focus >= 11 — qualifying lap time bonus + better setup feedback
+  | "Iron Wall";          // fitness >= 11 — no fatigue decay during race
+
 // ─── Driver ──────────────────────────────────────────────────────────────────
 
 export interface DriverStats {
@@ -36,6 +54,8 @@ export interface Driver {
   form?: number;
   championshipForm?: number;
   isTransferListed?: boolean;
+  /** Specialization assigned via academy pipeline when a stat reaches the trigger threshold. */
+  specialty?: DriverSpecialty;
 }
 
 // ─── Team ────────────────────────────────────────────────────────────────────

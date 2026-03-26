@@ -16,6 +16,7 @@ import type {
   CarSetup,
   CarStats,
   Driver,
+  DriverSpecialty,
   DriverStats,
   LapEvent,
   QualyGridEntry,
@@ -25,6 +26,18 @@ import type {
   TyreCompound,
 } from "../../shared/types";
 import { DEFAULT_SETUP, POINT_SYSTEM } from "../../config/constants";
+import {
+  APEX_HUNTER_STAT_BOOST,
+  DEFENSIVE_MINISTER_CRASH_REDUCTION,
+  FATIGUE_DRAIN_BY_STYLE,
+  FATIGUE_PENALTY_FACTOR,
+  FATIGUE_PENALTY_THRESHOLD,
+  IRON_NERVE_NOISE_REDUCTION,
+  LATE_BRAKER_STAT_BOOST,
+  QUALY_ACE_LAPTIME_BONUS,
+  RAINMASTER_WET_DF_BONUS,
+  TYRE_WHISPERER_WEAR_REDUCTION,
+} from "../../config/constants";
 
 // ─── Types ───────────────────────────────────────────────────────────────────
 
@@ -36,6 +49,25 @@ export interface SimLapParams {
   style?: string;
   teamRole?: string;
   weather?: string;
+  /**
+   * Driver's current specialization. When provided, the engine applies the
+   * corresponding effect. Adding a new specialty requires only a new branch here
+   * — no changes to orchestrators or data models.
+   */
+  specialty?: DriverSpecialty | string;
+  /**
+   * True when this lap is being simulated as part of a qualifying session.
+   * Used by Qualy Ace to apply its lap time bonus only in qualifying.
+   */
+  isQualifying?: boolean;
+  /**
+   * Current physical fatigue level (0–100, where 100 = fully fresh).
+   * Initialized from driver.stats.fitness at race start.
+   * When below FATIGUE_PENALTY_THRESHOLD, a lap time penalty is applied.
+   * Iron Wall specialty bypasses fatigue drain in simulateRace, so this will
+   * remain at its initial value for those drivers.
+   */
+  fatigueLevel?: number;
 }
 
 export interface SimLapResult {
@@ -75,7 +107,8 @@ const gap = (a: number, b: number): number => Math.abs(a - b);
  * Simulates a single qualifying or race lap.
  * Pure function — no side effects, no Firestore calls.
  *
- * @param params Lap simulation inputs (circuit, car stats, driver stats, setup, weather).
+ * @param params Lap simulation inputs (circuit, car stats, driver stats, setup,
+ *               weather, specialty, isQualifying, fatigueLevel).
  * @returns Lap result with lapTime (999.0 if crashed) and isCrashed flag.
  */
 export function simulateLap(params: SimLapParams): SimLapResult {
@@ -83,6 +116,7 @@ export function simulateLap(params: SimLapParams): SimLapResult {
   const driverStats = params.driverStats ?? {};
   const ideal = circuit.idealSetup;
   const s = params.carStats ?? { aero: 1, powertrain: 1, chassis: 1 };
+  const specialty = params.specialty ?? null;
 
   // --- Setup penalty ---
   const aB = 1.0 - (clamp(s.aero ?? 1, 1, 20) / 40.0);
@@ -110,10 +144,16 @@ export function simulateLap(params: SimLapParams): SimLapResult {
   const carFactor = 1.0 - (w / 20.0) * 0.25;
 
   // --- Driver contribution ---
-  const brk = (driverStats.braking ?? 10) / 20.0;
-  const crn = (driverStats.cornering ?? 10) / 20.0;
+  // Late Braker: braking contributes 50% more to df
+  const brkBase = (driverStats.braking ?? 10) / 20.0;
+  const brkWeight = specialty === "Late Braker" ? 0.02 * (1 + LATE_BRAKER_STAT_BOOST) : 0.02;
+
+  // Apex Hunter: cornering contributes 50% more to df
+  const crnBase = (driverStats.cornering ?? 10) / 20.0;
+  const crnWeight = specialty === "Apex Hunter" ? 0.025 * (1 + APEX_HUNTER_STAT_BOOST) : 0.025;
+
   const foc = (driverStats.focus ?? 10) / 20.0;
-  let df = 1.0 - (brk * 0.02 + crn * 0.025 + (foc - 0.5) * 0.01);
+  let df = 1.0 - (brkBase * brkWeight + crnBase * crnWeight + (foc - 0.5) * 0.01);
 
   // --- Weather & tyres ---
   const isWet =
@@ -121,8 +161,13 @@ export function simulateLap(params: SimLapParams): SimLapResult {
     (params.weather ?? "").toLowerCase().includes("wet");
 
   if (isWet) {
-    if (driverStats.traits?.includes("rainMaster")) {
-      df -= 0.01;
+    // Rainmaster: replaces the legacy traits.rainMaster check with specialty check.
+    // Also still supports legacy traits array for backwards compatibility.
+    const isRainmaster =
+      specialty === "Rainmaster" ||
+      driverStats.traits?.includes("rainMaster");
+    if (isRainmaster) {
+      df -= RAINMASTER_WET_DF_BONUS;
     }
     if (setup.tyreCompound !== "wet") {
       penalty += 5.0; // Wrong tyres in rain
@@ -150,6 +195,11 @@ export function simulateLap(params: SimLapParams): SimLapResult {
   const rV = clamp(s.reliability ?? 1, 1, 20);
   accProb *= 1.0 - rV / 30.0;
 
+  // Defensive Minister: lower crash probability
+  if (specialty === "Defensive Minister") {
+    accProb *= (1 - DEFENSIVE_MINISTER_CRASH_REDUCTION);
+  }
+
   // --- Manager role modifiers ---
   // ⚠️  CRITICAL: extraCrash MUST be declared with `let` before any conditional
   // assignment. An undeclared assignment throws ReferenceError in strict mode.
@@ -163,10 +213,31 @@ export function simulateLap(params: SimLapParams): SimLapResult {
     df += 0.02; // -2% pace penalty
   }
 
+  // --- Fatigue penalty ---
+  // Applied when driver's current fatigue is below the penalty threshold.
+  // Iron Wall drivers never drop below their initial fatigue (see simulateRace),
+  // so in practice this block never triggers for Iron Wall.
+  const fatigue = params.fatigueLevel ?? 100;
+  if (fatigue < FATIGUE_PENALTY_THRESHOLD) {
+    const exhaustion = FATIGUE_PENALTY_THRESHOLD - fatigue;
+    df *= (1 + exhaustion * FATIGUE_PENALTY_FACTOR);
+  }
+
   const crashed = Math.random() < accProb + extraCrash;
 
+  // --- Base lap time ---
   let lap = circuit.baseLapTime * carFactor * df + penalty;
-  lap += (Math.random() - 0.5) * 0.8;
+
+  // Iron Nerve: reduced lap time variance (less random noise)
+  const noiseScale = specialty === "Iron Nerve"
+    ? 0.8 * (1 - IRON_NERVE_NOISE_REDUCTION)
+    : 0.8;
+  lap += (Math.random() - 0.5) * noiseScale;
+
+  // Qualy Ace: lap time bonus in qualifying sessions only
+  if (specialty === "Qualy Ace" && params.isQualifying) {
+    lap *= (1 - QUALY_ACE_LAPTIME_BONUS);
+  }
 
   return { lapTime: crashed ? 999.0 : lap, isCrashed: crashed };
 }
@@ -176,6 +247,12 @@ export function simulateLap(params: SimLapParams): SimLapResult {
 /**
  * Simulates a full race lap by lap, starting from the qualifying grid.
  * Pure function — no side effects, no Firestore calls.
+ *
+ * Fatigue model: each driver's fatigue (0–100, sourced from stats.fitness)
+ * drains every lap at a rate determined by their driving style.
+ * When fatigue drops below FATIGUE_PENALTY_THRESHOLD, simulateLap applies a
+ * lap time penalty proportional to the deficit.
+ * Iron Wall specialty drivers skip the fatigue drain entirely.
  *
  * @param params Race simulation inputs.
  * @returns Full race result including lap log, final positions, DNFs, and fast lap.
@@ -197,11 +274,13 @@ export function simulateRace(params: SimRaceParams): SimRaceResult {
   const style: Record<string, string> = {};
   const stops: Record<string, number> = {};
   const usedHard: Record<string, boolean> = {};
+  const fatigue: Record<string, number> = {};
   const dnfs: string[] = [];
   const raceLog: RaceLapLog[] = [];
 
   for (const id of order) {
     const su = { ...DEFAULT_SETUP, ...(setupsMap[id] ?? {}) } as Partial<CarSetup>;
+    const driver = driversMap[id];
     total[id] = 0;
     wear[id] = 0;
     fuel[id] = su.initialFuel ?? 50;
@@ -209,6 +288,8 @@ export function simulateRace(params: SimRaceParams): SimRaceResult {
     style[id] = su.raceStyle ?? "normal";
     stops[id] = 0;
     usedHard[id] = compound[id] === "hard";
+    // Fatigue starts at the driver's current fitness (0–100 scale).
+    fatigue[id] = clamp(driver?.stats?.fitness ?? 100, 0, 100);
   }
 
   let curOrder = [...order];
@@ -231,6 +312,7 @@ export function simulateRace(params: SimRaceParams): SimRaceResult {
         continue;
       }
 
+      const specialty = driver.specialty ?? undefined;
       const su = { ...DEFAULT_SETUP, ...(setupsMap[did] ?? {}) };
       const idx = driver.carIndex ?? 0;
       const cs = (team.carStats?.[String(idx)]) ?? { aero: 1, powertrain: 1, chassis: 1 };
@@ -243,6 +325,9 @@ export function simulateRace(params: SimRaceParams): SimRaceResult {
         style: style[did],
         teamRole: roles[driver.teamId] ?? "",
         weather: raceEvent.weatherRace,
+        specialty,
+        isQualifying: false,
+        fatigueLevel: fatigue[did],
       });
 
       if (res.isCrashed) {
@@ -316,14 +401,29 @@ export function simulateRace(params: SimRaceParams): SimRaceResult {
         else if (compound[did] === "medium") cwMod = 1.1;
         else if (compound[did] === "hard") cwMod = 0.7;
 
-        wear[did] +=
-          4.5 * (circuit.tyreWearMultiplier ?? 1) * cwMod * wMod + Math.random();
+        let wearDelta = 4.5 * (circuit.tyreWearMultiplier ?? 1) * cwMod * wMod + Math.random();
+
+        // Tyre Whisperer: reduced tyre wear
+        if (specialty === "Tyre Whisperer") {
+          wearDelta *= (1 - TYRE_WHISPERER_WEAR_REDUCTION);
+        }
 
         // Ex-Engineer: -10% tyre wear
         const teamRoleW = roles[driversMap[did].teamId] ?? "";
         if (teamRoleW === "engineer") {
-          wear[did] *= 0.9;
+          wearDelta *= 0.9;
         }
+
+        wear[did] += wearDelta;
+      }
+
+      // --- Fatigue drain ---
+      // Iron Wall: no fatigue drain. All other drivers lose fatigue each lap
+      // at a rate determined by their current driving style.
+      // Fatigue is clamped at 0 (exhausted but no DNF — penalty applied via fatigueLevel in simulateLap).
+      if (specialty !== "Iron Wall") {
+        const drain = FATIGUE_DRAIN_BY_STYLE[style[did]] ?? FATIGUE_DRAIN_BY_STYLE["normal"];
+        fatigue[did] = Math.max(0, fatigue[did] - drain);
       }
 
       lapTimes[did] = lt;

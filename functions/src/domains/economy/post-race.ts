@@ -16,7 +16,14 @@ import * as logger from "firebase-functions/logger";
 import { onSchedule } from "firebase-functions/v2/scheduler";
 import { db, admin } from "../../shared/admin";
 import { getCircuit } from "../../config/circuits";
-import { FALLBACK_BONUSES, DEFAULT_SETUP, POINT_SYSTEM, ACADEMY_TRAINEE_WEEKLY_COST } from "../../config/constants";
+import {
+  FALLBACK_BONUSES,
+  DEFAULT_SETUP,
+  POINT_SYSTEM,
+  ACADEMY_TRAINEE_WEEKLY_COST,
+  SPECIALTY_BASESKILL_THRESHOLD,
+  SPECIALTY_STAT_THRESHOLD,
+} from "../../config/constants";
 import { addOfficeNews } from "../../shared/notifications";
 import { evaluateObjective } from "./sponsors";
 import {
@@ -293,12 +300,18 @@ export async function runPostRaceProcessing(): Promise<void> {
             }
 
             // Specialization trigger (baseSkill >= 8 required)
-            if (!yDriver["specialty"] && (yDriver["baseSkill"] as number) >= 8) {
+            // Priority order is fixed: first match wins. A trainee with multiple
+            // stats >= 11 will receive the highest-priority specialty.
+            if (!yDriver["specialty"] && (yDriver["baseSkill"] as number) >= SPECIALTY_BASESKILL_THRESHOLD) {
               const s = (yDriver["stats"] as Record<string, number>) ?? {};
-              if (s["adaptability"] >= 11) updates["specialty"] = "Rainmaster";
-              else if (s["smoothness"] >= 11) updates["specialty"] = "Tyre Whisperer";
-              else if (s["braking"] >= 11) updates["specialty"] = "Late Braker";
-              else if (s["overtaking"] >= 11) updates["specialty"] = "Defensive Minister";
+              if (s["adaptability"] >= SPECIALTY_STAT_THRESHOLD) updates["specialty"] = "Rainmaster";
+              else if (s["smoothness"] >= SPECIALTY_STAT_THRESHOLD) updates["specialty"] = "Tyre Whisperer";
+              else if (s["braking"] >= SPECIALTY_STAT_THRESHOLD) updates["specialty"] = "Late Braker";
+              else if (s["overtaking"] >= SPECIALTY_STAT_THRESHOLD) updates["specialty"] = "Defensive Minister";
+              else if (s["cornering"] >= SPECIALTY_STAT_THRESHOLD) updates["specialty"] = "Apex Hunter";
+              else if (s["consistency"] >= SPECIALTY_STAT_THRESHOLD) updates["specialty"] = "Iron Nerve";
+              else if (s["focus"] >= SPECIALTY_STAT_THRESHOLD) updates["specialty"] = "Qualy Ace";
+              else if (s["fitness"] >= SPECIALTY_STAT_THRESHOLD) updates["specialty"] = "Iron Wall";
             }
 
             updates["weeklyStatDiffs"] = statDiffs;

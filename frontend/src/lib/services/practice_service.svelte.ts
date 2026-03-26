@@ -186,15 +186,22 @@ class PracticeService {
         const confidence = Math.max(0, Math.min(1, 1.0 - (totalGap / 100.0)));
 
         // 8. Setup Hints (Range Indicators)
-        // High adaptability = narrower and more accurate range
+        // High feedback stat = narrower and more accurate range.
+        // Qualy Ace specialty: simulates a boosted feedback stat during qualifying,
+        // producing tighter hint ranges closer to the ideal setup.
+        const isQualyAce = driver.specialty === "Qualy Ace";
+        const effectiveFeedbackStat = isQualyAce
+            ? Math.min(1.0, feedbackStat + 0.35)
+            : feedbackStat;
+
         const generateHint = (idealVal: number) => {
             const baseWidth = 25; // Maximum width for 0 feedback
-            const width = Math.max(5, baseWidth * (1.1 - feedbackStat)); 
-            
+            const width = Math.max(5, baseWidth * (1.1 - effectiveFeedbackStat));
+
             // Random offset also depends on feedback skill (lower skill = more error)
-            const maxOffset = (1.0 - feedbackStat) * 12;
+            const maxOffset = (1.0 - effectiveFeedbackStat) * 12;
             const offset = (Math.random() * maxOffset * 2) - maxOffset;
-            
+
             const center = idealVal + offset;
             return {
                 min: Math.max(0, Math.round(center - width / 2)),
