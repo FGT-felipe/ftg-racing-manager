@@ -13,12 +13,15 @@ import {
     getDoc,
     where,
     updateDoc,
-    limit
+    limit,
+    deleteField,
+    increment,
 } from 'firebase/firestore';
 import {
     BUDGET_REBALANCE_THRESHOLD_HIGH,
     BUDGET_REBALANCE_THRESHOLD_LOW,
     BUDGET_REBALANCE_REDUCTION_RATE,
+    QUALY_ENTRY_FEE,
 } from '$lib/constants/economics';
 
 export const adminService = {
@@ -206,6 +209,98 @@ export const adminService = {
             timestamp: serverTimestamp(),
             executed: false,
         });
+    },
+
+    /**
+     * Emergency recovery tool after a qualifying data corruption incident.
+     * Resets all qualifying fields for every human (non-bot) team's drivers,
+     * refunds the QUALY_ENTRY_FEE per affected driver, and clears the qualyGrid
+     * from all race documents so Force Qualifying can regenerate a clean grid.
+     * @returns Object with teamsFixed and driversFixed counts.
+     */
+    async resetQualifyingSession(): Promise<{ teamsFixed: number; driversFixed: number }> {
+        try {
+            const teamsSnap = await getDocs(collection(db, 'teams'));
+
+            // --- Step 1: Reset qualifying data on all human teams ---
+            let teamsBatch = writeBatch(db);
+            let batchOps = 0;
+            let teamsFixed = 0;
+            let driversFixed = 0;
+
+            const humanTeamIds = new Set<string>();
+
+            for (const tDoc of teamsSnap.docs) {
+                const teamData = tDoc.data();
+                if (teamData.isBot) continue;
+
+                humanTeamIds.add(tDoc.id);
+
+                const driverSetups: Record<string, any> = teamData.weekStatus?.driverSetups ?? {};
+                const updates: Record<string, any> = {};
+                let affectedDrivers = 0;
+
+                for (const [driverId, ds] of Object.entries(driverSetups)) {
+                    const setup = ds as any;
+                    if (!setup.qualifyingAttempts || setup.qualifyingAttempts === 0) continue;
+
+                    const path = `weekStatus.driverSetups.${driverId}`;
+                    updates[`${path}.qualifyingAttempts`]    = deleteField();
+                    updates[`${path}.qualifyingBestTime`]    = deleteField();
+                    updates[`${path}.qualifyingBestCompound`] = deleteField();
+                    updates[`${path}.qualifyingDnf`]         = deleteField();
+                    updates[`${path}.qualifyingParcFerme`]   = deleteField();
+                    updates[`${path}.qualifying`]            = deleteField();
+                    updates[`${path}.isSetupSent`]           = deleteField();
+                    updates[`${path}.lastQualyResult`]       = deleteField();
+                    updates[`${path}.qualifyingLaps`]        = deleteField();
+                    affectedDrivers++;
+                }
+
+                if (affectedDrivers > 0) {
+                    // Refund entry fee so players can redo attempt 1 without extra cost
+                    updates['budget'] = increment(QUALY_ENTRY_FEE * affectedDrivers);
+                    teamsBatch.update(tDoc.ref, updates);
+                    batchOps++;
+                    teamsFixed++;
+                    driversFixed += affectedDrivers;
+
+                    if (batchOps >= 400) {
+                        await teamsBatch.commit();
+                        teamsBatch = writeBatch(db);
+                        batchOps = 0;
+                    }
+                }
+            }
+            if (batchOps > 0) await teamsBatch.commit();
+
+            // --- Step 2: Clear qualyGrid from races so Force Qualifying can re-run ---
+            // qualyGrid.length > 0 is the guard that prevents CF from re-running.
+            const racesSnap = await getDocs(collection(db, 'races'));
+            let racesBatch = writeBatch(db);
+            let racesOps = 0;
+
+            for (const rDoc of racesSnap.docs) {
+                const grid = rDoc.data()?.qualyGrid;
+                if (!grid || grid.length === 0) continue;
+
+                racesBatch.update(rDoc.ref, { qualyGrid: [], qualifyingResults: [] });
+                racesOps++;
+
+                if (racesOps >= 400) {
+                    await racesBatch.commit();
+                    racesBatch = writeBatch(db);
+                    racesOps = 0;
+                }
+            }
+            if (racesOps > 0) await racesBatch.commit();
+
+            console.log(`[AdminService:resetQualifyingSession] Reset ${driversFixed} drivers across ${teamsFixed} teams. Cleared ${racesOps} race documents.`);
+            return { teamsFixed, driversFixed };
+        } catch (e: any) {
+            console.error('[AdminService:resetQualifyingSession] Failed:', e.message || e);
+            throw e;
+        }
     },
 
     /**

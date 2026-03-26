@@ -72,13 +72,18 @@
                 name === "fixRaceCalendars" ||
                 name === "applyGreatRebalanceTax" ||
                 name === "fixBrokenAcademies" ||
-                name === "generate_market_drivers"
+                name === "generate_market_drivers" ||
+                name === "resetQualifyingSession"
             ) {
                 const { adminService } = await import("$lib/services/admin.svelte");
                 const methodName = name === "generate_market_drivers" ? "generateMarketDrivers" : name;
                 const result = await adminService[methodName as keyof typeof adminService]();
                 if (result && typeof result === 'object' && 'count' in result) {
                     uiStore.alert(`Success: ${name} executed. Fixed ${result.count} academies.`, 'Success', 'success');
+                    return;
+                }
+                if (result && typeof result === 'object' && 'driversFixed' in result) {
+                    uiStore.alert(`Qualifying reset complete. ${result.driversFixed} drivers across ${result.teamsFixed} teams. Entry fees refunded. Run Force Qualifying to regenerate the grid.`, 'Success', 'success');
                     return;
                 }
             } else {
@@ -254,7 +259,19 @@
                                 <ChevronRight class="opacity-10 group-hover:opacity-100" />
                             </button>
 
-                            <button 
+                            <button
+                                class="action-card group dangerous"
+                                onclick={() => triggerAction("resetQualifyingSession", "Reset all qualifying data for human teams. Refunds entry fees and clears qualyGrid so Force Qualifying can re-run.", true)}
+                            >
+                                <div class="card-icon bg-orange-500/10 text-orange-500"><RefreshCw size={24} /></div>
+                                <div class="card-body">
+                                    <h3>Reset Qualifying Session</h3>
+                                    <p class="text-orange-500/60 font-medium">Clears all human qualifying data and refunds entry fees. Run Force Qualifying after.</p>
+                                </div>
+                                <ChevronRight class="opacity-20 group-hover:opacity-100" />
+                            </button>
+
+                            <button
                                 class="action-card group dangerous"
                                 onclick={() => triggerAction("nukeAndReseed", "DANGEROUS: Wipes ALL collections and recreates the simulation state.", true)}
                             >
