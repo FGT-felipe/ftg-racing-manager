@@ -393,12 +393,12 @@
                         >
                         {#if nextEvent?.weatherQualifying}
                             {@const Icon = getWeatherIcon(nextEvent.weatherQualifying)}
-                            <div class="ml-auto flex items-center gap-1.5 px-2 py-1 bg-white/5 rounded-lg border border-white/5">
-                                <Icon 
-                                    size={18} 
+                            <div class="ml-auto flex items-center gap-1.5 px-2 py-1 rounded-lg border {activeTab === 'qualy' ? 'bg-black/5 border-black/5' : 'bg-white/5 border-white/5'}">
+                                <Icon
+                                    size={18}
                                     class={getWeatherColor(nextEvent.weatherQualifying)}
                                 />
-                                <span class="text-[10px] font-black uppercase tracking-widest text-app-text/60">
+                                <span class="text-[10px] font-black uppercase tracking-widest {activeTab === 'qualy' ? 'text-black/60' : 'text-app-text/60'}">
                                     {nextEvent.weatherQualifying}
                                 </span>
                             </div>

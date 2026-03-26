@@ -256,7 +256,7 @@
                                         class="text-green-400"
                                     />
                                     <span class="text-xs font-black text-app-text"
-                                        >{driver.stats?.fitness || 70}%</span
+                                        >{Math.round((driver.stats?.fitness || 70) * 10) / 10}%</span
                                     >
                                 </div>
                             </td>
@@ -368,7 +368,7 @@
                                 >Fitness</span
                             >
                             <span class="text-xs font-black text-app-text"
-                                >{driver.stats?.fitness || 70}%</span
+                                >{Math.round((driver.stats?.fitness || 70) * 10) / 10}%</span
                             >
                         </div>
                         <div
