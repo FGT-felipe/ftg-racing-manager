@@ -15,6 +15,8 @@
         Cloud,
         Sun,
         CloudRain,
+        Fuel,
+        CircleDot,
     } from "lucide-svelte";
     import { onDestroy } from "svelte";
 
@@ -72,16 +74,15 @@
         };
 
         if (weekStatus === "qualifying") {
-            return { ...base, btnLabel: "VIEW QUALIFYING", icon: Trophy };
+            return { ...base, btnLabel: t('btn_view_qualifying'), icon: Trophy };
         } else if (weekStatus === "raceStrategy" || weekStatus === "race") {
             return {
                 ...base,
-                btnLabel:
-                    weekStatus === "race" ? "GO TO RACE" : "SET RACE STRATEGY",
+                btnLabel: weekStatus === "race" ? t('btn_go_to_race') : t('btn_set_race_strategy'),
                 icon: Flag,
             };
         } else {
-            return { ...base, btnLabel: "WEEKEND SETUP", icon: Timer };
+            return { ...base, btnLabel: t('btn_weekend_setup'), icon: Timer };
         }
     });
 
@@ -162,141 +163,93 @@
             <!-- Action Button -->
             <a
                 href={uiConfig.route}
-                class="group w-full md:w-auto px-8 py-4 rounded-xl font-black tracking-[2px] text-[10px] uppercase transition-all flex items-center justify-center gap-3 {uiConfig.btnColor} hover:shadow-[0_0_30px_rgba(197,160,89,0.2)]"
+                class="group shrink-0 whitespace-nowrap px-8 py-4 rounded-xl font-black tracking-[2px] text-[10px] uppercase transition-all flex items-center justify-center gap-3 {uiConfig.btnColor} hover:shadow-[0_0_30px_rgba(197,160,89,0.2)]"
             >
                 <uiConfig.icon
                     size={16}
                     strokeWidth={3}
-                    class="transition-transform group-hover:scale-110"
+                    class="shrink-0 transition-transform group-hover:scale-110"
                 />
                 {uiConfig.btnLabel}
             </a>
         </div>
 
-        <div class="grid grid-cols-1 lg:grid-cols-2 gap-10">
-            <!-- Left: Timers & Weather -->
-            <div class="flex flex-col gap-8">
-                <!-- Dual Timers -->
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <!-- Qualy Timer -->
-                    <div
-                        class="bg-app-text/5 border border-app-border rounded-2xl p-4 flex flex-col gap-3"
-                    >
-                        <div class="flex items-center justify-between">
-                            <span
-                                class="text-[9px] font-black tracking-[0.2em] text-app-text/40 uppercase"
-                                >{t('qualifying')}</span
-                            >
-                            <Trophy size={14} class="text-app-primary/60" />
-                        </div>
-                        <div class="flex items-baseline gap-1">
-                            <span
-                                class="text-xl font-mono font-black text-app-text"
-                                >{qualyTime.days}d {qualyTime.hours}h {qualyTime.minutes}m
-                                {qualyTime.seconds}s</span
-                            >
-                        </div>
+        <div class="flex flex-col gap-8">
+            <!-- Dual Timers -->
+            <div class="grid grid-cols-2 gap-4">
+                <!-- Qualy Timer -->
+                <div
+                    class="bg-app-text/5 border border-app-border rounded-2xl p-4 flex flex-col items-center gap-3"
+                >
+                    <div class="flex items-center gap-2">
+                        <Trophy size={13} class="text-app-primary/60" />
+                        <span
+                            class="text-[9px] font-black tracking-[0.2em] text-app-text/40 uppercase"
+                            >{t('qualifying')}</span
+                        >
                     </div>
-
-                    <!-- Race Timer -->
-                    <div
-                        class="bg-app-text/5 border border-app-border rounded-2xl p-4 flex flex-col gap-3"
-                    >
-                        <div class="flex items-center justify-between">
-                            <span
-                                class="text-[9px] font-black tracking-[0.2em] text-app-text/40 uppercase"
-                                >{t('race_day')}</span
-                            >
-                            <Flag size={14} class="text-red-500/60" />
+                    <div class="flex items-end gap-1">
+                        <div class="flex flex-col items-center">
+                            <span class="text-2xl font-mono font-black text-app-text leading-none">{String(qualyTime.days).padStart(2,'0')}</span>
+                            <span class="text-[7px] font-black text-app-text/30 uppercase tracking-widest mt-1">D</span>
                         </div>
-                        <div class="flex items-baseline gap-1">
-                            <span
-                                class="text-xl font-mono font-black text-app-text"
-                                >{raceTime.days}d {raceTime.hours}h {raceTime.minutes}m
-                                {raceTime.seconds}s</span
-                            >
+                        <span class="text-xl font-mono font-black text-app-primary/40 leading-none mb-2">:</span>
+                        <div class="flex flex-col items-center">
+                            <span class="text-2xl font-mono font-black text-app-text leading-none">{String(qualyTime.hours).padStart(2,'0')}</span>
+                            <span class="text-[7px] font-black text-app-text/30 uppercase tracking-widest mt-1">H</span>
+                        </div>
+                        <span class="text-xl font-mono font-black text-app-primary/40 leading-none mb-2">:</span>
+                        <div class="flex flex-col items-center">
+                            <span class="text-2xl font-mono font-black text-app-text leading-none">{String(qualyTime.minutes).padStart(2,'0')}</span>
+                            <span class="text-[7px] font-black text-app-text/30 uppercase tracking-widest mt-1">M</span>
+                        </div>
+                        <span class="text-xl font-mono font-black text-app-primary/40 leading-none mb-2">:</span>
+                        <div class="flex flex-col items-center">
+                            <span class="text-2xl font-mono font-black text-app-primary leading-none">{String(qualyTime.seconds).padStart(2,'0')}</span>
+                            <span class="text-[7px] font-black text-app-text/30 uppercase tracking-widest mt-1">S</span>
                         </div>
                     </div>
                 </div>
 
-                <!-- Weather Intel -->
-                {#if nextEvent}
-                    {@const PracticeIcon = getWeatherIcon(
-                        nextEvent.weatherPractice,
-                    )}
-                    {@const QualyIcon = getWeatherIcon(
-                        nextEvent.weatherQualifying,
-                    )}
-                    {@const RaceIcon = getWeatherIcon(nextEvent.weatherRace)}
-
-                    <div class="flex flex-col gap-4">
+                <!-- Race Timer -->
+                <div
+                    class="bg-app-text/5 border border-app-border rounded-2xl p-4 flex flex-col items-center gap-3"
+                >
+                    <div class="flex items-center gap-2">
+                        <Flag size={13} class="text-red-500/60" />
                         <span
-                            class="text-[9px] font-black tracking-[0.3em] text-app-text/30 uppercase"
-                            >{t('forecast')}</span
+                            class="text-[9px] font-black tracking-[0.2em] text-app-text/40 uppercase"
+                            >{t('race_day')}</span
                         >
-                        <div class="flex items-center gap-6">
-                            <div class="flex items-center gap-3">
-                                <PracticeIcon
-                                    size={18}
-                                    class={getWeatherColor(
-                                        nextEvent.weatherPractice,
-                                    )}
-                                />
-                                <div class="flex flex-col">
-                                    <span
-                                        class="text-[8px] font-black text-app-text/40 uppercase"
-                                        >{t('practice_short')}</span
-                                    >
-                                    <span
-                                        class="text-[10px] font-bold text-app-text"
-                                        >{nextEvent.weatherPractice}</span
-                                    >
-                                </div>
-                            </div>
-                            <div class="w-px h-6 bg-app-text/5"></div>
-                            <div class="flex items-center gap-3">
-                                <QualyIcon
-                                    size={18}
-                                    class={getWeatherColor(
-                                        nextEvent.weatherQualifying,
-                                    )}
-                                />
-                                <div class="flex flex-col">
-                                    <span
-                                        class="text-[8px] font-black text-app-text/40 uppercase"
-                                        >{t('qualifying_short')}</span
-                                    >
-                                    <span
-                                        class="text-[10px] font-bold text-app-text"
-                                        >{nextEvent.weatherQualifying}</span
-                                    >
-                                </div>
-                            </div>
-                            <div class="w-px h-6 bg-app-text/5"></div>
-                            <div class="flex items-center gap-3">
-                                <RaceIcon
-                                    size={18}
-                                    class={getWeatherColor(
-                                        nextEvent.weatherRace,
-                                    )}
-                                />
-                                <div class="flex flex-col">
-                                    <span
-                                        class="text-[8px] font-black text-app-text/40 uppercase"
-                                        >{t('race')}</span
-                                    >
-                                    <span
-                                        class="text-[10px] font-bold text-app-text"
-                                        >{nextEvent.weatherRace}</span
-                                    >
-                                </div>
-                            </div>
+                    </div>
+                    <div class="flex items-end gap-1">
+                        <div class="flex flex-col items-center">
+                            <span class="text-2xl font-mono font-black text-app-text leading-none">{String(raceTime.days).padStart(2,'0')}</span>
+                            <span class="text-[7px] font-black text-app-text/30 uppercase tracking-widest mt-1">D</span>
+                        </div>
+                        <span class="text-xl font-mono font-black text-red-500/40 leading-none mb-2">:</span>
+                        <div class="flex flex-col items-center">
+                            <span class="text-2xl font-mono font-black text-app-text leading-none">{String(raceTime.hours).padStart(2,'0')}</span>
+                            <span class="text-[7px] font-black text-app-text/30 uppercase tracking-widest mt-1">H</span>
+                        </div>
+                        <span class="text-xl font-mono font-black text-red-500/40 leading-none mb-2">:</span>
+                        <div class="flex flex-col items-center">
+                            <span class="text-2xl font-mono font-black text-app-text leading-none">{String(raceTime.minutes).padStart(2,'0')}</span>
+                            <span class="text-[7px] font-black text-app-text/30 uppercase tracking-widest mt-1">M</span>
+                        </div>
+                        <span class="text-xl font-mono font-black text-red-500/40 leading-none mb-2">:</span>
+                        <div class="flex flex-col items-center">
+                            <span class="text-2xl font-mono font-black text-red-400 leading-none">{String(raceTime.seconds).padStart(2,'0')}</span>
+                            <span class="text-[7px] font-black text-app-text/30 uppercase tracking-widest mt-1">S</span>
                         </div>
                     </div>
-                {/if}
+                </div>
             </div>
 
-            <!-- Right: Circuit Intel & Characteristics -->
+            <!-- Circuit Intel + Forecast -->
+            <div class="grid grid-cols-2 gap-4 items-stretch">
+
+            <!-- Circuit Intel -->
             <div
                 class="bg-app-text/5 border border-app-border rounded-3xl p-8 flex flex-col gap-6"
             >
@@ -320,65 +273,65 @@
                         >
                         <div class="flex items-center gap-2">
                             <span class="text-[10px] font-bold text-app-text/60"
-                                >{nextEvent.totalLaps} Laps</span
+                                >{nextEvent.totalLaps} {t('laps')}</span
                             >
                         </div>
                     </div>
 
-                    <div class="flex flex-col gap-4">
+                    <div class="grid grid-cols-3 gap-4">
                         <!-- Aero -->
-                        <div class="flex items-center justify-between">
-                            <div class="flex items-center gap-3 text-app-text/60">
-                                <Cpu size={16} />
-                                <span class="text-[10px] font-black uppercase tracking-widest">{t('aero')}</span>
+                        <div class="flex flex-col items-center gap-2">
+                            <div class="flex items-center justify-center gap-2 text-app-text/60">
+                                <Cpu size={14} />
+                                <span class="text-[9px] font-black uppercase tracking-widest">{t('aero')}</span>
                             </div>
                             {#if componentTraits}
-                                <div class="relative group/trait">
+                                <div class="relative group/trait w-full">
                                     <span
-                                        class="inline-flex items-center px-2.5 py-1 rounded-lg text-[9px] font-black uppercase tracking-wider cursor-help transition-all
+                                        class="inline-flex items-center px-2 py-1 rounded-lg text-[7px] font-black uppercase tracking-wide cursor-help transition-all w-full justify-center whitespace-nowrap
                                         {componentTraits.aero.label === 'High Downforce' ? 'bg-app-primary/15 text-app-primary border border-app-primary/20 shadow-[0_0_8px_rgba(197,160,89,0.1)]' : 'bg-blue-500/15 text-blue-400 border border-blue-500/20 shadow-[0_0_8px_rgba(59,130,246,0.1)]'}"
                                     >{t(componentTraits.aero.tooltipKey)}</span>
-                                    <div class="absolute bottom-full right-0 mb-2 w-48 px-3 py-2 bg-app-bg border border-app-border rounded-lg shadow-xl opacity-0 invisible group-hover/trait:opacity-100 group-hover/trait:visible transition-all duration-200 z-50 pointer-events-none">
+                                    <div class="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 w-48 px-3 py-2 bg-app-bg border border-app-border rounded-lg shadow-xl opacity-0 invisible group-hover/trait:opacity-100 group-hover/trait:visible transition-all duration-200 z-50 pointer-events-none">
                                         <span class="text-[9px] text-app-text/80 leading-relaxed">{t('circuit_tooltip_' + componentTraits.aero.tooltipKey.replace('circuit_trait_', ''))}</span>
-                                        <div class="absolute top-full right-6 w-2 h-2 bg-app-bg border-r border-b border-app-border rotate-45 -mt-1"></div>
+                                        <div class="absolute top-full left-1/2 -translate-x-1/2 w-2 h-2 bg-app-bg border-r border-b border-app-border rotate-45 -mt-1"></div>
                                     </div>
                                 </div>
                             {/if}
                         </div>
                         <!-- Power -->
-                        <div class="flex items-center justify-between">
-                            <div class="flex items-center gap-3 text-app-text/60">
-                                <Zap size={16} />
-                                <span class="text-[10px] font-black uppercase tracking-widest">{t('power')}</span>
+                        <div class="flex flex-col items-center gap-2">
+                            <div class="flex items-center justify-center gap-2 text-app-text/60">
+                                <Zap size={14} />
+                                <span class="text-[9px] font-black uppercase tracking-widest">{t('power')}</span>
                             </div>
                             {#if componentTraits}
-                                <div class="relative group/trait">
+                                <div class="relative group/trait w-full">
                                     <span
-                                        class="inline-flex items-center px-2.5 py-1 rounded-lg text-[9px] font-black uppercase tracking-wider cursor-help transition-all
+                                        class="inline-flex items-center px-2 py-1 rounded-lg text-[7px] font-black uppercase tracking-wide cursor-help transition-all w-full justify-center whitespace-nowrap
                                         {componentTraits.power.label === 'Top Speed' ? 'bg-orange-500/15 text-orange-400 border border-orange-500/20 shadow-[0_0_8px_rgba(249,115,22,0.1)]' : 'bg-cyan-500/15 text-cyan-400 border border-cyan-500/20 shadow-[0_0_8px_rgba(6,182,212,0.1)]'}"
                                     >{t(componentTraits.power.tooltipKey)}</span>
-                                    <div class="absolute bottom-full right-0 mb-2 w-48 px-3 py-2 bg-app-bg border border-app-border rounded-lg shadow-xl opacity-0 invisible group-hover/trait:opacity-100 group-hover/trait:visible transition-all duration-200 z-50 pointer-events-none">
+                                    <div class="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 w-48 px-3 py-2 bg-app-bg border border-app-border rounded-lg shadow-xl opacity-0 invisible group-hover/trait:opacity-100 group-hover/trait:visible transition-all duration-200 z-50 pointer-events-none">
                                         <span class="text-[9px] text-app-text/80 leading-relaxed">{t('circuit_tooltip_' + componentTraits.power.tooltipKey.replace('circuit_trait_', ''))}</span>
-                                        <div class="absolute top-full right-6 w-2 h-2 bg-app-bg border-r border-b border-app-border rotate-45 -mt-1"></div>
+                                        <div class="absolute top-full left-1/2 -translate-x-1/2 w-2 h-2 bg-app-bg border-r border-b border-app-border rotate-45 -mt-1"></div>
                                     </div>
                                 </div>
                             {/if}
                         </div>
                         <!-- Chassis -->
-                        <div class="flex items-center justify-between">
-                            <div class="flex items-center gap-3 text-app-text/60">
-                                <Shield size={16} />
-                                <span class="text-[10px] font-black uppercase tracking-widest">{t('chassis')}</span>
+                        <div class="flex flex-col items-center gap-2">
+                            <div class="flex items-center justify-center gap-2 text-app-text/60">
+                                <Shield size={14} />
+                                <span class="text-[9px] font-black uppercase tracking-widest">{t('chassis')}</span>
                             </div>
                             {#if componentTraits}
-                                <div class="relative group/trait">
+                                <div class="relative group/trait w-full">
                                     <span
-                                        class="inline-flex items-center px-2.5 py-1 rounded-lg text-[9px] font-black uppercase tracking-wider cursor-help transition-all
+                                        class="inline-flex items-center px-2 py-1 rounded-lg text-[7px] font-black uppercase tracking-wide cursor-help transition-all w-full justify-center whitespace-nowrap
                                         {componentTraits.chassis.label === 'Stiff' ? 'bg-red-500/15 text-red-400 border border-red-500/20 shadow-[0_0_8px_rgba(239,68,68,0.1)]' : 'bg-emerald-500/15 text-emerald-400 border border-emerald-500/20 shadow-[0_0_8px_rgba(16,185,129,0.1)]'}"
                                     >{t(componentTraits.chassis.tooltipKey)}</span>
-                                    <div class="absolute bottom-full right-0 mb-2 w-48 px-3 py-2 bg-app-bg border border-app-border rounded-lg shadow-xl opacity-0 invisible group-hover/trait:opacity-100 group-hover/trait:visible transition-all duration-200 z-50 pointer-events-none">
+                                    <div class="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 w-48 px-3 py-2 bg-app-bg border border-app-border rounded-lg shadow-xl opacity-0 invisible group-hover/trait:opacity-100 group-hover/trait:visible transition-all duration-200 z-50 pointer-events-none">
                                         <span class="text-[9px] text-app-text/80 leading-relaxed">{t('circuit_tooltip_' + componentTraits.chassis.tooltipKey.replace('circuit_trait_', ''))}</span>
-                                        <div class="absolute top-full right-6 w-2 h-2 bg-app-bg border-r border-b border-app-border rotate-45 -mt-1"></div>
+                                        <div class="absolute top-full left-1/2 -translate-x-1/2 w-2 h-2 bg-app-bg border-r border-b border-app-border rotate-45 -mt-1"></div>
                                     </div>
                                 </div>
                             {/if}
@@ -386,20 +339,24 @@
                     </div>
 
                     <div
-                        class="flex flex-wrap gap-3 border-t border-app-border pt-6"
+                        class="flex flex-wrap justify-center gap-3 border-t border-app-border pt-6"
                     >
                         {#if circuitInfo.characteristics}
                             {#each Object.entries(circuitInfo.characteristics).filter(([key]) => {
                                 const k = key.toLowerCase();
                                 return k.includes('tyre') || k.includes('fuel');
                             }) as [key, value]}
-                            {@const tooltipKey = 
+                            {@const tooltipKey =
                                 key.toLowerCase().includes('fuel') ? 'circuit_tooltip_fuel_consumption' :
                                 key.toLowerCase().includes('tyre') ? 'circuit_tooltip_tyre_wear' : null
                             }
+                            {@const badgeIcon = key.toLowerCase().includes('fuel') ? Fuel : key.toLowerCase().includes('tyre') ? CircleDot : null}
                             <div
                                 class="relative px-3 py-1.5 bg-app-text/5 border border-app-border rounded-lg flex items-center gap-2 cursor-help group/badge"
                             >
+                                {#if badgeIcon}
+                                    <svelte:component this={badgeIcon} size={12} class="text-app-text/40 group-hover/badge:text-app-primary transition-colors shrink-0" />
+                                {/if}
                                 <span
                                     class="text-[8px] font-black text-app-text/40 uppercase tracking-tighter group-hover/badge:text-app-primary transition-colors"
                                     >{key}</span
@@ -428,6 +385,68 @@
                     </div>
                 {/if}
             </div>
+
+            <!-- Forecast -->
+            {#if nextEvent}
+                {@const PracticeIcon = getWeatherIcon(nextEvent.weatherPractice)}
+                {@const QualyIcon = getWeatherIcon(nextEvent.weatherQualifying)}
+                {@const RaceIcon = getWeatherIcon(nextEvent.weatherRace)}
+
+                <div class="bg-app-text/5 border border-app-border rounded-3xl p-8 flex flex-col gap-6">
+                    <span
+                        class="text-[10px] font-black tracking-[0.3em] text-app-primary uppercase"
+                        >{t('forecast')}</span
+                    >
+                    <div class="flex items-center justify-around flex-1">
+                        <div class="flex flex-col items-center gap-2">
+                            <PracticeIcon
+                                size={24}
+                                class={getWeatherColor(nextEvent.weatherPractice)}
+                            />
+                            <span
+                                class="text-[9px] font-black text-app-text/40 uppercase"
+                                >{t('practice_short')}</span
+                            >
+                            <span
+                                class="text-[11px] font-bold text-app-text"
+                                >{nextEvent.weatherPractice}</span
+                            >
+                        </div>
+                        <div class="w-px h-12 bg-app-border"></div>
+                        <div class="flex flex-col items-center gap-2">
+                            <QualyIcon
+                                size={24}
+                                class={getWeatherColor(nextEvent.weatherQualifying)}
+                            />
+                            <span
+                                class="text-[9px] font-black text-app-text/40 uppercase"
+                                >{t('qualifying_short')}</span
+                            >
+                            <span
+                                class="text-[11px] font-bold text-app-text"
+                                >{nextEvent.weatherQualifying}</span
+                            >
+                        </div>
+                        <div class="w-px h-12 bg-app-border"></div>
+                        <div class="flex flex-col items-center gap-2">
+                            <RaceIcon
+                                size={24}
+                                class={getWeatherColor(nextEvent.weatherRace)}
+                            />
+                            <span
+                                class="text-[9px] font-black text-app-text/40 uppercase"
+                                >{t('race')}</span
+                            >
+                            <span
+                                class="text-[11px] font-bold text-app-text"
+                                >{nextEvent.weatherRace}</span
+                            >
+                        </div>
+                    </div>
+                </div>
+            {/if}
+
+            </div><!-- end grid Circuit Intel + Forecast -->
         </div>
     </div>
 </div>

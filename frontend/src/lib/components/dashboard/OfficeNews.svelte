@@ -8,6 +8,7 @@
         Info,
         Trash2,
     } from "lucide-svelte";
+    import { t } from "$lib/utils/i18n";
     import { fly } from "svelte/transition";
 
     function getIcon(type: string) {
@@ -44,13 +45,13 @@
         <h3
             class="text-[10px] font-black uppercase tracking-[0.3em] text-app-primary/40 font-heading"
         >
-            Office News
+            {t('office_news')}
         </h3>
         {#if notificationStore.unreadCount > 0}
             <span
                 class="bg-app-primary text-app-primary-foreground text-[9px] font-black px-2 py-0.5 rounded-full animate-pulse"
             >
-                {notificationStore.unreadCount} NEW
+                {t('notifications_new', { count: notificationStore.unreadCount })}
             </span>
         {/if}
     </div>
@@ -74,7 +75,7 @@
             <p
                 class="text-[10px] uppercase font-black tracking-widest text-app-text/20"
             >
-                No active notifications
+                {t('no_active_notifications')}
             </p>
         </div>
     {:else}
@@ -104,7 +105,7 @@
                                           hour: "2-digit",
                                           minute: "2-digit",
                                       }).format(item.timestamp.toDate())
-                                    : "Recently"}
+                                    : t('recently')}
                             </span>
                         </div>
                         <p
@@ -122,7 +123,7 @@
                                 notificationStore.markAsRead(item.id)}
                             class="p-1 px-2 hover:bg-app-text/5 rounded text-[9px] font-black uppercase tracking-widest text-app-primary"
                         >
-                            Read
+                            {t('mark_as_read')}
                         </button>
                         <button
                             onclick={() =>

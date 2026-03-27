@@ -69,7 +69,7 @@
                     <span
                         class="text-[10px] font-black tracking-[0.3em] text-app-primary/40 uppercase font-heading"
                     >
-                        Welcome {managerStore.profile ? `${managerStore.profile.firstName} ${managerStore.profile.lastName}` : (authStore.user?.displayName || "Manager")}
+                        {t('welcome')} {managerStore.profile ? `${managerStore.profile.firstName} ${managerStore.profile.lastName}` : (authStore.user?.displayName || t('manager_title'))}
                     </span>
                     {#if managerStore.profile}
                         <CountryFlag countryCode={managerStore.profile.country || managerStore.profile.nationality} size="xs" />
@@ -106,6 +106,8 @@
 
             <!-- Right Col: Financials & Status -->
             <div class="flex flex-col gap-8 w-full">
+                <StandingsCard />
+
                 <section class="flex flex-col gap-6">
                     <h3
                         class="text-[10px] font-black uppercase tracking-[0.3em] text-app-primary/40 font-heading px-2"
@@ -119,7 +121,7 @@
                             <div class="flex flex-col gap-1">
                                 <span
                                     class="text-[9px] font-black text-app-text/30 uppercase tracking-widest"
-                                    >Available Budget</span
+                                    >{t('available_budget')}</span
                                 >
                                 <span class="text-2xl font-black text-app-text">
                                     ${((team?.budget || 0) / 1000000).toFixed(
@@ -141,7 +143,7 @@
                                 class="flex items-center justify-between text-[10px] font-bold uppercase tracking-wider"
                             >
                                 <span class="text-app-text/40"
-                                    >Active Sponsors</span
+                                    >{t('active_sponsors')}</span
                                 >
                                 <span class="text-app-primary"
                                     >{Object.keys(team?.sponsors || {}).length} /
@@ -170,8 +172,6 @@
                         </a>
                     </div>
                 </section>
-
-                <StandingsCard />
             </div>
         </div>
     {/if}

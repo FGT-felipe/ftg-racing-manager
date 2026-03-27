@@ -59,6 +59,9 @@
 
     let qualyCompounds = $state<Record<string, TyreCompound>>({});
     let isQualyWet = $state(false);
+    let qualyMechanicals = $state<{ suspension: number; gearRatio: number } | null>(null);
+
+    const isParcFermeLocked = $derived(!!driverId && !!qualyCompounds[driverId] && !isQualyWet);
 
     // Watch for driver changes to load their RACE setup and Qualy tyre
     $effect(() => {
@@ -97,8 +100,21 @@
 
                 // Parc fermé exception: if the driver qualified on WET tyres, free compound choice for race start
                 isQualyWet = qualyCompounds[dId] === TyreCompound.wet;
+
                 if (qualyCompounds[dId] && !isQualyWet) {
                     strategy.tyreCompound = qualyCompounds[dId];
+
+                    // Lock mechanical setup (suspension + gearRatio) from the best qualifying lap.
+                    // The full CarSetup is persisted in weekStatus.driverSetups.[dId].qualifying.
+                    const qualySetup = team?.weekStatus?.driverSetups?.[dId]?.qualifying;
+                    if (qualySetup?.suspension !== undefined && qualySetup?.gearRatio !== undefined) {
+                        qualyMechanicals = {
+                            suspension: qualySetup.suspension,
+                            gearRatio: qualySetup.gearRatio,
+                        };
+                        strategy.suspension = qualySetup.suspension;
+                        strategy.gearRatio = qualySetup.gearRatio;
+                    }
                 }
             }
         } catch (e) {
@@ -241,13 +257,13 @@
                 {/if}
             </div>
 
-            <!-- Setup Sliders — rearWing is parc fermé locked (cannot be adjusted after qualifying) -->
+            <!-- Setup Sliders — rearWing always locked; suspension/gearRatio locked by parc fermé (dry qualy) -->
             <div class="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-5 mb-10 pb-8 border-b border-app-border">
                 {#each [
-                    { label: t("front_wing"),  field: "frontWing"  as const, icon: Wind,       color: "text-cyan-400",   hintL: t("top_speed_0"),    hintR: t("corner_grip_100"), locked: false },
-                    { label: t("rear_wing"),   field: "rearWing"   as const, icon: Wind,       color: "text-cyan-400",   hintL: t("top_speed_0"),    hintR: t("corner_grip_100"), locked: true  },
-                    { label: t("suspension"),  field: "suspension" as const, icon: Navigation, color: "text-purple-400", hintL: t("soft_bumps_0"),  hintR: t("stiff_aero_100"),  locked: false },
-                    { label: t("gear_ratio"),  field: "gearRatio"  as const, icon: Zap,        color: "text-orange-400", hintL: t("acceleration_0"), hintR: t("top_speed_100"),   locked: false }
+                    { label: t("front_wing"),  field: "frontWing"  as const, icon: Wind,       color: "text-cyan-400",   hintL: t("top_speed_0"),    hintR: t("corner_grip_100"), locked: false             },
+                    { label: t("rear_wing"),   field: "rearWing"   as const, icon: Wind,       color: "text-cyan-400",   hintL: t("top_speed_0"),    hintR: t("corner_grip_100"), locked: true              },
+                    { label: t("suspension"),  field: "suspension" as const, icon: Navigation, color: "text-purple-400", hintL: t("soft_bumps_0"),  hintR: t("stiff_aero_100"),  locked: isParcFermeLocked },
+                    { label: t("gear_ratio"),  field: "gearRatio"  as const, icon: Zap,        color: "text-orange-400", hintL: t("acceleration_0"), hintR: t("top_speed_100"),   locked: isParcFermeLocked }
                 ] as item}
                     <div class="space-y-3 group {item.locked ? 'opacity-50' : ''}">
                         <div class="flex justify-between items-center px-1">

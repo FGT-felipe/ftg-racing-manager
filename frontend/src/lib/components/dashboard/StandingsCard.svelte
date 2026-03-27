@@ -63,7 +63,7 @@
                             </h4>
                             <span
                                 class="text-xs font-bold text-app-text/20 whitespace-nowrap"
-                                >OF {standing.total} TEAMS</span
+                                >{t('of_x_teams', { total: standing.total })}</span
                             >
                         </div>
                     </div>
@@ -118,7 +118,7 @@
                                     </div>
                                     <span
                                         class="text-[8px] font-bold text-app-text/30 uppercase tracking-tighter pt-0.5"
-                                        >{driver.seasonPoints} PTS</span
+                                        >{driver.seasonPoints} {t('col_pts_abbr')}</span
                                     >
                                 </div>
                             </div>
