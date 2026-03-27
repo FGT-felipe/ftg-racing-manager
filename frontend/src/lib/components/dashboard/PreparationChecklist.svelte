@@ -50,8 +50,8 @@
     const checklist = $derived([
         {
             id: 'qualifying',
-            title: 'Qualifying Setup',
-            description: 'Send a qualifying setup to avoid fitness & morale penalties',
+            title: t('qualifying_setup'),
+            description: t('qualifying_setup_desc'),
             isComplete: hasQualifyingSetups,
             link: '/racing',
             optional: false,
@@ -91,7 +91,7 @@
             <h3 class="text-xl font-heading font-black italic uppercase tracking-tighter text-app-text">
                 {t('race_prep_title').split(' ')[0]} <span class="text-app-primary">{t('race_prep_title').split(' ')[1] || ''}</span>
             </h3>
-            <p class="text-xs font-bold text-app-text/40 uppercase tracking-widest mt-1">{t('session_label')} Checklist</p>
+            <p class="text-xs font-bold text-app-text/40 uppercase tracking-widest mt-1">{t('session_label')} {t('checklist')}</p>
         </div>
         
         <!-- Progress Circular / Text Indicator -->
@@ -132,7 +132,7 @@
                                 {item.title}
                             </h4>
                             {#if item.optional}
-                                <span class="px-1.5 py-0.5 rounded bg-app-text/10 text-[8px] font-black uppercase text-app-text/40">Opt</span>
+                                <span class="px-1.5 py-0.5 rounded bg-app-text/10 text-[8px] font-black uppercase text-app-text/40">{t('optional_badge')}</span>
                             {/if}
                         </div>
                         <p class="text-[11px] font-medium text-app-text/50 leading-snug line-clamp-1">
