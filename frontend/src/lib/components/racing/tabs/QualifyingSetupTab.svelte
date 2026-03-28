@@ -14,7 +14,7 @@
     import { circuitService } from "$lib/services/circuit_service.svelte";
     import { raceService } from "$lib/services/race_service.svelte";
     import { practiceService, type PracticeRunResult } from "$lib/services/practice_service.svelte";
-    import { timeService } from "$lib/services/time_service.svelte";
+    import { timeService, RaceWeekStatus } from "$lib/services/time_service.svelte";
     import { uiStore } from "$lib/stores/ui.svelte";
     import { QUALY_ENTRY_FEE } from "$lib/constants/economics";
     import {
@@ -765,6 +765,15 @@
                     <AlertTriangle size={24} class="mb-2" />
                     <span class="text-xs font-black uppercase"
                         >Driver Crashed - Session Over</span
+                    >
+                </div>
+            {:else if timeService.currentStatus !== RaceWeekStatus.QUALIFYING}
+                <div
+                    class="bg-app-text/5 border border-app-border text-app-text/50 rounded-xl p-4 flex flex-col items-center justify-center text-center"
+                >
+                    <Flag size={24} class="mb-2" />
+                    <span class="text-xs font-black uppercase"
+                        >{t('qualy_session_closed')}</span
                     >
                 </div>
             {:else if attempts >= MAX_ATTEMPTS}
