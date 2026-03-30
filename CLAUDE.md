@@ -199,6 +199,7 @@ When you modify a business rule, data structure, service interface, or architect
 | New business rule or economic value | `human/reglas_negocio.md` |
 | New/changed component pattern | `ai/components.md` |
 | Simulation or Cloud Function logic | `ai/weekend_pipeline.md` |
+| **Any version bump** | `README.md` — update the `**Version:**` line |
 
 **JSDoc is mandatory** for all public methods in services and stores (parameters, return types, side effects).
 
