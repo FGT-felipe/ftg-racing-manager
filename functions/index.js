@@ -1,5 +1,5 @@
 /* eslint-disable max-len */
-// Deployment: 2026-03-21 (R3 Fix: extraCrash declaration + qualyGrid length checks)
+// Deployment: 2026-03-30 (hotfix/weekly-update-reliability: team scope via qualyGrid, weekStatus dot-notation, auto universe sync, dynamic year)
 const { onSchedule } = require("firebase-functions/v2/scheduler");
 const { onCall } = require("firebase-functions/v2/https");
 const { setGlobalOptions } = require("firebase-functions");
@@ -1792,6 +1792,57 @@ exports.scheduledRace = onSchedule({
 
 
 // ─────────────────────────────────────────────
+// HELPER: Sync universe standings document
+// Reads live driver/team stats and writes them to universe/game_universe_v1
+// so the /season/standings page reflects the latest race results.
+// ─────────────────────────────────────────────
+async function syncUniverseStats() {
+  const uRef = db.collection("universe").doc("game_universe_v1");
+  const uDoc = await uRef.get();
+  if (!uDoc.exists) {
+    logger.warn("[syncUniverseStats] universe document not found, skipping sync");
+    return;
+  }
+  const leagues = uDoc.data().leagues;
+
+  for (let li = 0; li < leagues.length; li++) {
+    for (let di = 0; di < leagues[li].drivers.length; di++) {
+      const dDoc = await db.collection("drivers").doc(leagues[li].drivers[di].id).get();
+      if (!dDoc.exists) continue;
+      const r = dDoc.data();
+      leagues[li].drivers[di].points = r.points || 0;
+      leagues[li].drivers[di].seasonPoints = r.seasonPoints || 0;
+      leagues[li].drivers[di].wins = r.wins || 0;
+      leagues[li].drivers[di].seasonWins = r.seasonWins || 0;
+      leagues[li].drivers[di].podiums = r.podiums || 0;
+      leagues[li].drivers[di].seasonPodiums = r.seasonPodiums || 0;
+      leagues[li].drivers[di].races = r.races || 0;
+      leagues[li].drivers[di].seasonRaces = r.seasonRaces || 0;
+      leagues[li].drivers[di].championships = r.championships || 0;
+      leagues[li].drivers[di].championshipForm = r.championshipForm || [];
+      leagues[li].drivers[di].careerHistory = r.careerHistory || [];
+    }
+    for (let ti = 0; ti < leagues[li].teams.length; ti++) {
+      const tDoc = await db.collection("teams").doc(leagues[li].teams[ti].id).get();
+      if (!tDoc.exists) continue;
+      const r = tDoc.data();
+      leagues[li].teams[ti].points = r.points || 0;
+      leagues[li].teams[ti].seasonPoints = r.seasonPoints || 0;
+      leagues[li].teams[ti].wins = r.wins || 0;
+      leagues[li].teams[ti].seasonWins = r.seasonWins || 0;
+      leagues[li].teams[ti].podiums = r.podiums || 0;
+      leagues[li].teams[ti].seasonPodiums = r.seasonPodiums || 0;
+      leagues[li].teams[ti].races = r.races || 0;
+      leagues[li].teams[ti].seasonRaces = r.seasonRaces || 0;
+      if (r.name) leagues[li].teams[ti].name = r.name;
+    }
+  }
+
+  await uRef.update({ leagues });
+  logger.info("[syncUniverseStats] Universe standings synced");
+}
+
+// ─────────────────────────────────────────────
 // 3. POST-RACE PROCESSING (Every 30 min check)
 // ─────────────────────────────────────────────
 exports.postRaceProcessing = onSchedule({
@@ -1819,17 +1870,11 @@ exports.postRaceProcessing = onSchedule({
       logger.info(`Post-race processing: ${rDoc.id}`);
 
 
-      // Get all drivers in this race
-      const driverIds = Object.keys(rd.finalPositions || {});
-      const teamIdsSet = new Set();
-
-      for (const did of driverIds) {
-        const dDoc = await db.collection("drivers")
-          .doc(did).get();
-        if (dDoc.exists) {
-          teamIdsSet.add(dDoc.data().teamId);
-        }
-      }
+      // SCOPE: All teams that participated in this race, derived directly from qualyGrid
+      // (qualyGrid.teamId is authoritative — avoids broken driver-lookup chain that caused R4 economy skip)
+      const teamIdsSet = new Set(
+        (rd.qualyGrid || []).map((g) => g.teamId).filter(Boolean),
+      );
 
       // Reset weekStatus, unlock, and process WEEKLY ECONOMY
       const sId = rd.seasonId || rDoc.id.split("_")[0];
@@ -2149,7 +2194,7 @@ exports.postRaceProcessing = onSchedule({
                   const newDriverRef = db.collection("drivers").doc(newDriverId);
 
                   // Create the new driver for the main squad
-                  const currentYear = 2026;
+                  const currentYear = new Date().getFullYear();
                   const teamsSnap = await db.collection("teams").get();
                   const teamsMap = {};
                   teamsSnap.docs.forEach(d => {
@@ -2238,30 +2283,21 @@ exports.postRaceProcessing = onSchedule({
         const currentBudget = teamData.budget || 0;
         const newBudget = currentBudget + weeklyIncome - weeklyExpense;
 
+        // weekStatus: reset only weekly-flag fields via dot notation.
+        // Persistent fields (trainer/psychologist level, name, assignedTo) are NOT listed here
+        // so Firestore leaves them untouched. New fields added in future versions are also safe.
         batch.update(tRef, {
-          "weekStatus": {
-            practiceCompleted: false,
-            strategySet: false,
-            sponsorReviewed: false,
-            hasUpgradedThisWeek: false,
-            upgradesThisWeek: 0,
-            upgradeCooldownWeeksLeft: cooldown,
-            isLockedForProcessing: false,
-            // Fitness trainer: reset weekly flags, preserve persistent fields
-            fitnessTrainerLevel: curWs.fitnessTrainerLevel || 1,
-            fitnessTrainerName: curWs.fitnessTrainerName || null,
-            fitnessTrainerCountry: curWs.fitnessTrainerCountry || null,
-            fitnessTrainerAssignedTo: curWs.fitnessTrainerAssignedTo || null,
-            fitnessTrainerUpgradedThisWeek: false,
-            fitnessTrainerTrainedThisWeek: false,
-            // Psychologist (HR Manager): reset weekly flags, preserve persistent fields
-            psychologistLevel: curWs.psychologistLevel || 1,
-            psychologistName: curWs.psychologistName || null,
-            psychologistCountry: curWs.psychologistCountry || null,
-            psychologistAssignedTo: curWs.psychologistAssignedTo || null,
-            psychologistUpgradedThisWeek: false,
-            psychologistSessionDoneThisWeek: false,
-          },
+          "weekStatus.practiceCompleted": false,
+          "weekStatus.strategySet": false,
+          "weekStatus.sponsorReviewed": false,
+          "weekStatus.hasUpgradedThisWeek": false,
+          "weekStatus.upgradesThisWeek": 0,
+          "weekStatus.upgradeCooldownWeeksLeft": cooldown,
+          "weekStatus.isLockedForProcessing": false,
+          "weekStatus.fitnessTrainerUpgradedThisWeek": false,
+          "weekStatus.fitnessTrainerTrainedThisWeek": false,
+          "weekStatus.psychologistUpgradedThisWeek": false,
+          "weekStatus.psychologistSessionDoneThisWeek": false,
           "sponsors": updatedSponsors,
           "budget": newBudget,
         });
@@ -2355,6 +2391,9 @@ exports.postRaceProcessing = onSchedule({
         postRaceProcessed: true,
         processedAt: admin.firestore.FieldValue.serverTimestamp(),
       });
+
+      // Sync standings — must run after postRaceProcessed=true so points/stats are final
+      await syncUniverseStats();
 
       logger.info(`Post-race done: ${rDoc.id}`);
     }
