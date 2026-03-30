@@ -72,16 +72,19 @@ if (rSnap.data().qualyGrid) { continue; }
 5. AI team car upgrades (30% chance per stat per team)
 6. Resets `weekStatus` for all teams (clears driver setups, flags)
 7. Sets `postRaceProcessed: true`, `processedAt: serverTimestamp()`
+8. Calls `syncUniverseStats()` — syncs `universe/game_universe_v1` with live driver/team stats
 
-### Phase 4 — UNIVERSE SYNC (NOT AUTOMATED ⚠️)
-**Script:** `functions/sync_universe.js`  
-**Must be run manually after any manual race simulation.**
+### Phase 4 — UNIVERSE SYNC (AUTOMATED ✅ — as of hotfix 2026-03-30)
+**Function:** `syncUniverseStats()` in `index.js` (called automatically at end of `postRaceProcessing`)
+**Manual script still available** for emergency use: `functions/scripts/emergency/sync_universe.js`
 
-**Execution:**
+**What it does:**
 - Reads the `universe/game_universe_v1` document
 - For each league → each driver/team, fetches current values from `drivers/{id}` and `teams/{id}`
 - Updates `universe.leagues[*].drivers[*]` and `universe.leagues[*].teams[*]` with fresh `seasonPoints`, `wins`, `podiums`, etc.
-- **Why this exists:** The Standings page (`/season/standings`) reads from `universe` (a denormalized aggregate) rather than querying hundreds of collection docs. This is a performance optimization that requires an explicit sync step.
+- **Why this exists:** The Standings page (`/season/standings`) reads from `universe` (a denormalized aggregate) rather than querying hundreds of collection docs. This is a performance optimization.
+
+> **Note:** `node sync_universe.js` is still needed after **manual** race simulations via emergency scripts. Automated weekend runs (Sat qualy → Sun race → postRace) no longer require it.
 
 ---
 
@@ -156,7 +159,7 @@ After each step, verify in the Firebase Console → Firestore:
 | `scheduledRace` | `0 14 * * 0` (Sun 14:00) | America/Bogota | Runs full race simulation |
 | `postRaceProcessing` | `*/30 * * * *` (every 30m) | America/Bogota | Processes economy when timer allows |
 | `scheduledDailyFitnessRecovery` | `0 0 * * *` (midnight) | America/Bogota | +1.5 fitness to all active drivers |
-| `sync_universe` | **MANUAL** | N/A | Must be called after any manual race sim |
+| `syncUniverseStats` | **AUTOMATIC** (end of postRaceProcessing) | N/A | Also available manually via `scripts/emergency/sync_universe.js` |
 
 ---
 
