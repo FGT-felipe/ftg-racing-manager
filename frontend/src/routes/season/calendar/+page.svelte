@@ -77,6 +77,7 @@
         <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
             {#each calendar as event, i}
                 {@const circuit = circuitService.getCircuitProfile(event.circuitId ?? '')}
+                {@const countryCode = event.countryCode ?? circuit.countryCode}
                 {@const isCurrent = isCurrentRound(calendar, i, event)}
                 {@const round = i + 1}
 
@@ -97,7 +98,7 @@
                     <div class="relative flex flex-col gap-4 h-full">
                         <!-- Top row: flag + status -->
                         <div class="flex items-center justify-between">
-                            <CountryFlag countryCode={circuit.countryCode} size="lg" />
+                            <CountryFlag countryCode={countryCode} size="lg" />
                             {#if event.isCompleted}
                                 <div class="flex items-center gap-1 text-green-500">
                                     <CheckCircle size={16} />
