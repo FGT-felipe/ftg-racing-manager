@@ -26,6 +26,7 @@ The weekend event system executes in a sequential, multi-step pipeline across tw
    - `qualyGrid: DriverResult[]`
    - `qualifyingResults: DriverResult[]`
    - `status: "qualifying"`
+9. Writes immutable backup to `qualifying_results/{seasonId}_{raceEventId}` (T-020)
 
 **Guard Condition (CRITICAL):**
 ```js
@@ -155,10 +156,11 @@ After each step, verify in the Firebase Console → Firestore:
 
 | Function | Schedule | Timezone | What it does |
 |---|---|---|---|
-| `scheduledQualifying` | `0 15 * * 6` (Sat 15:00) | America/Bogota | Runs qualifying simulation |
+| `scheduledQualifying` | `0 15 * * 6` (Sat 15:00) | America/Bogota | Runs qualifying simulation + writes `qualifying_results` backup |
 | `scheduledRace` | `0 14 * * 0` (Sun 14:00) | America/Bogota | Runs full race simulation |
 | `postRaceProcessing` | `*/30 * * * *` (every 30m) | America/Bogota | Processes economy when timer allows |
 | `scheduledDailyFitnessRecovery` | `0 0 * * *` (midnight) | America/Bogota | +1.5 fitness to all active drivers |
+| `scheduledDailyBackup` | `0 3 * * *` (03:00 COT) | America/Bogota | JSON backup of races/teams/seasons/drivers → Cloud Storage. Retention: 8 days. |
 | `syncUniverseStats` | **AUTOMATIC** (end of postRaceProcessing) | N/A | Also available manually via `scripts/emergency/sync_universe.js` |
 
 ---
