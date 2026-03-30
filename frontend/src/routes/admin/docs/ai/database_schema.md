@@ -293,7 +293,24 @@ raceLog: RaceLapLog[]                  // per-lap telemetry snapshot
 
 ---
 
-## 7. Manager Entity
+## 7. Qualifying Backup (Immutable)
+
+### `qualifying_results/{seasonId}_{raceEventId}`  (e.g. `S1_r4`)
+> **Append-only.** Written once by `runQualifyingLogic()` immediately after `races/{id}.qualyGrid` is saved.
+> No pipeline, admin tool, or emergency script deletes or updates this collection.
+> If qualifying is re-run via emergency recovery, the entry is safely overwritten with the corrected grid.
+```
+seasonId:    string
+raceEventId: string          // e.g. "r4"
+trackName:   string
+circuitId:   string
+qualyGrid:   QualyGridEntry[]   // identical shape to races/{id}.qualyGrid
+createdAt:   Timestamp
+```
+
+---
+
+## 8. Manager Entity
 
 ### `managers/{managerId}` (Auth UID as document ID)
 ```

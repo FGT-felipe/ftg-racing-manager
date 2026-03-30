@@ -1114,6 +1114,21 @@ async function runQualifyingLogic() {
           updatedAt: admin.firestore.FieldValue.serverTimestamp(),
         }, { merge: true });
 
+        // T-020: Immutable backup — qualifying_results collection
+        // SCOPE: Append-only. No pipeline or admin tool deletes or updates this collection.
+        //        If qualifying is re-run via emergency scripts, this write safely overwrites
+        //        the previous entry with the corrected grid.
+        const qrRef = db.collection("qualifying_results").doc(`${sId}_${raceEvent.id}`);
+        await qrRef.set({
+          seasonId: sId,
+          raceEventId: raceEvent.id,
+          trackName: raceEvent.trackName,
+          circuitId: raceEvent.circuitId,
+          qualyGrid: qualyResults,
+          createdAt: admin.firestore.FieldValue.serverTimestamp(),
+        });
+        logger.info(`[qualifying_results] Immutable backup written for ${sId}_${raceEvent.id} (${qualyResults.length} entries)`);
+
         // Update pole stats
         const pole = qualyResults.find((r) => !r.isCrashed);
         if (pole) {
@@ -2812,6 +2827,80 @@ exports.restoreDriversHistory = onCall({
   } catch (err) {
     logger.error("restoreDriversHistory failed", err);
     return { success: false, error: err.message };
+  }
+});
+
+// ---------------------------------------------------------------------------
+// T-019: Daily JSON backup to Cloud Storage
+// ---------------------------------------------------------------------------
+
+const BACKUP_BUCKET = "ftg-racing-manager.firebasestorage.app";
+const BACKUP_COLLECTIONS = ["races", "teams", "seasons", "drivers"];
+const BACKUP_RETENTION_DAYS = 8;
+
+/**
+ * Reads all documents in a Firestore collection and returns them as a
+ * JSON-serializable array. Timestamps are preserved as { _seconds, _nanoseconds }
+ * objects which is sufficient for disaster recovery.
+ * @param {string} collectionName
+ * @return {Promise<Object[]>}
+ */
+async function backupCollection(collectionName) {
+  const snap = await db.collection(collectionName).get();
+  return snap.docs.map((d) => ({ id: d.id, ...d.data() }));
+}
+
+/**
+ * Writes one JSON backup per collection to gs://BUCKET/backups/YYYY-MM-DD/.
+ * Then deletes any backup folders older than BACKUP_RETENTION_DAYS.
+ */
+async function runDailyBackup() {
+  const bucket = admin.storage().bucket(BACKUP_BUCKET);
+  const today = new Date().toISOString().split("T")[0]; // "YYYY-MM-DD"
+
+  // 1. Write today's snapshot
+  for (const collName of BACKUP_COLLECTIONS) {
+    const docs = await backupCollection(collName);
+    const json = JSON.stringify(docs, null, 2);
+    const filePath = `backups/${today}/${collName}.json`;
+    const file = bucket.file(filePath);
+    await file.save(json, { contentType: "application/json" });
+    logger.info(`[dailyBackup] Wrote ${filePath} (${docs.length} docs)`);
+  }
+
+  // 2. Delete backups older than BACKUP_RETENTION_DAYS
+  const cutoff = new Date();
+  cutoff.setDate(cutoff.getDate() - BACKUP_RETENTION_DAYS);
+
+  const [files] = await bucket.getFiles({ prefix: "backups/" });
+  for (const file of files) {
+    const match = file.name.match(/^backups\/(\d{4}-\d{2}-\d{2})\//);
+    if (!match) continue;
+    const fileDate = new Date(match[1]);
+    if (fileDate < cutoff) {
+      await file.delete();
+      logger.info(`[dailyBackup] Deleted expired backup: ${file.name}`);
+    }
+  }
+
+  logger.info(`[dailyBackup] Completed for ${today}. Retention: last ${BACKUP_RETENTION_DAYS} days.`);
+}
+
+/**
+ * Scheduled daily backup — runs at 03:00 COT (08:00 UTC).
+ * Backs up: races, teams, seasons, drivers → gs://ftg-racing-manager.firebasestorage.app/backups/YYYY-MM-DD/
+ * Retention: 8 days (auto-deletes older folders).
+ */
+exports.scheduledDailyBackup = onSchedule({
+  schedule: "0 3 * * *",
+  timeZone: "America/Bogota",
+  region: "us-central1",
+}, async () => {
+  try {
+    await runDailyBackup();
+  } catch (err) {
+    logger.error("[dailyBackup] Backup failed:", err);
+    throw err;
   }
 });
 
