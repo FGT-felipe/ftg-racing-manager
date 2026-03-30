@@ -61,15 +61,12 @@ export async function runPostRaceProcessing(): Promise<void> {
 
       logger.info(`Post-race processing: ${rDoc.id}`);
 
-      // Collect all team IDs from drivers in this race
-      const driverIds = Object.keys((rd["finalPositions"] as Record<string, number>) ?? {});
-      const teamIdsSet = new Set<string>();
-      for (const did of driverIds) {
-        const dDoc = await db.collection("drivers").doc(did).get();
-        if (dDoc.exists) {
-          teamIdsSet.add((dDoc.data() as Record<string, unknown>)["teamId"] as string);
-        }
-      }
+      // SCOPE: All teams that participated in this race, derived directly from qualyGrid
+      // (qualyGrid.teamId is authoritative — avoids broken driver-lookup chain when finalPositions is incomplete)
+      const qualyGrid = (rd["qualyGrid"] as Array<Record<string, unknown>>) ?? [];
+      const teamIdsSet = new Set<string>(
+        qualyGrid.map((g) => g["teamId"] as string).filter(Boolean),
+      );
 
       const sId = (rd["seasonId"] as string) || rDoc.id.split("_")[0];
       const eId = (rd["eventId"] as string) || rDoc.id.split("_")[1];
@@ -404,21 +401,23 @@ export async function runPostRaceProcessing(): Promise<void> {
         const currentBudget = (teamData["budget"] as number) || 0;
         const newBudget = currentBudget + weeklyIncome - weeklyExpense;
 
+        // Dot-notation update preserves fields added by future versions (e.g. morale/psychologist fields)
+        // A full weekStatus object replacement would silently wipe any field not listed here.
         batch.update(tRef, {
-          weekStatus: {
-            practiceCompleted: false,
-            strategySet: false,
-            sponsorReviewed: false,
-            hasUpgradedThisWeek: false,
-            upgradesThisWeek: 0,
-            upgradeCooldownWeeksLeft: cooldown,
-            isLockedForProcessing: false,
-            fitnessTrainerUpgradedThisWeek: false,
-            fitnessTrainerTrainedThisWeek: false,
-          },
+          "weekStatus.practiceCompleted": false,
+          "weekStatus.strategySet": false,
+          "weekStatus.sponsorReviewed": false,
+          "weekStatus.hasUpgradedThisWeek": false,
+          "weekStatus.upgradesThisWeek": 0,
+          "weekStatus.upgradeCooldownWeeksLeft": cooldown,
+          "weekStatus.isLockedForProcessing": false,
+          "weekStatus.fitnessTrainerUpgradedThisWeek": false,
+          "weekStatus.fitnessTrainerTrainedThisWeek": false,
+          "weekStatus.psychologistUpgradedThisWeek": false,
+          "weekStatus.psychologistSessionDoneThisWeek": false,
           sponsors: updatedSponsors,
           budget: newBudget,
-        });
+        } as FirebaseFirestore.UpdateData<object>);
 
         if (weeklyIncome > 0) {
           const incTx = tRef.collection("transactions").doc();
@@ -491,11 +490,67 @@ export async function runPostRaceProcessing(): Promise<void> {
         processedAt: admin.firestore.FieldValue.serverTimestamp(),
       });
 
+      // Sync universe standings so /season/standings reflects live data
+      await syncUniverseStats();
+
       logger.info(`Post-race done: ${rDoc.id}`);
     }
   } catch (err) {
     logger.error("Error in postRaceProcessing", err);
   }
+}
+
+// ─── Universe sync ────────────────────────────────────────────────────────────
+
+/**
+ * Syncs live driver/team stats into the denormalized universe document.
+ * Called automatically at the end of postRaceProcessing so /season/standings
+ * always reflects fresh data after an automated race weekend.
+ */
+async function syncUniverseStats(): Promise<void> {
+  const uRef = db.collection("universe").doc("game_universe_v1");
+  const uDoc = await uRef.get();
+  if (!uDoc.exists) {
+    logger.warn("[syncUniverseStats] universe document not found, skipping sync");
+    return;
+  }
+  const leagues = (uDoc.data() as Record<string, unknown>)["leagues"] as Array<Record<string, unknown>>;
+  for (const league of leagues) {
+    const drivers = (league["drivers"] as Array<Record<string, unknown>>) ?? [];
+    for (const d of drivers) {
+      const dDoc = await db.collection("drivers").doc(d["id"] as string).get();
+      if (!dDoc.exists) continue;
+      const r = dDoc.data() as Record<string, unknown>;
+      d["points"] = r["points"] || 0;
+      d["seasonPoints"] = r["seasonPoints"] || 0;
+      d["wins"] = r["wins"] || 0;
+      d["seasonWins"] = r["seasonWins"] || 0;
+      d["podiums"] = r["podiums"] || 0;
+      d["seasonPodiums"] = r["seasonPodiums"] || 0;
+      d["races"] = r["races"] || 0;
+      d["seasonRaces"] = r["seasonRaces"] || 0;
+      d["championships"] = r["championships"] || 0;
+      d["championshipForm"] = r["championshipForm"] || [];
+      d["careerHistory"] = r["careerHistory"] || [];
+    }
+    const teams = (league["teams"] as Array<Record<string, unknown>>) ?? [];
+    for (const t of teams) {
+      const tDoc = await db.collection("teams").doc(t["id"] as string).get();
+      if (!tDoc.exists) continue;
+      const r = tDoc.data() as Record<string, unknown>;
+      t["points"] = r["points"] || 0;
+      t["seasonPoints"] = r["seasonPoints"] || 0;
+      t["wins"] = r["wins"] || 0;
+      t["seasonWins"] = r["seasonWins"] || 0;
+      t["podiums"] = r["podiums"] || 0;
+      t["seasonPodiums"] = r["seasonPodiums"] || 0;
+      t["races"] = r["races"] || 0;
+      t["seasonRaces"] = r["seasonRaces"] || 0;
+      if (r["name"]) t["name"] = r["name"];
+    }
+  }
+  await uRef.update({ leagues } as FirebaseFirestore.UpdateData<object>);
+  logger.info("[syncUniverseStats] Universe standings synced");
 }
 
 // ─── Helpers (exported for use by admin tools) ───────────────────────────────

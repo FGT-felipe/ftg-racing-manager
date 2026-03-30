@@ -45,3 +45,7 @@ export {
   forceFixGBA,
   restoreDriversHistory,
 } from "../domains/admin/tools";
+
+// ─── Backup ───────────────────────────────────────────────────────────────────
+
+export { scheduledDailyBackup } from "../domains/admin/backup";
