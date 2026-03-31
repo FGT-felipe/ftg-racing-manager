@@ -13,11 +13,6 @@ service cloud.firestore {
       allow read, write: if request.auth != null && request.auth.uid == userId;
     }
     
-    // Users: Owners only
-    match /users/{userId} {
-      allow read, write: if request.auth != null && request.auth.uid == userId;
-    }
-
     // Teams: 
     // 1. Managers can manage their own teams.
     // 2. Allow broad update permissions for simulation results (e.g. updating qualy compound).
@@ -38,17 +33,9 @@ service cloud.firestore {
       allow read, write: if request.auth != null;
     }
 
-    // Transfer Bids: Allow read/write for all authenticated users
-    match /transferBids/{bidId} {
-      allow read, write: if request.auth != null;
-    }
-
-    // Leagues: Allow press_news additions (Press/News items)
+    // Leagues: read-only for authenticated users
     match /leagues/{leagueId} {
       allow read: if request.auth != null;
-      match /press_news/{newsId} {
-        allow read, write: if request.auth != null;
-      }
     }
 
     // Races: Allow create/update for simulation results (Qualifying grids, Race results)
@@ -59,6 +46,13 @@ service cloud.firestore {
     // Seasons: Allow updates for calendar progress
     match /seasons/{seasonId} {
       allow read, write: if request.auth != null;
+    }
+
+    // Qualifying results: immutable backup written by Cloud Functions (admin SDK bypasses rules)
+    // Client-side write is explicitly denied as an extra safety guard.
+    match /qualifying_results/{resultId} {
+      allow read: if request.auth != null;
+      allow write: if false;
     }
 
     // Universe: Static data, read-only

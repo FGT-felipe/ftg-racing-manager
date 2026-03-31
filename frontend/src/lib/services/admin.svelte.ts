@@ -47,8 +47,8 @@ export const adminService = {
             // 1. Delete Universe
             await deleteDoc(doc(db, 'universe', 'game_universe_v1'));
 
-            // 2. Clear Collection Groups (Drivers, Press News)
-            const collectionGroups = ['drivers', 'press_news'];
+            // 2. Clear Collection Groups (Drivers)
+            const collectionGroups = ['drivers'];
             for (const cg of collectionGroups) {
                 const snap = await getDocs(query(collectionGroup(db, cg)));
                 if (!snap.empty) {
