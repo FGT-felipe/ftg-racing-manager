@@ -323,3 +323,20 @@ backgroundId: string    // onboarding selection (cosmetic)
 role:         "driver" | "engineer" | "ex_driver" | "investor"
 createdAt:    Timestamp
 ```
+
+---
+
+## 9. Transfer Bids
+
+> **Note:** There is no standalone `transferBids` collection. Bids are stored directly on the driver document.
+> See `drivers/{driverId}.currentHighestBid` and `drivers/{driverId}.highestBidderTeamId`.
+> The `transferBids` Firestore rule was removed in v1.5.8 as it was legacy with no active code references.
+
+---
+
+## Removed / Legacy Collections
+
+| Collection | Removed | Reason |
+|---|---|---|
+| `leagues/{id}/press_news` | v1.5.8 | League-wide news system discarded due to performance issues. Rule and dead code removed. |
+| `users` | v1.5.8 | Legacy Firestore rule with no active code references. User identity is handled by `managers/{uid}`. Firebase Auth accounts are unaffected. |
