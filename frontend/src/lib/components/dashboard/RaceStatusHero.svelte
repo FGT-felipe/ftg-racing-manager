@@ -12,12 +12,10 @@
         Zap,
         Shield,
         Cpu,
-        Cloud,
-        Sun,
-        CloudRain,
         Fuel,
         CircleDot,
     } from "lucide-svelte";
+    import { getWeatherIcon, getWeatherColor } from "$lib/utils/weather";
     import { onDestroy } from "svelte";
 
     import { circuitService } from "$lib/services/circuit_service.svelte";
@@ -86,21 +84,6 @@
         }
     });
 
-    function getWeatherIcon(condition: string) {
-        condition = condition.toLowerCase();
-        if (condition.includes("rain") || condition.includes("wet"))
-            return CloudRain;
-        if (condition.includes("cloud")) return Cloud;
-        return Sun;
-    }
-
-    function getWeatherColor(condition: string) {
-        condition = condition.toLowerCase();
-        if (condition.includes("rain") || condition.includes("wet"))
-            return "text-blue-400";
-        if (condition.includes("cloud")) return "text-slate-400";
-        return "text-yellow-400";
-    }
 </script>
 
 <div

@@ -529,6 +529,10 @@ export const translations = {
         circuit_tyre_wear_label: "Tyre Wear",
         circuit_fuel_label: "Fuel",
         circuit_difficulty_label: "Tech. Difficulty",
+        calendar_forecast: "Forecast",
+        calendar_weather_fp: "FP",
+        calendar_weather_qualy: "Qualy",
+        calendar_weather_race: "Race",
         season_progress_completed: "Completed",
         season_progress_remaining: "Remaining",
         // ── Racing Live ────────────────────────────────────────────────────────
@@ -1189,6 +1193,10 @@ export const translations = {
         circuit_tyre_wear_label: "Desgaste de Neumáticos",
         circuit_fuel_label: "Combustible",
         circuit_difficulty_label: "Dificultad Técnica",
+        calendar_forecast: "Pronóstico",
+        calendar_weather_fp: "Prác",
+        calendar_weather_qualy: "Clasi",
+        calendar_weather_race: "Carrera",
         season_progress_completed: "Completadas",
         season_progress_remaining: "Restantes",
         // ── Racing Live ────────────────────────────────────────────────────────
