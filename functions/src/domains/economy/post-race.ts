@@ -549,8 +549,21 @@ async function syncUniverseStats(): Promise<void> {
       if (r["name"]) t["name"] = r["name"];
     }
   }
-  await uRef.update({ leagues } as FirebaseFirestore.UpdateData<object>);
-  logger.info("[syncUniverseStats] Universe standings synced");
+
+  // Sync activeSeasonId: prefer ftg_world league's currentSeasonId;
+  // if not set, preserve whatever is already in the universe doc.
+  let activeSeasonId: string | undefined = (uDoc.data() as Record<string, unknown>)["activeSeasonId"] as string | undefined;
+  const masterLeagueDoc = await db.collection("leagues").doc("ftg_world").get();
+  if (masterLeagueDoc.exists) {
+    const fromLeague = (masterLeagueDoc.data() as Record<string, unknown>)["currentSeasonId"] as string | undefined;
+    if (fromLeague) activeSeasonId = fromLeague;
+  }
+
+  const updatePayload: Record<string, unknown> = { leagues };
+  if (activeSeasonId) updatePayload["activeSeasonId"] = activeSeasonId;
+
+  await uRef.update(updatePayload as FirebaseFirestore.UpdateData<object>);
+  logger.info("[syncUniverseStats] Universe standings synced", { activeSeasonId });
 }
 
 // ─── Helpers (exported for use by admin tools) ───────────────────────────────

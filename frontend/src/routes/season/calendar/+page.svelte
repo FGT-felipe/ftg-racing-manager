@@ -5,16 +5,11 @@
     import { seasonStore } from "$lib/stores/season.svelte";
     import { circuitService } from "$lib/services/circuit_service.svelte";
     import CountryFlag from "$lib/components/ui/CountryFlag.svelte";
+    import { getWeatherIcon, getWeatherColor } from "$lib/utils/weather";
 
     let season = $derived(seasonStore.value.season);
     let loading = $derived(seasonStore.value.loading);
     let calendar = $derived(season?.calendar ?? []);
-
-    function getDifficultyColor(difficulty: number): string {
-        if (difficulty > 0.7) return "bg-red-500";
-        if (difficulty > 0.4) return "bg-orange-400";
-        return "bg-green-400";
-    }
 
     function formatDate(date: Date | string | null): string {
         if (!date) return "—";
@@ -142,14 +137,21 @@
                             {/if}
                         </div>
 
-                        <!-- Difficulty Bar -->
+                        <!-- Weather Forecast -->
                         <div class="flex flex-col gap-2 mt-auto">
-                            <div class="flex items-center justify-between text-[8px] font-black uppercase tracking-widest text-app-text/30">
-                                <span>{t('circuit_difficulty_label')}</span>
-                                <span>{(circuit.difficulty * 10).toFixed(0)}/10</span>
-                            </div>
-                            <div class="h-1 w-full bg-app-text/10 rounded-full overflow-hidden">
-                                <div class="h-full rounded-full {getDifficultyColor(circuit.difficulty)}" style="width: {circuit.difficulty * 100}%"></div>
+                            <span class="text-[8px] font-black uppercase tracking-widest text-app-text/30">{t('calendar_forecast')}</span>
+                            <div class="grid grid-cols-3 gap-1">
+                                {#each [
+                                    { label: t('calendar_weather_fp'),    condition: event.weatherPractice   ?? '' },
+                                    { label: t('calendar_weather_qualy'), condition: event.weatherQualifying ?? '' },
+                                    { label: t('calendar_weather_race'),  condition: event.weatherRace       ?? '' },
+                                ] as session}
+                                    {@const Icon = getWeatherIcon(session.condition)}
+                                    <div class="flex flex-col items-center gap-1 bg-app-text/5 rounded-xl py-2">
+                                        <svelte:component this={Icon} size={14} class={getWeatherColor(session.condition)} />
+                                        <span class="text-[8px] font-black uppercase tracking-widest text-app-text/40">{session.label}</span>
+                                    </div>
+                                {/each}
                             </div>
                         </div>
                     </div>

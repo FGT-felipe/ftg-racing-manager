@@ -70,10 +70,13 @@
   });
 
   // Keep Season Store in sync with Team Lifecycle
+  // Priority: universe.activeSeasonId (canonical, updated by post-race sync)
+  // Fallback:  team.currentSeasonId   (legacy field, may be stale)
+  // All leagues share one season doc per year — never one per league.
   $effect(() => {
     const team = teamStore.value.team;
     const universe = universeStore.value.universe;
-    const seasonId = team?.currentSeasonId || universe?.activeSeasonId;
+    const seasonId = universe?.activeSeasonId || team?.currentSeasonId;
 
     if (seasonId) {
       seasonStore.init(seasonId);
