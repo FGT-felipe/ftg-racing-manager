@@ -263,6 +263,20 @@ async function runQualifyingLogic() {
                     status: "qualifying",
                     updatedAt: admin_1.admin.firestore.FieldValue.serverTimestamp(),
                 }, { merge: true });
+                // T-020: Immutable backup — qualifying_results collection
+                // SCOPE: Append-only. No pipeline or admin tool deletes or updates this collection.
+                //        If qualifying is re-run via emergency scripts, this write safely overwrites
+                //        the previous entry with the corrected grid.
+                const qrRef = admin_1.db.collection("qualifying_results").doc(`${sId}_${raceEvent["id"]}`);
+                await qrRef.set({
+                    seasonId: sId,
+                    raceEventId: raceEvent["id"],
+                    trackName: raceEvent["trackName"],
+                    circuitId: raceEvent["circuitId"],
+                    qualyGrid: qualyResults,
+                    createdAt: admin_1.admin.firestore.FieldValue.serverTimestamp(),
+                });
+                logger.info(`[qualifying_results] Backup written for ${sId}_${raceEvent["id"]} (${qualyResults.length} entries)`);
                 // Update pole stats
                 const pole = qualyResults.find((r) => !r["isCrashed"]);
                 if (pole) {
