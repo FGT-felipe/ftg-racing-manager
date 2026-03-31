@@ -76,8 +76,18 @@ async function syncUniverse() {
         }
     }
 
+    // Sync activeSeasonId from ftg_world league so the frontend reads the correct season
+    let activeSeasonId;
+    const masterLDoc = await db.collection("leagues").doc("ftg_world").get();
+    if (masterLDoc.exists) {
+        activeSeasonId = masterLDoc.data().currentSeasonId;
+        console.log(`activeSeasonId (from ftg_world): ${activeSeasonId || "(not found)"}`);
+    }
+
     console.log("\n💾 Writing updated universe...");
-    await uRef.update({ leagues });
+    const updatePayload = { leagues };
+    if (activeSeasonId) updatePayload.activeSeasonId = activeSeasonId;
+    await uRef.update(updatePayload);
     console.log("✅ Universe synced!\n");
 
     // Verify

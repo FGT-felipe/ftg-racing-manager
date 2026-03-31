@@ -536,8 +536,20 @@ async function syncUniverseStats() {
                 t["name"] = r["name"];
         }
     }
-    await uRef.update({ leagues });
-    logger.info("[syncUniverseStats] Universe standings synced");
+    // Sync activeSeasonId: prefer ftg_world league's currentSeasonId;
+    // if not set, preserve whatever is already in the universe doc.
+    let activeSeasonId = uDoc.data()["activeSeasonId"];
+    const masterLeagueDoc = await admin_1.db.collection("leagues").doc("ftg_world").get();
+    if (masterLeagueDoc.exists) {
+        const fromLeague = masterLeagueDoc.data()["currentSeasonId"];
+        if (fromLeague)
+            activeSeasonId = fromLeague;
+    }
+    const updatePayload = { leagues };
+    if (activeSeasonId)
+        updatePayload["activeSeasonId"] = activeSeasonId;
+    await uRef.update(updatePayload);
+    logger.info("[syncUniverseStats] Universe standings synced", { activeSeasonId });
 }
 // ─── Helpers (exported for use by admin tools) ───────────────────────────────
 /**
