@@ -117,7 +117,7 @@ export function createFacilityStore() {
                 title: "Facility Upgraded",
                 message: `${type} has been upgraded to level ${facility.level + 1}.`,
                 type: 'SUCCESS',
-                actionRoute: '/management/facilities'
+                actionRoute: '/facilities'
             });
         }
     };

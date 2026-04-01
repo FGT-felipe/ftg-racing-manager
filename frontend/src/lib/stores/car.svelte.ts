@@ -116,7 +116,7 @@ export function createCarStore() {
                 title: "Car Updated",
                 message: `Upgraded ${partKey} to LVL ${currentLevel + 1} on ${carIndex === 0 ? 'Car A' : 'Car B'}.`,
                 type: 'SUCCESS',
-                actionRoute: '/management/engineering'
+                actionRoute: '/facilities/engineering'
             });
         }
     };

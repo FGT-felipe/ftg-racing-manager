@@ -199,14 +199,24 @@ export const TRANSFER_MARKET_LISTING_FEE_RATE = 0.10;
 /** Driver release fee as a fraction of market value (10%). */
 export const TRANSFER_MARKET_RELEASE_FEE_RATE = 0.10;
 
-/** Non-refundable commission charged to the winning bidder (5% of bid amount). Lost even if negotiations fail. */
-export const TRANSFER_MARKET_BID_FEE_RATE = 0.05;
+/**
+ * Non-refundable commission charged to the buyer upon placing a bid (10% of driver marketValue).
+ * Deducted immediately when the bid is submitted. Lost even if negotiations fail or the bid is outbid.
+ * Equals TRANSFER_MARKET_LISTING_FEE_RATE — symmetrical cost between seller and buyer.
+ */
+export const TRANSFER_MARKET_BID_COMMISSION_RATE = 0.10;
 
 /** Minimum increment above the current highest bid required to place a new bid (USD). */
 export const TRANSFER_MARKET_BID_INCREMENT = 50_000;
 
 /** Duration a transfer listing remains active before expiring (hours). */
 export const TRANSFER_LISTING_DURATION_HOURS = 24;
+
+/** Duration a transfer listing remains active before expiring (milliseconds). */
+export const TRANSFER_LISTING_DURATION_MS = TRANSFER_LISTING_DURATION_HOURS * 3_600_000;
+
+/** Time before expiry at which a listing is considered "expiring soon" (milliseconds). */
+export const LISTING_EXPIRY_WARNING_MS = 5 * 60 * 1_000;
 
 // ---------------------------------------------------------------------------
 // Contract Negotiation

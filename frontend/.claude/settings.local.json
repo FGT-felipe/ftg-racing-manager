@@ -1,0 +1,12 @@
+{
+  "permissions": {
+    "allow": [
+      "Read(//d/PROYECTOS/Fire Tower Games/Projects/ftg-racing-manager/**)",
+      "Bash(node -e \"const p=require\\(''./frontend/package.json''\\); console.log\\(p.version\\)\")",
+      "Bash(npm version:*)",
+      "Bash(npm run:*)",
+      "Bash(firebase deploy:*)",
+      "Bash(sort -t- -k2 -n)"
+    ]
+  }
+}

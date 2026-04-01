@@ -5,6 +5,7 @@ import {
     runTransaction,
     increment,
     collection,
+    Timestamp,
 } from 'firebase/firestore';
 import { type Driver } from '$lib/types';
 import { driverRepository } from '$lib/repositories/driver.repository';
@@ -18,6 +19,7 @@ import {
     MORALE_EVENT_TRANSFER_LISTED,
     PSYCHOLOGIST_UPGRADE_COSTS,
 } from '$lib/constants/economics';
+import { transferMarketService } from '$lib/services/transfer_market.svelte';
 
 export class StaffService {
     async getTeamDrivers(teamId: string): Promise<Driver[]> {
@@ -184,7 +186,7 @@ export class StaffService {
 
             transaction.update(driverRef, {
                 isTransferListed: true,
-                transferListedAt: new Date().toISOString(),
+                transferListedAt: Timestamp.now(),
                 marketValue,
                 'stats.morale': Math.max(0, currentMorale + MORALE_EVENT_TRANSFER_LISTED),
             });
@@ -268,85 +270,55 @@ export class StaffService {
     }
 
     /**
-     * Finalizes a post-bid transfer negotiation.
-     * Called after the buyer won an auction and has agreed (or failed) on personal terms.
+     * Stores the result of a post-bid transfer contract negotiation and delegates
+     * the actual team transfer to the Cloud Function resolver (T-028 flow).
      *
-     * On acceptance: driver transferred to buyer team with agreed salary/years.
-     * On rejection: driver returned to original team. Bid amount is NOT refunded.
+     * On acceptance: saves accepted contract terms to the driver's pendingContracts map.
+     *   The resolver picks these up at auction expiry and executes the transfer.
      *
-     * @param driver - The driver in pendingNegotiation state
-     * @param params.accepted - Whether personal terms were agreed
-     * @param params.salary - Agreed annual salary (if accepted)
-     * @param params.years - Contract duration in seasons (if accepted)
-     * @param params.moraleChange - Cumulative morale adjustment from failed attempts
+     * On rejection: blacklists the buyer team on the driver so they cannot bid again,
+     *   and applies morale penalties.
+     *
+     * @param driver             - The driver being negotiated for (still on market)
+     * @param params.accepted    - Whether personal terms were agreed
+     * @param params.salary      - Agreed annual salary (if accepted)
+     * @param params.years       - Contract duration in seasons (if accepted)
+     * @param params.moraleChange - Cumulative morale adjustment from failed attempts (≤0)
+     * @param params.role        - Agreed team role: 'main' | 'secondary' | 'equal'
+     * @param params.replacedDriverId - Driver being displaced from the roster slot
+     * @param params.buyerTeamId - The team that placed the bid
+     * @param params.bidAmount   - The bid amount placed
      */
     async finalizeTransferAcquisition(driver: Driver, params: {
         accepted: boolean;
         salary?: number;
         years?: number;
         moraleChange: number;
+        role?: 'main' | 'secondary' | 'equal';
+        replacedDriverId?: string;
+        buyerTeamId: string;
+        bidAmount: number;
     }) {
-        const driverRef = driverRepository.docRef(driver.id);
-        const { accepted, salary, years, moraleChange } = params;
-        const buyerTeamId = driver.pendingBuyerTeamId;
-        const originalTeamId = driver.pendingOriginalTeamId;
+        const { accepted, salary, years, moraleChange, role, replacedDriverId, buyerTeamId, bidAmount } = params;
 
-        if (!buyerTeamId) throw new Error('No pending buyer for this driver');
-
-        await runTransaction(db, async (transaction) => {
-            const driverDoc = await transaction.get(driverRef);
-            if (!driverDoc.exists()) throw new Error('Driver not found');
-
-            const pendingNeg = driverDoc.data().pendingNegotiation;
-            if (!pendingNeg) throw new Error('No pending negotiation for this driver');
-
-            const clearPendingFields = {
-                pendingNegotiation: false,
-                pendingBuyerTeamId: null,
-                pendingBidAmount: null,
-                pendingOriginalTeamId: null,
-            };
-
-            if (accepted && salary && years) {
-                // Transfer the driver to the buyer team
-                const driverUpdates: Record<string, any> = {
-                    ...clearPendingFields,
-                    teamId: buyerTeamId,
-                    salary,
-                    contractYearsRemaining: years,
-                    role: 'Reserve', // Joins as Reserve — manager reassigns later
-                    carIndex: -1,
-                };
-                if (moraleChange !== 0) {
-                    const currentMorale = driverDoc.data().stats?.morale ?? 50;
-                    driverUpdates['stats.morale'] = Math.max(0, Math.min(100, currentMorale + moraleChange));
-                }
-
-                transaction.update(driverRef, driverUpdates);
-
-                // Log acquisition transaction for buyer
-                const buyerTeamRef = teamRepository.docRef(buyerTeamId);
-                const txRef = doc(collection(buyerTeamRef, 'transactions'));
-                transaction.set(txRef, {
-                    id: txRef.id,
-                    description: `Transfer Acquisition: ${driver.name} (${years} yr${years > 1 ? 's' : ''} @ $${salary.toLocaleString()}/yr)`,
-                    amount: 0, // Transfer fee already deducted by resolver
-                    date: new Date().toISOString(),
-                    type: 'OTHER',
-                });
-            } else {
-                // Negotiations failed — return driver to original team, bid amount already lost
-                const driverUpdates: Record<string, any> = {
-                    ...clearPendingFields,
-                    teamId: originalTeamId || null,
-                };
-                if (moraleChange !== 0) {
-                    const currentMorale = driverDoc.data().stats?.morale ?? 50;
-                    driverUpdates['stats.morale'] = Math.max(0, Math.min(100, currentMorale + moraleChange));
-                }
-                transaction.update(driverRef, driverUpdates);
-            }
-        });
+        if (accepted && salary && years && role && replacedDriverId) {
+            // Store contract terms — resolver executes the actual transfer at auction end
+            await transferMarketService.submitContractAccepted(driver.id, buyerTeamId, {
+                bidAmount,
+                role,
+                replacedDriverId,
+                salary,
+                years,
+            });
+        } else {
+            // Negotiations failed — blacklist team, apply morale penalty to driver
+            await transferMarketService.submitContractRejected(
+                driver.id,
+                buyerTeamId,
+                bidAmount,
+                moraleChange
+            );
+        }
     }
     /**
      * Applies a morale delta to a driver, clamping the result to [0, 100].

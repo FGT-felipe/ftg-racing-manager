@@ -283,7 +283,22 @@ The **Motivation** section is mandatory — it's the long-term record of *why*, 
 
 ---
 
-## 10. Flutter Deprecation Status
+## 10. Multi-Task Execution Rule
+
+When the user requests multiple fixes or tasks in a single message, **execute them sequentially, one at a time**. Do not parallelize work across independent tasks.
+
+**Required process:**
+1. Pick the first task (prioritize by urgency if indicated).
+2. Investigate it fully — read all relevant files before writing code.
+3. Implement the fix.
+4. Confirm it is correct (verify the right fields, conditions, and data flow).
+5. Only then move to the next task.
+
+**Rationale:** Parallel execution causes assumptions to go unverified and fixes to target the wrong fields or conditions — leading to bugs that are worse than the originals.
+
+---
+
+## 11. Flutter Deprecation Status
 
 The Flutter codebase (`lib/`, `android/`, `pubspec.yaml`) is **100% migrated** to Svelte. It is kept for reference only. **Do not modify any Flutter files.**
 

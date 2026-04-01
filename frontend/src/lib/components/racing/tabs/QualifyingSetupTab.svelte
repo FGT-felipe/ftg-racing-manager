@@ -767,7 +767,9 @@
                         >Driver Crashed - Session Over</span
                     >
                 </div>
-            {:else if timeService.currentStatus !== RaceWeekStatus.QUALIFYING}
+            {:else if timeService.currentStatus === RaceWeekStatus.RACE_STRATEGY
+                    || timeService.currentStatus === RaceWeekStatus.RACE
+                    || timeService.currentStatus === RaceWeekStatus.POST_RACE}
                 <div
                     class="bg-app-text/5 border border-app-border text-app-text/50 rounded-xl p-4 flex flex-col items-center justify-center text-center"
                 >

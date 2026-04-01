@@ -59,6 +59,17 @@ export function createYouthAcademyStore() {
         unsubscribeConfig = onSnapshot(configRef, (snapshot) => {
             if (snapshot.exists()) {
                 config = snapshot.data();
+
+                // Self-heal: if the academy has been upgraded (level > 1) but
+                // lastUpgradeSeasonId is null due to a prior bug in upgradeAcademy(),
+                // write the current season ID silently so canUpgrade returns correctly.
+                const seasonId = seasonStore.value.season?.id ?? null;
+                if (seasonId && (config.academyLevel ?? 0) > 1 && !config.lastUpgradeSeasonId) {
+                    const teamRef = doc(db, 'teams', teamId);
+                    updateDoc(configRef, { lastUpgradeSeasonId: seasonId });
+                    updateDoc(teamRef, { 'facilities.youthAcademy.lastUpgradeSeasonId': seasonId });
+                    console.debug('[YouthAcademyStore] Repaired null lastUpgradeSeasonId →', seasonId);
+                }
             } else {
                 config = null;
             }
@@ -115,7 +126,8 @@ export function createYouthAcademyStore() {
 
     const canUpgrade = $derived.by(() => {
         if (!config || !seasonStore.value.season) return false;
-        return config.academyLevel < 5 && config.lastUpgradeSeasonId !== seasonStore.value.season.id;
+        const isLocked = teamStore.value.team?.facilities?.youthAcademy?.isLocked === true;
+        return config.academyLevel < 5 && !isLocked;
     });
 
     return {
@@ -200,11 +212,13 @@ export function createYouthAcademyStore() {
 
         async upgradeAcademy() {
             const teamId = teamStore.value.team?.id;
-            const currentSeasonId = seasonStore.value.season?.id || teamStore.value.team?.currentSeasonId || null;
-            if (!teamId || !config) return;
+            // Read season ID from store before the transaction — this is the authoritative value
+            // used by canUpgrade, so it must match exactly what is stored.
+            const resolvedSeasonId = seasonStore.value.season?.id ?? null;
+            if (!teamId || !config || !resolvedSeasonId) return;
 
             if (config.academyLevel >= 5) throw new Error("Maximum level reached");
-            if (currentSeasonId && config.lastUpgradeSeasonId === currentSeasonId) throw new Error("Already upgraded this season");
+            if (config.lastUpgradeSeasonId === resolvedSeasonId) throw new Error("Already upgraded this season");
 
             const upgradePrice = ACADEMY_UPGRADE_COST_MULTIPLIER * config.academyLevel;
             const role = managerStore.profile?.role;
@@ -219,7 +233,6 @@ export function createYouthAcademyStore() {
                 if (!data || (data.budget ?? 0) < finalPrice) throw new Error("Insufficient budget");
                 const budget = data.budget ?? 0;
 
-                const resolvedSeasonId = data?.currentSeasonId || currentSeasonId || null;
                 const newLevel = config.academyLevel + 1;
 
                 transaction.update(configRef, {
@@ -230,7 +243,8 @@ export function createYouthAcademyStore() {
                 transaction.update(teamRef, {
                     budget: budget - finalPrice,
                     [`facilities.youthAcademy.level`]: newLevel,
-                    [`facilities.youthAcademy.lastUpgradeSeasonId`]: resolvedSeasonId
+                    [`facilities.youthAcademy.lastUpgradeSeasonId`]: resolvedSeasonId,
+                    [`facilities.youthAcademy.isLocked`]: true
                 });
             });
 
