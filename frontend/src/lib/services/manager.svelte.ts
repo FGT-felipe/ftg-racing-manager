@@ -3,7 +3,7 @@ import { collection, query, where, getDocs } from 'firebase/firestore';
 
 export interface ManagerProfile {
     name: string;
-    country: string;
+    countryCode: string;
 }
 
 export const managerService = {
@@ -30,7 +30,7 @@ export const managerService = {
                 if (matchedTeam) {
                     map[matchedTeam.id] = {
                         name: `${d.firstName ?? ''} ${d.lastName ?? ''}`.trim(),
-                        country: d.country ?? '',
+                        countryCode: d.countryCode ?? '',
                     };
                 }
             }

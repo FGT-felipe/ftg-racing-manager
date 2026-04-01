@@ -200,11 +200,13 @@ export function createYouthAcademyStore() {
 
         async upgradeAcademy() {
             const teamId = teamStore.value.team?.id;
-            const currentSeasonId = seasonStore.value.season?.id || teamStore.value.team?.currentSeasonId || null;
-            if (!teamId || !config) return;
+            // Read season ID from store before the transaction — this is the authoritative value
+            // used by canUpgrade, so it must match exactly what is stored.
+            const resolvedSeasonId = seasonStore.value.season?.id ?? null;
+            if (!teamId || !config || !resolvedSeasonId) return;
 
             if (config.academyLevel >= 5) throw new Error("Maximum level reached");
-            if (currentSeasonId && config.lastUpgradeSeasonId === currentSeasonId) throw new Error("Already upgraded this season");
+            if (config.lastUpgradeSeasonId === resolvedSeasonId) throw new Error("Already upgraded this season");
 
             const upgradePrice = ACADEMY_UPGRADE_COST_MULTIPLIER * config.academyLevel;
             const role = managerStore.profile?.role;
@@ -219,7 +221,6 @@ export function createYouthAcademyStore() {
                 if (!data || (data.budget ?? 0) < finalPrice) throw new Error("Insufficient budget");
                 const budget = data.budget ?? 0;
 
-                const resolvedSeasonId = data?.currentSeasonId || currentSeasonId || null;
                 const newLevel = config.academyLevel + 1;
 
                 transaction.update(configRef, {

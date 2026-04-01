@@ -18,7 +18,7 @@
     let activeTab = $state<Tab>("drivers");
 
     // ── Manager lookup map (teamId → display data) ──────────────────────────────
-    let managerMap = $state<Record<string, { name: string; country: string }>>({});
+    let managerMap = $state<Record<string, { name: string; countryCode: string }>>({});
 
     // ── League resolved from universe ────────────────────────────────────────────
     let selectedLeague = $derived.by(() => {
@@ -225,7 +225,7 @@
                             {#if mgr}
                                 <div class="flex items-center gap-1.5">
                                     <span class="text-[9px] font-bold text-app-text/20 uppercase truncate">Mgr: {mgr.name}</span>
-                                    <CountryFlag countryCode={mgr.country} size="xs" />
+                                    <CountryFlag countryCode={mgr.countryCode} size="xs" />
                                 </div>
                             {:else if team.managerName}
                                 <span class="text-[9px] font-bold text-app-text/20 uppercase truncate">Mgr: {team.managerName}</span>
