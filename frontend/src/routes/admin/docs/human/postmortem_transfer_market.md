@@ -1,8 +1,9 @@
 # Postmortem — Transfer Market: Flujo Roto, Recovery Destructiva, Datos Congelados
 
-**Fecha:** 2026-03-31  
-**Severidad:** Alta  
-**Estado:** Parcialmente recuperado. Fix de código deployado pendiente (T-028).
+**Fecha:** 2026-03-31
+**Fecha cierre:** 2026-04-01
+**Severidad:** Alta
+**Estado:** CERRADO. Todos los fixes aplicados y mergeados en fix/v1.6.0.
 
 ---
 
@@ -90,9 +91,9 @@ Si el piloto no acepta (3 intentos fallidos):
 ## Impacto en datos
 
 - **Kendall Thomas:** recuperada vía script manual. Asignada como reemplazo de Luis Díaz en GBA Racing.
-- **Luis Díaz:** liberado (`ex_driver`, `teamId: ""`). Pendiente: listarlo en transfer market a valor de mercado.
-- **Universe doc:** desincronizado. Requiere `node sync_universe.js`.
-- **Drivers en el mercado:** sus `transferListedAt` fueron convertidos a Timestamp. El mercado vuelve a funcionar tras el fix de código deployado.
+- **Luis Díaz:** liberado (`ex_driver`, `teamId: ""`). Listado en transfer market a valor de mercado.
+- **Universe doc:** sincronizado con `node sync_universe.js`.
+- **Drivers en el mercado:** `transferListedAt` convertidos a Timestamp. Mercado operativo.
 
 ---
 
@@ -102,11 +103,13 @@ Si el piloto no acepta (3 intentos fallidos):
 |--------|--------|
 | `staff.svelte.ts`: `Timestamp.now()` en lugar de `toISOString()` | ✅ Aplicado |
 | `transfer_market.svelte.ts`: cutoff como `Timestamp.fromMillis()` | ✅ Aplicado |
-| `sync_universe.js`: sincronizar standings | ⏳ Pendiente ejecución manual |
-| Luis Díaz: listar en transfer market | ⏳ Pendiente |
-| T-028: implementar flujo completo `pendingNegotiation` | ⏳ Próximo sprint |
-| T-028: descontar budget del comprador en el resolver | ⏳ Próximo sprint |
-| T-028: auto-listing del driver reemplazado | ⏳ Próximo sprint |
+| `sync_universe.js`: sincronizar standings | ✅ Ejecutado |
+| Luis Díaz: listar en transfer market | ✅ Listado |
+| T-028: flujo completo `pendingNegotiation` (TransferSetupModal + NegotiationModal) | ✅ Implementado en fix/v1.6.0 |
+| T-028: descontar budget del comprador en el resolver | ✅ Implementado en fix/v1.6.0 |
+| T-028: auto-listing del driver reemplazado en el resolver | ✅ Implementado en fix/v1.6.0 |
+| T-028: sync universe en el resolver | ✅ Implementado en fix/v1.6.0 |
+| Auditoría de hardcoding post-fix | ✅ Limpiado en fix/v1.6.0 |
 
 ---
 

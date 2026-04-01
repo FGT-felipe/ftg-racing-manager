@@ -13,7 +13,7 @@
     import { staffService } from "$lib/services/staff.svelte";
     import type { Driver } from "$lib/types";
     import { transferMarketService, MARKET_PAGE_SIZE, type MarketDriver } from "$lib/services/transfer_market.svelte";
-    import { TRANSFER_MARKET_BID_INCREMENT, TRANSFER_MARKET_BID_COMMISSION_RATE } from "$lib/constants/economics";
+    import { TRANSFER_MARKET_BID_INCREMENT, TRANSFER_MARKET_BID_COMMISSION_RATE, TRANSFER_LISTING_DURATION_MS, LISTING_EXPIRY_WARNING_MS } from "$lib/constants/economics";
 
     // ─── State ────────────────────────────────────────────────────────────────────
     let myTeamId = $derived(teamStore.value.team?.id ?? null);
@@ -34,9 +34,9 @@
     let bidLoading = $state(false);
     let bidError = $state("");
     let bidSuccess = $state(false);
-    /** Commission shown in the bid modal (10 % of marketValue, non-refundable). */
+    /** Commission shown in the bid modal (non-refundable). */
     let bidCommission = $derived(
-        selectedDriver ? Math.round(selectedDriver.marketValue * 0.10) : 0
+        selectedDriver ? Math.round(selectedDriver.marketValue * TRANSFER_MARKET_BID_COMMISSION_RATE) : 0
     );
 
     // Countdown timers
@@ -100,7 +100,7 @@
         for (const d of drivers) {
             if (!d.transferListedAt) { map[d.id] = "—"; continue; }
             const listed = d.transferListedAt?.toDate?.() ?? new Date(d.transferListedAt);
-            const expires = listed.getTime() + 24 * 3600 * 1000;
+            const expires = listed.getTime() + TRANSFER_LISTING_DURATION_MS;
             const diff = expires - now;
             if (diff <= 0) { map[d.id] = "Expired"; continue; }
             const totalHours = Math.floor(diff / 3600000);
@@ -167,7 +167,7 @@
                 setupDriver = selectedDriver as unknown as Driver;
             }, 800);
         } catch (e: any) {
-            bidError = e.message ?? "Error al pujar";
+            bidError = e.message ?? t('market_bid_error_default');
         } finally {
             bidLoading = false;
         }
@@ -213,8 +213,8 @@
     function isExpiringSoon(driver: MarketDriver): boolean {
         if (!driver.transferListedAt) return false;
         const listed = driver.transferListedAt?.toDate?.() ?? new Date(driver.transferListedAt);
-        const diff = listed.getTime() + 24 * 3600 * 1000 - Date.now();
-        return diff > 0 && diff < 5 * 60 * 1000;
+        const diff = listed.getTime() + TRANSFER_LISTING_DURATION_MS - Date.now();
+        return diff > 0 && diff < LISTING_EXPIRY_WARNING_MS;
     }
 
     async function fetchPendingNegotiations() {

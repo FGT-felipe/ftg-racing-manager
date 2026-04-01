@@ -291,7 +291,7 @@ export const transferMarketService = {
             // If this team already negotiated, cannot cancel
             const contracts: Record<string, any> = data.pendingContracts ?? {};
             if (contracts[myTeamId]) {
-                throw new Error('No puedes cancelar una puja una vez iniciada la negociación.');
+                throw new Error(t('market_cancel_negotiated_error'));
             }
 
             const updates: Record<string, any> = {};

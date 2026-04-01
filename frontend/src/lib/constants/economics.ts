@@ -212,6 +212,12 @@ export const TRANSFER_MARKET_BID_INCREMENT = 50_000;
 /** Duration a transfer listing remains active before expiring (hours). */
 export const TRANSFER_LISTING_DURATION_HOURS = 24;
 
+/** Duration a transfer listing remains active before expiring (milliseconds). */
+export const TRANSFER_LISTING_DURATION_MS = TRANSFER_LISTING_DURATION_HOURS * 3_600_000;
+
+/** Time before expiry at which a listing is considered "expiring soon" (milliseconds). */
+export const LISTING_EXPIRY_WARNING_MS = 5 * 60 * 1_000;
+
 // ---------------------------------------------------------------------------
 // Contract Negotiation
 // ---------------------------------------------------------------------------

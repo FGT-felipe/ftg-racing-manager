@@ -626,6 +626,8 @@ export const translations = {
         market_bid_rejected_error: "This driver does not want to negotiate with your team.",
         market_bid_min_error: "Minimum bid is {amount}",
         market_bid_budget_error: "Insufficient budget. You need {bid} + {commission} commission.",
+        market_bid_error_default: "Error placing bid.",
+        market_cancel_negotiated_error: "Cannot cancel a bid once negotiation has started.",
         transaction_bid_commission: "Bid commission: {name}",
         // ── Onboarding ─────────────────────────────────────────────────────────
         onboarding_career_path_label: "Career Path Initiation",
@@ -1323,6 +1325,8 @@ export const translations = {
         market_bid_rejected_error: "Este piloto no quiere negociar con tu equipo.",
         market_bid_min_error: "La puja mínima es {amount}",
         market_bid_budget_error: "Presupuesto insuficiente. Necesitas {bid} + {commission} de comisión.",
+        market_bid_error_default: "Error al pujar.",
+        market_cancel_negotiated_error: "No puedes cancelar una puja una vez iniciada la negociación.",
         transaction_bid_commission: "Comisión de puja: {name}",
         // ── Onboarding ─────────────────────────────────────────────────────────
         onboarding_career_path_label: "Inicio de Carrera",
