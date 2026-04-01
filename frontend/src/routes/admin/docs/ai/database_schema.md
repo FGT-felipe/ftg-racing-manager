@@ -187,7 +187,14 @@ potential:    number          // 1–5 stars
 currentStars: number          // 1–5
 gender:       "male" | "female"
 countryCode:  string
-role?:        "driver" | "reserve" | "ex_driver"
+role:         "main" | "secondary" | "equal" | "reserve" | "ex_driver"
+              // "main"      — primary car slot (carIndex 0); used in transfer market negotiations
+              // "secondary" — second car slot (carIndex 1)
+              // "equal"     — both drivers share equal priority (carIndex 0 or 1)
+              // "reserve"   — backup driver; promoted from academy only, not via transfer market
+              // "ex_driver" — released/free agent (teamId = null, carIndex = -1)
+              // Legacy values in pre-T-028 Firestore docs: "Main", "Reserve" (capitalized).
+              // UI reads role?.toLowerCase() to handle both. New transfers write lowercase.
 contractYearsRemaining: number
 
 stats: {                      // all values 1–20
@@ -212,10 +219,17 @@ form:             number      // recent performance trend
 championshipForm: number
 
 isTransferListed:   boolean
-transferListedAt?:  Timestamp
+transferListedAt?:  Timestamp   // Firestore Timestamp (NOT ISO string — see T-028 postmortem)
 marketValue:        number
 currentHighestBid:  number
 highestBidderTeamId?: string
+
+// Post-auction pending negotiation (set by resolver when auction closes with winning bid)
+// Cleared by finalizeTransferAcquisition on accept or reject.
+pendingNegotiation?:    boolean   // true = awaiting buyer contract negotiation
+pendingBuyerTeamId?:    string    // team that won the auction
+pendingBidAmount?:      number    // transfer fee already deducted from buyer budget
+pendingOriginalTeamId?: string    // original team (driver returns here if negotiations fail)
 
 specialty?:  string    // assigned via academy pipeline when a stat >= 11 (see DriverSpecialty type)
              // Values: "Rainmaster" | "Tyre Whisperer" | "Late Braker" | "Defensive Minister"

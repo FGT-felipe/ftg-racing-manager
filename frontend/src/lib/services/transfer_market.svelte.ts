@@ -10,6 +10,7 @@ import {
     doc,
     runTransaction,
     updateDoc,
+    Timestamp,
 } from 'firebase/firestore';
 import { calculateCurrentStars, calculateDriverMarketValue } from '$lib/utils/driver';
 import type { Driver } from '$lib/types';
@@ -59,7 +60,7 @@ export const transferMarketService = {
         pageIndex: number,
         pageHistory: any[]
     ): Promise<{ drivers: MarketDriver[]; lastDoc: any }> {
-        const cutoff = new Date(Date.now() - TRANSFER_LISTING_MS).toISOString();
+        const cutoff = Timestamp.fromMillis(Date.now() - TRANSFER_LISTING_MS);
         const constraints: any[] = [
             where('isTransferListed', '==', true),
             where('transferListedAt', '>', cutoff),

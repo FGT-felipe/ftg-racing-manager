@@ -40,6 +40,11 @@
     // UI State
     let selectedDriverId = $state<string | null>(null);
 
+    /** Accepts both legacy "Reserve" (capital) and normalized "reserve" (lowercase). */
+    function isReserveRole(role: string | undefined | null): boolean {
+        return role?.toLowerCase() === 'reserve';
+    }
+
     $effect(() => {
         if (!selectedDriverId && drivers.length > 0) {
             selectedDriverId = drivers[0].id;
@@ -52,7 +57,7 @@
         if (drivers.length > 0 && !selectedDriverId) {
             // Default to first Main driver, or any driver
             const mainDriver =
-                drivers.find((d: any) => d.role === "Main") || drivers[0];
+                drivers.find((d: any) => d.role === "main" || d.role === "Main" || d.carIndex === 0) || drivers[0];
             if (mainDriver) selectedDriverId = mainDriver.id;
         } else if (drivers.length > 0 && selectedDriverId) {
             // Ensure selected driver still exists
@@ -112,14 +117,14 @@
 
     let isQualyLocked = $derived.by(() => {
         if (!selectedDriver) return true;
-        if (selectedDriver.role === "Reserve") return true;
+        if (isReserveRole(selectedDriver.role)) return true;
         if (isSaturdayAfter1PM) return false;
         return driverPracticeLaps === 0;
     });
 
     let isRaceLocked = $derived.by(() => {
         if (!selectedDriver) return true;
-        if (selectedDriver.role === "Reserve") return true;
+        if (isReserveRole(selectedDriver.role)) return true;
         if (isSaturdayAfter1PM) return false;
         return driverPracticeLaps === 0;
     });
@@ -264,7 +269,7 @@
                     : 'bg-app-text/40 border-app-border text-app-text/60 hover:bg-app-text/5 hover:border-app-border'}"
                 onclick={() => {
                     selectedDriverId = driver.id;
-                    if (driver.role === "Reserve" && activeTab !== "practice") {
+                    if (isReserveRole(driver.role) && activeTab !== "practice") {
                         activeTab = "practice";
                     }
                 }}
@@ -423,7 +428,7 @@
                         <span
                             class="text-[8px] font-black uppercase tracking-widest text-red-500 max-w-[100px]"
                         >
-                            {selectedDriver.role === "Reserve"
+                            {isReserveRole(selectedDriver.role)
                                 ? "RESERVE DRIVERS RESTRICTED"
                                 : "PRACTICE REQUIRED"}
                         </span>
@@ -504,7 +509,7 @@
                         <span
                             class="text-[8px] font-black uppercase tracking-widest text-red-500 max-w-[100px]"
                         >
-                            {selectedDriver.role === "Reserve"
+                            {isReserveRole(selectedDriver.role)
                                 ? "RESERVE DRIVERS RESTRICTED"
                                 : "PRACTICE REQUIRED"}
                         </span>

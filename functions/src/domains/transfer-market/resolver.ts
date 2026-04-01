@@ -3,7 +3,8 @@
  * Extracted from resolveTransferMarket in functions/index.js (lines 2349–2464).
  *
  * Finds drivers listed for transfer ≥24h. Processes bids:
- *  - If bid exists: transfers driver to winning team, credits seller.
+ *  - If bid exists: transfers driver to winning team, debits buyer, credits seller,
+ *    logs transactions, and syncs universe standings automatically.
  *  - If no bid: delist driver; if no team, delete the driver document.
  */
 
@@ -11,6 +12,77 @@ import * as logger from "firebase-functions/logger";
 import { onSchedule } from "firebase-functions/v2/scheduler";
 import { db, admin } from "../../shared/admin";
 import { addOfficeNews } from "../../shared/notifications";
+
+// ─── Universe sync helper ─────────────────────────────────────────────────────
+
+/**
+ * Updates the universe/game_universe_v1 document after a transfer:
+ *  - If the driver already exists in a league.drivers[], updates their teamId.
+ *  - If not found and newTeamId belongs to a league, adds the driver entry.
+ * Called after every resolved transfer so standings reflect changes immediately.
+ *
+ * @param driverId     Firestore driver document ID.
+ * @param driverData   Full driver data snapshot (for building new entry if needed).
+ * @param newTeamId    The team the driver now belongs to.
+ */
+async function syncDriverInUniverse(
+  driverId: string,
+  driverData: Record<string, unknown>,
+  newTeamId: string
+): Promise<void> {
+  const uRef = db.collection("universe").doc("game_universe_v1");
+  const uDoc = await uRef.get();
+  if (!uDoc.exists) return;
+
+  const uData = uDoc.data()!;
+  const leagues: any[] = uData.leagues || [];
+
+  // Build set of all league teamIds to determine which league this team belongs to
+  let targetLeagueIdx = -1;
+  for (let li = 0; li < leagues.length; li++) {
+    const teamIds = (leagues[li].teams || []).map((t: any) => t.id);
+    if (newTeamId && teamIds.includes(newTeamId)) {
+      targetLeagueIdx = li;
+      break;
+    }
+  }
+
+  let updated = false;
+
+  // Update existing entry across all leagues
+  for (let li = 0; li < leagues.length; li++) {
+    const di = (leagues[li].drivers || []).findIndex((d: any) => d.id === driverId);
+    if (di !== -1) {
+      leagues[li].drivers[di].teamId = newTeamId || "";
+      updated = true;
+      break;
+    }
+  }
+
+  // Add to target league if not found anywhere and we know the league
+  if (!updated && targetLeagueIdx !== -1) {
+    leagues[targetLeagueIdx].drivers.push({
+      id:               driverId,
+      name:             driverData["name"] || "",
+      teamId:           newTeamId,
+      gender:           (driverData["gender"] as string) || "male",
+      countryCode:      (driverData["countryCode"] as string) || "",
+      points:           (driverData["points"] as number) || 0,
+      seasonPoints:     (driverData["seasonPoints"] as number) || 0,
+      wins:             (driverData["wins"] as number) || 0,
+      seasonWins:       (driverData["seasonWins"] as number) || 0,
+      podiums:          (driverData["podiums"] as number) || 0,
+      seasonPodiums:    (driverData["seasonPodiums"] as number) || 0,
+      races:            (driverData["races"] as number) || 0,
+      seasonRaces:      (driverData["seasonRaces"] as number) || 0,
+      championships:    (driverData["championships"] as number) || 0,
+      championshipForm: (driverData["championshipForm"] as unknown[]) || [],
+      careerHistory:    (driverData["careerHistory"] as unknown[]) || [],
+    });
+  }
+
+  await uRef.update({ leagues });
+}
 
 // ─── Core logic ───────────────────────────────────────────────────────────────
 
@@ -47,36 +119,75 @@ export async function runTransferMarketResolver(): Promise<void> {
       const originalTeamId = driver["teamId"] as string | undefined;
 
       if (highestBid > 0 && highestBidderId) {
-        // ── Driver sold ──
+        // ── Auction won — enter pendingNegotiation phase ──
+        // Driver stays on current team until the buyer completes contract negotiation.
+        // The buyer has already paid the transfer fee (deducted below); it is not refunded
+        // if negotiations fail. Actual teamId/role change happens in finalizeTransferAcquisition.
         currentBatch.update(doc.ref, {
           isTransferListed: false,
           transferListedAt: admin.firestore.FieldValue.delete(),
           currentHighestBid: admin.firestore.FieldValue.delete(),
           highestBidderTeamId: admin.firestore.FieldValue.delete(),
-          teamId: highestBidderId,
-          salary: Math.max((driver["salary"] as number) || 10_000, 10_000),
-          contractYearsRemaining: 1,
+          pendingNegotiation: true,
+          pendingBuyerTeamId: highestBidderId,
+          pendingBidAmount: highestBid,
+          pendingOriginalTeamId: originalTeamId || null,
+        });
+        opCount++;
+
+        // Debit buyer budget
+        const buyerRef = db.collection("teams").doc(highestBidderId);
+        currentBatch.update(buyerRef, {
+          budget: admin.firestore.FieldValue.increment(-highestBid),
+        });
+        opCount++;
+
+        // Buyer transaction record
+        const buyerTxRef = buyerRef.collection("transactions").doc();
+        currentBatch.set(buyerTxRef, {
+          id: buyerTxRef.id,
+          description: `Transfer Market: ${driver["name"]} signed`,
+          amount: -highestBid,
+          date: new Date().toISOString(),
+          type: "TRANSFER",
         });
         opCount++;
 
         if (originalTeamId) {
-          currentBatch.update(db.collection("teams").doc(originalTeamId), {
+          // Credit seller budget
+          const sellerRef = db.collection("teams").doc(originalTeamId);
+          currentBatch.update(sellerRef, {
             budget: admin.firestore.FieldValue.increment(highestBid),
+          });
+          opCount++;
+
+          // Seller transaction record
+          const sellerTxRef = sellerRef.collection("transactions").doc();
+          currentBatch.set(sellerTxRef, {
+            id: sellerTxRef.id,
+            description: `Transfer Market: ${driver["name"]} sold`,
+            amount: highestBid,
+            date: new Date().toISOString(),
+            type: "TRANSFER",
           });
           opCount++;
 
           await addOfficeNews(originalTeamId, {
             title: "Driver Sold",
-            message: `${driver["name"]} was successfully sold in the transfer market for $${(highestBid as number).toLocaleString()}.`,
+            message: `${driver["name"]} was successfully sold in the transfer market for $${highestBid.toLocaleString()}.`,
             type: "TRANSFER_SOLD",
           });
         }
 
         await addOfficeNews(highestBidderId, {
-          title: "Transfer Bid Won",
-          message: `You won the bid for ${driver["name"]} for $${(highestBid as number).toLocaleString()}! They have joined your team.`,
+          title: "Transfer Completed",
+          message: `${driver["name"]} has joined your team. Transfer fee: $${highestBid.toLocaleString()}.`,
           type: "TRANSFER_WON",
         });
+
+        // Sync universe standings automatically
+        await syncDriverInUniverse(doc.id, driver, highestBidderId);
+
       } else {
         // ── Driver unsold ──
         if (originalTeamId) {

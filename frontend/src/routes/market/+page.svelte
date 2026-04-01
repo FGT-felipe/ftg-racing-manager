@@ -9,6 +9,7 @@
     import { t } from "$lib/utils/i18n";
     import { managerStore } from "$lib/stores/manager.svelte";
     import NegotiationModal from "$lib/components/NegotiationModal.svelte";
+    import TransferSetupModal from "$lib/components/TransferSetupModal.svelte";
     import { staffService } from "$lib/services/staff.svelte";
     import type { Driver } from "$lib/types";
     import { transferMarketService, MARKET_PAGE_SIZE, type MarketDriver } from "$lib/services/transfer_market.svelte";
@@ -41,7 +42,11 @@
 
     // Pending negotiations (drivers with pendingNegotiation == true for my team)
     let pendingNegotiations = $state<Driver[]>([]);
+    // Setup phase: manager selects role + replacement driver before salary negotiation
+    let setupDriver = $state<Driver | null>(null);
     let negotiatingDriver = $state<Driver | null>(null);
+    let pendingRole = $state<'main' | 'secondary' | 'equal' | null>(null);
+    let pendingReplacedDriverId = $state<string | null>(null);
 
     // ─── Helpers ─────────────────────────────────────────────────────────────────
     function formatCurrency(value: number): string {
@@ -258,7 +263,7 @@
                             Fee paid: {formatCurrency(pendingDriver.pendingBidAmount ?? 0)}
                         </p>
                         <button
-                            onclick={() => { negotiatingDriver = pendingDriver; }}
+                            onclick={() => { setupDriver = pendingDriver; }}
                             class="px-4 py-2 bg-yellow-500 text-black text-[10px] font-black uppercase tracking-widest rounded-xl hover:bg-yellow-400 transition-all shrink-0"
                         >
                             {t('negotiate_contract')}
@@ -701,25 +706,57 @@
     {/if}
 {/if}
 
-<!-- Transfer Negotiation Modal -->
+<!-- Transfer Setup Modal — role + replacement driver selection (step 1) -->
+{#if setupDriver && myTeamId}
+    <TransferSetupModal
+        driver={setupDriver}
+        teamId={myTeamId}
+        isOpen={setupDriver !== null}
+        onConfirm={(replacedDriverId, role) => {
+            pendingReplacedDriverId = replacedDriverId;
+            pendingRole = role;
+            negotiatingDriver = setupDriver;
+            setupDriver = null;
+        }}
+        onClose={() => { setupDriver = null; }}
+    />
+{/if}
+
+<!-- Transfer Negotiation Modal — salary + years negotiation (step 2) -->
 {#if negotiatingDriver && myTeamId}
     <NegotiationModal
         driver={negotiatingDriver}
         teamId={myTeamId}
         managerBackground={managerStore.profile?.backgroundId ?? ''}
         isOpen={negotiatingDriver !== null}
-        feeLabel="Contract Cost"
+        feeLabel={t('transfer_setup_title')}
         onFinalize={async (salary, years, moraleChange) => {
             await staffService.finalizeTransferAcquisition(negotiatingDriver!, {
-                accepted: true, salary, years, moraleChange,
+                accepted: true,
+                salary,
+                years,
+                moraleChange,
+                role: pendingRole ?? 'secondary',
+                replacedDriverId: pendingReplacedDriverId ?? undefined,
             });
         }}
         onFailed={async (moraleChange) => {
             await staffService.finalizeTransferAcquisition(negotiatingDriver!, {
-                accepted: false, moraleChange,
+                accepted: false,
+                moraleChange,
             });
         }}
-        onClose={() => { negotiatingDriver = null; fetchPendingNegotiations(); }}
-        onSuccess={() => { negotiatingDriver = null; fetchPendingNegotiations(); }}
+        onClose={() => {
+            negotiatingDriver = null;
+            pendingRole = null;
+            pendingReplacedDriverId = null;
+            fetchPendingNegotiations();
+        }}
+        onSuccess={() => {
+            negotiatingDriver = null;
+            pendingRole = null;
+            pendingReplacedDriverId = null;
+            fetchPendingNegotiations();
+        }}
     />
 {/if}

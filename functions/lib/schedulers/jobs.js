@@ -10,7 +10,7 @@
  *  - Verify no duplicates from domain files.
  */
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.scheduledDailyBackup = exports.restoreDriversHistory = exports.forceFixGBA = exports.megaFixDebriefs = exports.resolveTransferMarket = exports.scheduledDailyFitnessRecovery = exports.postRaceProcessing = exports.forceRace = exports.scheduledRace = exports.forceQualy = exports.scheduledQualifying = void 0;
+exports.scheduledHourlyMaintenance = exports.scheduledDailyBackup = exports.restoreDriversHistory = exports.forceFixGBA = exports.megaFixDebriefs = exports.resolveTransferMarket = exports.scheduledDailyFitnessRecovery = exports.postRaceProcessing = exports.forceRace = exports.scheduledRace = exports.forceQualy = exports.scheduledQualifying = void 0;
 const v2_1 = require("firebase-functions/v2");
 // Limit all functions to 10 concurrent instances unless overridden per-function
 (0, v2_1.setGlobalOptions)({ maxInstances: 10 });
@@ -38,3 +38,6 @@ Object.defineProperty(exports, "restoreDriversHistory", { enumerable: true, get:
 // ─── Backup ───────────────────────────────────────────────────────────────────
 var backup_1 = require("../domains/admin/backup");
 Object.defineProperty(exports, "scheduledDailyBackup", { enumerable: true, get: function () { return backup_1.scheduledDailyBackup; } });
+// ─── Maintenance ──────────────────────────────────────────────────────────────
+var checker_1 = require("../schedulers/checker");
+Object.defineProperty(exports, "scheduledHourlyMaintenance", { enumerable: true, get: function () { return checker_1.scheduledHourlyMaintenance; } });

@@ -1,0 +1,9 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(grep '\"\"version\"\"' \"D:\\\\PROYECTOS\\\\Fire Tower Games\\\\Projects\\\\ftg-racing-manager\\\\frontend\\\\package.json\")",
+      "Bash(npm run:*)",
+      "Bash(firebase deploy:*)"
+    ]
+  }
+}

@@ -128,12 +128,28 @@ moraleFactor = MORALE_LAPTIME_FACTOR * (morale - MORALE_NEUTRAL) / 100
 ---
 
 ## 6. Mercado de Transferencias
-*   **Ciclo de Subasta**: Las pujas duran **24 horas**.
-*   **Resolución**: Al finalizar, el mejor postor entra en fase de negociación personal. La tarifa de transferencia se deduce inmediatamente; no se reembolsa aunque fallen las negociaciones.
-*   **Contratos Post-Venta**: El comprador negocia salario y años al finalizar la subasta vía `NegotiationModal`.
-*   **Limpieza**: Los pilotos generados por el sistema que no reciben pujas en 24h son eliminados para mantener el pool fresco.
+
+### Flujo completo de transferencia (T-028)
+
+1. **Listado**: El manager lista un piloto. Se descuenta la tarifa de listado (10% del valor de mercado). El piloto recibe penalización de moral (`MORALE_EVENT_TRANSFER_LISTED`).
+2. **Subasta**: Las pujas duran **24 horas**. Puja mínima = `marketValue`; incremento = `TRANSFER_MARKET_BID_INCREMENT`.
+3. **Resolución** (CF `resolveTransferMarket`, cada hora en :00): Al vencer el plazo:
+   - **Sin puja**: El piloto se deslistea. Si no tiene equipo (generado por sistema), se elimina.
+   - **Con puja ganadora**: La tarifa de transferencia (`highestBid`) se descuenta inmediatamente del budget del comprador. Se acredita al vendedor. El piloto entra en estado `pendingNegotiation = true`. La tarifa **NO se reembolsa** si las negociaciones fallan.
+4. **Configuración de fichaje** (`TransferSetupModal`): El manager comprador selecciona:
+   - Rol del piloto entrante: `main` | `secondary` | `equal` (no `reserve` — reservas son exclusivos de academia)
+   - Piloto del equipo que será reemplazado (uno de los slots activos, carIndex 0 o 1)
+5. **Negociación de contrato** (`NegotiationModal`): El manager propone salario y años. El piloto puede contra-proponer. Máx. 3 intentos (`NEGOTIATION_MAX_ATTEMPTS`). Cada intento fallido aplica penalización de moral (`NEGOTIATION_MORALE_PENALTY_PER_FAIL`).
+6. **Cierre** (`staffService.finalizeTransferAcquisition`):
+   - **Aceptado**: El piloto entra al equipo con el rol y slot del reemplazado. El reemplazado queda libre (`role: 'ex_driver'`, `teamId: null`) y se auto-lista en el mercado a su valor de mercado actual (**sin tarifa de listado**).
+   - **Rechazado**: El piloto regresa a su equipo original. La tarifa de transferencia ya está perdida.
+
+### Reglas adicionales
 *   **Valor de Mercado**: Calculado con `calculateDriverMarketValue` — fórmula basada en potencial, rendimiento actual y edad. NO equivale al salario anual.
-*   **Tarifa de Listado**: 10% del valor de mercado, deducida al publicar (`TRANSFER_MARKET_LISTING_FEE_RATE`).
+*   **Tarifa de Listado**: 10% del valor de mercado, deducida al publicar (`TRANSFER_MARKET_LISTING_FEE_RATE`). Exenta para auto-listados por reemplazo.
+*   **Limpieza**: Los pilotos generados por el sistema sin equipo y sin pujas en 24h son eliminados.
+*   **Roles de piloto**: Ver sección `role` en `database_schema.md`. Los pilotos del transfer market deben tener `role` poblado — si falta, la UI muestra "Unknown". El resolver no asigna rol (lo elige el manager en el setup).
+*   **Universe sync**: El `scheduledHourlyMaintenance` (CF, :30 cada hora) reconstruye `universe/game_universe_v1` con `gender` y `countryCode` incluidos en cada entrada de piloto.
 
 ### Despido de Piloto (Dismiss)
 *   **Coste**: Salario anual completo del piloto (indemnización por rescisión).

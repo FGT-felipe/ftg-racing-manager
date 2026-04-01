@@ -5,6 +5,7 @@ import {
     runTransaction,
     increment,
     collection,
+    Timestamp,
 } from 'firebase/firestore';
 import { type Driver } from '$lib/types';
 import { driverRepository } from '$lib/repositories/driver.repository';
@@ -184,7 +185,7 @@ export class StaffService {
 
             transaction.update(driverRef, {
                 isTransferListed: true,
-                transferListedAt: new Date().toISOString(),
+                transferListedAt: Timestamp.now(),
                 marketValue,
                 'stats.morale': Math.max(0, currentMorale + MORALE_EVENT_TRANSFER_LISTED),
             });
@@ -271,23 +272,31 @@ export class StaffService {
      * Finalizes a post-bid transfer negotiation.
      * Called after the buyer won an auction and has agreed (or failed) on personal terms.
      *
-     * On acceptance: driver transferred to buyer team with agreed salary/years.
-     * On rejection: driver returned to original team. Bid amount is NOT refunded.
+     * On acceptance:
+     *  - Incoming driver transferred to buyer team with the agreed salary/years and chosen role.
+     *  - Replaced driver released to free agent status and auto-listed on the transfer market
+     *    at their current market value (no listing fee for auto-listings).
+     *  - Incoming driver inherits the carIndex of the replaced driver.
+     * On rejection: driver stays on original team. Transfer fee already deducted — not refunded.
      *
-     * @param driver - The driver in pendingNegotiation state
-     * @param params.accepted - Whether personal terms were agreed
-     * @param params.salary - Agreed annual salary (if accepted)
-     * @param params.years - Contract duration in seasons (if accepted)
+     * @param driver             - The driver in pendingNegotiation state
+     * @param params.accepted    - Whether personal terms were agreed
+     * @param params.salary      - Agreed annual salary (if accepted)
+     * @param params.years       - Contract duration in seasons (if accepted)
      * @param params.moraleChange - Cumulative morale adjustment from failed attempts
+     * @param params.role        - Team role for the incoming driver: 'main' | 'secondary' | 'equal'
+     * @param params.replacedDriverId - Driver being displaced from the roster slot
      */
     async finalizeTransferAcquisition(driver: Driver, params: {
         accepted: boolean;
         salary?: number;
         years?: number;
         moraleChange: number;
+        role?: 'main' | 'secondary' | 'equal';
+        replacedDriverId?: string;
     }) {
         const driverRef = driverRepository.docRef(driver.id);
-        const { accepted, salary, years, moraleChange } = params;
+        const { accepted, salary, years, moraleChange, role, replacedDriverId } = params;
         const buyerTeamId = driver.pendingBuyerTeamId;
         const originalTeamId = driver.pendingOriginalTeamId;
 
@@ -307,21 +316,44 @@ export class StaffService {
                 pendingOriginalTeamId: null,
             };
 
-            if (accepted && salary && years) {
-                // Transfer the driver to the buyer team
+            if (accepted && salary && years && role) {
+                // ── Resolve replaced driver slot ──────────────────────────────────
+                let inheritedCarIndex = -1;
+                if (replacedDriverId) {
+                    const replacedRef = driverRepository.docRef(replacedDriverId);
+                    const replacedDoc = await transaction.get(replacedRef);
+                    if (replacedDoc.exists()) {
+                        const rd = replacedDoc.data();
+                        inheritedCarIndex = rd.carIndex ?? -1;
+                        const replacedMarketValue = calculateDriverMarketValue(replacedDoc.data() as any);
+
+                        // Release replaced driver — free agent, auto-listed without listing fee
+                        transaction.update(replacedRef, {
+                            teamId: null,
+                            role: 'ex_driver',
+                            carIndex: -1,
+                            isTransferListed: true,
+                            transferListedAt: Timestamp.now(),
+                            marketValue: replacedMarketValue,
+                            currentHighestBid: 0,
+                            highestBidderTeamId: null,
+                        });
+                    }
+                }
+
+                // ── Transfer incoming driver ──────────────────────────────────────
                 const driverUpdates: Record<string, any> = {
                     ...clearPendingFields,
                     teamId: buyerTeamId,
                     salary,
                     contractYearsRemaining: years,
-                    role: 'Reserve', // Joins as Reserve — manager reassigns later
-                    carIndex: -1,
+                    role,
+                    carIndex: inheritedCarIndex,
                 };
                 if (moraleChange !== 0) {
                     const currentMorale = driverDoc.data().stats?.morale ?? 50;
                     driverUpdates['stats.morale'] = Math.max(0, Math.min(100, currentMorale + moraleChange));
                 }
-
                 transaction.update(driverRef, driverUpdates);
 
                 // Log acquisition transaction for buyer
@@ -329,13 +361,13 @@ export class StaffService {
                 const txRef = doc(collection(buyerTeamRef, 'transactions'));
                 transaction.set(txRef, {
                     id: txRef.id,
-                    description: `Transfer Acquisition: ${driver.name} (${years} yr${years > 1 ? 's' : ''} @ $${salary.toLocaleString()}/yr)`,
+                    description: `Transfer Acquisition: ${driver.name} as ${role} (${years} yr${years > 1 ? 's' : ''} @ $${salary.toLocaleString()}/yr)`,
                     amount: 0, // Transfer fee already deducted by resolver
                     date: new Date().toISOString(),
-                    type: 'OTHER',
+                    type: 'TRANSFER',
                 });
             } else {
-                // Negotiations failed — return driver to original team, bid amount already lost
+                // Negotiations failed — driver stays on original team, bid amount already lost
                 const driverUpdates: Record<string, any> = {
                     ...clearPendingFields,
                     teamId: originalTeamId || null,
