@@ -59,9 +59,17 @@
 
     let qualyCompounds = $state<Record<string, TyreCompound>>({});
     let isQualyWet = $state(false);
-    let qualyMechanicals = $state<{ suspension: number; gearRatio: number } | null>(null);
 
-    const isParcFermeLocked = $derived(!!driverId && !!qualyCompounds[driverId] && !isQualyWet);
+    // Parc Fermé: read qualifyingParcFerme flag directly from the reactive team store.
+    // This avoids the async getQualyGrid() dependency which only works when the CF has
+    // written the races/ document (not available during manual qualifying flow).
+    const isParcFermeLocked = $derived.by(() => {
+        if (!driverId) return false;
+        const ds = team?.weekStatus?.driverSetups?.[driverId];
+        if (!ds?.qualifyingParcFerme) return false;
+        // Wet tyre exception: if the driver qualified on wets, free compound choice for race start
+        return ds?.qualifying?.tyreCompound !== TyreCompound.wet;
+    });
 
     // Watch for driver changes to load their RACE setup and Qualy tyre
     $effect(() => {
@@ -86,32 +94,32 @@
             const nextEvent = seasonStore.nextEvent;
             if (nextEvent && seasonStore.value.season) {
                 const raceDocId = `${seasonStore.value.season.id}_${nextEvent.id}`;
+
+                // Try to read the CF-generated qualifying grid (available only when CF ran qualy).
+                // Primary purpose: populate qualyCompounds for tyre compound display/lock.
                 const grid = await carSetupService.getQualyGrid(raceDocId);
                 grid.forEach((row) => {
                     qualyCompounds[row.driverId] = row.tyreCompound as TyreCompound;
                 });
 
-                // Fallback: if the grid doesn't have this driver yet (CF hasn't generated it),
-                // read the compound directly from the driver's qualifying session data in the team doc.
+                // Fallback: use qualifyingBestCompound from the team doc (set by manual qualy flow).
                 if (!qualyCompounds[dId]) {
                     const savedCompound = team?.weekStatus?.driverSetups?.[dId]?.qualifyingBestCompound as TyreCompound | undefined;
                     if (savedCompound) qualyCompounds[dId] = savedCompound;
                 }
 
-                // Parc fermé exception: if the driver qualified on WET tyres, free compound choice for race start
                 isQualyWet = qualyCompounds[dId] === TyreCompound.wet;
 
-                if (qualyCompounds[dId] && !isQualyWet) {
-                    strategy.tyreCompound = qualyCompounds[dId];
+                // Lock starting tyre compound and apply qualifying mechanical values to strategy.
+                // isParcFermeLocked is derived directly from qualifyingParcFerme (reactive, no async).
+                // This block only seeds the strategy state for display — the lock itself is reactive.
+                const ds = team?.weekStatus?.driverSetups?.[dId];
+                if (ds?.qualifyingParcFerme && !isQualyWet) {
+                    if (qualyCompounds[dId]) strategy.tyreCompound = qualyCompounds[dId];
 
-                    // Lock mechanical setup (suspension + gearRatio) from the best qualifying lap.
-                    // The full CarSetup is persisted in weekStatus.driverSetups.[dId].qualifying.
-                    const qualySetup = team?.weekStatus?.driverSetups?.[dId]?.qualifying;
+                    // Seed suspension + gearRatio from the saved qualifying setup.
+                    const qualySetup = ds?.qualifying;
                     if (qualySetup?.suspension !== undefined && qualySetup?.gearRatio !== undefined) {
-                        qualyMechanicals = {
-                            suspension: qualySetup.suspension,
-                            gearRatio: qualySetup.gearRatio,
-                        };
                         strategy.suspension = qualySetup.suspension;
                         strategy.gearRatio = qualySetup.gearRatio;
                     }
