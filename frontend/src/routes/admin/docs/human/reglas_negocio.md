@@ -129,20 +129,46 @@ moraleFactor = MORALE_LAPTIME_FACTOR * (morale - MORALE_NEUTRAL) / 100
 
 ## 6. Mercado de Transferencias
 
-### Flujo completo de transferencia (T-028)
+### Flujo completo de transferencia (T-028 — implementado en V1.6.0)
 
 1. **Listado**: El manager lista un piloto. Se descuenta la tarifa de listado (10% del valor de mercado). El piloto recibe penalización de moral (`MORALE_EVENT_TRANSFER_LISTED`).
 2. **Subasta**: Las pujas duran **24 horas**. Puja mínima = `marketValue`; incremento = `TRANSFER_MARKET_BID_INCREMENT`.
-3. **Resolución** (CF `resolveTransferMarket`, cada hora en :00): Al vencer el plazo:
-   - **Sin puja**: El piloto se deslistea. Si no tiene equipo (generado por sistema), se elimina.
-   - **Con puja ganadora**: La tarifa de transferencia (`highestBid`) se descuenta inmediatamente del budget del comprador. Se acredita al vendedor. El piloto entra en estado `pendingNegotiation = true`. La tarifa **NO se reembolsa** si las negociaciones fallan.
-4. **Configuración de fichaje** (`TransferSetupModal`): El manager comprador selecciona:
-   - Rol del piloto entrante: `main` | `secondary` | `equal` (no `reserve` — reservas son exclusivos de academia)
-   - Piloto del equipo que será reemplazado (uno de los slots activos, carIndex 0 o 1)
-5. **Negociación de contrato** (`NegotiationModal`): El manager propone salario y años. El piloto puede contra-proponer. Máx. 3 intentos (`NEGOTIATION_MAX_ATTEMPTS`). Cada intento fallido aplica penalización de moral (`NEGOTIATION_MORALE_PENALTY_PER_FAIL`).
-6. **Cierre** (`staffService.finalizeTransferAcquisition`):
-   - **Aceptado**: El piloto entra al equipo con el rol y slot del reemplazado. El reemplazado queda libre (`role: 'ex_driver'`, `teamId: null`) y se auto-lista en el mercado a su valor de mercado actual (**sin tarifa de listado**).
-   - **Rechazado**: El piloto regresa a su equipo original. La tarifa de transferencia ya está perdida.
+3. **Puja + Comisión inmediata**: Al hacer Submit Bid:
+   - Se descuenta la **comisión de puja** (`TRANSFER_MARKET_BID_COMMISSION_RATE` = 10% del `marketValue`) del comprador. **No reembolsable**.
+   - Se abre inmediatamente el flujo de negociación de contrato (TransferSetupModal → NegotiationModal).
+4. **Negociación de contrato**: El manager selecciona:
+   - Rol del piloto entrante: `main` | `secondary` | `equal`
+   - Piloto a reemplazar (debe ser activo, carIndex 0 o 1)
+   - Salario y años vía NegotiationModal (máx. `NEGOTIATION_MAX_ATTEMPTS` intentos)
+   - El resultado se guarda en `driver.pendingContracts[teamId]` con `status: 'accepted' | 'rejected'`.
+5. **Rechazo**: Si el piloto rechaza la negociación:
+   - El equipo queda en `driver.rejectedNegotiationTeams[]` (blacklisted — no puede volver a pujar).
+   - La comisión ya está perdida.
+   - La subasta sigue activa para otros equipos.
+6. **Múltiples pujas**: Varios equipos pueden pujar y negociar simultáneamente. Cada uno tiene su propio `pendingContracts[teamId]`.
+7. **Resolución** (CF `resolveTransferMarket`, cada hora en :00): Al vencer el plazo:
+   - El ganador es el equipo con mayor `bidAmount` en `pendingContracts` con `status === 'accepted'`.
+   - Si no hay equipo con contrato aceptado: el piloto se deslistea sin transferencia (los equipos que pujaron sin negociar pierden su comisión — **Opción A**).
+   - El `bidAmount` del ganador se descuenta de su budget y se acredita al vendedor.
+   - El piloto entrante recibe `teamId`, `role`, `salary`, `years` del contrato aceptado.
+   - El piloto reemplazado queda libre (`role: 'ex_driver'`, `teamId: null`) y se auto-lista en el mercado sin tarifa de listado.
+
+### Modelo de datos en `drivers/{driverId}`
+
+```
+pendingContracts: {
+  [teamId]: {
+    bidAmount: number
+    role: 'main' | 'secondary' | 'equal'
+    replacedDriverId: string
+    salary: number
+    years: number
+    status: 'accepted' | 'rejected'
+    negotiatedAt: Timestamp
+  }
+}
+rejectedNegotiationTeams: string[]   // equipos bloqueados de volver a pujar
+```
 
 ### Reglas adicionales
 *   **Valor de Mercado**: Calculado con `calculateDriverMarketValue` — fórmula basada en potencial, rendimiento actual y edad. NO equivale al salario anual.

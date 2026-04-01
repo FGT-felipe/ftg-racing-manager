@@ -1,12 +1,17 @@
 "use strict";
 /**
  * Transfer market resolver — runs hourly.
- * Extracted from resolveTransferMarket in functions/index.js (lines 2349–2464).
  *
- * Finds drivers listed for transfer ≥24h. Processes bids:
- *  - If bid exists: transfers driver to winning team, debits buyer, credits seller,
- *    logs transactions, and syncs universe standings automatically.
- *  - If no bid: delist driver; if no team, delete the driver document.
+ * T-028 Flow:
+ * Finds drivers listed for transfer ≥24h. For each expired listing:
+ *  - Finds the winner: the team with the highest bidAmount in pendingContracts
+ *    that has status === 'accepted'. Teams that never negotiated or were rejected
+ *    are skipped (Option A — commission lost, no transfer).
+ *  - Executes the transfer using the winner's stored contract terms
+ *    (role, replacedDriverId, salary, years).
+ *  - Deducts the bid amount from winner's budget, credits seller.
+ *  - Releases the replaced driver to free agent + auto-lists on market.
+ *  - If no team has an accepted contract: driver is delisted normally.
  */
 var __createBinding = (this && this.__createBinding) || (Object.create ? (function(o, m, k, k2) {
     if (k2 === undefined) k2 = k;
@@ -50,13 +55,12 @@ const admin_1 = require("../../shared/admin");
 const notifications_1 = require("../../shared/notifications");
 // ─── Universe sync helper ─────────────────────────────────────────────────────
 /**
- * Updates the universe/game_universe_v1 document after a transfer:
- *  - If the driver already exists in a league.drivers[], updates their teamId.
- *  - If not found and newTeamId belongs to a league, adds the driver entry.
- * Called after every resolved transfer so standings reflect changes immediately.
+ * Updates the universe/game_universe_v1 document after a transfer.
+ * - If the driver already exists in a league.drivers[], updates their teamId.
+ * - If not found and newTeamId belongs to a league, adds the driver entry.
  *
  * @param driverId     Firestore driver document ID.
- * @param driverData   Full driver data snapshot (for building new entry if needed).
+ * @param driverData   Full driver data snapshot.
  * @param newTeamId    The team the driver now belongs to.
  */
 async function syncDriverInUniverse(driverId, driverData, newTeamId) {
@@ -66,7 +70,6 @@ async function syncDriverInUniverse(driverId, driverData, newTeamId) {
         return;
     const uData = uDoc.data();
     const leagues = uData.leagues || [];
-    // Build set of all league teamIds to determine which league this team belongs to
     let targetLeagueIdx = -1;
     for (let li = 0; li < leagues.length; li++) {
         const teamIds = (leagues[li].teams || []).map((t) => t.id);
@@ -76,7 +79,6 @@ async function syncDriverInUniverse(driverId, driverData, newTeamId) {
         }
     }
     let updated = false;
-    // Update existing entry across all leagues
     for (let li = 0; li < leagues.length; li++) {
         const di = (leagues[li].drivers || []).findIndex((d) => d.id === driverId);
         if (di !== -1) {
@@ -85,7 +87,6 @@ async function syncDriverInUniverse(driverId, driverData, newTeamId) {
             break;
         }
     }
-    // Add to target league if not found anywhere and we know the league
     if (!updated && targetLeagueIdx !== -1) {
         leagues[targetLeagueIdx].drivers.push({
             id: driverId,
@@ -114,7 +115,7 @@ async function syncDriverInUniverse(driverId, driverData, newTeamId) {
  * Separated from the scheduler for emergency script invocation.
  */
 async function runTransferMarketResolver() {
-    logger.info("=== TRANSFER MARKET RESOLVER START ===");
+    logger.info("=== TRANSFER MARKET RESOLVER START (T-028) ===");
     try {
         const now = admin_1.admin.firestore.Timestamp.now();
         const yesterday = new Date(now.toDate().getTime() - 24 * 60 * 60 * 1000);
@@ -131,39 +132,81 @@ async function runTransferMarketResolver() {
         const batches = [];
         let currentBatch = admin_1.db.batch();
         let opCount = 0;
-        for (const doc of snapshot.docs) {
-            const driver = doc.data();
-            const highestBid = driver["currentHighestBid"] || 0;
-            const highestBidderId = driver["highestBidderTeamId"];
+        for (const docSnap of snapshot.docs) {
+            const driver = docSnap.data();
             const originalTeamId = driver["teamId"];
-            if (highestBid > 0 && highestBidderId) {
-                // ── Auction won — enter pendingNegotiation phase ──
-                // Driver stays on current team until the buyer completes contract negotiation.
-                // The buyer has already paid the transfer fee (deducted below); it is not refunded
-                // if negotiations fail. Actual teamId/role change happens in finalizeTransferAcquisition.
-                currentBatch.update(doc.ref, {
+            // ── Find winning team: highest accepted contract ───────────────────────
+            const pendingContracts = (driver["pendingContracts"] ?? {});
+            let winnerTeamId = null;
+            let winnerContract = null;
+            for (const [teamId, contract] of Object.entries(pendingContracts)) {
+                if (contract.status !== "accepted")
+                    continue;
+                if (!winnerContract || contract.bidAmount > winnerContract.bidAmount) {
+                    winnerTeamId = teamId;
+                    winnerContract = contract;
+                }
+            }
+            if (winnerTeamId && winnerContract) {
+                // ── Auction won by a team WITH accepted contract ──────────────────────
+                const { bidAmount, role, replacedDriverId, salary, years } = winnerContract;
+                const buyerRef = admin_1.db.collection("teams").doc(winnerTeamId);
+                logger.info(`[Resolver] Winner: team=${winnerTeamId}, driver=${docSnap.id}, bid=$${bidAmount}`);
+                // Determine carIndex from replaced driver
+                let inheritedCarIndex = -1;
+                if (replacedDriverId) {
+                    const replacedSnap = await admin_1.db.collection("drivers").doc(replacedDriverId).get();
+                    if (replacedSnap.exists) {
+                        inheritedCarIndex = replacedSnap.data()?.carIndex ?? -1;
+                        const replacedMarketValue = replacedSnap.data()?.marketValue ?? replacedSnap.data()?.salary ?? 100_000;
+                        // Release replaced driver — auto-listed without listing fee
+                        currentBatch.update(replacedSnap.ref, {
+                            teamId: null,
+                            role: "ex_driver",
+                            carIndex: -1,
+                            isTransferListed: true,
+                            transferListedAt: admin_1.admin.firestore.Timestamp.now(),
+                            marketValue: replacedMarketValue,
+                            currentHighestBid: 0,
+                            highestBidderTeamId: null,
+                            pendingContracts: admin_1.admin.firestore.FieldValue.delete(),
+                            rejectedNegotiationTeams: admin_1.admin.firestore.FieldValue.delete(),
+                        });
+                        opCount++;
+                    }
+                }
+                // Transfer incoming driver to buyer team
+                currentBatch.update(docSnap.ref, {
                     isTransferListed: false,
                     transferListedAt: admin_1.admin.firestore.FieldValue.delete(),
                     currentHighestBid: admin_1.admin.firestore.FieldValue.delete(),
                     highestBidderTeamId: admin_1.admin.firestore.FieldValue.delete(),
-                    pendingNegotiation: true,
-                    pendingBuyerTeamId: highestBidderId,
-                    pendingBidAmount: highestBid,
-                    pendingOriginalTeamId: originalTeamId || null,
+                    pendingContracts: admin_1.admin.firestore.FieldValue.delete(),
+                    rejectedNegotiationTeams: admin_1.admin.firestore.FieldValue.delete(),
+                    // Apply accepted contract terms
+                    teamId: winnerTeamId,
+                    role,
+                    salary,
+                    contractYearsRemaining: years,
+                    carIndex: inheritedCarIndex,
+                    // Clear any legacy pending fields from old flow
+                    pendingNegotiation: admin_1.admin.firestore.FieldValue.delete(),
+                    pendingBuyerTeamId: admin_1.admin.firestore.FieldValue.delete(),
+                    pendingBidAmount: admin_1.admin.firestore.FieldValue.delete(),
+                    pendingOriginalTeamId: admin_1.admin.firestore.FieldValue.delete(),
                 });
                 opCount++;
-                // Debit buyer budget
-                const buyerRef = admin_1.db.collection("teams").doc(highestBidderId);
+                // Debit buyer budget (the bid amount — commission was already deducted at bid time)
                 currentBatch.update(buyerRef, {
-                    budget: admin_1.admin.firestore.FieldValue.increment(-highestBid),
+                    budget: admin_1.admin.firestore.FieldValue.increment(-bidAmount),
                 });
                 opCount++;
                 // Buyer transaction record
                 const buyerTxRef = buyerRef.collection("transactions").doc();
                 currentBatch.set(buyerTxRef, {
                     id: buyerTxRef.id,
-                    description: `Transfer Market: ${driver["name"]} signed`,
-                    amount: -highestBid,
+                    description: `Transfer Market: ${driver["name"]} firmado como ${role} (${years} temporadas)`,
+                    amount: -bidAmount,
                     date: new Date().toISOString(),
                     type: "TRANSFER",
                 });
@@ -172,52 +215,54 @@ async function runTransferMarketResolver() {
                     // Credit seller budget
                     const sellerRef = admin_1.db.collection("teams").doc(originalTeamId);
                     currentBatch.update(sellerRef, {
-                        budget: admin_1.admin.firestore.FieldValue.increment(highestBid),
+                        budget: admin_1.admin.firestore.FieldValue.increment(bidAmount),
                     });
                     opCount++;
                     // Seller transaction record
                     const sellerTxRef = sellerRef.collection("transactions").doc();
                     currentBatch.set(sellerTxRef, {
                         id: sellerTxRef.id,
-                        description: `Transfer Market: ${driver["name"]} sold`,
-                        amount: highestBid,
+                        description: `Transfer Market: ${driver["name"]} vendido`,
+                        amount: bidAmount,
                         date: new Date().toISOString(),
                         type: "TRANSFER",
                     });
                     opCount++;
                     await (0, notifications_1.addOfficeNews)(originalTeamId, {
-                        title: "Driver Sold",
-                        message: `${driver["name"]} was successfully sold in the transfer market for $${highestBid.toLocaleString()}.`,
+                        title: "Piloto Vendido",
+                        message: `${driver["name"]} fue vendido en el mercado de transferencias por $${bidAmount.toLocaleString()}.`,
                         type: "TRANSFER_SOLD",
                     });
                 }
-                await (0, notifications_1.addOfficeNews)(highestBidderId, {
-                    title: "Transfer Completed",
-                    message: `${driver["name"]} has joined your team. Transfer fee: $${highestBid.toLocaleString()}.`,
+                await (0, notifications_1.addOfficeNews)(winnerTeamId, {
+                    title: "Fichaje Completado",
+                    message: `${driver["name"]} se une a tu equipo como ${role}. Fee de transferencia: $${bidAmount.toLocaleString()}.`,
                     type: "TRANSFER_WON",
                 });
-                // Sync universe standings automatically
-                await syncDriverInUniverse(doc.id, driver, highestBidderId);
+                await syncDriverInUniverse(docSnap.id, driver, winnerTeamId);
             }
             else {
-                // ── Driver unsold ──
+                // ── No accepted contract found — driver delisted (Option A) ───────────
+                logger.info(`[Resolver] No winner for driver=${docSnap.id} (no accepted contracts). Delisting.`);
                 if (originalTeamId) {
-                    currentBatch.update(doc.ref, {
+                    currentBatch.update(docSnap.ref, {
                         isTransferListed: false,
                         transferListedAt: admin_1.admin.firestore.FieldValue.delete(),
                         currentHighestBid: admin_1.admin.firestore.FieldValue.delete(),
                         highestBidderTeamId: admin_1.admin.firestore.FieldValue.delete(),
+                        pendingContracts: admin_1.admin.firestore.FieldValue.delete(),
+                        rejectedNegotiationTeams: admin_1.admin.firestore.FieldValue.delete(),
                     });
                     opCount++;
                     await (0, notifications_1.addOfficeNews)(originalTeamId, {
-                        title: "Driver Unsold",
-                        message: `Nobody bid on ${driver["name"]} in the transfer market. They remain in your team.`,
+                        title: "Piloto No Vendido",
+                        message: `Ningún equipo completó la negociación con ${driver["name"]}. El piloto permanece en tu equipo.`,
                         type: "TRANSFER_UNSOLD",
                     });
                 }
                 else {
-                    // Admin-generated driver with no team — delete to keep pool clean
-                    currentBatch.delete(doc.ref);
+                    // Admin-generated free agent with no accepted contracts — delete
+                    currentBatch.delete(docSnap.ref);
                     opCount++;
                 }
             }
@@ -234,7 +279,7 @@ async function runTransferMarketResolver() {
         logger.info(`=== TRANSFER MARKET RESOLVER COMPLETE. Batches: ${batches.length} ===`);
     }
     catch (error) {
-        logger.error("Error in resolveTransferMarket:", error);
+        logger.error("[Resolver] Error in resolveTransferMarket:", error);
     }
 }
 // ─── Scheduled export ─────────────────────────────────────────────────────────

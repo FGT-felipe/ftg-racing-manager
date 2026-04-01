@@ -224,12 +224,27 @@ marketValue:        number
 currentHighestBid:  number
 highestBidderTeamId?: string
 
-// Post-auction pending negotiation (set by resolver when auction closes with winning bid)
-// Cleared by finalizeTransferAcquisition on accept or reject.
-pendingNegotiation?:    boolean   // true = awaiting buyer contract negotiation
-pendingBuyerTeamId?:    string    // team that won the auction
-pendingBidAmount?:      number    // transfer fee already deducted from buyer budget
-pendingOriginalTeamId?: string    // original team (driver returns here if negotiations fail)
+// T-028: Per-team contract negotiation results (written by frontend after NegotiationModal).
+// Resolver reads these at auction expiry to determine the winner.
+pendingContracts?: {
+  [teamId: string]: {
+    bidAmount:        number
+    role:             'main' | 'secondary' | 'equal'
+    replacedDriverId: string
+    salary:           number
+    years:            number
+    status:           'accepted' | 'rejected'
+    negotiatedAt:     Timestamp
+  }
+}
+// Teams blacklisted from re-bidding (driver rejected their negotiation)
+rejectedNegotiationTeams?: string[]
+
+// Legacy single-buyer pending fields (pre-T-028). Cleaned up by resolver.
+// pendingNegotiation?:    boolean
+// pendingBuyerTeamId?:    string
+// pendingBidAmount?:      number
+// pendingOriginalTeamId?: string
 
 specialty?:  string    // assigned via academy pipeline when a stat >= 11 (see DriverSpecialty type)
              // Values: "Rainmaster" | "Tyre Whisperer" | "Late Braker" | "Defensive Minister"

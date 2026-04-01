@@ -13,7 +13,7 @@
     import { staffService } from "$lib/services/staff.svelte";
     import type { Driver } from "$lib/types";
     import { transferMarketService, MARKET_PAGE_SIZE, type MarketDriver } from "$lib/services/transfer_market.svelte";
-    import { TRANSFER_MARKET_BID_INCREMENT } from "$lib/constants/economics";
+    import { TRANSFER_MARKET_BID_INCREMENT, TRANSFER_MARKET_BID_COMMISSION_RATE } from "$lib/constants/economics";
 
     // ─── State ────────────────────────────────────────────────────────────────────
     let myTeamId = $derived(teamStore.value.team?.id ?? null);
@@ -34,19 +34,27 @@
     let bidLoading = $state(false);
     let bidError = $state("");
     let bidSuccess = $state(false);
+    /** Commission shown in the bid modal (10 % of marketValue, non-refundable). */
+    let bidCommission = $derived(
+        selectedDriver ? Math.round(selectedDriver.marketValue * 0.10) : 0
+    );
 
     // Countdown timers
     let countdownMap = $state<Record<string, string>>({});
     let activeDrivers = $derived(drivers.filter(d => countdownMap[d.id] !== "Expired"));
     let timerInterval: ReturnType<typeof setInterval> | null = null;
 
-    // Pending negotiations (drivers with pendingNegotiation == true for my team)
+    // Pending negotiations (drivers with pendingNegotiation == true for my team — safety-net)
     let pendingNegotiations = $state<Driver[]>([]);
     // Setup phase: manager selects role + replacement driver before salary negotiation
     let setupDriver = $state<Driver | null>(null);
     let negotiatingDriver = $state<Driver | null>(null);
     let pendingRole = $state<'main' | 'secondary' | 'equal' | null>(null);
     let pendingReplacedDriverId = $state<string | null>(null);
+    /** Bid amount associated with the current negotiation flow. */
+    let negotiationBidAmount = $state(0);
+    /** Buyer team ID for the current negotiation flow. */
+    let negotiationBuyerTeamId = $state<string | null>(null);
 
     // ─── Helpers ─────────────────────────────────────────────────────────────────
     function formatCurrency(value: number): string {
@@ -146,11 +154,20 @@
         bidError = "";
         bidSuccess = false;
         try {
+            // Commission is deducted here; negotiation opens immediately after
             await transferMarketService.placeBid(selectedDriver.id, bidAmount, myTeamId, myBudget);
             bidSuccess = true;
-            setTimeout(() => { showBidModal = false; fetchPage(currentPage); }, 1200);
+            // Small delay so the user sees the success state, then transition to negotiation
+            setTimeout(() => {
+                showBidModal = false;
+                // Store bid context for the negotiation callbacks
+                negotiationBidAmount = bidAmount;
+                negotiationBuyerTeamId = myTeamId;
+                // Open setup modal immediately
+                setupDriver = selectedDriver as unknown as Driver;
+            }, 800);
         } catch (e: any) {
-            bidError = e.message ?? "Error placing bid";
+            bidError = e.message ?? "Error al pujar";
         } finally {
             bidLoading = false;
         }
@@ -160,9 +177,11 @@
         if (!myTeamId) return;
         cancellingBidIds = new Set([...cancellingBidIds, driver.id]);
         try {
-            await transferMarketService.cancelBid(driver.id);
+            await transferMarketService.cancelBid(driver.id, myTeamId);
             fetchPage(currentPage);
-        } catch (e) { console.error(e); } finally {
+        } catch (e: any) {
+            console.error('[Market:cancelBid]', e.message);
+        } finally {
             cancellingBidIds = new Set([...cancellingBidIds].filter(x => x !== driver.id));
         }
     }
@@ -183,6 +202,12 @@
         bidError = "";
         bidSuccess = false;
         showBidModal = true;
+    }
+
+    /** Returns true if this team has been blacklisted by the driver (rejected negotiation). */
+    function isRejectedByTeam(driver: MarketDriver): boolean {
+        if (!myTeamId) return false;
+        return (driver.rejectedNegotiationTeams ?? []).includes(myTeamId);
     }
 
     function isExpiringSoon(driver: MarketDriver): boolean {
@@ -389,6 +414,10 @@
                                 >
                                     {cancellingBidIds.has(driver.id) ? t('processing') : t('cancel_bid')}
                                 </button>
+                            {:else if isRejectedByTeam(driver)}
+                                <span class="text-[9px] font-black uppercase tracking-widest text-red-400/60 border border-red-400/20 px-2 py-1 rounded-lg cursor-not-allowed">
+                                    {t('market_bid_rejected')}
+                                </span>
                             {:else}
                                 <button
                                     onclick={() => openBidModal(driver)}
@@ -672,8 +701,17 @@
                     </button>
                 </div>
 
-                {#if bidAmount > myBudget}
-                    <p class="text-[10px] text-red-400 font-black text-center mb-4">⚠ Exceeds available budget ({formatCurrency(myBudget)})</p>
+                <!-- Commission breakdown -->
+                <div class="flex items-center justify-between px-4 py-3 bg-orange-500/5 border border-orange-500/10 rounded-2xl mb-4">
+                    <div class="flex flex-col">
+                        <span class="text-[9px] font-black uppercase tracking-widest text-orange-400">{t('market_bid_commission_label')}</span>
+                        <span class="text-[10px] text-app-text/40">{t('market_bid_commission_desc')}</span>
+                    </div>
+                    <span class="text-sm font-black text-orange-400 font-mono">{formatCurrency(bidCommission)}</span>
+                </div>
+
+                {#if bidAmount + bidCommission > myBudget}
+                    <p class="text-[10px] text-red-400 font-black text-center mb-4">⚠ {t('insufficient_funds')} ({formatCurrency(myBudget)})</p>
                 {/if}
                 {#if bidError}
                     <p class="text-[10px] text-red-400 font-black text-center mb-4">⚠ {bidError}</p>
@@ -687,17 +725,17 @@
 
                 <div class="flex gap-3">
                     <button onclick={() => showBidModal = false} class="flex-1 py-3 border border-app-border text-app-text/40 text-[10px] font-black uppercase tracking-wider rounded-2xl hover:bg-app-text/5 transition-colors">
-                        Cancel
+                        {t('cancel')}
                     </button>
                     <button
                         onclick={placeBid}
-                        disabled={bidLoading || bidAmount > myBudget || bidAmount < minBid}
+                        disabled={bidLoading || bidAmount + bidCommission > myBudget || bidAmount < minBid}
                         class="flex-1 py-3 bg-green-500 text-app-text text-[10px] font-black uppercase tracking-wider rounded-2xl hover:bg-green-400 transition-colors disabled:opacity-30 flex items-center justify-center gap-2"
                     >
                         {#if bidLoading}
                             <div class="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
                         {:else}
-                            <Gavel size={14} /> Submit Bid
+                            <Gavel size={14} /> {t('market_bid_and_negotiate')}
                         {/if}
                     </button>
                 </div>
@@ -738,24 +776,34 @@
                 moraleChange,
                 role: pendingRole ?? 'secondary',
                 replacedDriverId: pendingReplacedDriverId ?? undefined,
+                buyerTeamId: negotiationBuyerTeamId ?? myTeamId!,
+                bidAmount: negotiationBidAmount,
             });
         }}
         onFailed={async (moraleChange) => {
             await staffService.finalizeTransferAcquisition(negotiatingDriver!, {
                 accepted: false,
                 moraleChange,
+                buyerTeamId: negotiationBuyerTeamId ?? myTeamId!,
+                bidAmount: negotiationBidAmount,
             });
         }}
         onClose={() => {
             negotiatingDriver = null;
             pendingRole = null;
             pendingReplacedDriverId = null;
+            negotiationBidAmount = 0;
+            negotiationBuyerTeamId = null;
+            fetchPage(currentPage);
             fetchPendingNegotiations();
         }}
         onSuccess={() => {
             negotiatingDriver = null;
             pendingRole = null;
             pendingReplacedDriverId = null;
+            negotiationBidAmount = 0;
+            negotiationBuyerTeamId = null;
+            fetchPage(currentPage);
             fetchPendingNegotiations();
         }}
     />

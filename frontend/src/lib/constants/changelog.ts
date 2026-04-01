@@ -27,6 +27,8 @@ export const CHANGELOG: ChangelogVersion[] = [
             { type: 'improvement', textKey: 'changelog_v160_3' },
             { type: 'fix',         textKey: 'changelog_v160_4' },
             { type: 'fix',         textKey: 'changelog_v160_5' },
+            { type: 'feature',     textKey: 'changelog_v160_6' },
+            { type: 'fix',         textKey: 'changelog_v160_7' },
         ],
     },
     {
