@@ -59,6 +59,17 @@ export function createYouthAcademyStore() {
         unsubscribeConfig = onSnapshot(configRef, (snapshot) => {
             if (snapshot.exists()) {
                 config = snapshot.data();
+
+                // Self-heal: if the academy has been upgraded (level > 1) but
+                // lastUpgradeSeasonId is null due to a prior bug in upgradeAcademy(),
+                // write the current season ID silently so canUpgrade returns correctly.
+                const seasonId = seasonStore.value.season?.id ?? null;
+                if (seasonId && (config.academyLevel ?? 0) > 1 && !config.lastUpgradeSeasonId) {
+                    const teamRef = doc(db, 'teams', teamId);
+                    updateDoc(configRef, { lastUpgradeSeasonId: seasonId });
+                    updateDoc(teamRef, { 'facilities.youthAcademy.lastUpgradeSeasonId': seasonId });
+                    console.debug('[YouthAcademyStore] Repaired null lastUpgradeSeasonId →', seasonId);
+                }
             } else {
                 config = null;
             }
