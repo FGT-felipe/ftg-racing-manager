@@ -384,6 +384,8 @@ export async function runPostRaceProcessing(): Promise<void> {
                 const resetBatch = db.batch();
                 selectedSnap.forEach((d) => resetBatch.delete(d.ref));
                 resetBatch.update(academyConfigRef, { scoutsUsedThisSeason: 0 });
+                // Unlock upgrade so managers can upgrade again in the new season
+                resetBatch.update(tRef, { "facilities.youthAcademy.isLocked": false });
                 await resetBatch.commit();
 
                 await addOfficeNews(tid, {

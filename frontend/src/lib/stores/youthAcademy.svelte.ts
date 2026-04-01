@@ -126,7 +126,8 @@ export function createYouthAcademyStore() {
 
     const canUpgrade = $derived.by(() => {
         if (!config || !seasonStore.value.season) return false;
-        return config.academyLevel < 5 && config.lastUpgradeSeasonId !== seasonStore.value.season.id;
+        const isLocked = teamStore.value.team?.facilities?.youthAcademy?.isLocked === true;
+        return config.academyLevel < 5 && !isLocked;
     });
 
     return {
@@ -242,7 +243,8 @@ export function createYouthAcademyStore() {
                 transaction.update(teamRef, {
                     budget: budget - finalPrice,
                     [`facilities.youthAcademy.level`]: newLevel,
-                    [`facilities.youthAcademy.lastUpgradeSeasonId`]: resolvedSeasonId
+                    [`facilities.youthAcademy.lastUpgradeSeasonId`]: resolvedSeasonId,
+                    [`facilities.youthAcademy.isLocked`]: true
                 });
             });
 
