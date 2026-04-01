@@ -1,6 +1,6 @@
 <script lang="ts">
     import { increment } from "firebase/firestore";
-    import { carSetupService } from "$lib/services/car_setup_service.svelte";
+    import { carSetupService, type QualyRunRecord } from "$lib/services/car_setup_service.svelte";
     import { teamStore } from "$lib/stores/team.svelte";
     import { managerStore } from "$lib/stores/manager.svelte";
     import { driverStore } from "$lib/stores/driver.svelte";
@@ -85,6 +85,8 @@
     let attempts = $derived(driverStatus?.qualifyingAttempts || 0);
     let bestTime = $derived(driverStatus?.qualifyingBestTime || 0);
     let isDnf = $derived(driverStatus?.qualifyingDnf || false);
+    let qualifyingRuns = $derived<QualyRunRecord[]>(driverStatus?.qualifyingRuns || []);
+    let confirmedAttempt = $derived<number | null>(driverStatus?.qualifyingConfirmedAttempt ?? null);
     
     // Wet Track Detection
     const isWetSession = $derived(nextEvent?.weatherQualifying?.toLowerCase().includes('rain') || nextEvent?.weatherQualifying?.toLowerCase().includes('wet'));
@@ -159,6 +161,16 @@
             });
         }
     });
+
+    async function confirmRun(run: QualyRunRecord) {
+        if (!team || !driver || run.isCrashed) return;
+        try {
+            await carSetupService.confirmQualySetup(team.id, driver.id, run, isWetSession ?? false);
+            uiStore.alert(`✓ ${t('qualy_run_confirmed')}`, t('qualy_runs_title'), 'success');
+        } catch (e) {
+            console.error('[QualifyingSetupTab:confirmRun] Failed:', e);
+        }
+    }
 
     async function runQualyAttempt() {
         if (!driver || !circuit || !team) return;
@@ -239,36 +251,39 @@
                 };
                 lastResult = crashResult;
 
+                const crashRun: QualyRunRecord = {
+                    attempt: newAttempts,
+                    lapTime: 999,
+                    tyreCompound: setupToRun.tyreCompound,
+                    setupConfidence: result.setupConfidence,
+                    setupUsed: setupToRun,
+                    isCrashed: true,
+                };
+
                 await carSetupService.saveQualyResult(
-                    team.id,
-                    driver.id,
+                    team.id, driver.id,
                     {
                         [`${pathPrefix}.qualifyingAttempts`]: MAX_ATTEMPTS,
                         [`${pathPrefix}.qualifyingLaps`]: increment(2),
                         [`${pathPrefix}.qualifyingDnf`]: true,
-                        [`${pathPrefix}.qualifying`]: setup,
                         [`${pathPrefix}.lastQualyResult`]: crashResult,
                         [`${pathPrefix}.isSetupSent`]: true,
                     },
-                    !isWetSession,
+                    false, // No parcFerme on crash — only a confirmed clean lap locks parc fermé
+                    crashRun,
                 );
                 driverDialogue = t('returning_pits_bad');
                 pitBoardMessages = [driverDialogue, ...pitBoardMessages].slice(0, 50);
                 uiStore.alert(t('qualy_crash_report', { name: driver.name }), t('accident_label'), 'danger');
             } else {
                 pitBoardMessages = [`${t('validated').toUpperCase()}: ${formatTime(result.lapTime)}`, ...pitBoardMessages].slice(0, 50);
-                // Determine if new personal best
-                const currentBest = bestTime;
-                let newBest = currentBest;
-                let bestCompound = setup.tyreCompound;
 
-                if (currentBest === 0 || result.lapTime < currentBest) {
-                    newBest = result.lapTime;
-                } else {
-                    bestCompound =
-                        driverStatus?.qualifyingBestCompound ||
-                        setup.tyreCompound;
-                }
+                const currentBest = bestTime;
+                const isNewBest = currentBest === 0 || result.lapTime < currentBest;
+                const newBest = isNewBest ? result.lapTime : currentBest;
+                const bestCompound = isNewBest
+                    ? setupToRun.tyreCompound
+                    : (driverStatus?.qualifyingBestCompound || setupToRun.tyreCompound);
 
                 const finalResult = {
                     lapTime: result.lapTime,
@@ -281,21 +296,37 @@
                 };
                 lastResult = finalResult;
 
+                const cleanRun: QualyRunRecord = {
+                    attempt: newAttempts,
+                    lapTime: result.lapTime,
+                    tyreCompound: setupToRun.tyreCompound,
+                    setupConfidence: result.setupConfidence,
+                    setupUsed: setupToRun,
+                    isCrashed: false,
+                };
+
+                // Only auto-confirm the setup when this is a new personal best.
+                // The manager can override by clicking "→ Race Setup" on any run.
+                const autoConfirmFields = isNewBest ? {
+                    [`${pathPrefix}.qualifying`]: setupToRun,
+                    [`${pathPrefix}.qualifyingConfirmedAttempt`]: newAttempts,
+                } : {};
+
                 await carSetupService.saveQualyResult(
-                    team.id,
-                    driver.id,
+                    team.id, driver.id,
                     {
                         [`${pathPrefix}.qualifyingAttempts`]: newAttempts,
                         [`${pathPrefix}.qualifyingBestTime`]: newBest,
-                        [`${pathPrefix}.qualifyingLaps`]: increment(3), // Out + Flying + In
+                        [`${pathPrefix}.qualifyingLaps`]: increment(3),
                         [`${pathPrefix}.qualifyingBestCompound`]: bestCompound,
-                        [`${pathPrefix}.qualifying`]: setup,
                         [`${pathPrefix}.lastQualyResult`]: finalResult,
                         [`${pathPrefix}.isSetupSent`]: true,
+                        ...autoConfirmFields,
                     },
-                    !isWetSession,
+                    isNewBest && !isWetSession, // parcFerme on first new best in dry session
+                    cleanRun,
                 );
-                driverDialogue = (result.lapTime < (bestTime || 999)) ? t('returning_pits_good') : t('returning_pits_bad');
+                driverDialogue = isNewBest ? t('returning_pits_good') : t('returning_pits_bad');
                 pitBoardMessages = [driverDialogue, ...pitBoardMessages].slice(0, 50);
                 await refreshStandings();
             }
@@ -807,6 +838,64 @@
         </div>
     </div>
 </div>
+
+<!-- Qualifying Runs History -->
+{#if qualifyingRuns.length > 0}
+<div class="bg-app-surface border border-app-border rounded-2xl p-6 shadow-2xl mt-5">
+    <div class="flex items-center gap-2 mb-4">
+        <h4 class="text-[10px] font-black text-app-text/40 uppercase tracking-widest">{t('qualy_runs_title')}</h4>
+        {#if confirmedAttempt !== null}
+            <span class="text-[9px] font-black text-app-primary/70 uppercase tracking-widest">
+                — {t('qualy_run_selected_label')} #{confirmedAttempt}
+            </span>
+        {/if}
+    </div>
+    <div class="flex flex-col gap-2">
+        {#each [...qualifyingRuns].sort((a, b) => {
+            if (a.isCrashed && !b.isCrashed) return 1;
+            if (!a.isCrashed && b.isCrashed) return -1;
+            return a.lapTime - b.lapTime;
+        }) as run}
+            {@const cleanRuns = qualifyingRuns.filter(r => !r.isCrashed)}
+            {@const bestLap = cleanRuns.length > 0 ? Math.min(...cleanRuns.map(r => r.lapTime)) : null}
+            {@const isBest = !run.isCrashed && run.lapTime === bestLap}
+            {@const isConfirmed = run.attempt === confirmedAttempt}
+            <div class="flex items-center gap-3 px-4 py-3 rounded-xl border {isConfirmed ? 'border-app-primary/40 bg-app-primary/5' : 'border-app-border/40 bg-black/20'}">
+                <span class="text-[10px] font-black text-app-text/40 w-6 text-center shrink-0">#{run.attempt}</span>
+
+                <div class="w-3 h-3 rounded-full shrink-0 {
+                    run.tyreCompound === TyreCompound.soft ? 'bg-red-500' :
+                    run.tyreCompound === TyreCompound.medium ? 'bg-yellow-400' :
+                    run.tyreCompound === TyreCompound.hard ? 'bg-gray-300' :
+                    'bg-blue-400'
+                }"></div>
+
+                <span class="font-black italic tabular-nums text-sm {run.isCrashed ? 'text-red-500' : isBest ? 'text-app-primary' : 'text-app-text'}">
+                    {run.isCrashed ? t('dnf') : formatTime(run.lapTime)}
+                </span>
+
+                <span class="text-xs {getConfidenceColor(run.setupConfidence)} ml-auto shrink-0">
+                    {Math.round(run.setupConfidence * 100)}%
+                </span>
+
+                <button
+                    class="text-[10px] font-black uppercase tracking-wider px-3 py-1.5 rounded-lg border transition-all shrink-0 {
+                        isConfirmed
+                            ? 'border-app-primary text-app-primary bg-app-primary/10 cursor-default'
+                            : run.isCrashed
+                            ? 'border-app-border/20 text-app-text/20 cursor-not-allowed'
+                            : 'border-app-border text-app-text/60 hover:border-app-primary hover:text-app-primary hover:bg-app-primary/5'
+                    }"
+                    disabled={run.isCrashed || isConfirmed || isSimulating}
+                    onclick={() => confirmRun(run)}
+                >
+                    {isConfirmed ? `✓ ${t('qualy_run_confirmed')}` : `→ ${t('qualy_use_for_race')}`}
+                </button>
+            </div>
+        {/each}
+    </div>
+</div>
+{/if}
 {/if}
 
 <style>

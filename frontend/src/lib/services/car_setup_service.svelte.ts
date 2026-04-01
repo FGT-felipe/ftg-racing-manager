@@ -1,7 +1,16 @@
 import { db } from '$lib/firebase/config';
-import { doc, getDoc, updateDoc, increment, addDoc, collection, serverTimestamp } from 'firebase/firestore';
+import { doc, getDoc, updateDoc, increment, addDoc, collection, serverTimestamp, arrayUnion } from 'firebase/firestore';
 import { PRACTICE_SESSION_COST } from '$lib/constants/app_constants';
 import { t } from '$lib/utils/i18n';
+
+export interface QualyRunRecord {
+    attempt: number;
+    lapTime: number;
+    tyreCompound: string;
+    setupConfidence: number;
+    setupUsed: Record<string, any>;
+    isCrashed: boolean;
+}
 
 /**
  * Service for all car setup and race weekend Firestore writes.
@@ -69,20 +78,53 @@ export class CarSetupService {
 
     /**
      * Saves a qualifying attempt result (clean lap or DNF/crash) to the team document.
-     * Optionally locks in Parc Fermé constraints for dry sessions.
+     * Appends the run to the qualifyingRuns array. Optionally locks Parc Fermé.
      * @param teamId - The team document ID.
      * @param driverId - The driver document ID.
-     * @param fields - Flat map of Firestore field paths to values (e.g. weekStatus.driverSetups.X.Y).
+     * @param fields - Flat map of Firestore field paths to values.
      * @param setParcFerme - If true, also locks qualifyingParcFerme for this driver.
+     * @param run - Run record to append to qualifyingRuns[].
      */
-    async saveQualyResult(teamId: string, driverId: string, fields: Record<string, any>, setParcFerme: boolean): Promise<void> {
+    async saveQualyResult(
+        teamId: string,
+        driverId: string,
+        fields: Record<string, any>,
+        setParcFerme: boolean,
+        run: QualyRunRecord
+    ): Promise<void> {
         const teamRef = doc(db, 'teams', teamId);
-        await updateDoc(teamRef, fields);
+        await updateDoc(teamRef, {
+            ...fields,
+            [`weekStatus.driverSetups.${driverId}.qualifyingRuns`]: arrayUnion(run),
+        });
         if (setParcFerme) {
             await updateDoc(teamRef, {
                 [`weekStatus.driverSetups.${driverId}.qualifyingParcFerme`]: true,
             });
         }
+    }
+
+    /**
+     * Confirms a specific qualifying run as the race setup, locking Parc Fermé to that run's
+     * mechanical values and tyre compound. Called when the manager clicks "→ Race Setup".
+     * @param teamId - The team document ID.
+     * @param driverId - The driver document ID.
+     * @param run - The qualifying run whose setup to use for the race.
+     * @param isWetSession - If true, no Parc Fermé lock applies (free compound choice).
+     */
+    async confirmQualySetup(
+        teamId: string,
+        driverId: string,
+        run: QualyRunRecord,
+        isWetSession: boolean
+    ): Promise<void> {
+        const teamRef = doc(db, 'teams', teamId);
+        await updateDoc(teamRef, {
+            [`weekStatus.driverSetups.${driverId}.qualifying`]: run.setupUsed,
+            [`weekStatus.driverSetups.${driverId}.qualifyingBestCompound`]: run.tyreCompound,
+            [`weekStatus.driverSetups.${driverId}.qualifyingConfirmedAttempt`]: run.attempt,
+            [`weekStatus.driverSetups.${driverId}.qualifyingParcFerme`]: !isWetSession && !run.isCrashed,
+        });
     }
 
     /**
