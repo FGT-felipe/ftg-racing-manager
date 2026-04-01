@@ -49,3 +49,7 @@ export {
 // ─── Backup ───────────────────────────────────────────────────────────────────
 
 export { scheduledDailyBackup } from "../domains/admin/backup";
+
+// ─── Maintenance ──────────────────────────────────────────────────────────────
+
+export { scheduledHourlyMaintenance } from "../schedulers/checker";

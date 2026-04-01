@@ -61,20 +61,21 @@
     }
 
     function getStatusBadge(driver: Driver) {
-        if (driver.carIndex === 0 || driver.carIndex === 1)
-            return {
-                label: "Principal",
-                color: "bg-green-400/10 text-green-400 border-green-400/20",
-            };
-        if (driver.role?.includes("Reserve"))
-            return {
-                label: "Reserve",
-                color: "bg-yellow-400/10 text-yellow-400 border-yellow-400/20",
-            };
-        return {
-            label: "Academy",
-            color: "bg-blue-400/10 text-blue-400 border-blue-400/20",
-        };
+        const role = driver.role?.toLowerCase();
+        if (role === 'main')
+            return { label: t('driver_role_main'),      color: "bg-green-400/10 text-green-400 border-green-400/20" };
+        if (role === 'secondary')
+            return { label: t('driver_role_secondary'), color: "bg-blue-400/10 text-blue-400 border-blue-400/20" };
+        if (role === 'equal')
+            return { label: t('driver_role_equal'),     color: "bg-green-400/10 text-green-400 border-green-400/20" };
+        if (role === 'reserve' || driver.role?.toLowerCase().includes('reserve'))
+            return { label: t('driver_role_reserve'),   color: "bg-yellow-400/10 text-yellow-400 border-yellow-400/20" };
+        // Legacy carIndex fallback: slot 0 = Main, slot 1 = Secondary
+        if (driver.carIndex === 0)
+            return { label: t('driver_role_main'),      color: "bg-green-400/10 text-green-400 border-green-400/20" };
+        if (driver.carIndex === 1)
+            return { label: t('driver_role_secondary'), color: "bg-blue-400/10 text-blue-400 border-blue-400/20" };
+        return { label: "Academy",                          color: "bg-blue-400/10 text-blue-400 border-blue-400/20" };
     }
 
     function formatCurrency(value: number) {
@@ -177,7 +178,7 @@
                         class="bg-app-text/5 text-[10px] font-black uppercase tracking-[0.2em] text-app-text/40"
                     >
                         <th class="py-6 px-8">{t('pilot')}</th>
-                        <th class="py-6 px-4">Status</th>
+                        <th class="py-6 px-4">{t('role')}</th>
                         <th class="py-6 px-4">{t('potential')}</th>
                         <th class="py-6 px-4">Morale</th>
                         <th class="py-6 px-4">Fitness</th>
