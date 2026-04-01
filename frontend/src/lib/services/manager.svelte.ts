@@ -30,7 +30,7 @@ export const managerService = {
                 if (matchedTeam) {
                     map[matchedTeam.id] = {
                         name: `${d.firstName ?? ''} ${d.lastName ?? ''}`.trim(),
-                        countryCode: d.countryCode ?? '',
+                        countryCode: d.countryCode ?? d.country ?? d.nationality ?? '',
                     };
                 }
             }
