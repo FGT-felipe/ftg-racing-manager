@@ -1134,9 +1134,9 @@ async function runQualifyingLogic() {
         if (pole) {
           const inc = admin.firestore.FieldValue.increment(1);
           await db.collection("drivers")
-            .doc(pole.driverId).update({ poles: inc });
+            .doc(pole.driverId).update({ poles: inc, seasonPoles: inc });
           await db.collection("teams")
-            .doc(pole.teamId).update({ poles: inc });
+            .doc(pole.teamId).update({ poles: inc, seasonPoles: inc });
 
           // Morale boost for pole sitter
           await db.runTransaction(async (tx) => {
@@ -1759,6 +1759,8 @@ async function syncUniverseGlobal() {
             leagues[li].drivers[di].seasonWins = real.seasonWins || 0;
             leagues[li].drivers[di].podiums = real.podiums || 0;
             leagues[li].drivers[di].seasonPodiums = real.seasonPodiums || 0;
+            leagues[li].drivers[di].poles = real.poles || 0;
+            leagues[li].drivers[di].seasonPoles = real.seasonPoles || 0;
             leagues[li].drivers[di].races = real.races || 0;
             leagues[li].drivers[di].seasonRaces = real.seasonRaces || 0;
             leagues[li].drivers[di].championships = real.championships || 0;
@@ -1831,6 +1833,8 @@ async function syncUniverseStats() {
       leagues[li].drivers[di].seasonWins = r.seasonWins || 0;
       leagues[li].drivers[di].podiums = r.podiums || 0;
       leagues[li].drivers[di].seasonPodiums = r.seasonPodiums || 0;
+      leagues[li].drivers[di].poles = r.poles || 0;
+      leagues[li].drivers[di].seasonPoles = r.seasonPoles || 0;
       leagues[li].drivers[di].races = r.races || 0;
       leagues[li].drivers[di].seasonRaces = r.seasonRaces || 0;
       leagues[li].drivers[di].championships = r.championships || 0;

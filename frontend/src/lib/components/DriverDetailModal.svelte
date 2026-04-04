@@ -6,7 +6,9 @@
     } from "$lib/types";
 
     import { teamStore } from "$lib/stores/team.svelte";
+    import { seasonStore } from "$lib/stores/season.svelte";
     import { staffService } from "$lib/services/staff.svelte";
+    import { raceService } from "$lib/services/race_service.svelte";
     import {
         X,
         Activity,
@@ -55,6 +57,42 @@
     let showStatusTooltip = $state(false);
     let isProcessing = $state(false);
     let showNegotiationModal = $state(false);
+
+    // Season stats derived from race docs — authoritative, self-healing.
+    // Null while loading so the template shows "—" instead of stale driver doc values.
+    let seasonStats = $state<{
+        seasonRaces: number;
+        seasonWins: number;
+        seasonPodiums: number;
+        seasonPoles: number;
+    } | null>(null);
+
+    $effect(() => {
+        if (!isOpen) return;
+        const season = seasonStore.value.season;
+        if (!season?.id || !season.calendar) return;
+        const completedRoundIds = season.calendar
+            .filter((e: any) => e.isCompleted)
+            .map((e: any) => e.id);
+        // No completed rounds yet — show zeros immediately, no async needed
+        if (completedRoundIds.length === 0) {
+            seasonStats = { seasonRaces: 0, seasonWins: 0, seasonPodiums: 0, seasonPoles: 0 };
+            return;
+        }
+        seasonStats = null; // show loading state while fetching
+        raceService.syncDriverSeasonStats(
+            driver.id,
+            season.id,
+            completedRoundIds,
+            {
+                seasonRaces:   driver.seasonRaces   || 0,
+                seasonWins:    driver.seasonWins    || 0,
+                seasonPodiums: driver.seasonPodiums || 0,
+                seasonPoles:   driver.seasonPoles   || 0,
+            }
+        ).then(stats => { seasonStats = stats; })
+         .catch(e => console.error('[DriverDetailModal] syncDriverSeasonStats failed:', e));
+    });
 
     // Confirmation Modal State
     let confirmConfig = $state<{
@@ -627,7 +665,7 @@
                                                 class="text-xs font-heading font-black {getStatTextColor(
                                                     val,
                                                     isPercentage,
-                                                )}">{val}{isPercentage ? "%" : ""}</span
+                                                )}">{isPercentage ? Math.round(val * 10) / 10 : val}{isPercentage ? "%" : ""}</span
                                             >
                                         </div>
                                         <span
@@ -658,19 +696,35 @@
                             <div class="grid grid-cols-2 gap-3">
                                 <div class="flex flex-col gap-0.5 px-4 py-3 bg-app-text/5 border border-app-border rounded-2xl">
                                     <span class="text-[9px] font-bold text-app-text/30 uppercase tracking-widest">{t("races")}</span>
-                                    <span class="text-xl font-black text-app-text tabular-nums">{driver.seasonRaces || 0}</span>
+                                    {#if seasonStats !== null}
+                                        <span class="text-xl font-black text-app-text tabular-nums">{seasonStats.seasonRaces}</span>
+                                    {:else}
+                                        <div class="h-6 w-8 bg-app-text/5 rounded-full animate-pulse mt-1"></div>
+                                    {/if}
                                 </div>
                                 <div class="flex flex-col gap-0.5 px-4 py-3 bg-app-text/5 border border-app-border rounded-2xl">
                                     <span class="text-[9px] font-bold text-app-text/30 uppercase tracking-widest">{t("wins")}</span>
-                                    <span class="text-xl font-black text-app-primary tabular-nums">{driver.seasonWins || 0}</span>
+                                    {#if seasonStats !== null}
+                                        <span class="text-xl font-black text-app-primary tabular-nums">{seasonStats.seasonWins}</span>
+                                    {:else}
+                                        <div class="h-6 w-8 bg-app-text/5 rounded-full animate-pulse mt-1"></div>
+                                    {/if}
                                 </div>
                                 <div class="flex flex-col gap-0.5 px-4 py-3 bg-app-text/5 border border-app-border rounded-2xl">
                                     <span class="text-[9px] font-bold text-app-text/30 uppercase tracking-widest">{t("podiums")}</span>
-                                    <span class="text-xl font-black text-yellow-400 tabular-nums">{driver.seasonPodiums || 0}</span>
+                                    {#if seasonStats !== null}
+                                        <span class="text-xl font-black text-yellow-400 tabular-nums">{seasonStats.seasonPodiums}</span>
+                                    {:else}
+                                        <div class="h-6 w-8 bg-app-text/5 rounded-full animate-pulse mt-1"></div>
+                                    {/if}
                                 </div>
                                 <div class="flex flex-col gap-0.5 px-4 py-3 bg-app-text/5 border border-app-border rounded-2xl">
                                     <span class="text-[9px] font-bold text-app-text/30 uppercase tracking-widest">{t("poles")}</span>
-                                    <span class="text-xl font-black text-blue-400 tabular-nums">{driver.seasonPoles || 0}</span>
+                                    {#if seasonStats !== null}
+                                        <span class="text-xl font-black text-blue-400 tabular-nums">{seasonStats.seasonPoles}</span>
+                                    {:else}
+                                        <div class="h-6 w-8 bg-app-text/5 rounded-full animate-pulse mt-1"></div>
+                                    {/if}
                                 </div>
                                 <div class="col-span-2 flex flex-col gap-0.5 px-4 py-3 bg-app-primary/5 border border-app-primary/20 rounded-2xl">
                                     <span class="text-[9px] font-bold text-app-primary/50 uppercase tracking-widest">Points</span>

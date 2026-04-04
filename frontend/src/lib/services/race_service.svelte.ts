@@ -1,6 +1,6 @@
 import { db, functions } from '$lib/firebase/config';
 import { httpsCallable } from 'firebase/functions';
-import { doc, getDoc, onSnapshot, collection, query, where, getDocs, orderBy, limit, documentId } from 'firebase/firestore';
+import { doc, getDoc, updateDoc, onSnapshot, collection, query, where, getDocs, orderBy, limit, documentId } from 'firebase/firestore';
 import type { Driver } from '$lib/types';
 import { MAX_PRACTICE_LAPS_PER_DRIVER } from '$lib/constants/app_constants';
 
@@ -405,6 +405,74 @@ export function createRaceService() {
                 console.error('[RaceService:getRaceDataByRound] Fallback query failed:', e);
                 return null;
             }
+        },
+
+        /**
+         * Derives a driver's season stats (races, wins, podiums, poles) from the
+         * actual race documents for each completed round, then patches the driver
+         * doc in Firestore if any value differs from what is currently stored.
+         *
+         * This is the authoritative source: counters on the driver doc can drift
+         * (e.g. seasonPoles was never written for R1–R4), so this computation
+         * self-heals on the first modal open and keeps data consistent going forward.
+         *
+         * @param driverId         - The driver document ID.
+         * @param seasonId         - Current canonical season ID from seasonStore.
+         * @param completedRoundIds - e.g. ['r1','r2','r3','r4'] from season.calendar.
+         * @param currentStats     - Current values on the driver doc (to skip the
+         *                           patch write if already correct).
+         * @returns Accurate season stats object.
+         */
+        async syncDriverSeasonStats(
+            driverId: string,
+            seasonId: string,
+            completedRoundIds: string[],
+            currentStats: { seasonRaces: number; seasonWins: number; seasonPodiums: number; seasonPoles: number }
+        ): Promise<{ seasonRaces: number; seasonWins: number; seasonPodiums: number; seasonPoles: number }> {
+            let seasonRaces = 0;
+            let seasonWins = 0;
+            let seasonPodiums = 0;
+            let seasonPoles = 0;
+
+            for (const roundId of completedRoundIds) {
+                const data = await this.getRaceDataByRound(seasonId, roundId);
+                if (!data) continue;
+
+                // Race results — finalPositions maps driverId → finishing position
+                const finalPositions = data.finalPositions || {};
+                if (driverId in finalPositions) {
+                    const pos = parseInt(String(finalPositions[driverId]));
+                    seasonRaces++;
+                    if (pos === 1) seasonWins++;
+                    if (pos <= 3) seasonPodiums++;
+                }
+
+                // Qualifying — pole is the first non-crashed entry in the grid
+                const qualyGrid: any[] = data.qualifyingResults?.length > 0
+                    ? data.qualifyingResults
+                    : (data.qualyGrid || []);
+                const pole = qualyGrid.find((q: any) => !q.isCrashed);
+                if (pole?.driverId === driverId) seasonPoles++;
+            }
+
+            const computed = { seasonRaces, seasonWins, seasonPodiums, seasonPoles };
+
+            // Patch driver doc only if any value differs — avoids unnecessary writes
+            const needsPatch =
+                computed.seasonRaces  !== currentStats.seasonRaces  ||
+                computed.seasonWins   !== currentStats.seasonWins   ||
+                computed.seasonPodiums !== currentStats.seasonPodiums ||
+                computed.seasonPoles  !== currentStats.seasonPoles;
+
+            if (needsPatch) {
+                try {
+                    await updateDoc(doc(db, 'drivers', driverId), computed);
+                } catch (e) {
+                    console.error('[RaceService:syncDriverSeasonStats] Patch write failed:', e);
+                }
+            }
+
+            return computed;
         },
 
         /**
