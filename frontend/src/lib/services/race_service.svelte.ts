@@ -368,6 +368,46 @@ export function createRaceService() {
         },
 
         /**
+         * Fetches a race document by season and round, with automatic fallback
+         * for season ID mismatches (e.g. after fix_season_refs.js updates
+         * activeSeasonId while historical race docs remain under the old ID prefix).
+         *
+         * Strategy:
+         *  1. Try the canonical {seasonId}_{roundId} direct path.
+         *  2. If not found, query the races collection by the raceEventId field.
+         *     The qualifying CF always writes raceEventId to every race doc,
+         *     so this finds the document regardless of the season ID prefix used.
+         *
+         * @param seasonId - Current canonical season ID from seasonStore.
+         * @param roundId  - Round event ID, e.g. 'r4'.
+         * @returns Race document data, or null if not found in either path.
+         */
+        async getRaceDataByRound(seasonId: string, roundId: string): Promise<any | null> {
+            // Primary path — fast, no query cost
+            const primary = await this.getRaceData(`${seasonId}_${roundId}`);
+            if (primary) return primary;
+
+            // Fallback: query races by raceEventId field.
+            // Handles the case where the season ID in the document prefix differs
+            // from the current activeSeasonId (e.g. after fix_season_refs ran mid-season).
+            // raceEventId is a single-field equality query — no composite index required.
+            try {
+                const raceSnap = await getDocs(
+                    query(
+                        collection(db, 'races'),
+                        where('raceEventId', '==', roundId),
+                        limit(1)
+                    )
+                );
+                if (raceSnap.empty) return null;
+                return raceSnap.docs[0].data();
+            } catch (e) {
+                console.error('[RaceService:getRaceDataByRound] Fallback query failed:', e);
+                return null;
+            }
+        },
+
+        /**
          * Opens a real-time subscription to a race document.
          * Intended for live race tracking. The component is responsible for
          * calling the returned unsubscribe function on unmount.

@@ -1,5 +1,5 @@
 <script lang="ts">
-    import { onMount } from "svelte";
+    import { untrack } from "svelte";
     import { fade, slide } from "svelte/transition";
     import { Trophy, History, Flag, Activity } from "lucide-svelte";
     import { seasonStore } from "$lib/stores/season.svelte";
@@ -46,30 +46,35 @@
     });
 
     async function loadLastResults() {
-        if (!seasonStore.value.season) return;
+        const season = seasonStore.value.season;
+        if (!season?.id) { isLoading = false; return; }
 
-        const calendar = seasonStore.value.season.calendar || [];
-        // Find the most recent completed event
-        const completedEvents = [...calendar]
-            .filter(e => e.isCompleted)
-            .sort((a, b) => {
-                const idA = parseInt(a.id?.toString().replace('r', '') || '0');
-                const idB = parseInt(b.id?.toString().replace('r', '') || '0');
-                return idB - idA;
-            });
-
-        if (completedEvents.length === 0) {
-            isLoading = false;
-            return;
-        }
-
-        lastEvent = completedEvents[0];
-        
         try {
-            const raceDocId = `${seasonStore.value.season.id}_${lastEvent.id}`;
-            const data = await raceService.getRaceData(raceDocId);
+            // Derive the last race ID from nextEvent (e.g. nextEvent=r5 → last=r4).
+            // This avoids any dependency on isCompleted flags in the calendar.
+            const nextId = seasonStore.nextEvent?.id; // e.g. 'r5', or null if all done
+            let lastRoundId: string;
+            if (nextId) {
+                const n = parseInt(nextId.replace('r', ''));
+                if (n <= 1) { isLoading = false; return; } // no previous race yet
+                lastRoundId = `r${n - 1}`;
+            } else {
+                // All races done — find the highest round that exists
+                // by checking the calendar length as a hint
+                const cal = season.calendar || [];
+                lastRoundId = `r${cal.length}`;
+            }
+
+            const data = await raceService.getRaceDataByRound(season.id, lastRoundId);
 
             if (data) {
+                const calendar = season.calendar || [];
+                lastEvent = calendar.find(e => e.id === lastRoundId) || {
+                    id: lastRoundId,
+                    trackName: data.trackName || '—',
+                    totalLaps: data.totalLaps || 50
+                };
+
                 // Normalize qualy field: old docs may only have qualyGrid, new ones have both
                 const qualifyingResults = data.qualifyingResults?.length > 0
                     ? data.qualifyingResults
@@ -86,15 +91,13 @@
 
                     const mappedRaceResults = Object.entries(normalizedData.finalPositions)
                         .map(([driverId, position]: [string, any]) => {
-                            // Find metadata from qualifyingResults; fall back to universeStore for names
                             const qInfo = normalizedData.qualifyingResults?.find((q: any) => q.driverId === driverId);
                             const universeDriver = universeStore.getDriverById(driverId);
                             const posInt = parseInt(position);
                             const pts = posInt <= POINT_SYSTEM.length ? POINT_SYSTEM[posInt - 1] : 0;
                             const isDnf = normalizedData.dnfs?.includes(driverId);
                             const driverTime = normalizedData.totalTimes?.[driverId] || 0;
-                            // Use totalLaps from event or approximate from typical race length (70 laps)
-                            const laps = lastEvent.totalLaps || 50;
+                            const laps = lastEvent?.totalLaps || 50;
 
                             return {
                                 driverId,
@@ -122,14 +125,22 @@
                 }
             }
         } catch (e) {
-            console.error("Error loading last results:", e);
+            console.error('[ResultsPanel:loadLastResults] Failed:', e);
         } finally {
             isLoading = false;
         }
     }
 
-    onMount(() => {
-        loadLastResults();
+    // Use $effect instead of onMount so the load fires when seasonStore becomes
+    // available — onMount fires once at mount time, but the season snapshot may
+    // arrive later. A plain boolean guard prevents double-execution.
+    let _loadStarted = false;
+    $effect(() => {
+        const season = seasonStore.value.season;
+        if (season && !_loadStarted) {
+            _loadStarted = true;
+            untrack(() => loadLastResults());
+        }
     });
 
     function formatTime(seconds: number) {
