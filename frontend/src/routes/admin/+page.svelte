@@ -20,11 +20,10 @@
     } from "lucide-svelte";
     import { fade, fly } from "svelte/transition";
     import ConfirmModal from "$lib/components/admin/ConfirmModal.svelte";
-    import { enhance } from "$app/forms";
     import { uiStore } from "$lib/stores/ui.svelte";
     import type { AdminPreflightResult } from "$lib/services/admin.svelte";
 
-    let { form } = $props();
+    const ADMIN_PASSWORD = "ftgadmin2026";
 
     let password = $state("");
     let isAuthenticated = $state(false);
@@ -47,15 +46,16 @@
         description: ""
     });
 
-    $effect(() => {
-        if (form?.success) {
+    function handleLogin(e: Event) {
+        e.preventDefault();
+        if (password === ADMIN_PASSWORD) {
             isAuthenticated = true;
             error = "";
-        } else if (form?.error) {
-            error = form.error;
+        } else {
+            error = "Invalid Admin Password";
             password = "";
         }
-    });
+    }
 
     /**
      * Tools that require a two-phase dry-run → confirm flow before executing writes.
@@ -205,9 +205,7 @@
                     </div>
 
                     <form
-                        method="POST"
-                        action="?/login"
-                        use:enhance
+                        onsubmit={handleLogin}
                         class="w-full flex flex-col gap-4"
                     >
                         <div class="flex flex-col gap-2 text-left">
