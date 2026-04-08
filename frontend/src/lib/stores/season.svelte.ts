@@ -1,4 +1,4 @@
-import { onSnapshot, doc, getFirestore, collection, query, orderBy, limit } from "firebase/firestore";
+import { onSnapshot, doc, getDoc, getFirestore, collection, query, orderBy, limit } from "firebase/firestore";
 import { teamStore } from "./team.svelte";
 import type { Season, RaceEvent } from "../types";
 import { browser } from "$app/environment";
@@ -18,6 +18,12 @@ class SeasonStore {
         error: null,
     });
 
+    /**
+     * Fallback set of event IDs that are actually finished (races/{id}.isFinished=true)
+     * even if seasons/{id}.calendar[].isCompleted wasn't updated by postRaceProcessing.
+     */
+    private finishedEventIds = $state<Set<string>>(new Set());
+
     private unsubscribe: (() => void) | null = null;
     private currentSeasonId: string | null = null;
 
@@ -36,7 +42,9 @@ class SeasonStore {
                 weatherRace: 'Sunny'
             } as any;
         }
-        return this.value.season.calendar.find((event) => !event.isCompleted) || null;
+        return this.value.season.calendar.find(
+            (event) => !event.isCompleted && !this.finishedEventIds.has(event.id)
+        ) || null;
     }
 
     // Keep nextEvent for backward compatibility if any component uses it
@@ -107,11 +115,43 @@ class SeasonStore {
 
             this.value.loading = false;
             console.debug(`✅ SeasonStore: Loaded ${this.value.season.id}`);
+
+            // Cross-validate calendar against race documents to catch stale isCompleted flags.
+            // postRaceProcessing sometimes fails to update seasons/{id}.calendar[].isCompleted.
+            this.syncFinishedEvents(seasonSnap.id, rawData.calendar ?? []);
         } else {
             console.error("❌ SeasonStore: Document not found", this.currentSeasonId);
             this.value.error = "Season document not found.";
             this.value.loading = false;
         }
+    }
+
+    /**
+     * For every calendar event where isCompleted is false, checks the corresponding
+     * races/{seasonId}_{eventId} document. If isFinished=true there, adds the event
+     * to finishedEventIds so nextEvent skips it — fixing stale calendar state.
+     */
+    private async syncFinishedEvents(seasonId: string, calendar: any[]) {
+        const db = getFirestore();
+        const newFinished = new Set<string>(this.finishedEventIds);
+        for (const event of calendar) {
+            if (event.isCompleted || newFinished.has(event.id)) continue;
+            try {
+                const raceRef = doc(db, "races", `${seasonId}_${event.id}`);
+                const raceSnap = await getDoc(raceRef);
+                if (raceSnap.exists() && raceSnap.data()?.isFinished === true) {
+                    newFinished.add(event.id);
+                    console.debug(`[SeasonStore] Calendar stale: ${event.id} isFinished in races/ but not in calendar — overriding.`);
+                } else {
+                    // First truly incomplete event — no need to check further
+                    break;
+                }
+            } catch (e) {
+                console.warn(`[SeasonStore] Could not verify race ${seasonId}_${event.id}:`, e);
+                break;
+            }
+        }
+        this.finishedEventIds = newFinished;
     }
 
     private handleError(error: any) {
@@ -129,6 +169,7 @@ class SeasonStore {
         this.value.season = null;
         this.value.loading = false;
         this.value.error = null;
+        this.finishedEventIds = new Set();
     }
 }
 
