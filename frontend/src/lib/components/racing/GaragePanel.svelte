@@ -13,9 +13,12 @@
         Cpu,
         Zap,
         Shield,
+        School,
+        GraduationCap,
     } from "lucide-svelte";
     import { teamStore } from "$lib/stores/team.svelte";
     import { driverStore } from "$lib/stores/driver.svelte";
+    import { youthAcademyStore } from "$lib/stores/youthAcademy.svelte";
     import { timeService } from "$lib/services/time_service.svelte";
     import { seasonStore } from "$lib/stores/season.svelte";
     import { circuitService } from "$lib/services/circuit_service.svelte";
@@ -39,6 +42,26 @@
 
     // UI State
     let selectedDriverId = $state<string | null>(null);
+    let isTraineeMode = $state(false);
+
+    // Trainee derived state
+    const activeTrainee = $derived(
+        youthAcademyStore.selectedDrivers.find(d => d.isMarkedForPromotion) ??
+        youthAcademyStore.selectedDrivers[0] ??
+        null
+    );
+
+    const mainDriver = $derived(
+        drivers.find((d: any) => d.role === 'main' || d.role === 'Main' || d.carIndex === 0) ?? drivers[0] ?? null
+    );
+
+    const traineePracticeUsed = $derived(youthAcademyStore.traineePracticeUsed);
+
+    const canSendTrainee = $derived(
+        !!activeTrainee &&
+        !traineePracticeUsed &&
+        currentWeekStatus === 'practice'
+    );
 
     /** Accepts both legacy "Reserve" (capital) and normalized "reserve" (lowercase). */
     function isReserveRole(role: string | undefined | null): boolean {
@@ -117,6 +140,7 @@
 
     let isQualyLocked = $derived.by(() => {
         if (!selectedDriver) return true;
+        if (isTraineeMode) return true;
         if (isReserveRole(selectedDriver.role)) return true;
         if (isSaturdayAfter1PM) return false;
         return driverPracticeLaps === 0;
@@ -124,6 +148,7 @@
 
     let isRaceLocked = $derived.by(() => {
         if (!selectedDriver) return true;
+        if (isTraineeMode) return true;
         if (isReserveRole(selectedDriver.role)) return true;
         if (isSaturdayAfter1PM) return false;
         return driverPracticeLaps === 0;
@@ -261,7 +286,7 @@
     <!-- 1. COMPACT DRIVER SELECTOR -->
     <div class="flex flex-wrap gap-2">
         {#each drivers as driver: any}
-            {@const isSelected = selectedDriverId === driver.id}
+            {@const isSelected = selectedDriverId === driver.id && !isTraineeMode}
             <button
                 class="px-4 py-2 rounded-xl border transition-all text-xs font-bold uppercase tracking-widest flex items-center gap-2
                 {isSelected
@@ -269,6 +294,7 @@
                     : 'bg-app-text/40 border-app-border text-app-text/60 hover:bg-app-text/5 hover:border-app-border'}"
                 onclick={() => {
                     selectedDriverId = driver.id;
+                    isTraineeMode = false;
                     if (isReserveRole(driver.role) && activeTab !== "practice") {
                         activeTab = "practice";
                     }
@@ -304,6 +330,40 @@
                 </div>
             </button>
         {/each}
+
+        <!-- Trainee practice button — only during practice window if team has a trainee -->
+        {#if activeTrainee && currentWeekStatus === 'practice'}
+            {@const traineeSelected = isTraineeMode}
+            {@const slotUsed = !!traineePracticeUsed}
+            <button
+                class="px-4 py-2 rounded-xl border transition-all text-xs font-bold uppercase tracking-widest flex items-center gap-2
+                {slotUsed
+                    ? 'bg-app-text/20 border-app-border text-app-text/30 cursor-not-allowed'
+                    : traineeSelected
+                      ? 'bg-emerald-600 text-white border-emerald-500 shadow-[0_0_12px_rgba(16,185,129,0.3)]'
+                      : 'bg-emerald-900/30 border-emerald-700/40 text-emerald-400 hover:bg-emerald-900/50 hover:border-emerald-600/60'}"
+                onclick={() => {
+                    if (!slotUsed) {
+                        isTraineeMode = true;
+                        selectedDriverId = mainDriver?.id ?? selectedDriverId;
+                        activeTab = 'practice';
+                    }
+                }}
+                disabled={slotUsed}
+                title={slotUsed ? t('academy_practice_slot_locked') : t('academy_practice_send_trainee')}
+            >
+                <GraduationCap size={16} />
+                <div class="flex flex-col items-start gap-0.5 min-w-[60px]">
+                    <div class="flex items-center gap-1.5 w-full">
+                        <span class="truncate">{activeTrainee.name?.split(" ")[0] || "Trainee"}</span>
+                        <span class="text-[7px] font-black {slotUsed ? 'opacity-30' : 'opacity-60'}">[T]</span>
+                    </div>
+                    <div class="text-[7px] font-black uppercase tracking-widest {slotUsed ? 'opacity-30' : 'opacity-60'}">
+                        {slotUsed ? 'USED' : 'TRAINEE'}
+                    </div>
+                </div>
+            </button>
+        {/if}
     </div>
 
     {#if selectedDriver}
@@ -360,7 +420,11 @@
                             ? 'text-black/80'
                             : 'text-app-primary/60'}"
                     >
-                        {t('session_laps', { n: driverPracticeLaps })}
+                        {#if traineePracticeUsed && !isTraineeMode}
+                            {t('academy_practice_slot_locked')}
+                        {:else}
+                            {t('session_laps', { n: driverPracticeLaps })}
+                        {/if}
                     </div>
                 {#if activeTab === "practice"}
                     <div class="absolute -bottom-1 -right-1 opacity-10">
@@ -541,7 +605,12 @@
             {#key activeTab}
                 <div in:fade={{ duration: 200 }}>
                     {#if activeTab === "practice"}
-                        <PracticePanel driverId={selectedDriverId} />
+                        <PracticePanel
+                            driverId={selectedDriverId}
+                            isTrainee={isTraineeMode}
+                            trainee={isTraineeMode ? activeTrainee : null}
+                            mainDriverId={isTraineeMode ? (mainDriver?.id ?? null) : null}
+                        />
                     {:else if activeTab === "qualy"}
                         <QualifyingSetupTab driverId={selectedDriverId} />
                     {:else if activeTab === "race"}

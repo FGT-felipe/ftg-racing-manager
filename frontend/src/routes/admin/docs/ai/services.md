@@ -50,6 +50,16 @@ This document defines the interface and behaviors of core services for automated
   - `saveCandidates(teamId, candidates)`: Batch persistent write.
 - **Rules**: Protects recruited drivers by avoiding overwrites in existing subcollections.
 
+### `YouthAcademyStore` — T-004 additions
+- **`runTraineePractice(traineeId, mainDriverId, result, setup, lapsCompleted)`**: Sends the marked trainee to the weekend practice session in place of the main driver.
+  - Writes `lastPracticeRun` + XP + stat drain to `selected/{traineeId}`.
+  - Writes setup to `weekStatus.driverSetups[mainDriverId].practice` so it flows into qualifying/race.
+  - Sets `weekStatus.traineePracticeUsed = traineeId` on the team doc (team-level lock — prevents rotating multiple trainees).
+  - **No budget mutation** — uses `updateDoc`, not `runTransaction`.
+- **`traineePracticeUsed` (getter)**: Returns `teamStore.value.team?.weekStatus?.traineePracticeUsed ?? null`. Null = slot free.
+- **Lock reset**: `traineePracticeUsed` is cleared in `postRaceProcessing` with the rest of `weekStatus`.
+- **Trainee selection priority**: `isMarkedForPromotion` trainee is shown first in GaragePanel. If none marked, first in `selectedDrivers[]`.
+
 ## 3. System Administration
 ### `AdminService`
 - **Capabilities**: Calendar sync, global economic rebalancing, qualifying recovery, academy repair.

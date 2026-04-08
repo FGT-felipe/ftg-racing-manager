@@ -2,6 +2,7 @@
     import { carSetupService } from "$lib/services/car_setup_service.svelte";
     import { teamStore } from "$lib/stores/team.svelte";
     import { driverStore } from "$lib/stores/driver.svelte";
+    import { youthAcademyStore } from "$lib/stores/youthAcademy.svelte";
     import { setupStore, type PracticeHistoryItem } from "$lib/stores/setup.svelte";
     import {
         raceService,
@@ -11,6 +12,7 @@
         type PracticeRunResult,
     } from "$lib/services/practice_service.svelte";
     import { MAX_PRACTICE_LAPS_PER_DRIVER, PRACTICE_SESSION_COST } from "$lib/constants/app_constants";
+    import { MORALE_DEFAULT, ACADEMY_PRACTICE_XP_PER_LAP, ACADEMY_PRACTICE_STAT_THRESHOLD } from "$lib/constants/economics";
     import { uiStore } from "$lib/stores/ui.svelte";
     import { seasonStore } from "$lib/stores/season.svelte";
     import { universeStore } from "$lib/stores/universe.svelte";
@@ -21,6 +23,7 @@ import { circuitService } from "$lib/services/circuit_service.svelte";
         TyreCompound,
         DriverStyle,
         type Driver,
+        type YoungDriver,
     } from "$lib/types";
     import {
         Timer,
@@ -38,6 +41,7 @@ import { circuitService } from "$lib/services/circuit_service.svelte";
         MessageSquare,
         Target,
         Activity,
+        Lock,
     } from "lucide-svelte";
     import { onMount, untrack } from "svelte";
     import { fade, slide } from "svelte/transition";
@@ -46,7 +50,51 @@ import { circuitService } from "$lib/services/circuit_service.svelte";
     import { t, type TranslationKey } from "$lib/utils/i18n";
     import { formatDriverName } from "$lib/utils/driver";
 
-    let { driverId = null } = $props();
+    let { driverId = null, isTrainee = false, trainee = null, mainDriverId = null } = $props();
+
+    /**
+     * Builds a synthetic Driver shape from a YoungDriver so it can be passed
+     * to simulatePracticeRun(). Uses carIndex=0 (main car slot).
+     * Feedback stat is degraded (60% of baseSkill) to reflect the trainee's
+     * limited circuit knowledge.
+     */
+    function traineeAsDriver(tr: YoungDriver, teamId: string): Driver {
+        const s = tr.stats ?? {};
+        return {
+            id: tr.id,
+            teamId,
+            carIndex: 0,
+            name: tr.name,
+            age: tr.age,
+            gender: tr.gender === 'M' ? 'male' : 'female',
+            countryCode: tr.countryCode,
+            role: 'reserve',
+            salary: tr.salary,
+            contractYearsRemaining: 0,
+            potential: tr.potentialStars,
+            currentStars: 1,
+            specialty: tr.specialty ?? null,
+            stats: {
+                braking:      s['braking']      ?? tr.baseSkill,
+                cornering:    s['cornering']     ?? tr.baseSkill,
+                focus:        s['focus']         ?? tr.baseSkill,
+                fitness:      s['fitness']       ?? 80,
+                adaptability: s['adaptability']  ?? tr.baseSkill,
+                consistency:  s['consistency']   ?? tr.baseSkill,
+                smoothness:   s['smoothness']    ?? tr.baseSkill,
+                overtaking:   s['overtaking']    ?? tr.baseSkill,
+                feedback:     Math.max(1, Math.floor(tr.baseSkill * 0.6)),
+                morale:       s['morale']        ?? MORALE_DEFAULT,
+            },
+            traits: [],
+            statPotentials: {},
+            weeklyGrowth: {},
+            points: 0, championships: 0, races: 0, wins: 0, podiums: 0, poles: 0,
+            seasonPoints: 0, seasonRaces: 0, seasonWins: 0, seasonPodiums: 0, seasonPoles: 0,
+            form: 0, championshipForm: [], marketValue: 0, currentHighestBid: 0,
+            negotiationAttempts: 0, isTransferListed: false, statusTitle: 'Trainee',
+        } as unknown as Driver;
+    }
 
     // Local state
     let setup = $state<CarSetup>({
@@ -78,12 +126,29 @@ import { circuitService } from "$lib/services/circuit_service.svelte";
     const nextEvent = $derived(seasonStore.nextEvent);
     const circuit = $derived(nextEvent ? circuitService.getCircuitProfile(nextEvent.circuitId) : null);
     
+    /** Unique ID for this race-weekend session, e.g. "S2_r6". */
+    const currentSessionId = $derived(
+        seasonStore.value.season && nextEvent
+            ? `${seasonStore.value.season.id}_${nextEvent.id}`
+            : null
+    );
+
+    /**
+     * Returns true if the saved practice data belongs to the current race round.
+     * Data without a sessionId (written before this fix) is treated as valid for
+     * backward compatibility.
+     */
+    function isCurrentSession(practiceData: any): boolean {
+        if (!practiceData) return false;
+        if (!practiceData.sessionId) return true; // legacy: no tag → assume valid
+        return practiceData.sessionId === currentSessionId;
+    }
+
     const driverPracticeLaps = $derived.by(() => {
         if (!driverId) return 0;
-        return (
-            teamStore.value.team?.weekStatus?.driverSetups?.[driverId]
-                ?.practice?.laps || 0
-        );
+        const pd = teamStore.value.team?.weekStatus?.driverSetups?.[driverId]?.practice;
+        if (!isCurrentSession(pd)) return 0;
+        return pd?.laps || 0;
     });
 
     const enrichedHistory = $derived.by(() => {
@@ -138,13 +203,20 @@ import { circuitService } from "$lib/services/circuit_service.svelte";
 
     const driverQualyAttempts = $derived.by(() => {
         if (!driverId) return 0;
-        return (
-            teamStore.value.team?.weekStatus?.driverSetups?.[driverId]
-                ?.qualifyingAttempts || 0
-        );
+        const driverSetup = teamStore.value.team?.weekStatus?.driverSetups?.[driverId];
+        if (!driverSetup) return 0;
+        // Gate on session: if practice data is stale, qualifying attempts are too
+        if (!isCurrentSession(driverSetup.practice)) return 0;
+        return driverSetup.qualifyingAttempts || 0;
     });
 
-    const isPracticeLocked = $derived(driverQualyAttempts > 0 || isSaturdayAfter1PM);
+    const traineePracticeUsed = $derived(teamStore.value.team?.weekStatus?.traineePracticeUsed ?? null);
+
+    const isPracticeLocked = $derived(
+        driverQualyAttempts > 0 ||
+        isSaturdayAfter1PM ||
+        (!isTrainee && !!traineePracticeUsed && (driver?.carIndex === 0 || driver?.role === 'main' || driver?.role === 'Main'))
+    );
 
     async function refreshStandings() {
         const team = teamStore.value.team;
@@ -179,8 +251,9 @@ import { circuitService } from "$lib/services/circuit_service.svelte";
         if (driverId) {
             untrack(() => {
                 const team = teamStore.value.team;
-                if (team?.weekStatus?.driverSetups?.[driverId]?.practice) {
-                    const savedSetup = team.weekStatus.driverSetups[driverId].practice;
+                const savedSetup = team?.weekStatus?.driverSetups?.[driverId]?.practice;
+                // Only restore setup if it belongs to the current race round
+                if (savedSetup && isCurrentSession(savedSetup)) {
                     setup = { ...setup, ...savedSetup };
                 }
             });
@@ -191,9 +264,15 @@ import { circuitService } from "$lib/services/circuit_service.svelte";
         if (driverId && !isSimulating) {
             const team = teamStore.value.team;
             if (!team) return;
-            
+
             const practiceData = team.weekStatus?.driverSetups?.[driverId]?.practice;
-            
+
+            // Ignore data from previous race rounds — their setup hints target the wrong circuit
+            if (!isCurrentSession(practiceData)) {
+                lastResult = null;
+                return;
+            }
+
             if (practiceData?.lastResult || practiceData?.sessionFeedback) {
                 lastResult = {
                     lapTime: practiceData.lastResult?.lapTime || 0,
@@ -205,17 +284,21 @@ import { circuitService } from "$lib/services/circuit_service.svelte";
                     tyreFeedback: []
                 };
             } else {
-                // Only clear if we really have no data
                 lastResult = null;
             }
         }
     });
 
     async function runPractice() {
-        const currentDriver = driver;
-        const currentCircuit = circuit;
         const team = teamStore.value.team;
-        if (!currentDriver || !currentCircuit || !team) return;
+        const currentCircuit = circuit;
+        if (!currentCircuit || !team) return;
+
+        const currentDriver = isTrainee && trainee
+            ? traineeAsDriver(trainee, team.id)
+            : driver;
+
+        if (!currentDriver) return;
 
         isSimulating = true;
         const weekStatus = team.weekStatus || {};
@@ -307,16 +390,26 @@ import { circuitService } from "$lib/services/circuit_service.svelte";
                 // NOW we update lastResult to trigger the speech bubble
                 lastResult = sessionResult;
 
-                const sessionId = `${seasonStore.value.season?.id}_${nextEvent?.id}`;
-                await practiceService.savePracticeRun(
-                    teamStore.value.team!,
-                    currentDriver.id,
-                    sessionResult,
-                    setupToRun,
-                    sessionId,
-                    lapsToRun,
-                    currentDriver.stats
-                );
+                if (isTrainee && trainee && mainDriverId) {
+                    await youthAcademyStore.runTraineePractice(
+                        trainee.id,
+                        mainDriverId,
+                        sessionResult,
+                        setupToRun,
+                        lapsToRun
+                    );
+                } else {
+                    const sessionId = `${seasonStore.value.season?.id}_${nextEvent?.id}`;
+                    await practiceService.savePracticeRun(
+                        teamStore.value.team!,
+                        currentDriver.id,
+                        sessionResult,
+                        setupToRun,
+                        sessionId,
+                        lapsToRun,
+                        currentDriver.stats
+                    );
+                }
                 await refreshStandings();
             }
         } catch (e) { console.error(e); }
@@ -363,6 +456,21 @@ import { circuitService } from "$lib/services/circuit_service.svelte";
         return `${mins}:${parts[0].padStart(2, '0')}.${parts[1]}`;
     }
 
+    const traineeXpEarned = $derived(lapsToRun * ACADEMY_PRACTICE_XP_PER_LAP);
+    const traineeStatEligible = $derived(
+        !!lastResult && lapsToRun >= ACADEMY_PRACTICE_STAT_THRESHOLD && !lastResult.isCrashed
+    );
+    const traineeFitnessDisplay = $derived(
+        isTrainee && trainee
+            ? Math.round(((trainee.stats?.['fitness'] ?? 80)) * 10) / 10
+            : Math.round((driver?.stats?.fitness || 100) * 10) / 10
+    );
+    const traineeMoraleDisplay = $derived(
+        isTrainee && trainee
+            ? (trainee.stats?.['morale'] ?? MORALE_DEFAULT)
+            : (driver?.stats?.morale ?? MORALE_DEFAULT)
+    );
+
     const styleConfigs = $derived.by(() => {
         const base = [
             { id: DriverStyle.defensive, icon: ChevronRight, color: "text-blue-400", label: "defensive" as TranslationKey },
@@ -381,6 +489,18 @@ import { circuitService } from "$lib/services/circuit_service.svelte";
 <div class="grid grid-cols-1 lg:grid-cols-12 gap-5" in:fade>
     <!-- LEFT: Setup & Controls (7 Cols) -->
     <div class="lg:col-span-7 space-y-5">
+        {#if isTrainee && trainee}
+            <div class="flex items-center gap-3 px-4 py-3 rounded-xl bg-emerald-900/30 border border-emerald-700/40 text-emerald-300">
+                <Info size={14} class="shrink-0" />
+                <span class="text-[10px] font-black uppercase tracking-widest">{t('academy_practice_feedback_note')}</span>
+            </div>
+        {/if}
+        {#if !isTrainee && traineePracticeUsed && (driver?.carIndex === 0 || driver?.role === 'main' || driver?.role === 'Main')}
+            <div class="flex items-center gap-3 px-4 py-3 rounded-xl bg-amber-900/30 border border-amber-700/40 text-amber-300">
+                <Lock size={14} class="shrink-0" />
+                <span class="text-[10px] font-black uppercase tracking-widest">{t('academy_practice_slot_locked')}</span>
+            </div>
+        {/if}
         {#if driver}
             <div class="space-y-3">
                 <div class="bg-app-surface border border-app-border rounded-2xl p-6 shadow-2xl relative overflow-hidden group min-h-[160px] flex flex-col justify-center">
@@ -398,10 +518,13 @@ import { circuitService } from "$lib/services/circuit_service.svelte";
                         <!-- CONVERSATION BUBBLE -->
                         <div class="flex-1 space-y-3">
                             <div class="flex items-center justify-between">
-                                <span class="text-[10px] font-black uppercase tracking-[0.3em] text-app-primary leading-none" title={driver.name}>{formatDriverName(driver.name)}</span>
+                                <div class="flex items-center gap-2">
+                                    <span class="text-[10px] font-black uppercase tracking-[0.3em] text-app-primary leading-none">{isTrainee && trainee ? formatDriverName(trainee.name) : formatDriverName(driver.name)}</span>
+                                    {#if isTrainee}<span class="px-1.5 py-0.5 rounded text-[7px] font-black uppercase tracking-widest bg-emerald-500/20 text-emerald-400 border border-emerald-500/30">TRAINEE</span>{/if}
+                                </div>
                                 <div class="flex items-center gap-4 text-[9px] font-black uppercase text-app-text/30">
-                                    <div class="flex items-center gap-1.5"><Bolt size={10} class="text-emerald-400" /> {Math.round((driver.stats?.fitness || 100) * 10) / 10}%</div>
-                                    <div class="flex items-center gap-1.5"><Smile size={10} class="text-yellow-400" /> {driver.stats?.morale || 100}%</div>
+                                    <div class="flex items-center gap-1.5"><Bolt size={10} class="text-emerald-400" /> {traineeFitnessDisplay}%</div>
+                                    <div class="flex items-center gap-1.5"><Smile size={10} class="text-yellow-400" /> {traineeMoraleDisplay}%</div>
                                 </div>
                             </div>
                             {#if isSimulating}
@@ -448,6 +571,21 @@ import { circuitService } from "$lib/services/circuit_service.svelte";
                                 </p>
                             {/if}
                         </div>
+                    <!-- Trainee XP / stat reward preview -->
+                    {#if isTrainee && trainee && lastResult && !isSimulating}
+                        <div in:fade class="mt-4 pt-4 border-t border-white/5 flex flex-wrap gap-3">
+                            <div class="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-emerald-900/30 border border-emerald-700/30 text-emerald-400">
+                                <Target size={11} />
+                                <span class="text-[9px] font-black uppercase tracking-widest">{t('academy_practice_xp_earned', { xp: String(traineeXpEarned) })}</span>
+                            </div>
+                            {#if traineeStatEligible}
+                                <div class="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-cyan-900/30 border border-cyan-700/30 text-cyan-400">
+                                    <Activity size={11} />
+                                    <span class="text-[9px] font-black uppercase tracking-widest">{t('academy_practice_stat_gained', { stat: 'lowest stat' })}</span>
+                                </div>
+                            {/if}
+                        </div>
+                    {/if}
                     </div>
                 </div>
             </div>

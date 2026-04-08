@@ -24,8 +24,16 @@ import {
     ACADEMY_TRAINEE_WEEKLY_SALARY,
     ACADEMY_UPGRADE_COST_MULTIPLIER,
     ACADEMY_INTENSIVE_TRAINING_COST,
+    ACADEMY_PRACTICE_XP_PER_LAP,
+    ACADEMY_PRACTICE_STAT_THRESHOLD,
+    ACADEMY_PRACTICE_FITNESS_DRAIN_PER_LAP,
     FACILITY_ROLE_DISCOUNT,
+    MORALE_DEFAULT,
+    MORALE_EVENT_BAD_PRACTICE,
+    MORALE_EVENT_GOOD_PRACTICE,
 } from '$lib/constants/economics';
+import type { PracticeRunResult } from '$lib/services/practice_service.svelte';
+import type { CarSetup } from '$lib/types';
 import { getFlagEmoji } from '$lib/utils/country';
 import { academyService } from '$lib/services/academy.svelte';
 
@@ -139,6 +147,10 @@ export function createYouthAcademyStore() {
         get scoutingQuota() { return scoutingQuota; },
         get i18n_currentSeasonId() { return seasonStore.value.season?.id || teamStore.value.team?.currentSeasonId || null; },
         get canUpgrade() { return canUpgrade; },
+        /** ID del trainee que ya usó el slot de práctica esta semana. null = slot libre. */
+        get traineePracticeUsed(): string | null {
+            return teamStore.value.team?.weekStatus?.traineePracticeUsed ?? null;
+        },
         init,
 
         async purchaseAcademy(country: { code: string, name: string, flagEmoji?: string }) {
@@ -465,6 +477,132 @@ export function createYouthAcademyStore() {
                 title: "Driver Released",
                 message: "Driver removed from the academy program.",
                 type: "INFO"
+            });
+        },
+
+        /**
+         * Sends a trainee to the main driver's practice session for the weekend.
+         *
+         * Effects:
+         * - Writes lastPracticeRun to the trainee's selected doc
+         * - Drains trainee fitness (ACADEMY_PRACTICE_FITNESS_DRAIN_PER_LAP × lapsCompleted)
+         * - Applies morale delta to trainee based on session confidence
+         * - Awards XP (ACADEMY_PRACTICE_XP_PER_LAP × lapsCompleted) to trainee
+         * - Awards +1 stat gain if lapsCompleted >= ACADEMY_PRACTICE_STAT_THRESHOLD
+         * - Writes the used setup to weekStatus.driverSetups[mainDriverId].practice (feeds qualy/race)
+         * - Sets weekStatus.traineePracticeUsed = traineeId on the team doc (team-level lock)
+         *
+         * @param traineeId - ID of the trainee doing practice
+         * @param mainDriverId - ID of the main driver being replaced this weekend
+         * @param result - PracticeRunResult from practiceService.simulatePracticeRun()
+         * @param setup - CarSetup used in the session
+         * @param lapsCompleted - number of laps run (1–50)
+         */
+        async runTraineePractice(
+            traineeId: string,
+            mainDriverId: string,
+            result: PracticeRunResult,
+            setup: CarSetup,
+            lapsCompleted: number
+        ): Promise<void> {
+            const teamId = teamStore.value.team?.id;
+            if (!teamId || !config) throw new Error('[YouthAcademyStore:runTraineePractice] Missing team context.');
+
+            const trainee = selectedDrivers.find(d => d.id === traineeId);
+            if (!trainee) throw new Error('[YouthAcademyStore:runTraineePractice] Trainee not found.');
+
+            // Guard: team-level slot lock
+            const currentLock = teamStore.value.team?.weekStatus?.traineePracticeUsed;
+            if (currentLock) throw new Error('[YouthAcademyStore:runTraineePractice] Practice slot already used this weekend.');
+
+            // --- Calculate rewards ---
+            const xpEarned = lapsCompleted * ACADEMY_PRACTICE_XP_PER_LAP;
+
+            // Stat gain: pick the trainee's lowest skill if threshold met
+            const TRAINEE_STATS = ['braking', 'cornering', 'smoothness', 'overtaking', 'consistency', 'adaptability', 'focus'] as const;
+            let statGained: string | null = null;
+            if (lapsCompleted >= ACADEMY_PRACTICE_STAT_THRESHOLD && !result.isCrashed) {
+                const lowest = TRAINEE_STATS.reduce((a, b) =>
+                    (trainee.stats?.[a] ?? 0) <= (trainee.stats?.[b] ?? 0) ? a : b
+                );
+                statGained = lowest;
+            }
+
+            // Fitness drain
+            const fitnessDrain = lapsCompleted * ACADEMY_PRACTICE_FITNESS_DRAIN_PER_LAP;
+            const currentFitness = (trainee.stats as any)?.fitness ?? 100;
+            const newFitness = Math.max(0, currentFitness - fitnessDrain);
+
+            // Morale delta
+            let moraleDelta = 0;
+            if (result.isCrashed) {
+                moraleDelta = MORALE_EVENT_BAD_PRACTICE;
+            } else if (result.setupConfidence < 0.60) {
+                moraleDelta = MORALE_EVENT_BAD_PRACTICE;
+            } else if (result.setupConfidence > 0.85) {
+                moraleDelta = MORALE_EVENT_GOOD_PRACTICE;
+            }
+            const currentMorale = (trainee.stats as any)?.morale ?? MORALE_DEFAULT;
+            const newMorale = Math.max(0, Math.min(100, currentMorale + moraleDelta));
+
+            // --- Firestore writes (two docs, no transaction needed — no budget mutation) ---
+            const traineeRef = doc(db, 'teams', teamId, 'academy', 'config', 'selected', traineeId);
+            const teamRef = doc(db, 'teams', teamId);
+
+            const traineeUpdates: Record<string, any> = {
+                lastPracticeRun: {
+                    lapTime: result.lapTime,
+                    setupConfidence: result.setupConfidence,
+                    isCrashed: result.isCrashed,
+                    lapsCompleted,
+                    xpEarned,
+                    statGained: statGained ?? null,
+                    timestamp: serverTimestamp()
+                },
+                xp: increment(xpEarned),
+                'stats.fitness': newFitness,
+                'stats.morale': newMorale,
+            };
+
+            if (statGained) {
+                traineeUpdates[`stats.${statGained}`] = increment(1);
+            }
+
+            const practiceSetupPath = `weekStatus.driverSetups.${mainDriverId}.practice`;
+            const teamUpdates: Record<string, any> = {
+                'weekStatus.traineePracticeUsed': traineeId,
+                [`${practiceSetupPath}.frontWing`]: setup.frontWing,
+                [`${practiceSetupPath}.rearWing`]: setup.rearWing,
+                [`${practiceSetupPath}.suspension`]: setup.suspension,
+                [`${practiceSetupPath}.gearRatio`]: setup.gearRatio,
+                [`${practiceSetupPath}.tyreCompound`]: setup.tyreCompound,
+                [`${practiceSetupPath}.laps`]: increment(lapsCompleted),
+                [`${practiceSetupPath}.sessionFeedback`]: result.driverFeedback.concat(result.tyreFeedback),
+                [`${practiceSetupPath}.lastResult`]: {
+                    lapTime: result.lapTime,
+                    setupConfidence: result.setupConfidence,
+                    isCrashed: result.isCrashed,
+                    setupUsed: setup,
+                    setupHints: result.setupHints ?? null
+                }
+            };
+
+            if (!result.isCrashed) {
+                const currentBest = teamStore.value.team?.weekStatus?.driverSetups?.[mainDriverId]?.practice?.bestLapTime ?? 9999;
+                if (result.lapTime < currentBest) {
+                    teamUpdates[`${practiceSetupPath}.bestLapTime`] = result.lapTime;
+                    teamUpdates[`${practiceSetupPath}.bestLapTyre`] = setup.tyreCompound;
+                    teamUpdates[`${practiceSetupPath}.bestLapSetup`] = setup;
+                }
+            }
+
+            await updateDoc(traineeRef, traineeUpdates);
+            await updateDoc(teamRef, teamUpdates);
+
+            notificationStore.addNotification({
+                title: 'Practice Session Complete',
+                message: `${trainee.name} completed ${lapsCompleted} laps. XP +${xpEarned}${statGained ? ` · ${statGained} +1` : ''}.`,
+                type: 'SUCCESS'
             });
         },
 

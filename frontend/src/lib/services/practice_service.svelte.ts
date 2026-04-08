@@ -273,6 +273,8 @@ class PracticeService {
             [`${practiceSetupPath}.gearRatio`]: setup.gearRatio,
             [`${practiceSetupPath}.tyreCompound`]: setup.tyreCompound,
             [`${practiceSetupPath}.laps`]: increment(lapCount),
+            // Tag the data with the session so stale data from previous rounds is ignored
+            [`${practiceSetupPath}.sessionId`]: sessionId ?? null,
             // Persistent session feedback and last result data
             [`${practiceSetupPath}.sessionFeedback`]: result.driverFeedback.concat(result.tyreFeedback),
             [`${practiceSetupPath}.lastResult`]: {

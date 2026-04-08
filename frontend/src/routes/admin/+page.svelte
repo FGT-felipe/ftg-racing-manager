@@ -314,6 +314,25 @@
                                 </div>
                                 <ChevronRight class="opacity-10 group-hover:opacity-100 group-hover:translate-x-1 transition-all" />
                             </button>
+
+                            <button
+                                class="action-card group"
+                                onclick={() => triggerAction("syncUniverseCallable", "Sync the universe standings document from live teams and drivers data.")}
+                                disabled={!!processingAction || !!runningDryRun}
+                            >
+                                <div class="card-icon bg-blue-500/10 text-blue-500">
+                                    {#if processingAction === 'syncUniverseCallable'}
+                                        <Loader size={24} class="animate-spin" />
+                                    {:else}
+                                        <RefreshCw size={24} />
+                                    {/if}
+                                </div>
+                                <div class="card-body">
+                                    <h3>Sync Universe</h3>
+                                    <p>Refresh standings from live data. Use when Standings page shows stale results after a race.</p>
+                                </div>
+                                <ChevronRight class="opacity-10 group-hover:opacity-100 group-hover:translate-x-1 transition-all" />
+                            </button>
                         </div>
                     {:else if activeTab === 'database'}
                         <div class="grid grid-cols-1 md:grid-cols-2 gap-6" in:fly={{ y: 20 }}>
