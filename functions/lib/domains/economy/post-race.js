@@ -399,6 +399,8 @@ async function runPostRaceProcessing() {
                     "weekStatus.fitnessTrainerTrainedThisWeek": false,
                     "weekStatus.psychologistUpgradedThisWeek": false,
                     "weekStatus.psychologistSessionDoneThisWeek": false,
+                    // T-004: reset academy trainee practice slot each round
+                    "weekStatus.traineePracticeUsed": null,
                     sponsors: updatedSponsors,
                     budget: newBudget,
                 });

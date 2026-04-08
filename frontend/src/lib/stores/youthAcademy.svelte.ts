@@ -147,9 +147,22 @@ export function createYouthAcademyStore() {
         get scoutingQuota() { return scoutingQuota; },
         get i18n_currentSeasonId() { return seasonStore.value.season?.id || teamStore.value.team?.currentSeasonId || null; },
         get canUpgrade() { return canUpgrade; },
-        /** ID del trainee que ya usó el slot de práctica esta semana. null = slot libre. */
+        /**
+         * ID del trainee que usó el slot de práctica en la ronda ACTUAL.
+         * Devuelve null si el slot está libre o si el campo pertenece a una ronda anterior.
+         * El campo se guarda como { traineeId, sessionId } para que el gate
+         * funcione sin depender de postRaceProcessing.
+         */
         get traineePracticeUsed(): string | null {
-            return teamStore.value.team?.weekStatus?.traineePracticeUsed ?? null;
+            const raw = teamStore.value.team?.weekStatus?.traineePracticeUsed;
+            if (!raw) return null;
+            // Legacy: valor era un string directo (traineeId sin sessionId)
+            if (typeof raw === 'string') return null; // tratar legacy como libre
+            const currentSessionId = seasonStore.value.season && seasonStore.nextEvent
+                ? `${seasonStore.value.season.id}_${seasonStore.nextEvent.id}`
+                : null;
+            if (!currentSessionId || raw.sessionId !== currentSessionId) return null;
+            return raw.traineeId ?? null;
         },
         init,
 
@@ -290,8 +303,25 @@ export function createYouthAcademyStore() {
                 if (!data || (data.budget ?? 0) < salary) throw new Error("Insufficient budget for hiring");
                 const budget = data.budget ?? 0;
 
+                // Initialize stats on sign — candidates are created without a stats
+                // object. Without explicit initialization, Firestore increment() calls
+                // from intensive training start from 0, leaving fitness at 1%.
+                const initFitness = candidate.statRangeMin?.['fitness'] ?? 85;
+                const initStats: Record<string, number> = {
+                    braking:      candidate.baseSkill,
+                    cornering:    candidate.baseSkill,
+                    smoothness:   candidate.baseSkill,
+                    overtaking:   candidate.baseSkill,
+                    consistency:  candidate.baseSkill,
+                    adaptability: candidate.baseSkill,
+                    focus:        candidate.baseSkill,
+                    fitness:      initFitness,
+                    morale:       MORALE_DEFAULT,
+                };
+
                 transaction.set(selectedRef, {
                     ...candidate,
+                    stats: initStats,
                     status: 'selected',
                     selectedAt: serverTimestamp()
                 });
@@ -511,9 +541,13 @@ export function createYouthAcademyStore() {
             const trainee = selectedDrivers.find(d => d.id === traineeId);
             if (!trainee) throw new Error('[YouthAcademyStore:runTraineePractice] Trainee not found.');
 
-            // Guard: team-level slot lock
-            const currentLock = teamStore.value.team?.weekStatus?.traineePracticeUsed;
-            if (currentLock) throw new Error('[YouthAcademyStore:runTraineePractice] Practice slot already used this weekend.');
+            // Guard: prevent rotating trainees — the slot can only be used by one trainee
+            // per weekend, but that same trainee can run multiple stints.
+            const rawLock = teamStore.value.team?.weekStatus?.traineePracticeUsed;
+            const lockedTraineeId = rawLock && typeof rawLock === 'object' ? rawLock.traineeId : null;
+            if (lockedTraineeId && lockedTraineeId !== traineeId) {
+                throw new Error('[YouthAcademyStore:runTraineePractice] Practice slot already used by a different trainee this weekend.');
+            }
 
             // --- Calculate rewards ---
             const xpEarned = lapsCompleted * ACADEMY_PRACTICE_XP_PER_LAP;
@@ -568,9 +602,19 @@ export function createYouthAcademyStore() {
                 traineeUpdates[`stats.${statGained}`] = increment(1);
             }
 
+            const sessionId = seasonStore.value.season && seasonStore.nextEvent
+                ? `${seasonStore.value.season.id}_${seasonStore.nextEvent.id}`
+                : null;
+
             const practiceSetupPath = `weekStatus.driverSetups.${mainDriverId}.practice`;
             const teamUpdates: Record<string, any> = {
-                'weekStatus.traineePracticeUsed': traineeId,
+                // Store { traineeId, sessionId } so the getter can gate by round
+                // without depending on postRaceProcessing clearing the field.
+                'weekStatus.traineePracticeUsed': { traineeId, sessionId },
+                // sessionId is required for session gating in getCompetitorPracticeTimes
+                // and isCurrentSession() in PracticePanel — without it the standings
+                // and setupHints disappear after the Firestore snapshot fires.
+                [`${practiceSetupPath}.sessionId`]: sessionId,
                 [`${practiceSetupPath}.frontWing`]: setup.frontWing,
                 [`${practiceSetupPath}.rearWing`]: setup.rearWing,
                 [`${practiceSetupPath}.suspension`]: setup.suspension,

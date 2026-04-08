@@ -203,10 +203,14 @@ export function createRaceService() {
                     const d = driverDoc.data();
                     const teamData = teamsMap.get(d.teamId);
                     
-                    // Priority 1: Central session data
-                    // Priority 2: Team-specific weekStatus data (fallback)
+                    // Priority 1: Central session data (practice_sessions/{sessionId})
+                    // Priority 2: Team weekStatus fallback — only when the stored
+                    //   practice.sessionId matches the current session. Without this
+                    //   gate, R(N-1) best lap times bleed into R(N) standings because
+                    //   driverSetups is not cleared between rounds.
                     const centralResult = driverResults[dId] || {};
-                    const teamPracticeData = teamData?.weekStatus?.driverSetups?.[dId]?.practice || {};
+                    const rawPracticeData = teamData?.weekStatus?.driverSetups?.[dId]?.practice || {};
+                    const teamPracticeData = rawPracticeData.sessionId === sessionId ? rawPracticeData : {};
 
                     const bestTime = centralResult.bestLapTime || teamPracticeData.bestLapTime || null;
                     const bestTyre = centralResult.bestLapTyre || teamPracticeData.bestLapTyre || null;
@@ -270,13 +274,18 @@ export function createRaceService() {
 
                 const competitors: Array<{teamName: string, driverName: string, time: number | null, tyre: string | null, totalLaps: number, driverId: string, gender: string}> = [];
 
-                // 3. Merge data using team weekStatus (where qualy data is stored)
+                // 3. Merge data using team weekStatus (where qualy data is stored).
+                // Gate by practice.sessionId: qualifying fields share the same
+                // driverSetups record and are not cleared between rounds, so
+                // R(N-1) qualifying times would leak into R(N) standings.
                 driversSnap.forEach(driverDoc => {
                     const dId = driverDoc.id;
                     const d = driverDoc.data();
                     const teamData = teamsMap.get(d.teamId);
-                    
-                    const qualyData = teamData?.weekStatus?.driverSetups?.[dId] || {};
+
+                    const rawDs = teamData?.weekStatus?.driverSetups?.[dId] || {};
+                    const isCurrentSession = rawDs.practice?.sessionId === sessionId;
+                    const qualyData = isCurrentSession ? rawDs : {};
 
                     const bestTime = qualyData.qualifyingBestTime || null;
                     const bestTyre = qualyData.qualifyingBestCompound || null;

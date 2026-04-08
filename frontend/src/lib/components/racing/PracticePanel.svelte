@@ -135,12 +135,14 @@ import { circuitService } from "$lib/services/circuit_service.svelte";
 
     /**
      * Returns true if the saved practice data belongs to the current race round.
-     * Data without a sessionId (written before this fix) is treated as valid for
-     * backward compatibility.
+     * A missing sessionId is treated as stale (prior-round data) because every
+     * practice write from v1.5+ tags the session. This prevents R(N) state from
+     * leaking into R(N+1) when post-race processing doesn't clear driverSetups.
      */
     function isCurrentSession(practiceData: any): boolean {
         if (!practiceData) return false;
-        if (!practiceData.sessionId) return true; // legacy: no tag → assume valid
+        if (!currentSessionId) return false;
+        if (!practiceData.sessionId) return false; // missing tag → previous-round data
         return practiceData.sessionId === currentSessionId;
     }
 
@@ -153,9 +155,12 @@ import { circuitService } from "$lib/services/circuit_service.svelte";
 
     const enrichedHistory = $derived.by(() => {
         if (!driver || !teamStore.value.team) return [];
-        const hist = setupStore.getHistoryByDriver(driver.id);
         const team = teamStore.value.team;
         const driverSetup = team.weekStatus?.driverSetups?.[driver.id] || {};
+        // Session gate: practiceRuns[] is not cleared between rounds, so read
+        // it only when the session matches the current round.
+        if (!isCurrentSession(driverSetup.practice)) return [];
+        const hist = setupStore.getHistoryByDriver(driver.id);
         const legacy = (driverSetup.practiceRuns || []).map((run: any, idx: number) => ({
             id: `legacy-${idx}`,
             driverId: driver.id,
@@ -510,7 +515,12 @@ import { circuitService } from "$lib/services/circuit_service.svelte";
                         <!-- BIG AVATAR -->
                         <div class="shrink-0 relative">
                             <div class="w-16 h-16 rounded-2xl bg-app-primary/10 border border-app-primary/20 flex items-center justify-center overflow-hidden shadow-inner ring-4 ring-app-primary/5">
-                                <DriverAvatar id={driver.id} seed={driver.id} gender={driver.gender} size={64} />
+                                <DriverAvatar
+                                    id={isTrainee && trainee ? trainee.id : driver.id}
+                                    seed={isTrainee && trainee ? trainee.id : driver.id}
+                                    gender={isTrainee && trainee ? (trainee.gender === 'M' ? 'male' : 'female') : driver.gender}
+                                    size={64}
+                                />
                             </div>
                             <div class="absolute -bottom-1 -right-1 w-5 h-5 rounded-full bg-emerald-500 border-2 border-app-surface ring-1 ring-emerald-500/20 {isSimulating ? 'animate-pulse' : ''}"></div>
                         </div>

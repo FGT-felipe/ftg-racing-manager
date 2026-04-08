@@ -1,8 +1,20 @@
-import { db } from '$lib/firebase/config';
-import { collection, query, where, onSnapshot, orderBy, limit } from 'firebase/firestore';
-import { teamStore } from './team.svelte';
 import { type CarSetup } from '$lib/types';
 
+/**
+ * Legacy setup history store.
+ *
+ * Historically this subscribed to the `teams/{teamId}/practice_results`
+ * Firestore subcollection. That subcollection has NO writer anywhere in the
+ * codebase (neither frontend nor Cloud Functions) — any documents sitting in
+ * it are leftover state from the deprecated Flutter build. Reading it caused
+ * practice history from previous race weekends to bleed into the current
+ * round forever.
+ *
+ * The store is kept as a no-op shim so existing call sites (PracticePanel,
+ * PracticeSetupTab) continue to compile. The source of truth for
+ * per-weekend practice runs is `driverSetups[driverId].practiceRuns[]`,
+ * which is already session-gated at the component level.
+ */
 export interface PracticeHistoryItem {
     id: string;
     driverId: string;
@@ -22,44 +34,22 @@ class SetupStore {
     }>({
         selectedDriverId: null,
         history: [],
-        loading: false
+        loading: false,
     });
 
-    private unsubscribe: (() => void) | null = null;
-
-    init(teamId: string) {
-        if (this.unsubscribe) return;
-
-        console.debug("📡 SetupStore: Initializing for team", teamId);
-        this.value.loading = true;
-
-        const resultsRef = collection(db, 'teams', teamId, 'practice_results');
-        const q = query(resultsRef, orderBy('timestamp', 'desc'), limit(20));
-
-        this.unsubscribe = onSnapshot(q, (snapshot) => {
-            this.value.history = snapshot.docs.map(doc => ({
-                id: doc.id,
-                ...doc.data()
-            } as PracticeHistoryItem));
-            this.value.loading = false;
-        });
+    init(_teamId: string) {
+        // no-op: legacy practice_results subcollection is abandoned
     }
 
-    getHistoryByDriver(driverId: string) {
-        return this.value.history.filter(h => h.driverId === driverId);
+    getHistoryByDriver(_driverId: string): PracticeHistoryItem[] {
+        return [];
     }
 
-    getBestLap(driverId: string) {
-        const driverHistory = this.getHistoryByDriver(driverId).filter(h => !h.isCrashed);
-        if (driverHistory.length === 0) return null;
-        return Math.min(...driverHistory.map(h => h.lapTime));
+    getBestLap(_driverId: string): number | null {
+        return null;
     }
 
     clear() {
-        if (this.unsubscribe) {
-            this.unsubscribe();
-            this.unsubscribe = null;
-        }
         this.value.history = [];
         this.value.selectedDriverId = null;
     }

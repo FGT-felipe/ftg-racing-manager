@@ -1,4 +1,4 @@
-import { onSnapshot, doc, getDoc, updateDoc, getFirestore, collection, query, orderBy, limit } from "firebase/firestore";
+import { onSnapshot, doc, getFirestore, collection, query, orderBy, limit } from "firebase/firestore";
 import { teamStore } from "./team.svelte";
 import type { Season, RaceEvent } from "../types";
 import { browser } from "$app/environment";
@@ -20,8 +20,6 @@ class SeasonStore {
 
     private unsubscribe: (() => void) | null = null;
     private currentSeasonId: string | null = null;
-    /** Guards against repeated self-heal writes during the same session. */
-    private selfHealRunning = false;
 
     // Derived store logic to get the next upcoming event
     get nextRace() {
@@ -109,62 +107,10 @@ class SeasonStore {
 
             this.value.loading = false;
             console.debug(`✅ SeasonStore: Loaded ${this.value.season.id}`);
-
-            // Cross-validate calendar against race documents to catch stale isCompleted flags.
-            // postRaceProcessing sometimes fails to update seasons/{id}.calendar[].isCompleted.
-            this.syncFinishedEvents(seasonSnap.id, rawData.calendar ?? []);
         } else {
             console.error("❌ SeasonStore: Document not found", this.currentSeasonId);
             this.value.error = "Season document not found.";
             this.value.loading = false;
-        }
-    }
-
-    /**
-     * Self-heal: if seasons/{id}.calendar has events where isCompleted=false but the
-     * corresponding races/{seasonId}_{eventId}.isFinished=true, patch the calendar
-     * in Firestore. The onSnapshot listener will receive the updated document and
-     * re-render nextEvent correctly. Idempotent — only writes when a stale flag is found.
-     */
-    private async syncFinishedEvents(seasonId: string, calendar: any[]) {
-        if (this.selfHealRunning) return;
-        this.selfHealRunning = true;
-        try {
-            const db = getFirestore();
-            const updatedCalendar = calendar.map((e) => ({ ...e }));
-            let anyUpdated = false;
-
-            for (let i = 0; i < updatedCalendar.length; i++) {
-                const event = updatedCalendar[i];
-                if (event.isCompleted) continue;
-                try {
-                    const raceRef = doc(db, "races", `${seasonId}_${event.id}`);
-                    const raceSnap = await getDoc(raceRef);
-                    if (raceSnap.exists() && raceSnap.data()?.isFinished === true) {
-                        updatedCalendar[i].isCompleted = true;
-                        anyUpdated = true;
-                        console.debug(`[SeasonStore] Stale calendar detected: ${event.id} isFinished in races/ — patching.`);
-                    } else {
-                        // First truly incomplete event — stop scanning
-                        break;
-                    }
-                } catch (e) {
-                    console.warn(`[SeasonStore] Could not verify race ${seasonId}_${event.id}:`, e);
-                    break;
-                }
-            }
-
-            if (anyUpdated) {
-                try {
-                    const seasonRef = doc(db, "seasons", seasonId);
-                    await updateDoc(seasonRef, { calendar: updatedCalendar });
-                    console.debug(`[SeasonStore] Calendar self-heal complete for ${seasonId}`);
-                } catch (e) {
-                    console.error("[SeasonStore] Calendar self-heal write failed:", e);
-                }
-            }
-        } finally {
-            this.selfHealRunning = false;
         }
     }
 

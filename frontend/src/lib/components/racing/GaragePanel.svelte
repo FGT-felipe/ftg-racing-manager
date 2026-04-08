@@ -26,6 +26,7 @@
     import DriverAvatar from "$lib/components/DriverAvatar.svelte";
     import CountryFlag from "$lib/components/ui/CountryFlag.svelte";
     import { t } from "$lib/utils/i18n";
+    import { buildCurrentSessionId, isDriverStatusStale } from "$lib/utils/sessionGate";
 
     import PracticePanel from "./PracticePanel.svelte";
     import QualifyingSetupTab from "./tabs/QualifyingSetupTab.svelte";
@@ -75,6 +76,13 @@
     });
     let activeTab = $state<"practice" | "qualy" | "race">("practice");
 
+    // Initialize youthAcademyStore here so the trainee button is available
+    // even when the user navigates directly to /racing without visiting /academy first.
+    $effect(() => {
+        const teamId = teamStore.value.team?.id;
+        if (teamId) youthAcademyStore.init(teamId);
+    });
+
     // Initialization
     $effect(() => {
         if (drivers.length > 0 && !selectedDriverId) {
@@ -101,20 +109,25 @@
         drivers?.find((d: any) => d.id === selectedDriverId) || drivers?.[0],
     );
 
+    // Session gate: driverSetups persists across rounds because post-race
+    // processing doesn't clear it. Both lap counters below must honour
+    // practice.sessionId to avoid showing R(N) state on R(N+1).
+    const currentSessionId = $derived(
+        buildCurrentSessionId(seasonStore.value.season?.id, nextEvent?.id),
+    );
+
     let driverPracticeLaps = $derived.by(() => {
         if (!selectedDriverId) return 0;
-        return (
-            teamStore.value.team?.weekStatus?.driverSetups?.[selectedDriverId]
-                ?.practice?.laps || 0
-        );
+        const ds = teamStore.value.team?.weekStatus?.driverSetups?.[selectedDriverId];
+        if (isDriverStatusStale(ds, currentSessionId)) return 0;
+        return ds?.practice?.laps || 0;
     });
 
     let driverQualyAttempts = $derived.by(() => {
         if (!selectedDriverId) return 0;
-        return (
-            teamStore.value.team?.weekStatus?.driverSetups?.[selectedDriverId]
-                ?.qualifyingAttempts || 0
-        );
+        const ds = teamStore.value.team?.weekStatus?.driverSetups?.[selectedDriverId];
+        if (isDriverStatusStale(ds, currentSessionId)) return 0;
+        return ds?.qualifyingAttempts || 0;
     });
 
     let isSaturdayAfter1PM = $derived.by(() => {
@@ -191,11 +204,11 @@
             
             <div class="flex items-center gap-4 w-full md:w-auto shrink-0 relative">
                 <div class="w-12 h-12 rounded-xl bg-app-primary/10 flex items-center justify-center shadow-inner border border-app-primary/20">
-                    <CountryFlag countryCode={circuit.countryCode} size="sm" />
+                    <CountryFlag countryCode={nextEvent?.countryCode || circuit.countryCode} size="sm" />
                 </div>
                 <div>
                     <h4 class="text-[9px] font-black uppercase tracking-[0.3em] text-app-primary leading-none mb-1">{t('circuit_intel')}</h4>
-                    <p class="text-sm font-black italic text-app-text tracking-tight uppercase leading-tight">{circuit.name}</p>
+                    <p class="text-sm font-black italic text-app-text tracking-tight uppercase leading-tight">{nextEvent?.trackName || circuit.name}</p>
                 </div>
             </div>
 
@@ -334,7 +347,7 @@
         <!-- Trainee practice button — only during practice window if team has a trainee -->
         {#if activeTrainee && currentWeekStatus === 'practice'}
             {@const traineeSelected = isTraineeMode}
-            {@const slotUsed = !!traineePracticeUsed}
+            {@const slotUsed = !!traineePracticeUsed && traineePracticeUsed !== activeTrainee?.id}
             <button
                 class="px-4 py-2 rounded-xl border transition-all text-xs font-bold uppercase tracking-widest flex items-center gap-2
                 {slotUsed
