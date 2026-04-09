@@ -67,7 +67,7 @@ El backend procesa la economía todos los lunes a las 00:00 UTC (Post-GP).
 ## 4. Ingeniería: La Curva Fibonacci
 El coste de mejora de piezas sigue la secuencia de Fibonacci para evitar el "power creep".
 
-*   **Fórmula**: `Nivel * Fibonacci(Nivel) * $100,000`.
+*   **Fórmula**: `Nivel * Fibonacci(Nivel) * $200,000`. *(base ajustada en v1.7.2 — objetivo L6–L8 por temporada)*
 *   **Nivel Máximo**: 20.
 *   **Auto-Upgrade AI**: Los equipos bot tienen un 30% de probabilidad semanal de subir +1 nivel en Aero, Motor o Chasis de forma gratuita.
 
