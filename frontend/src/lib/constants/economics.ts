@@ -20,7 +20,7 @@ export const TEAM_RENAME_COST = 500_000;
 // ---------------------------------------------------------------------------
 
 /** Base cost for the first two upgrade levels (USD). Scales via Fibonacci above level 2. */
-export const CAR_UPGRADE_BASE_COST = 100_000;
+export const CAR_UPGRADE_BASE_COST = 200_000;
 
 /** Maximum level any car part can reach. */
 export const CAR_PART_MAX_LEVEL = 20;
