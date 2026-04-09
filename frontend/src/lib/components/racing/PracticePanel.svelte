@@ -175,14 +175,32 @@ import { circuitService } from "$lib/services/circuit_service.svelte";
         return combined.reverse(); // Simplified for now
     });
 
+    // Trainee name override for standings: if a trainee ran this session, their name
+    // replaces the main driver's name in the standings regardless of which driver tab
+    // is currently active. mainDriverId is now always passed from GaragePanel.
+    const traineeStandingsName = $derived.by(() => {
+        const lockedId = youthAcademyStore.traineePracticeUsed; // session-gated string | null
+        if (!lockedId || !mainDriverId) return null;
+        return youthAcademyStore.selectedDrivers.find(d => d.id === lockedId)?.name ?? null;
+    });
+
     const globalStandings = $derived.by(() => {
         if (competitorTimes.length === 0) return [];
         const leaderTime = competitorTimes.find(c => c.time !== null)?.time || null;
-        return competitorTimes.map((s, idx) => ({
-            ...s,
-            position: idx + 1,
-            gap: (s.time !== null && leaderTime !== null) ? s.time - leaderTime : null
-        }));
+        return competitorTimes.map((s, idx) => {
+            // Replace the main driver's name with the trainee's name whenever a trainee
+            // ran practice this weekend — independent of which driver tab is selected.
+            const driverName =
+                traineeStandingsName && mainDriverId && s.driverId === mainDriverId
+                    ? traineeStandingsName
+                    : s.driverName;
+            return {
+                ...s,
+                driverName,
+                position: idx + 1,
+                gap: (s.time !== null && leaderTime !== null) ? s.time - leaderTime : null
+            };
+        });
     });
 
     const isSaturdayAfter1PM = $derived.by(() => {

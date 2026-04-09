@@ -563,8 +563,16 @@ export function createYouthAcademyStore() {
             }
 
             // Fitness drain
+            // Self-heal: trainees signed before stats initialization was added to signCandidate
+            // may have fitness <= 0 (increment() on a missing Firestore field starts at 0).
+            // Restore to the candidate's base fitness before applying the drain.
+            // Skill stats (braking, cornering, etc.) are not touched — only fitness and morale.
             const fitnessDrain = lapsCompleted * ACADEMY_PRACTICE_FITNESS_DRAIN_PER_LAP;
-            const currentFitness = (trainee.stats as any)?.fitness ?? 100;
+            const rawFitness = (trainee.stats as any)?.fitness;
+            const isFitnessCorrupted = rawFitness === undefined || rawFitness === null || rawFitness <= 0;
+            const currentFitness = isFitnessCorrupted
+                ? (config.statRangeMin?.['fitness'] ?? 85)
+                : rawFitness;
             const newFitness = Math.max(0, currentFitness - fitnessDrain);
 
             // Morale delta
@@ -576,7 +584,9 @@ export function createYouthAcademyStore() {
             } else if (result.setupConfidence > 0.85) {
                 moraleDelta = MORALE_EVENT_GOOD_PRACTICE;
             }
-            const currentMorale = (trainee.stats as any)?.morale ?? MORALE_DEFAULT;
+            const rawMorale = (trainee.stats as any)?.morale;
+            const isMoraleCorrupted = rawMorale === undefined || rawMorale === null || rawMorale <= 0;
+            const currentMorale = isMoraleCorrupted ? MORALE_DEFAULT : rawMorale;
             const newMorale = Math.max(0, Math.min(100, currentMorale + moraleDelta));
 
             // --- Firestore writes (two docs, no transaction needed — no budget mutation) ---

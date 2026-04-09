@@ -622,7 +622,7 @@
                             driverId={selectedDriverId}
                             isTrainee={isTraineeMode}
                             trainee={isTraineeMode ? activeTrainee : null}
-                            mainDriverId={isTraineeMode ? (mainDriver?.id ?? null) : null}
+                            mainDriverId={mainDriver?.id ?? null}
                         />
                     {:else if activeTab === "qualy"}
                         <QualifyingSetupTab driverId={selectedDriverId} />
