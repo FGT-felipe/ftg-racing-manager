@@ -40,7 +40,7 @@ var __importStar = (this && this.__importStar) || (function () {
     };
 })();
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.restoreDriversHistory = exports.forceFixGBA = exports.megaFixDebriefs = void 0;
+exports.restoreDriversHistory = exports.syncUniverseCallable = exports.forceFixGBA = exports.megaFixDebriefs = void 0;
 const logger = __importStar(require("firebase-functions/logger"));
 const https_1 = require("firebase-functions/v2/https");
 const admin_1 = require("../../shared/admin");
@@ -221,6 +221,33 @@ exports.forceFixGBA = (0, https_1.onCall)({
  *
  * @returns Object with { success, count } of drivers updated.
  */
+// ─── syncUniverseCallable ─────────────────────────────────────────────────────
+/**
+ * Syncs the denormalized universe standings document with live data.
+ * Reads seasonPoints, wins, podiums, races from teams/ and drivers/ collections
+ * and writes them into universe/game_universe_v1.
+ *
+ * Use from the admin panel when standings appear stale after a race weekend.
+ * SCOPE: universe/game_universe_v1 only — no operational collections are modified.
+ */
+exports.syncUniverseCallable = (0, https_1.onCall)({
+    cors: true,
+    enforceAppCheck: true,
+    timeoutSeconds: 120,
+}, async (request) => {
+    if (!request.auth) {
+        throw new https_1.HttpsError("unauthenticated", "Authentication required.");
+    }
+    logger.info("[syncUniverseCallable] Triggered by admin.", { uid: request.auth.uid });
+    try {
+        await (0, post_race_1.syncUniverseStats)();
+        return { success: true };
+    }
+    catch (err) {
+        logger.error("[syncUniverseCallable] Failed:", err);
+        throw new https_1.HttpsError("internal", err.message);
+    }
+});
 exports.restoreDriversHistory = (0, https_1.onCall)({
     cors: true,
     enforceAppCheck: true, // Uncomment after enabling App Check in Firebase Console

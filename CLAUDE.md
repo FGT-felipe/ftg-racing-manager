@@ -298,7 +298,64 @@ When the user requests multiple fixes or tasks in a single message, **execute th
 
 ---
 
-## 11. Flutter Deprecation Status
+## 11. Propagación de Cambios de Tipo y Semántica (Postmortem T-004 — Critical)
+
+Cuando se cambia el **tipo** o la **semántica** de un campo compartido entre store y componentes, es obligatorio hacer un grep de todos sus consumidores antes de escribir una sola línea de código.
+
+**Regla:** Antes de cambiar el tipo de un campo (ej. `string` → `{ id, sessionId }`) o su semántica (ej. "hay lock" → "hay lock de otro"), ejecutar:
+
+```bash
+grep -r "nombreDelCampo" frontend/src --include="*.ts" --include="*.svelte"
+```
+
+Luego actualizar **cada** punto de consumo en el mismo commit. Un cambio de tipo con N consumidores debe producir N actualizaciones — no 1.
+
+### Casos concretos que deben disparar este proceso
+
+| Situación | Acción obligatoria |
+|---|---|
+| Campo Firestore cambia de tipo primitivo a objeto | Grep + actualizar guards de truthiness (`if (x)` → `if (x?.id)`) |
+| Semántica de un lock cambia ("existe" → "es de otro") | Grep + actualizar todos los `!!campo` en la UI |
+| Prop de componente cambia de condicional a siempre presente | Grep + verificar todos los consumidores del prop |
+| Dato disponible en dos fuentes (raw snapshot vs getter gateado) | Siempre usar el getter público del store — nunca el snapshot raw desde un componente |
+
+### Verificación de producto antes de implementar
+
+Antes de escribir código, releer la decisión de producto tal como fue acordada en el planning. Si la implementación contradice lo acordado, **parar y corregir** — no asumir que la interpretación propia es válida.
+
+Ejemplo del T-004: el planning acordó explícitamente "el mismo trainee puede correr múltiples stints, el lock solo bloquea rotar a otro trainee". La implementación hizo lo opuesto. El usuario tuvo que reportarlo como bug.
+
+### Verificación antes de commitear
+
+Después de cualquier cambio que afecte un campo compartido, verificar explícitamente:
+
+1. ¿Todos los `if (campo)` siguen siendo válidos con el nuevo tipo?
+2. ¿Todos los props que dependen de este campo están actualizados?
+3. ¿La UI consume el getter del store o el snapshot raw? (debe ser el getter)
+4. ¿El fix cubre el backend (store/service) **y** el frontend (componente)?
+
+Ver `human/postmortem_t004_academy_practice.md` — 5 bugs en una sola feature por no seguir este proceso.
+
+---
+
+## 12. Implementar Exactamente Lo Que Se Pidió
+
+Las decisiones de producto se acuerdan en el planning (`/start-dev`). La implementación debe respetar esas decisiones al pie de la letra — no interpretarlas, no simplificarlas, no mejorarlas sin autorización.
+
+**Antes de escribir código, releer la decisión de producto acordada.** Si hay ambigüedad, preguntar. No asumir.
+
+Si la implementación contradice lo acordado, es un bug introducido por el desarrollador — no por el usuario.
+
+**Prohibido:**
+- Implementar una versión "simplificada" de lo pedido sin avisar
+- Tomar decisiones de producto unilateralmente durante la implementación
+- Ignorar respuestas dadas durante el Q&A del planning
+
+**El planning existe para evitar re-trabajo. Si se ignora, el re-trabajo es responsabilidad del desarrollador.**
+
+---
+
+## 13. Flutter Deprecation Status
 
 The Flutter codebase (`lib/`, `android/`, `pubspec.yaml`) is **100% migrated** to Svelte. It is kept for reference only. **Do not modify any Flutter files.**
 

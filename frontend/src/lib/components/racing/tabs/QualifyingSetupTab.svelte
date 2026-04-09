@@ -38,6 +38,7 @@
     import Typewriter from "$lib/components/ui/Typewriter.svelte";
     import { t } from "$lib/utils/i18n";
     import { formatDriverName } from "$lib/utils/driver";
+    import { buildCurrentSessionId, isDriverStatusStale } from "$lib/utils/sessionGate";
 
     let { driverId } = $props<{ driverId: string | null }>();
 
@@ -77,9 +78,20 @@
     let competitorTimes = $state<Array<{ teamName: string; driverName: string; time: number | null; tyre: string | null; totalLaps: number; driverId: string; gender: string }>>([]);
     let driverDialogue = $state<string | null>(null);
 
+    // Session gate: the driverSetups record survives across rounds because
+    // post-race processing doesn't clear it. We use practice.sessionId (the
+    // only field tagged with the race weekend) to decide whether the record
+    // still belongs to the current round. If stale, treat as null so all
+    // qualifying fields fall back to their defaults.
+    const currentSessionId = $derived(
+        buildCurrentSessionId(seasonStore.value.season?.id, nextEvent?.id),
+    );
+
     let driverStatus = $derived.by(() => {
         if (!team || !driverId) return null;
-        return team.weekStatus?.driverSetups?.[driverId];
+        const ds = team.weekStatus?.driverSetups?.[driverId];
+        if (isDriverStatusStale(ds, currentSessionId)) return null;
+        return ds;
     });
 
     let attempts = $derived(driverStatus?.qualifyingAttempts || 0);
@@ -124,13 +136,36 @@
         }
     });
 
-    // Watch for driver changes to load their QUALY setup and results
+    // Watch for driver changes to load their QUALY setup and results.
+    // Uses the session-gated `driverStatus` so stale data from previous
+    // rounds is ignored — a fresh R(N+1) starts at defaults, not R(N) state.
     $effect(() => {
         if (driverId && team) {
+            // Track the gated value explicitly so the effect re-runs when
+            // the session changes (e.g. after R(N) completes).
+            const driverData = driverStatus;
             untrack(() => {
-                const driverData = team.weekStatus?.driverSetups?.[driverId];
+                if (!driverData) {
+                    // Stale / fresh round → reset to defaults
+                    setup = {
+                        frontWing: 50,
+                        rearWing: 50,
+                        suspension: 50,
+                        gearRatio: 50,
+                        tyreCompound: TyreCompound.soft,
+                        pitStops: [],
+                        initialFuel: 10,
+                        pitStopFuel: [],
+                        qualifyingStyle: DriverStyle.normal,
+                        raceStyle: DriverStyle.normal,
+                        pitStopStyles: [],
+                    };
+                    lastResult = null;
+                    return;
+                }
+
                 const existing = driverData?.qualifying;
-                
+
                 if (existing) {
                     setup = { ...setup, ...existing };
                 } else {

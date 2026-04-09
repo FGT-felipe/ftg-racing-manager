@@ -289,6 +289,15 @@ export const ACADEMY_UPGRADE_COST_MULTIPLIER = 1_000_000;
 /** Cost charged to accept an Intensive Training event for an academy driver (USD). */
 export const ACADEMY_INTENSIVE_TRAINING_COST = 25_000;
 
+/** XP awarded to a trainee per lap completed in a practice session. */
+export const ACADEMY_PRACTICE_XP_PER_LAP = 2;
+
+/** Minimum laps required in a practice session for the trainee to earn a +1 stat gain. */
+export const ACADEMY_PRACTICE_STAT_THRESHOLD = 15;
+
+/** Fitness drained from the trainee per lap completed in practice. */
+export const ACADEMY_PRACTICE_FITNESS_DRAIN_PER_LAP = 2;
+
 // ---------------------------------------------------------------------------
 // Budget Rebalance (Admin)
 // ---------------------------------------------------------------------------

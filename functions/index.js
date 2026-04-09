@@ -1797,6 +1797,19 @@ async function syncUniverseGlobal() {
   }
 }
 
+/**
+ * Callable: Sync the denormalized universe document with live data from teams/ and drivers/ collections.
+ * Invoked from the admin panel when standings appear stale after a race weekend.
+ * SCOPE: universe/game_universe_v1 document only — reads all teams + drivers referenced in it.
+ */
+exports.syncUniverseCallable = onCall({
+  region: "us-central1",
+}, async (request) => {
+  logger.info("[syncUniverseCallable] Triggered by admin.");
+  await syncUniverseGlobal();
+  return { success: true };
+});
+
 exports.scheduledRace = onSchedule({
   schedule: "0 14 * * 0",
   timeZone: "America/Bogota",

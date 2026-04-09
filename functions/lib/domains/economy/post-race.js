@@ -48,6 +48,7 @@ var __importStar = (this && this.__importStar) || (function () {
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.postRaceProcessing = void 0;
 exports.runPostRaceProcessing = runPostRaceProcessing;
+exports.syncUniverseStats = syncUniverseStats;
 exports.generateTeamDebrief = generateTeamDebrief;
 const logger = __importStar(require("firebase-functions/logger"));
 const scheduler_1 = require("firebase-functions/v2/scheduler");
@@ -398,6 +399,8 @@ async function runPostRaceProcessing() {
                     "weekStatus.fitnessTrainerTrainedThisWeek": false,
                     "weekStatus.psychologistUpgradedThisWeek": false,
                     "weekStatus.psychologistSessionDoneThisWeek": false,
+                    // T-004: reset academy trainee practice slot each round
+                    "weekStatus.traineePracticeUsed": null,
                     sponsors: updatedSponsors,
                     budget: newBudget,
                 });

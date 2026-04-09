@@ -164,13 +164,29 @@ specialty?:      "rain_master" | "tyre_whisperer" | "late_braker" | "defensive_m
 status:              "trainee"
 xp:                  number    // accumulated XP (500 XP = skill level-up)
 weeklyXP:            number    // XP gained last processing cycle
-isMarkedForPromotion: boolean  // +25% XP bonus when true
+isMarkedForPromotion: boolean  // +25% XP bonus when true; also determines which trainee
+                               // is shown as the practice candidate in GaragePanel
 pendingEvent?: {
   type:   "INTENSIVE_TRAINING" | "MORALE_BOOST" | "SKILL_FOCUS" | ...
   desc:   string
   stat?:  string               // target skill for single-stat events
 }
+// T-004 — Written by youthAcademyStore.runTraineePractice() after a weekend practice session
+lastPracticeRun?: {
+  lapTime:         number       // best lap time in seconds (999 = DNF)
+  setupConfidence: number       // 0–1
+  isCrashed:       boolean
+  lapsCompleted:   number       // 1–50
+  xpEarned:        number       // ACADEMY_PRACTICE_XP_PER_LAP × lapsCompleted
+  statGained:      string|null  // stat key that earned +1, or null if threshold not met
+  timestamp:       Timestamp
+}
 ```
+
+> **T-004 weekend practice lock:** `teams/{teamId}.weekStatus.traineePracticeUsed` (string | undefined)
+> Stores the `traineeId` of the trainee that used the practice slot this weekend.
+> Set atomically alongside the practice result write. Reset in `postRaceProcessing` with the rest of weekStatus.
+> While set, all other trainees are blocked from practicing and the main driver (carIndex 0) cannot use the practice session.
 
 ---
 

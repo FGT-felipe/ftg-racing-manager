@@ -23,9 +23,20 @@
     import { t } from "$lib/utils/i18n";
 
     let nextEvent = $derived(seasonStore.nextEvent);
-    let weekStatus = $derived(
-        teamStore.value.team?.weekStatus?.globalStatus || "practice",
-    );
+    let weekStatus = $derived.by(() => {
+        const firestoreStatus = teamStore.value.team?.weekStatus?.globalStatus;
+        const timeStatus = timeService.currentStatus;
+        const normalizedTime = timeStatus === RaceWeekStatus.POST_RACE ? 'practice' : (timeStatus || 'practice');
+
+        // If the time-based status is "practice" but Firestore still has a race-pipeline
+        // status (qualifying/raceStrategy/race/postRace), the weekStatus doc is stale from
+        // the previous race week. Trust the clock and show "practice" for the new round.
+        if (normalizedTime === 'practice' && firestoreStatus && firestoreStatus !== 'practice') {
+            return 'practice';
+        }
+
+        return firestoreStatus || normalizedTime;
+    });
 
     let circuitInfo = $derived(
         nextEvent

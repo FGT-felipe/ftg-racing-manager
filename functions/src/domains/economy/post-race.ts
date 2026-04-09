@@ -417,6 +417,8 @@ export async function runPostRaceProcessing(): Promise<void> {
           "weekStatus.fitnessTrainerTrainedThisWeek": false,
           "weekStatus.psychologistUpgradedThisWeek": false,
           "weekStatus.psychologistSessionDoneThisWeek": false,
+          // T-004: reset academy trainee practice slot each round
+          "weekStatus.traineePracticeUsed": null,
           sponsors: updatedSponsors,
           budget: newBudget,
         } as FirebaseFirestore.UpdateData<object>);
@@ -509,7 +511,7 @@ export async function runPostRaceProcessing(): Promise<void> {
  * Called automatically at the end of postRaceProcessing so /season/standings
  * always reflects fresh data after an automated race weekend.
  */
-async function syncUniverseStats(): Promise<void> {
+export async function syncUniverseStats(): Promise<void> {
   const uRef = db.collection("universe").doc("game_universe_v1");
   const uDoc = await uRef.get();
   if (!uDoc.exists) {

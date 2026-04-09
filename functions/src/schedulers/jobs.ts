@@ -44,6 +44,7 @@ export {
   megaFixDebriefs,
   forceFixGBA,
   restoreDriversHistory,
+  syncUniverseCallable,
 } from "../domains/admin/tools";
 
 // ─── Backup ───────────────────────────────────────────────────────────────────

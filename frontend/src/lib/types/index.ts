@@ -253,12 +253,22 @@ export interface YoungDriver {
     isMarkedForPromotion: boolean;
     statRangeMin: Record<string, number>;
     statRangeMax: Record<string, number>;
+    stats?: Record<string, number>;
     pendingAction?: boolean;
     pendingActionType?: string | null;
     weeklyEventMessage?: string | null;
     weeklyStatDiffs?: Record<string, number>;
     trainingProgress?: Record<string, number>;
     specialty?: string | null;
+    lastPracticeRun?: {
+        lapTime: number;
+        setupConfidence: number;
+        isCrashed: boolean;
+        lapsCompleted: number;
+        xpEarned: number;
+        statGained?: string | null;
+        timestamp: Date;
+    } | null;
 }
 
 export interface AppNotification {
