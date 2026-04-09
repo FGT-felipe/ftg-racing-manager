@@ -32,12 +32,22 @@ If the task touches Cloud Functions, race simulation, or scheduled jobs, also re
 
 ---
 
-## Step 3 — Initial analysis
+## Step 3 — Initial analysis + branch proposal
 
 Before asking questions, do a quick scan of the relevant codebase areas:
 - Find files most likely affected (services, stores, components, CF functions)
 - Identify what already exists vs. what needs to be built from scratch
 - Flag any risks or constraints found in docs or code (transactions, CF strict mode, state machine, etc.)
+
+**At the end of this step, also determine the branch name** following CLAUDE.md §9.1:
+- New user-facing feature → `feature/v<next-minor>-<slug>`
+- Bug fix → `fix/v<next-patch>-<slug>`
+- Tech task / chore → `chore/v<next-patch>-<slug>`
+- Urgent production fix → `hotfix/<slug>`
+
+Read `frontend/src/lib/constants/app_constants.ts` to get the current `APP_VERSION` and derive the next version.
+
+Show the proposed branch name at the end of the analysis block so the user sees it before the Q&A.
 
 Do NOT write any code yet.
 
@@ -45,31 +55,34 @@ Do NOT write any code yet.
 
 ## Step 4 — Ask product and technical questions
 
-Based on your analysis, ask the user the questions that need answers before planning can begin. Separate them into two groups:
+Based on your analysis, use the **AskUserQuestion tool** to ask all questions in a single call.
 
-**Producto** — scope, UX decisions, business rules, edge cases the user must define.
-**Técnicas** — implementation choices where more than one valid approach exists and the decision affects architecture.
+Structure the question text in two labelled groups:
 
-Keep questions concise and numbered. Do not ask about things you can already determine from the docs or the existing code.
+```
+**Producto**
+1. ...
+2. ...
 
-Wait for the user's answers before proceeding.
+**Técnicas**
+3. ...
+4. ...
+```
+
+Rules:
+- Ask everything in one `AskUserQuestion` call — do not ask follow-ups one at a time.
+- Keep questions concise and numbered across both groups.
+- Do not ask about things you can already determine from the docs or the existing code.
+- If there are no technical questions, omit that group.
+- If there are no product questions (e.g. a pure chore), omit that group and state why.
+
+Wait for the answers before proceeding to Step 5.
 
 ---
 
-## Step 5 — Propose branch name
+## Step 5 — Present the work plan
 
-Following CLAUDE.md §9.1:
-- New user-facing feature → `feature/v<next-minor>-<slug>`
-- Bug fix or tech task → `fix/v<next-patch>-<slug>` or `chore/v<next-patch>-<slug>`
-- Urgent production fix → `hotfix/<slug>`
-
-Show the next logical version based on current `APP_VERSION` in `app_constants.ts`.
-
----
-
-## Step 6 — Present the work plan
-
-Write a structured plan covering:
+Using the user's answers, write a structured plan covering only the sections that apply:
 
 1. **Firestore schema** — new fields, collections, or index changes required
 2. **Services / Stores** — what to create, what to extend, public method signatures
@@ -80,14 +93,14 @@ Write a structured plan covering:
 7. **Tests** — Vitest unit tests required for new deterministic logic
 8. **Docs to update** — which `ai/*.md` files need updating after the work
 
-Present the plan clearly and tell the user:
+End with the confirmed branch name and:
 > "Revisá el plan. Cuando lo apruebes (o me indiques ajustes), creo la rama y arrancamos."
 
 Do NOT create the branch or write any code until the user explicitly approves.
 
 ---
 
-## Step 7 — On approval
+## Step 6 — On approval
 
 Once the user approves (with or without adjustments):
 1. Create the branch: `git checkout -b <branch-name>`
