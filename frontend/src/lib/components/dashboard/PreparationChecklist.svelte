@@ -2,11 +2,17 @@
     import { CheckCircle2, ChevronRight, XCircle, AlertCircle, TrendingUp } from 'lucide-svelte';
     import { teamStore } from '$lib/stores/team.svelte';
     import { driverStore } from '$lib/stores/driver.svelte';
+    import { seasonStore } from '$lib/stores/season.svelte';
+    import { buildCurrentSessionId, isDriverStatusStale } from '$lib/utils/sessionGate';
     import { t } from '$lib/utils/i18n';
-    
+
     // Preparation steps Logic
     let team = $derived(teamStore.value.team);
     let drivers = $derived(driverStore.drivers);
+
+    const currentSessionId = $derived(
+        buildCurrentSessionId(seasonStore.value.season?.id, seasonStore.nextEvent?.id)
+    );
 
     // Dynamic checklist states
     let hasMainSetups = $derived.by(() => {
@@ -18,9 +24,11 @@
         const mainDrivers = drivers.filter((d: any) => d.carIndex === 0 || d.carIndex === 1);
         if (mainDrivers.length === 0) return false;
 
-        // Check if all main drivers have race setups saved (this is the final goal)
+        // Check if all main drivers have race setups saved for the current round.
+        // Gate by sessionId so R(N-1) setups don't appear as complete in R(N).
         return mainDrivers.every((d: any) => {
             const driverSetup = setups[d.id];
+            if (isDriverStatusStale(driverSetup, currentSessionId)) return false;
             return driverSetup && driverSetup.race;
         });
     });
@@ -33,9 +41,10 @@
         const mainDrivers = drivers.filter((d: any) => d.carIndex === 0 || d.carIndex === 1);
         if (mainDrivers.length === 0) return false;
 
-        // Check if all main drivers have sent a qualifying setup (avoids morale/fitness penalty)
+        // Check if all main drivers have sent a qualifying setup for the current round.
         return mainDrivers.every((d: any) => {
             const driverSetup = setups[d.id];
+            if (isDriverStatusStale(driverSetup, currentSessionId)) return false;
             return driverSetup?.isSetupSent === true;
         });
     });
