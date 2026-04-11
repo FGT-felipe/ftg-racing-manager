@@ -165,12 +165,22 @@ export class CarSetupService {
      * @param teamId - The team document ID.
      * @param driverId - The driver document ID.
      * @param strategy - The CarSetup object to persist as the race strategy.
+     * @param sessionId - Current race-weekend session id (`${seasonId}_${raceEventId}`).
+     *        Stamped as `raceSessionId` sibling so the dashboard checklist can
+     *        distinguish R(N) leftovers from R(N+1) submissions. Post-race
+     *        processing does not clear driverSetups, so without this tag a
+     *        stale `race` object from the previous round would mark the
+     *        checklist 100% complete.
      */
-    async saveRaceSetup(teamId: string, driverId: string, strategy: any): Promise<void> {
+    async saveRaceSetup(teamId: string, driverId: string, strategy: any, sessionId: string | null = null): Promise<void> {
         const teamRef = doc(db, 'teams', teamId);
-        await updateDoc(teamRef, {
+        const updates: Record<string, unknown> = {
             [`weekStatus.driverSetups.${driverId}.race`]: { ...strategy },
-        });
+        };
+        if (sessionId) {
+            updates[`weekStatus.driverSetups.${driverId}.raceSessionId`] = sessionId;
+        }
+        await updateDoc(teamRef, updates);
     }
 }
 

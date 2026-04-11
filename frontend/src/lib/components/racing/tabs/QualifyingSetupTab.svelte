@@ -94,16 +94,28 @@
         return ds;
     });
 
-    let attempts = $derived(driverStatus?.qualifyingAttempts || 0);
-    let bestTime = $derived(driverStatus?.qualifyingBestTime || 0);
-    let isDnf = $derived(driverStatus?.qualifyingDnf || false);
-    let qualifyingRuns = $derived<QualyRunRecord[]>(driverStatus?.qualifyingRuns || []);
-    let confirmedAttempt = $derived<number | null>(driverStatus?.qualifyingConfirmedAttempt ?? null);
-    
+    // Qualifying data is stale when practice has been done this session (which un-gates
+    // the driverSetups entry and exposes previous-round qualifying fields) but no qualifying
+    // attempt has been made yet this session. The qualifying write paths stamp qualifyingSessionId
+    // on the first attempt, so its presence/absence is the authoritative gate.
+    const qualifyingIsStale = $derived.by(() => {
+        if (!driverStatus) return false;
+        if (!currentSessionId) return false;
+        const stored = driverStatus.qualifyingSessionId;
+        if (!stored) return true;
+        return stored !== currentSessionId;
+    });
+
+    let attempts = $derived(qualifyingIsStale ? 0 : (driverStatus?.qualifyingAttempts || 0));
+    let bestTime = $derived(qualifyingIsStale ? 0 : (driverStatus?.qualifyingBestTime || 0));
+    let isDnf = $derived(qualifyingIsStale ? false : (driverStatus?.qualifyingDnf || false));
+    let qualifyingRuns = $derived<QualyRunRecord[]>(qualifyingIsStale ? [] : (driverStatus?.qualifyingRuns || []));
+    let confirmedAttempt = $derived<number | null>(qualifyingIsStale ? null : (driverStatus?.qualifyingConfirmedAttempt ?? null));
+
     // Wet Track Detection
     const isWetSession = $derived(nextEvent?.weatherQualifying?.toLowerCase().includes('rain') || nextEvent?.weatherQualifying?.toLowerCase().includes('wet'));
     const needsWetTyres = $derived(isWetSession && setup.tyreCompound !== TyreCompound.wet);
-    let isParcFerme = $derived(!isWetSession && (driverStatus?.qualifyingParcFerme || false));
+    let isParcFerme = $derived(qualifyingIsStale ? false : (!isWetSession && (driverStatus?.qualifyingParcFerme || false)));
 
     // Table Data
     const globalStandings = $derived.by(() => {
@@ -142,8 +154,10 @@
     $effect(() => {
         if (driverId && team) {
             // Track the gated value explicitly so the effect re-runs when
-            // the session changes (e.g. after R(N) completes).
+            // the session changes (e.g. after R(N) completes) or when the
+            // stale gate flips (e.g. first qualifying attempt stamps qualifyingSessionId).
             const driverData = driverStatus;
+            const isStale = qualifyingIsStale;
             untrack(() => {
                 if (!driverData) {
                     // Stale / fresh round → reset to defaults
@@ -164,16 +178,24 @@
                     return;
                 }
 
-                const existing = driverData?.qualifying;
+                // Load the saved qualifying setup only when it belongs to the
+                // current race weekend. driverStatus is gated by practice.sessionId,
+                // but qualifying has its own session tag — when stale, R(N-1) state
+                // must not spread over the user's current selection.
+                //
+                // tyreCompound is ALWAYS stripped from both the existing-qualifying
+                // and practice fallbacks. The effect re-runs on every team-doc
+                // snapshot (budget, sponsors, unrelated writes), and spreading a
+                // saved tyreCompound over `setup` would silently revert the compound
+                // the manager just picked for their next attempt. The user's current
+                // selection in `setup.tyreCompound` is the source of truth until a
+                // new attempt writes it back.
+                const existing = isStale ? null : driverData?.qualifying;
 
                 if (existing) {
-                    setup = { ...setup, ...existing };
+                    const { tyreCompound: _q, ...qualMechanicals } = existing;
+                    setup = { ...setup, ...qualMechanicals };
                 } else {
-                    // Fallback to practice for mechanical settings only.
-                    // tyreCompound is intentionally excluded: the qualifying default (soft)
-                    // should not be overwritten by practice data, and this fallback
-                    // re-runs on every Firestore snapshot (e.g. chargeQualyFee budget update)
-                    // which would silently reset a compound the user already selected.
                     const prac = driverData?.practice;
                     if (prac) {
                         const { tyreCompound: _prac, ...pracMechanicals } = prac;
@@ -181,8 +203,10 @@
                     }
                 }
 
-                // Load last result if available, fallback to practice hints if no Qualy results yet
-                if (driverData?.lastQualyResult) {
+                // Load last result if available, fallback to practice hints if no Qualy results yet.
+                // When qualifying is stale (practice ran but qualy hasn't started yet this session),
+                // skip lastQualyResult — it belongs to a previous round.
+                if (!isStale && driverData?.lastQualyResult) {
                     lastResult = driverData.lastQualyResult;
                 } else if (driverData?.practice?.lastResult) {
                     // Start with basic structure from practice if we have no qualy results yet
@@ -298,6 +322,7 @@
                 await carSetupService.saveQualyResult(
                     team.id, driver.id,
                     {
+                        [`${pathPrefix}.qualifyingSessionId`]: currentSessionId,
                         [`${pathPrefix}.qualifyingAttempts`]: MAX_ATTEMPTS,
                         [`${pathPrefix}.qualifyingLaps`]: increment(2),
                         [`${pathPrefix}.qualifyingDnf`]: true,
@@ -350,6 +375,7 @@
                 await carSetupService.saveQualyResult(
                     team.id, driver.id,
                     {
+                        [`${pathPrefix}.qualifyingSessionId`]: currentSessionId,
                         [`${pathPrefix}.qualifyingAttempts`]: newAttempts,
                         [`${pathPrefix}.qualifyingBestTime`]: newBest,
                         [`${pathPrefix}.qualifyingLaps`]: increment(3),

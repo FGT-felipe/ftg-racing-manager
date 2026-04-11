@@ -31,6 +31,7 @@
     import { carSetupService } from "$lib/services/car_setup_service.svelte";
     import { uiStore } from "$lib/stores/ui.svelte";
     import { t } from "$lib/utils/i18n";
+    import { buildCurrentSessionId } from "$lib/utils/sessionGate";
 
     let { carIndex = 0 } = $props();
 
@@ -57,6 +58,10 @@
     const driver = $derived(
         teamDrivers.find((d: Driver) => d.id === activeDriverId) ||
             (carIndex === 0 ? driverStore.carADriver : driverStore.carBDriver),
+    );
+
+    const currentSessionId = $derived(
+        buildCurrentSessionId(seasonStore.value.season?.id, seasonStore.nextEvent?.id),
     );
 
     onMount(async () => {
@@ -103,7 +108,7 @@
         if (!driver || !teamStore.value.team) return;
         isSaving = true;
         try {
-            await carSetupService.saveRaceSetup(teamStore.value.team.id, driver.id, strategy);
+            await carSetupService.saveRaceSetup(teamStore.value.team.id, driver.id, strategy, currentSessionId);
             uiStore.alert(`✓ ${t('race_strategy_saved')}`, t('race_strategy_saved'), 'success');
         } catch (e) {
             console.error('[StrategyPanel:saveStrategy] Error:', e);

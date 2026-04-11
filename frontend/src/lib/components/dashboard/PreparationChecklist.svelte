@@ -3,7 +3,7 @@
     import { teamStore } from '$lib/stores/team.svelte';
     import { driverStore } from '$lib/stores/driver.svelte';
     import { seasonStore } from '$lib/stores/season.svelte';
-    import { buildCurrentSessionId, isDriverStatusStale } from '$lib/utils/sessionGate';
+    import { buildCurrentSessionId } from '$lib/utils/sessionGate';
     import { t } from '$lib/utils/i18n';
 
     // Preparation steps Logic
@@ -15,21 +15,28 @@
     );
 
     // Dynamic checklist states
+    //
+    // Both checks gate by explicit per-flow session tags instead of the shared
+    // `practice.sessionId` proxy. Post-race processing does not clear
+    // driverSetups, so without per-flow tags a stale `isSetupSent: true` or
+    // `race: {...}` from R(N) would mark the checklist 100% complete in R(N+1)
+    // as soon as the player runs practice in the new round (which refreshes
+    // practice.sessionId and un-gates the whole entry). qualifyingSessionId is
+    // stamped by QualifyingSetupTab on submit; raceSessionId is stamped by
+    // carSetupService.saveRaceSetup on any race strategy write.
     let hasMainSetups = $derived.by(() => {
         if (!team || !drivers) return false;
 
         const setups = team.weekStatus?.driverSetups || {};
 
-        // Find main drivers
         const mainDrivers = drivers.filter((d: any) => d.carIndex === 0 || d.carIndex === 1);
         if (mainDrivers.length === 0) return false;
 
-        // Check if all main drivers have race setups saved for the current round.
-        // Gate by sessionId so R(N-1) setups don't appear as complete in R(N).
         return mainDrivers.every((d: any) => {
             const driverSetup = setups[d.id];
-            if (isDriverStatusStale(driverSetup, currentSessionId)) return false;
-            return driverSetup && driverSetup.race;
+            if (!driverSetup?.race) return false;
+            if (!currentSessionId) return false;
+            return driverSetup.raceSessionId === currentSessionId;
         });
     });
 
@@ -41,11 +48,11 @@
         const mainDrivers = drivers.filter((d: any) => d.carIndex === 0 || d.carIndex === 1);
         if (mainDrivers.length === 0) return false;
 
-        // Check if all main drivers have sent a qualifying setup for the current round.
         return mainDrivers.every((d: any) => {
             const driverSetup = setups[d.id];
-            if (isDriverStatusStale(driverSetup, currentSessionId)) return false;
-            return driverSetup?.isSetupSent === true;
+            if (driverSetup?.isSetupSent !== true) return false;
+            if (!currentSessionId) return false;
+            return driverSetup.qualifyingSessionId === currentSessionId;
         });
     });
 

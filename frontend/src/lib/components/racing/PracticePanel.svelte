@@ -228,12 +228,18 @@ import { circuitService } from "$lib/services/circuit_service.svelte";
         if (!driverId) return 0;
         const driverSetup = teamStore.value.team?.weekStatus?.driverSetups?.[driverId];
         if (!driverSetup) return 0;
-        // Gate on session: if practice data is stale, qualifying attempts are too
-        if (!isCurrentSession(driverSetup.practice)) return 0;
+        // Gate by qualifyingSessionId — NOT practice.sessionId. Practice and qualy
+        // are tagged independently: running practice in R(N+1) refreshes
+        // practice.sessionId, which would falsely un-gate stale qualifyingAttempts
+        // from R(N) and trigger a "Qualy Started" lock on the practice button.
+        if (!currentSessionId) return 0;
+        if (driverSetup.qualifyingSessionId !== currentSessionId) return 0;
         return driverSetup.qualifyingAttempts || 0;
     });
 
-    const traineePracticeUsed = $derived(teamStore.value.team?.weekStatus?.traineePracticeUsed ?? null);
+    // Use the store getter, not the raw field: the getter is session-gated and
+    // returns null when the lock belongs to a previous round.
+    const traineePracticeUsed = $derived(youthAcademyStore.traineePracticeUsed);
 
     const isPracticeLocked = $derived(
         driverQualyAttempts > 0 ||
@@ -459,7 +465,7 @@ import { circuitService } from "$lib/services/circuit_service.svelte";
     async function copyToRace() {
         if (!driver || !teamStore.value.team) return;
         try {
-            await carSetupService.saveRaceSetup(teamStore.value.team.id, driver.id, setup);
+            await carSetupService.saveRaceSetup(teamStore.value.team.id, driver.id, setup, currentSessionId);
             uiStore.alert(t('set_race'), t('copy_practice_to_race'), 'success');
         } catch (e) { console.error('[PracticePanel:copyToRace] Error:', e); }
     }
