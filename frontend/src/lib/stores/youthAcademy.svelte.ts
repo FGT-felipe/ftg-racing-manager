@@ -150,8 +150,9 @@ export function createYouthAcademyStore() {
         /**
          * ID del trainee que usó el slot de práctica en la ronda ACTUAL.
          * Devuelve null si el slot está libre o si el campo pertenece a una ronda anterior.
-         * El campo se guarda como { traineeId, sessionId } para que el gate
-         * funcione sin depender de postRaceProcessing.
+         * El campo se guarda como { traineeId, traineeName, sessionId } para que el gate
+         * funcione sin depender de postRaceProcessing y para que
+         * getCompetitorPracticeTimes pueda resolver el nombre sin fetch extra (T-032).
          */
         get traineePracticeUsed(): string | null {
             const raw = teamStore.value.team?.weekStatus?.traineePracticeUsed;
@@ -617,14 +618,30 @@ export function createYouthAcademyStore() {
                 : null;
 
             const practiceSetupPath = `weekStatus.driverSetups.${mainDriverId}.practice`;
+            const driverSetupPath = `weekStatus.driverSetups.${mainDriverId}`;
+
+            // Detect new race weekend: if the stored practice.sessionId differs from the
+            // current one, this is the first trainee run of a new round. Reset qualifying
+            // fields so they don't bleed in from the previous round.
+            // Root cause: isDriverStatusStale gates ALL driverSetup fields via practice.sessionId.
+            // Writing a new sessionId to the practice slot re-activates stale qualifying data
+            // (qualifyingAttempts, qualifyingRuns, etc.) from the prior round — causing
+            // "Max Attempts Reached" in QualifyingSetupTab (T-032 side effect).
+            const prevPracticeSessionId = teamStore.value.team?.weekStatus?.driverSetups?.[mainDriverId]?.practice?.sessionId;
+            const isNewRoundSession = !prevPracticeSessionId || prevPracticeSessionId !== sessionId;
+
             const teamUpdates: Record<string, any> = {
-                // Store { traineeId, sessionId } so the getter can gate by round
-                // without depending on postRaceProcessing clearing the field.
-                'weekStatus.traineePracticeUsed': { traineeId, sessionId },
+                // Store { traineeId, traineeName, sessionId } so the getter can gate by round
+                // and getCompetitorPracticeTimes can resolve the trainee name without
+                // an extra subcollection fetch (T-032 fix).
+                'weekStatus.traineePracticeUsed': { traineeId, traineeName: trainee.name, sessionId },
                 // sessionId is required for session gating in getCompetitorPracticeTimes
                 // and isCurrentSession() in PracticePanel — without it the standings
                 // and setupHints disappear after the Firestore snapshot fires.
                 [`${practiceSetupPath}.sessionId`]: sessionId,
+                // traineeName allows getCompetitorPracticeTimes to show the correct name
+                // for external teams — without it they would see the main driver's name.
+                [`${practiceSetupPath}.traineeName`]: trainee.name,
                 [`${practiceSetupPath}.frontWing`]: setup.frontWing,
                 [`${practiceSetupPath}.rearWing`]: setup.rearWing,
                 [`${practiceSetupPath}.suspension`]: setup.suspension,
@@ -640,6 +657,18 @@ export function createYouthAcademyStore() {
                     setupHints: result.setupHints ?? null
                 }
             };
+
+            // Reset qualifying fields when this is the first trainee run of a new round.
+            // Without this, old qualifyingAttempts/qualifyingRuns from the prior round
+            // pass the isDriverStatusStale gate as soon as the new practice.sessionId is written.
+            if (isNewRoundSession) {
+                teamUpdates[`${driverSetupPath}.qualifyingAttempts`] = 0;
+                teamUpdates[`${driverSetupPath}.qualifyingBestTime`] = 0;
+                teamUpdates[`${driverSetupPath}.qualifyingDnf`] = false;
+                teamUpdates[`${driverSetupPath}.qualifyingRuns`] = [];
+                teamUpdates[`${driverSetupPath}.qualifyingConfirmedAttempt`] = null;
+                teamUpdates[`${driverSetupPath}.qualifyingParcFerme`] = false;
+            }
 
             if (!result.isCrashed) {
                 const currentBest = teamStore.value.team?.weekStatus?.driverSetups?.[mainDriverId]?.practice?.bestLapTime ?? 9999;

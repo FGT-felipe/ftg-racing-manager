@@ -177,7 +177,7 @@
         if (!driver || !team) return;
         isSaving = true;
         try {
-            await carSetupService.saveRaceSetup(team.id, driver.id, strategy);
+            await carSetupService.saveRaceSetup(team.id, driver.id, strategy, currentSessionId);
             uiStore.alert(`✓ ${t('race_strategy_saved')}`, t('race_strategy_saved'), "success");
         } catch (e) {
             console.error('[RaceSetupTab:saveStrategy] Error:', e);

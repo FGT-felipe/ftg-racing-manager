@@ -195,6 +195,39 @@ export function createRaceService() {
                 const sessionData = sessionSnap.exists() ? sessionSnap.data() : { driverResults: {} };
                 const driverResults = sessionData.driverResults || {};
 
+                // 3b. Pre-fetch trainee names for teams with an active trainee lock this session.
+                // Fixes T-032: external teams saw the main driver's name because traineeName was
+                // not stored in practice data written before this fix. Security rules allow reading
+                // all team subcollections for authenticated users.
+                // Priority: lock.traineeName (new format) > selected subcollection (old format).
+                const teamTraineeNames: Map<string, string> = new Map(); // teamId → traineeName
+                const traineeFetches: Promise<void>[] = [];
+                teamsMap.forEach((teamData, teamId) => {
+                    const lock = teamData.weekStatus?.traineePracticeUsed;
+                    if (!lock || typeof lock !== 'object') return;
+                    if (lock.sessionId !== sessionId) return;
+                    const traineeId = lock.traineeId;
+                    if (!traineeId) return;
+                    if (lock.traineeName) {
+                        teamTraineeNames.set(teamId, lock.traineeName);
+                        return;
+                    }
+                    // Old format: traineeName not stored in lock — fetch from academy subcollection.
+                    traineeFetches.push(
+                        getDoc(doc(db, 'teams', teamId, 'academy', 'config', 'selected', traineeId))
+                            .then(snap => {
+                                if (snap.exists()) {
+                                    teamTraineeNames.set(teamId, snap.data().name || 'Trainee');
+                                    console.debug(`[RaceService] Trainee name resolved from subcollection for team ${teamId}: ${snap.data().name}`);
+                                } else {
+                                    console.warn(`[RaceService] Trainee doc not found: teams/${teamId}/academy/config/selected/${traineeId}`);
+                                }
+                            })
+                            .catch((e) => { console.warn(`[RaceService] Trainee subcollection fetch failed for team ${teamId}:`, e); })
+                    );
+                });
+                await Promise.all(traineeFetches);
+
                 const competitors: Array<{teamName: string, driverName: string, time: number | null, tyre: string | null, totalLaps: number, driverId: string}> = [];
 
                 // 4. Merge data
@@ -202,7 +235,7 @@ export function createRaceService() {
                     const dId = driverDoc.id;
                     const d = driverDoc.data();
                     const teamData = teamsMap.get(d.teamId);
-                    
+
                     // Priority 1: Central session data (practice_sessions/{sessionId})
                     // Priority 2: Team weekStatus fallback — only when the stored
                     //   practice.sessionId matches the current session. Without this
@@ -216,9 +249,24 @@ export function createRaceService() {
                     const bestTyre = centralResult.bestLapTyre || teamPracticeData.bestLapTyre || null;
                     const laps = Math.max(centralResult.laps || 0, teamPracticeData.laps || 0);
 
+                    // Resolve driver name: if a trainee ran practice for this driver's slot,
+                    // use the trainee's name. The slot is identified by:
+                    //   1. teamPracticeData.traineeName (written by new fix — future sessions)
+                    //   2. teamTraineeNames for this team AND driver is the main driver slot
+                    //      (carIndex 0 or role 'main') with practice data for this session
+                    //      (covers existing data written before the fix).
+                    const fetchedTraineeName = teamTraineeNames.get(d.teamId);
+                    const isTraineeSlot = !!fetchedTraineeName &&
+                        !!teamPracticeData.bestLapTime &&
+                        (d.carIndex === 0 || d.role === 'main' || d.role === 'Main');
+                    const driverName = teamPracticeData.traineeName
+                        || (isTraineeSlot ? fetchedTraineeName : null)
+                        || d.name
+                        || 'Unknown Driver';
+
                     competitors.push({
                         teamName: teamNames?.[d.teamId] || d.teamName || teamData?.name || `Team ${d.teamId.substring(0, 5)}`,
-                        driverName: d.name || 'Unknown Driver',
+                        driverName,
                         driverId: dId,
                         time: bestTime,
                         tyre: bestTyre,
@@ -275,16 +323,17 @@ export function createRaceService() {
                 const competitors: Array<{teamName: string, driverName: string, time: number | null, tyre: string | null, totalLaps: number, driverId: string, gender: string}> = [];
 
                 // 3. Merge data using team weekStatus (where qualy data is stored).
-                // Gate by practice.sessionId: qualifying fields share the same
-                // driverSetups record and are not cleared between rounds, so
-                // R(N-1) qualifying times would leak into R(N) standings.
+                // Gate by qualifyingSessionId (stamped by QualifyingSetupTab on each
+                // attempt). practice.sessionId is NOT a valid proxy for qualy freshness
+                // because practice and qualy are tagged independently — a team that ran
+                // practice but not qualy in this round would leak R(N-1) qualy times.
                 driversSnap.forEach(driverDoc => {
                     const dId = driverDoc.id;
                     const d = driverDoc.data();
                     const teamData = teamsMap.get(d.teamId);
 
                     const rawDs = teamData?.weekStatus?.driverSetups?.[dId] || {};
-                    const isCurrentSession = rawDs.practice?.sessionId === sessionId;
+                    const isCurrentSession = rawDs.qualifyingSessionId === sessionId;
                     const qualyData = isCurrentSession ? rawDs : {};
 
                     const bestTime = qualyData.qualifyingBestTime || null;
