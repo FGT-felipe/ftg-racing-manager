@@ -355,7 +355,107 @@ Si la implementación contradice lo acordado, es un bug introducido por el desar
 
 ---
 
-## 13. Flutter Deprecation Status
+## 13. Root Cause Discipline & State Lifecycle (Postmortem v1.7.x)
+
+Four consecutive releases (v1.7.0 → v1.7.3 hotfix) shipped patches to the same subsystem (`weekStatus.driverSetups`) without anyone fixing the actual root cause: `processPostRace` doesn't clear the record between rounds. The rules below codify the lessons. See `human/postmortem_v17_session_gate_cascade.md`.
+
+### 13.1 Identify root cause before writing the fix
+
+Before any P1 fix, write one sentence: *"the bug happens because X writes/doesn't write Y, read by Z."* If you can't write that sentence, you don't understand the bug yet — do not start coding.
+
+When the bad data comes from an upstream write (or absent write), the fix belongs upstream. Patching the read is acceptable only when the upstream is out of scope, **and that case must be logged as debt in the PR description with an explicit TODO**.
+
+### 13.2 Bug-in-other-faces check
+
+Before closing any fix, ask: *"can this same bug appear in a different component that reads the same field?"* If yes, fix it at the source or touch every consumer in the same PR. Do not ship a fix that just relocates the bug.
+
+> v1.7.1 patched `PreparationChecklist`. v1.7.3 patched `QualifyingSetupTab`, `PracticePanel`, `RaceSetupTab`, `StrategyPanel`, and `PreparationChecklist` again. Five components, same root cause, five independent patches.
+
+### 13.3 Walk the state machine before closing the PR
+
+When the change touches a phased subsystem (race weekend, hiring flow, transfer market), write in the PR body how the code behaves in **every phase × every user branch**. For race weekend: 4 phases (practice → qualifying → race strategy → race) × 2 user paths (with practice / without practice) = 8 cells. Skipping a cell is a guaranteed bug in that cell.
+
+> v1.7.3 fixed the tyre compound revert for users who practiced. The "user did not practice this round" branch was never walked. The bug surfaced ~3 hours later in production with players in the active session.
+
+### 13.4 `$effect` never resets state on snapshot re-runs
+
+`$effect` re-runs on every snapshot of the watched store, including unrelated writes (budget, sponsors, charge fees). Resetting `$state` inside `$effect` based on a derived value silently destroys live user input.
+
+State resets inside `$effect` are only allowed when the trigger is a deliberate input change (e.g. `driverId` switch). Track the previous input in a `let` outside `$state` and compare before resetting:
+
+```ts
+let loadedDriverId: string | null = null;
+$effect(() => {
+    if (driverId !== loadedDriverId) {
+        loadedDriverId = driverId;
+        setup = { ...defaults }; // reset only on driver switch
+    }
+    // ... load logic that does not clobber live user input
+});
+```
+
+### 13.5 Strip user-editable fields in every load branch
+
+When a `$effect` loads a saved Firestore object onto a `$state` the user is editing, strip the fields the user controls live (e.g. `tyreCompound`, active sliders) **from every load branch**, not only the main one. The bug always surfaces in the branch you forgot.
+
+```ts
+const { tyreCompound: _q, ...quali } = qualifyingObj;  setup = { ...setup, ...quali };
+const { tyreCompound: _p, ...prac  } = practiceObj;     setup = { ...setup, ...prac  };
+```
+
+### 13.6 `arrayUnion` requires an explicit lifecycle
+
+Any array field written with `arrayUnion` must have a documented "first write of scope" condition that **overwrites** instead of appending. If the data is per-session, the overwrite fires when the sessionId changes.
+
+```ts
+async saveQualyResult(..., isFreshSession: boolean) {
+    await updateDoc(ref, {
+        qualifyingRuns: isFreshSession ? [run] : arrayUnion(run),
+    });
+}
+```
+
+Without this, R(N-1) entries leak into R(N+1) until a manual cleanup is done.
+
+### 13.7 Gate by own sessionId — never by proxy
+
+To check whether data belongs to the current session, compare the sessionId **owned by that data** (`qualifyingSessionId` for qualifying, `raceSessionId` for race strategy). Never use a sibling subsystem's session field as a proxy. A driver may qualify without practicing — using `practice.sessionId` as the qualifying gate hides their fresh data.
+
+### 13.8 Cross-boundary state needs explicit cleanup
+
+Any field that survives beyond its natural lifecycle (across rounds, sessions, requests) is debt unless a cleanup mechanism exists. Document the lifecycle (creation → mutation → cleanup) in `weekend_pipeline.md` or `database_schema.md` before merging.
+
+---
+
+## 14. Hotfix & Deploy Gate
+
+### 14.1 One branch, one objective
+
+If a second bug surfaces during implementation, open a new branch. Branch ballooning is prohibited during hotfix windows. The only exception: bugs that block QA of the original fix — and even then, log them explicitly in the PR.
+
+> `fix/v1.7.3-trainee-standings-name` started as a cosmetic naming fix. It ended up touching 6 files and merging 5 P1s in a single commit, with no individual review. Three hours later, two of them had returned in production.
+
+### 14.2 Hotfix walkthrough is mandatory
+
+Before deploying any hotfix to production, write in chat:
+- *the bug was X*
+- *the previous line did Y*
+- *the new line does Z*
+- *the new version does NOT fail in scenarios A, B, C because ...*
+
+If you can't write that, the fix is not ready.
+
+### 14.3 `/deploy` requires explicit text confirmation
+
+A green build is not authorization to deploy. After `npm run build` succeeds, **stop and wait** for the user to type a confirmation (`ship`, `deploy`, `go`) before uploading to hosting. The user is the only QA gate; bypassing it ships untested fixes to live players.
+
+### 14.4 Reporting a fix
+
+When telling the user a bug is fixed, cite four things: file, line, exact change, and **why** the new code prevents the failure. "Fixed, deploying" without those four pieces does not count.
+
+---
+
+## 15. Flutter Deprecation Status
 
 The Flutter codebase (`lib/`, `android/`, `pubspec.yaml`) is **100% migrated** to Svelte. It is kept for reference only. **Do not modify any Flutter files.**
 
