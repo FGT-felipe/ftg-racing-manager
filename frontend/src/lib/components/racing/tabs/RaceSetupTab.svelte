@@ -77,14 +77,25 @@
     let qualyCompounds = $state<Record<string, TyreCompound>>({});
     let isQualyWet = $state(false);
 
+    // Wet race exception: when the race itself is wet, tyre compound is a
+    // free choice regardless of what the driver qualified on (real F1 rule —
+    // parc fermé is lifted for wet races). Checked against the race weather,
+    // NOT the qualifying weather.
+    const isWetRace = $derived(
+        (nextEvent?.weatherRace?.toLowerCase().includes('rain') ||
+         nextEvent?.weatherRace?.toLowerCase().includes('wet')) ?? false
+    );
+
     // Parc Fermé: read qualifyingParcFerme flag from the session-gated status.
     // Once R(N) completes, the gated status becomes null and the lock lifts
     // automatically for the next round.
     const isParcFermeLocked = $derived.by(() => {
         if (!driverId) return false;
+        // Wet race: free compound choice for ALL drivers, no parc fermé.
+        if (isWetRace) return false;
         const ds = gatedDriverStatus;
         if (!ds?.qualifyingParcFerme) return false;
-        // Wet tyre exception: if the driver qualified on wets, free compound choice for race start
+        // Wet qualy exception: if the driver qualified on wets, free compound choice for race start
         return ds?.qualifying?.tyreCompound !== TyreCompound.wet;
     });
 
@@ -123,6 +134,14 @@
                     loadBestSetup(true); // Silent load on initialization
                 }
 
+                // Wet race override: if the race is wet, force the starting
+                // compound to `wet` regardless of what was previously saved.
+                // Covers the case where qualy ran dry, the saved race strategy
+                // carried a dry compound, and the forecast flipped to rain.
+                if (isWetRace && strategy.tyreCompound !== TyreCompound.wet) {
+                    strategy.tyreCompound = TyreCompound.wet;
+                }
+
                 // Also fetch the qualy grid constraints
                 fetchQualyConstraints(driverId);
             });
@@ -156,8 +175,11 @@
                 // Lock starting tyre compound and apply qualifying mechanical values to strategy.
                 // isParcFermeLocked is derived directly from qualifyingParcFerme (reactive, no async).
                 // This block only seeds the strategy state for display — the lock itself is reactive.
+                // Skip the compound seeding entirely when the race is wet: the
+                // wet-race override above already forced `wet`, and we must not
+                // overwrite it with a dry qualifying compound.
                 const ds = gated;
-                if (ds?.qualifyingParcFerme && !isQualyWet) {
+                if (ds?.qualifyingParcFerme && !isQualyWet && !isWetRace) {
                     if (qualyCompounds[dId]) strategy.tyreCompound = qualyCompounds[dId];
 
                     // Seed suspension + gearRatio from the saved qualifying setup.
