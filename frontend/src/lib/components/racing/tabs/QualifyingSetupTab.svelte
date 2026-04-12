@@ -38,7 +38,7 @@
     import Typewriter from "$lib/components/ui/Typewriter.svelte";
     import { t } from "$lib/utils/i18n";
     import { formatDriverName } from "$lib/utils/driver";
-    import { buildCurrentSessionId, isDriverStatusStale } from "$lib/utils/sessionGate";
+    import { buildCurrentSessionId } from "$lib/utils/sessionGate";
 
     let { driverId } = $props<{ driverId: string | null }>();
 
@@ -79,29 +79,38 @@
     let driverDialogue = $state<string | null>(null);
 
     // Session gate: the driverSetups record survives across rounds because
-    // post-race processing doesn't clear it. We use practice.sessionId (the
-    // only field tagged with the race weekend) to decide whether the record
-    // still belongs to the current round. If stale, treat as null so all
-    // qualifying fields fall back to their defaults.
+    // post-race processing doesn't clear it. Qualifying data has its own session
+    // tag (`qualifyingSessionId`) written on every qualy write, so we gate qualy
+    // reads by that field directly — NOT by `practice.sessionId`, because a
+    // driver may qualify in R(N+1) without having practiced first.
     const currentSessionId = $derived(
         buildCurrentSessionId(seasonStore.value.season?.id, nextEvent?.id),
     );
 
+    // Raw driverSetups record — no practice.sessionId proxy, because that
+    // field hides qualifying data when practice wasn't run this round.
     let driverStatus = $derived.by(() => {
         if (!team || !driverId) return null;
-        const ds = team.weekStatus?.driverSetups?.[driverId];
-        if (isDriverStatusStale(ds, currentSessionId)) return null;
-        return ds;
+        return team.weekStatus?.driverSetups?.[driverId] || null;
     });
 
-    // Qualifying data is stale when practice has been done this session (which un-gates
-    // the driverSetups entry and exposes previous-round qualifying fields) but no qualifying
-    // attempt has been made yet this session. The qualifying write paths stamp qualifyingSessionId
-    // on the first attempt, so its presence/absence is the authoritative gate.
+    // Qualifying data is stale when this record's qualifyingSessionId doesn't
+    // match the current race weekend. Covers both "never written" and
+    // "written in a previous round".
     const qualifyingIsStale = $derived.by(() => {
         if (!driverStatus) return false;
         if (!currentSessionId) return false;
         const stored = driverStatus.qualifyingSessionId;
+        if (!stored) return true;
+        return stored !== currentSessionId;
+    });
+
+    // Practice data is stale when practice.sessionId doesn't match current.
+    // Used only to gate the practice fallback in the load effect below.
+    const practiceIsStale = $derived.by(() => {
+        if (!driverStatus) return false;
+        if (!currentSessionId) return false;
+        const stored = driverStatus.practice?.sessionId;
         if (!stored) return true;
         return stored !== currentSessionId;
     });
@@ -148,77 +157,73 @@
         }
     });
 
-    // Watch for driver changes to load their QUALY setup and results.
-    // Uses the session-gated `driverStatus` so stale data from previous
-    // rounds is ignored — a fresh R(N+1) starts at defaults, not R(N) state.
+    // Tracks which driver is currently loaded into `setup`. Full resets only
+    // fire on driver-switch — NOT on every team-doc snapshot. Resetting on
+    // snapshots would destroy the user's live tyre/mechanical selection every
+    // time an unrelated field (budget, sponsors, etc.) changes.
+    let loadedDriverId: string | null = null;
+
     $effect(() => {
-        if (driverId && team) {
-            // Track the gated value explicitly so the effect re-runs when
-            // the session changes (e.g. after R(N) completes) or when the
-            // stale gate flips (e.g. first qualifying attempt stamps qualifyingSessionId).
-            const driverData = driverStatus;
-            const isStale = qualifyingIsStale;
-            untrack(() => {
-                if (!driverData) {
-                    // Stale / fresh round → reset to defaults
-                    setup = {
-                        frontWing: 50,
-                        rearWing: 50,
-                        suspension: 50,
-                        gearRatio: 50,
-                        tyreCompound: TyreCompound.soft,
-                        pitStops: [],
-                        initialFuel: 10,
-                        pitStopFuel: [],
-                        qualifyingStyle: DriverStyle.normal,
-                        raceStyle: DriverStyle.normal,
-                        pitStopStyles: [],
-                    };
-                    lastResult = null;
-                    return;
-                }
+        if (!driverId || !team) return;
+        const driverData = driverStatus;
+        const qualyStale = qualifyingIsStale;
+        const pracStale = practiceIsStale;
+        const driverChanged = driverId !== loadedDriverId;
 
-                // Load the saved qualifying setup only when it belongs to the
-                // current race weekend. driverStatus is gated by practice.sessionId,
-                // but qualifying has its own session tag — when stale, R(N-1) state
-                // must not spread over the user's current selection.
-                //
-                // tyreCompound is ALWAYS stripped from both the existing-qualifying
-                // and practice fallbacks. The effect re-runs on every team-doc
-                // snapshot (budget, sponsors, unrelated writes), and spreading a
-                // saved tyreCompound over `setup` would silently revert the compound
-                // the manager just picked for their next attempt. The user's current
-                // selection in `setup.tyreCompound` is the source of truth until a
-                // new attempt writes it back.
-                const existing = isStale ? null : driverData?.qualifying;
+        untrack(() => {
+            if (driverChanged) {
+                loadedDriverId = driverId;
+                // Full reset on driver switch only
+                setup = {
+                    frontWing: 50,
+                    rearWing: 50,
+                    suspension: 50,
+                    gearRatio: 50,
+                    tyreCompound: TyreCompound.soft,
+                    pitStops: [],
+                    initialFuel: 10,
+                    pitStopFuel: [],
+                    qualifyingStyle: DriverStyle.normal,
+                    raceStyle: DriverStyle.normal,
+                    pitStopStyles: [],
+                };
+                lastResult = null;
+            }
 
-                if (existing) {
-                    const { tyreCompound: _q, ...qualMechanicals } = existing;
-                    setup = { ...setup, ...qualMechanicals };
-                } else {
-                    const prac = driverData?.practice;
-                    if (prac) {
-                        const { tyreCompound: _prac, ...pracMechanicals } = prac;
-                        setup = { ...setup, ...pracMechanicals };
-                    }
-                }
+            if (!driverData) return;
 
-                // Load last result if available, fallback to practice hints if no Qualy results yet.
-                // When qualifying is stale (practice ran but qualy hasn't started yet this session),
-                // skip lastQualyResult — it belongs to a previous round.
-                if (!isStale && driverData?.lastQualyResult) {
-                    lastResult = driverData.lastQualyResult;
-                } else if (driverData?.practice?.lastResult) {
-                    // Start with basic structure from practice if we have no qualy results yet
-                    lastResult = {
-                        ...driverData.practice.lastResult,
-                        isQualyFallback: true // Flag to distinguish it's from Practice
-                    } as any;
-                } else {
-                    lastResult = null;
+            // Load the saved qualifying setup only when it belongs to the current
+            // race weekend. tyreCompound is ALWAYS stripped from both the existing
+            // qualifying and practice fallbacks — the effect re-runs on every
+            // team-doc snapshot, and spreading a saved tyreCompound over `setup`
+            // would silently revert the compound the manager just picked. The
+            // user's current selection in `setup.tyreCompound` is the source of
+            // truth until a new attempt writes it back.
+            const existing = qualyStale ? null : driverData?.qualifying;
+
+            if (existing) {
+                const { tyreCompound: _q, ...qualMechanicals } = existing;
+                setup = { ...setup, ...qualMechanicals };
+            } else if (!pracStale) {
+                const prac = driverData?.practice;
+                if (prac) {
+                    const { tyreCompound: _prac, ...pracMechanicals } = prac;
+                    setup = { ...setup, ...pracMechanicals };
                 }
-            });
-        }
+            }
+
+            // Load last result if available. Skip previous-round results entirely.
+            if (!qualyStale && driverData?.lastQualyResult) {
+                lastResult = driverData.lastQualyResult;
+            } else if (!pracStale && driverData?.practice?.lastResult) {
+                lastResult = {
+                    ...driverData.practice.lastResult,
+                    isQualyFallback: true,
+                } as any;
+            }
+            // If both stale, leave lastResult alone — don't clobber to null on
+            // every snapshot re-run.
+        });
     });
 
     async function confirmRun(run: QualyRunRecord) {
@@ -297,6 +302,9 @@
 
             const pathPrefix = `weekStatus.driverSetups.${driver.id}`;
             const newAttempts = attempts + 1;
+            // First attempt of a fresh race weekend → overwrite qualifyingRuns
+            // instead of appending to the stale R(N-1) array.
+            const isFreshSession = qualifyingIsStale || attempts === 0;
 
             if (result.isCrashed) {
                 const crashResult = {
@@ -328,9 +336,13 @@
                         [`${pathPrefix}.qualifyingDnf`]: true,
                         [`${pathPrefix}.lastQualyResult`]: crashResult,
                         [`${pathPrefix}.isSetupSent`]: true,
+                        [`${pathPrefix}.qualifyingBestTime`]: 0,
+                        [`${pathPrefix}.qualifyingBestCompound`]: null,
+                        [`${pathPrefix}.qualifyingConfirmedAttempt`]: null,
                     },
                     false, // No parcFerme on crash — only a confirmed clean lap locks parc fermé
                     crashRun,
+                    isFreshSession,
                 );
                 driverDialogue = t('returning_pits_bad');
                 pitBoardMessages = [driverDialogue, ...pitBoardMessages].slice(0, 50);
@@ -338,12 +350,16 @@
             } else {
                 pitBoardMessages = [`${t('validated').toUpperCase()}: ${formatTime(result.lapTime)}`, ...pitBoardMessages].slice(0, 50);
 
-                const currentBest = bestTime;
+                // Fresh session → force a new personal best so we never mix
+                // a previous round's leaderboard time with the new attempt.
+                const currentBest = isFreshSession ? 0 : bestTime;
                 const isNewBest = currentBest === 0 || result.lapTime < currentBest;
                 const newBest = isNewBest ? result.lapTime : currentBest;
                 const bestCompound = isNewBest
                     ? setupToRun.tyreCompound
-                    : (driverStatus?.qualifyingBestCompound || setupToRun.tyreCompound);
+                    : (isFreshSession
+                        ? setupToRun.tyreCompound
+                        : (driverStatus?.qualifyingBestCompound || setupToRun.tyreCompound));
 
                 const finalResult = {
                     lapTime: result.lapTime,
@@ -372,20 +388,31 @@
                     [`${pathPrefix}.qualifyingConfirmedAttempt`]: newAttempts,
                 } : {};
 
+                // Reset qualifying counters on fresh session so R(N-1) state doesn't
+                // leak into the new round's UI (attempts, DNF flag, etc.).
+                const freshResetFields = isFreshSession
+                    ? {
+                        [`${pathPrefix}.qualifyingDnf`]: false,
+                        [`${pathPrefix}.qualifyingConfirmedAttempt`]: null,
+                    }
+                    : {};
+
                 await carSetupService.saveQualyResult(
                     team.id, driver.id,
                     {
                         [`${pathPrefix}.qualifyingSessionId`]: currentSessionId,
-                        [`${pathPrefix}.qualifyingAttempts`]: newAttempts,
+                        [`${pathPrefix}.qualifyingAttempts`]: isFreshSession ? 1 : newAttempts,
                         [`${pathPrefix}.qualifyingBestTime`]: newBest,
                         [`${pathPrefix}.qualifyingLaps`]: increment(3),
                         [`${pathPrefix}.qualifyingBestCompound`]: bestCompound,
                         [`${pathPrefix}.lastQualyResult`]: finalResult,
                         [`${pathPrefix}.isSetupSent`]: true,
+                        ...freshResetFields,
                         ...autoConfirmFields,
                     },
                     isNewBest && !isWetSession, // parcFerme on first new best in dry session
                     cleanRun,
+                    isFreshSession,
                 );
                 driverDialogue = isNewBest ? t('returning_pits_good') : t('returning_pits_bad');
                 pitBoardMessages = [driverDialogue, ...pitBoardMessages].slice(0, 50);

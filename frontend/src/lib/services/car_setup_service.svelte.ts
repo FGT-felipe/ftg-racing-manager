@@ -79,23 +79,34 @@ export class CarSetupService {
     /**
      * Saves a qualifying attempt result (clean lap or DNF/crash) to the team document.
      * Appends the run to the qualifyingRuns array. Optionally locks Parc Fermé.
+     *
+     * IMPORTANT: `driverSetups` is not cleared between race weekends by post-race
+     * processing, so `qualifyingRuns` from R(N-1) persists into R(N). When this is
+     * the first attempt of a fresh race weekend (`isFreshSession`), we OVERWRITE the
+     * array with `[run]` instead of appending, otherwise stale runs leak into the
+     * next round's UI. Subsequent attempts in the same session append.
+     *
      * @param teamId - The team document ID.
      * @param driverId - The driver document ID.
      * @param fields - Flat map of Firestore field paths to values.
      * @param setParcFerme - If true, also locks qualifyingParcFerme for this driver.
-     * @param run - Run record to append to qualifyingRuns[].
+     * @param run - Run record to append to (or seed) qualifyingRuns[].
+     * @param isFreshSession - When true, overwrite the runs array instead of appending.
      */
     async saveQualyResult(
         teamId: string,
         driverId: string,
         fields: Record<string, any>,
         setParcFerme: boolean,
-        run: QualyRunRecord
+        run: QualyRunRecord,
+        isFreshSession: boolean = false,
     ): Promise<void> {
         const teamRef = doc(db, 'teams', teamId);
         await updateDoc(teamRef, {
             ...fields,
-            [`weekStatus.driverSetups.${driverId}.qualifyingRuns`]: arrayUnion(run),
+            [`weekStatus.driverSetups.${driverId}.qualifyingRuns`]: isFreshSession
+                ? [run]
+                : arrayUnion(run),
         });
         if (setParcFerme) {
             await updateDoc(teamRef, {
