@@ -622,11 +622,8 @@ export function createYouthAcademyStore() {
 
             // Detect new race weekend: if the stored practice.sessionId differs from the
             // current one, this is the first trainee run of a new round. Reset qualifying
-            // fields so they don't bleed in from the previous round.
-            // Root cause: isDriverStatusStale gates ALL driverSetup fields via practice.sessionId.
-            // Writing a new sessionId to the practice slot re-activates stale qualifying data
-            // (qualifyingAttempts, qualifyingRuns, etc.) from the prior round — causing
-            // "Max Attempts Reached" in QualifyingSetupTab (T-032 side effect).
+            // fields as defense-in-depth (processPostRace clears driverSetups since v1.7.4,
+            // but this guard protects against partial CF failures).
             const prevPracticeSessionId = teamStore.value.team?.weekStatus?.driverSetups?.[mainDriverId]?.practice?.sessionId;
             const isNewRoundSession = !prevPracticeSessionId || prevPracticeSessionId !== sessionId;
 
@@ -658,9 +655,7 @@ export function createYouthAcademyStore() {
                 }
             };
 
-            // Reset qualifying fields when this is the first trainee run of a new round.
-            // Without this, old qualifyingAttempts/qualifyingRuns from the prior round
-            // pass the isDriverStatusStale gate as soon as the new practice.sessionId is written.
+            // Reset qualifying fields on new round (defense-in-depth — v1.7.4 CF clears all).
             if (isNewRoundSession) {
                 teamUpdates[`${driverSetupPath}.qualifyingAttempts`] = 0;
                 teamUpdates[`${driverSetupPath}.qualifyingBestTime`] = 0;
