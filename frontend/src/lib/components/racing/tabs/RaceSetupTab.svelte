@@ -34,7 +34,7 @@
         type Driver,
     } from "$lib/types";
     import { carSetupService } from "$lib/services/car_setup_service.svelte";
-    import { buildCurrentSessionId, isDriverStatusStale } from "$lib/utils/sessionGate";
+    import { buildCurrentSessionId } from "$lib/utils/sessionGate";
 
     let { driverId } = $props<{ driverId: string | null }>();
 
@@ -59,19 +59,15 @@
     const team = $derived(teamStore.value.team);
     const nextEvent = $derived(seasonStore.nextEvent);
 
-    // Session gate: post-race processing doesn't clear driverSetups, so the
-    // full record (race strategy, qualifyingParcFerme, qualifyingBestCompound,
-    // etc.) persists from R(N) into R(N+1). We treat it as null when the
-    // practice.sessionId does not match the current race weekend.
+    // v1.7.4: processPostRace now clears weekStatus.driverSetups between rounds,
+    // so we read directly — no stale-session proxy needed.
     const currentSessionId = $derived(
         buildCurrentSessionId(seasonStore.value.season?.id, nextEvent?.id),
     );
 
-    const gatedDriverStatus = $derived.by(() => {
+    const driverStatus = $derived.by(() => {
         if (!team || !driverId) return null;
-        const ds = team.weekStatus?.driverSetups?.[driverId];
-        if (isDriverStatusStale(ds, currentSessionId)) return null;
-        return ds;
+        return team.weekStatus?.driverSetups?.[driverId] ?? null;
     });
 
     let qualyCompounds = $state<Record<string, TyreCompound>>({});
@@ -93,59 +89,62 @@
         if (!driverId) return false;
         // Wet race: free compound choice for ALL drivers, no parc fermé.
         if (isWetRace) return false;
-        const ds = gatedDriverStatus;
+        const ds = driverStatus;
         if (!ds?.qualifyingParcFerme) return false;
         // Wet qualy exception: if the driver qualified on wets, free compound choice for race start
         return ds?.qualifying?.tyreCompound !== TyreCompound.wet;
     });
 
-    // Watch for driver changes to load their RACE setup and Qualy tyre.
-    // Uses the session-gated driverStatus so a stale R(N) strategy does not
-    // leak into R(N+1). When the session is stale, reset to defaults.
+    // Load race setup when the driver changes. Uses loadedDriverId tracker
+    // (CLAUDE.md §13.4) to prevent snapshot re-runs from clobbering live
+    // user input — resets only fire on actual driver switch.
+    let loadedDriverId: string | null = null;
+
     $effect(() => {
-        if (driverId && team) {
-            // Track the gated value so the effect re-runs on session change.
-            const driverData = gatedDriverStatus;
-            untrack(() => {
-                if (!driverData) {
-                    // Fresh round — reset strategy + clear qualy hints
-                    strategy = {
-                        frontWing: 50,
-                        rearWing: 50,
-                        suspension: 50,
-                        gearRatio: 50,
-                        tyreCompound: TyreCompound.medium,
-                        pitStops: [],
-                        initialFuel: 50,
-                        pitStopFuel: [],
-                        qualifyingStyle: DriverStyle.normal,
-                        raceStyle: DriverStyle.normal,
-                        pitStopStyles: [],
-                    };
-                    qualyCompounds = {};
-                    isQualyWet = false;
-                    return;
-                }
+        if (!driverId || !team) return;
+        const driverData = driverStatus;
+        const wet = isWetRace;
+        const driverChanged = driverId !== loadedDriverId;
 
-                if (driverData?.race) {
-                    strategy = { ...strategy, ...driverData.race };
-                } else {
-                    // Fallback to best available if race strategy is not yet saved
-                    loadBestSetup(true); // Silent load on initialization
-                }
+        untrack(() => {
+            if (driverChanged) {
+                loadedDriverId = driverId;
+                strategy = {
+                    frontWing: 50,
+                    rearWing: 50,
+                    suspension: 50,
+                    gearRatio: 50,
+                    tyreCompound: wet ? TyreCompound.wet : TyreCompound.medium,
+                    pitStops: [],
+                    initialFuel: 50,
+                    pitStopFuel: [],
+                    qualifyingStyle: DriverStyle.normal,
+                    raceStyle: DriverStyle.normal,
+                    pitStopStyles: [],
+                };
+                qualyCompounds = {};
+                isQualyWet = false;
+            }
 
-                // Wet race override: if the race is wet, force the starting
-                // compound to `wet` regardless of what was previously saved.
-                // Covers the case where qualy ran dry, the saved race strategy
-                // carried a dry compound, and the forecast flipped to rain.
-                if (isWetRace && strategy.tyreCompound !== TyreCompound.wet) {
-                    strategy.tyreCompound = TyreCompound.wet;
-                }
+            if (!driverData) return;
 
-                // Also fetch the qualy grid constraints
-                fetchQualyConstraints(driverId);
-            });
-        }
+            if (driverData.race) {
+                // Strip tyreCompound — user controls it live (§13.5)
+                const { tyreCompound: _r, ...raceMechanicals } = driverData.race;
+                if (driverChanged) {
+                    strategy = { ...strategy, ...raceMechanicals };
+                }
+            } else if (driverChanged) {
+                loadBestSetup(true);
+            }
+
+            // Wet race override on driver switch
+            if (driverChanged && wet && strategy.tyreCompound !== TyreCompound.wet) {
+                strategy.tyreCompound = TyreCompound.wet;
+            }
+
+            fetchQualyConstraints(driverId);
+        });
     });
 
     async function fetchQualyConstraints(dId: string) {
@@ -163,8 +162,8 @@
 
                 // Fallback: use qualifyingBestCompound from the team doc — but only
                 // when the record still belongs to the current race weekend.
-                // gatedDriverStatus returns null for stale R(N) data.
-                const gated = gatedDriverStatus;
+                // driverStatus returns null for stale R(N) data.
+                const gated = driverStatus;
                 if (!qualyCompounds[dId]) {
                     const savedCompound = gated?.qualifyingBestCompound as TyreCompound | undefined;
                     if (savedCompound) qualyCompounds[dId] = savedCompound;
@@ -212,7 +211,7 @@
     async function loadBestSetup(silent = false) {
         if (!team || !driverId) return;
         // Session gate: don't pull hints from the previous round's data
-        const gated = gatedDriverStatus;
+        const gated = driverStatus;
         if (!gated) {
             if (!silent) uiStore.alert(t('no_setup_found'), t('best_setup'), "warning");
             return;

@@ -2,7 +2,10 @@
   "permissions": {
     "allow": [
       "Bash(grep -E \"\\\\.svelte\\\\.ts$\")",
-      "Bash(grep -E \"\\\\+page\\\\.svelte$\")"
+      "Bash(grep -E \"\\\\+page\\\\.svelte$\")",
+      "Bash(firebase deploy:*)",
+      "Bash(npm run:*)",
+      "Bash(awk '/^## 13\\\\. Root Cause/,/^## 15\\\\. Flutter/' CLAUDE.md)"
     ]
   }
 }

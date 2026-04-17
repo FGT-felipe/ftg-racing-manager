@@ -26,7 +26,6 @@
     import DriverAvatar from "$lib/components/DriverAvatar.svelte";
     import CountryFlag from "$lib/components/ui/CountryFlag.svelte";
     import { t } from "$lib/utils/i18n";
-    import { buildCurrentSessionId, isDriverStatusStale } from "$lib/utils/sessionGate";
 
     import PracticePanel from "./PracticePanel.svelte";
     import QualifyingSetupTab from "./tabs/QualifyingSetupTab.svelte";
@@ -109,24 +108,16 @@
         drivers?.find((d: any) => d.id === selectedDriverId) || drivers?.[0],
     );
 
-    // Session gate: driverSetups persists across rounds because post-race
-    // processing doesn't clear it. Both lap counters below must honour
-    // practice.sessionId to avoid showing R(N) state on R(N+1).
-    const currentSessionId = $derived(
-        buildCurrentSessionId(seasonStore.value.season?.id, nextEvent?.id),
-    );
-
+    // v1.7.4: processPostRace now clears driverSetups — read directly, no stale proxy.
     let driverPracticeLaps = $derived.by(() => {
         if (!selectedDriverId) return 0;
         const ds = teamStore.value.team?.weekStatus?.driverSetups?.[selectedDriverId];
-        if (isDriverStatusStale(ds, currentSessionId)) return 0;
         return ds?.practice?.laps || 0;
     });
 
     let driverQualyAttempts = $derived.by(() => {
         if (!selectedDriverId) return 0;
         const ds = teamStore.value.team?.weekStatus?.driverSetups?.[selectedDriverId];
-        if (isDriverStatusStale(ds, currentSessionId)) return 0;
         return ds?.qualifyingAttempts || 0;
     });
 

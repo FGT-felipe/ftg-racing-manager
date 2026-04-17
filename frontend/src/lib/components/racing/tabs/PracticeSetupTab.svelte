@@ -36,7 +36,6 @@
     } from "lucide-svelte";
     import { t } from "$lib/utils/i18n";
     import { onMount, untrack } from "svelte";
-    import { buildCurrentSessionId, isDriverStatusStale } from "$lib/utils/sessionGate";
 
     let { driverId } = $props<{ driverId: string | null }>();
 
@@ -76,18 +75,11 @@
             : null,
     );
 
-    // Session gate: the driverSetups record survives post-race processing,
-    // so we must check practice.sessionId before trusting any field on it.
-    const currentSessionId = $derived(
-        buildCurrentSessionId(seasonStore.value.season?.id, nextEvent?.id),
-    );
-
+    // v1.7.4: processPostRace now clears driverSetups between rounds — read directly.
     const driverStatus = $derived.by(() => {
         const team = teamStore.value.team;
         if (!team || !driverId) return null;
-        const ds = team.weekStatus?.driverSetups?.[driverId];
-        if (isDriverStatusStale(ds, currentSessionId)) return null;
-        return ds;
+        return team.weekStatus?.driverSetups?.[driverId] ?? null;
     });
 
     const driverPracticeLaps = $derived(driverStatus?.practice?.laps || 0);
@@ -129,11 +121,7 @@
     );
 
     const legacyPracticeRuns = $derived.by(() => {
-        const team = teamStore.value.team;
-        if (!driver || !team?.weekStatus?.driverSetups) return [];
-        // Session gate: practiceRuns[] is not cleared when a round finishes.
-        // Reuse the gated driverStatus so R(N-1) runs don't show on R(N).
-        if (!driverStatus) return [];
+        if (!driver || !driverStatus) return [];
         return driverStatus.practiceRuns || [];
     });
 

@@ -1,27 +1,17 @@
 /**
- * Session gating for weekStatus.driverSetups reads.
+ * Session gating helpers for weekStatus.driverSetups.
  *
- * Background: `driverSetups[driverId]` holds practice, qualifying, and race
- * strategy state for the current race weekend. Post-race processing does NOT
- * clear these fields when a round completes, so the record from R(N) persists
- * unchanged into R(N+1) until the driver practices the new round.
+ * Since v1.7.4, processPostRace clears `weekStatus.driverSetups` between rounds,
+ * so the old proxy-based `isDriverStatusStale` (which checked practice.sessionId
+ * to gate ALL subsystems) is no longer needed and has been removed.
  *
- * The `practice` sub-object is the only field that carries an explicit
- * `sessionId` (format: `${seasonId}_${raceEventId}`), written whenever practice
- * is saved. We use it as the source of truth for "does this record belong to
- * the current race weekend?"
+ * Each subsystem now gates by its own session tag:
+ *  - Qualifying: `qualifyingSessionId`
+ *  - Race strategy: `raceSessionId`
+ *  - Practice: `practice.sessionId`
  *
- * Rules:
- *  - No driverStatus at all → fresh team/driver, not stale.
- *  - practice.sessionId matches currentSessionId → valid, not stale.
- *  - practice.sessionId exists and differs → stale (previous round's record).
- *  - practice.sessionId missing → stale. All writes from v1.5+ tag it, so a
- *    missing tag means the record was written before the tagging was introduced
- *    and has to be treated as prior-round data.
- *
- * Components should treat `driverStatus` as `null` when `isStaleSession` is
- * true, so qualifyingAttempts, qualifyingRuns, qualifyingParcFerme, race, etc.
- * all fall back to their defaults (0 / [] / false / undefined).
+ * `buildCurrentSessionId` remains as the canonical way to build the session tag
+ * for comparison and tagging on write.
  */
 export function buildCurrentSessionId(
     seasonId: string | null | undefined,
@@ -29,15 +19,4 @@ export function buildCurrentSessionId(
 ): string | null {
     if (!seasonId || !raceEventId) return null;
     return `${seasonId}_${raceEventId}`;
-}
-
-export function isDriverStatusStale(
-    driverStatus: any,
-    currentSessionId: string | null,
-): boolean {
-    if (!driverStatus) return false; // nothing to hide
-    if (!currentSessionId) return false; // can't compare yet
-    const storedSessionId = driverStatus?.practice?.sessionId;
-    if (!storedSessionId) return true; // missing tag → previous-round data
-    return storedSessionId !== currentSessionId;
 }

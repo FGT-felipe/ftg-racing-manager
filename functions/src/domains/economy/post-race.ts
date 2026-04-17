@@ -419,6 +419,11 @@ export async function runPostRaceProcessing(): Promise<void> {
           "weekStatus.psychologistSessionDoneThisWeek": false,
           // T-004: reset academy trainee practice slot each round
           "weekStatus.traineePracticeUsed": null,
+          // v1.7.4: clear all driver setups between rounds — root cause of the
+          // v1.7.x session-gate cascade. Without this, practice/qualifying/race
+          // data from R(N) leaks into R(N+1) and every frontend component must
+          // independently gate by sessionId. See postmortem_v17_session_gate_cascade.md.
+          "weekStatus.driverSetups": {},
           sponsors: updatedSponsors,
           budget: newBudget,
         } as FirebaseFirestore.UpdateData<object>);
