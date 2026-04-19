@@ -95,20 +95,26 @@
         return ds?.qualifying?.tyreCompound !== TyreCompound.wet;
     });
 
-    // Load race setup when the driver changes. Uses loadedDriverId tracker
-    // (CLAUDE.md §13.4) to prevent snapshot re-runs from clobbering live
-    // user input — resets only fire on actual driver switch.
+    // Load race setup when the driver or session changes (§13.4, §13.7).
+    // Tracks both driverId and sessionId so that a new round resets the form
+    // even when the same driver is selected — preventing previous-round race
+    // config from bleeding into the new round's setup tab.
     let loadedDriverId: string | null = null;
+    let loadedSessionId: string | null = null;
 
     $effect(() => {
         if (!driverId || !team) return;
         const driverData = driverStatus;
         const wet = isWetRace;
+        const sessId = currentSessionId;
         const driverChanged = driverId !== loadedDriverId;
+        const sessionChanged = sessId !== loadedSessionId;
+        const shouldReset = driverChanged || sessionChanged;
 
         untrack(() => {
-            if (driverChanged) {
+            if (shouldReset) {
                 loadedDriverId = driverId;
+                loadedSessionId = sessId;
                 strategy = {
                     frontWing: 50,
                     rearWing: 50,
@@ -128,18 +134,21 @@
 
             if (!driverData) return;
 
-            if (driverData.race) {
+            // Session gate (§13.7): only restore saved race config when raceSessionId
+            // matches the current round. Prevents R(N-1) setup from loading into R(N).
+            const raceIsFresh = !!sessId && driverData.raceSessionId === sessId;
+            if (driverData.race && raceIsFresh) {
                 // Strip tyreCompound — user controls it live (§13.5)
                 const { tyreCompound: _r, ...raceMechanicals } = driverData.race;
-                if (driverChanged) {
+                if (shouldReset) {
                     strategy = { ...strategy, ...raceMechanicals };
                 }
-            } else if (driverChanged) {
+            } else if (shouldReset) {
                 loadBestSetup(true);
             }
 
-            // Wet race override on driver switch
-            if (driverChanged && wet && strategy.tyreCompound !== TyreCompound.wet) {
+            // Wet race override on reset
+            if (shouldReset && wet && strategy.tyreCompound !== TyreCompound.wet) {
                 strategy.tyreCompound = TyreCompound.wet;
             }
 

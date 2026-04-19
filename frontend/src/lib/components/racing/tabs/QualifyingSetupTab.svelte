@@ -157,23 +157,26 @@
         }
     });
 
-    // Tracks which driver is currently loaded into `setup`. Full resets only
-    // fire on driver-switch — NOT on every team-doc snapshot. Resetting on
-    // snapshots would destroy the user's live tyre/mechanical selection every
-    // time an unrelated field (budget, sponsors, etc.) changes.
+    // Tracks driver and session to prevent previous-round setup from bleeding
+    // into new rounds (§13.4, §13.7). Resets fire on driver switch OR session change.
     let loadedDriverId: string | null = null;
+    let loadedSessionId: string | null = null;
 
     $effect(() => {
         if (!driverId || !team) return;
         const driverData = driverStatus;
         const qualyStale = qualifyingIsStale;
         const pracStale = practiceIsStale;
+        const sessId = currentSessionId;
         const driverChanged = driverId !== loadedDriverId;
+        const sessionChanged = sessId !== loadedSessionId;
+        const shouldReset = driverChanged || sessionChanged;
 
         untrack(() => {
-            if (driverChanged) {
+            if (shouldReset) {
                 loadedDriverId = driverId;
-                // Full reset on driver switch only
+                loadedSessionId = sessId;
+                // Full reset on driver switch or session change
                 setup = {
                     frontWing: 50,
                     rearWing: 50,

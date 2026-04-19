@@ -406,6 +406,13 @@ async function runPostRaceProcessing() {
                     // data from R(N) leaks into R(N+1) and every frontend component must
                     // independently gate by sessionId. See postmortem_v17_session_gate_cascade.md.
                     "weekStatus.driverSetups": {},
+                    // v1.7.5: globalStatus persisted between rounds and overrode the time-based
+                    // status derivation in the racing page, hiding the trainee practice button.
+                    // Delete forces the page to fall back to timeService.currentStatus.
+                    "weekStatus.globalStatus": admin_1.admin.firestore.FieldValue.delete(),
+                    // v1.7.5: practicePaid persisted between rounds, granting free practice sessions
+                    // at the start of the new round without charging the $10k fee.
+                    "weekStatus.practicePaid": admin_1.admin.firestore.FieldValue.delete(),
                     sponsors: updatedSponsors,
                     budget: newBudget,
                 });
