@@ -1,8 +1,61 @@
 # FTG Racing Manager — Claude Development Guide
 
-## 1. Mandatory Pre-Development Review
+## 1. BMAD Method — The Primary Workflow (Mandatory)
 
-Before modifying or creating any module, service, or feature, read the relevant documentation under:
+This project is driven by the **BMAD Method** (Build More, Architect Dreams) — an agile, AI-driven development framework. **Any feature, bug fix, or improvement MUST go through a BMAD workflow.** Ad-hoc edits directly into files are forbidden except for trivial one-liners (typos, formatting, a missing import) — and even then, a short BMAD story is preferred.
+
+### 1.1 Installed modules
+
+- **BMAD Core + BMM (Build More Architect Dreams)** — v6.3.0
+- **Location:** `_bmad/` (tracked), `_bmad-output/` (generated artifacts)
+- **Claude Code integration:** 41 skills under `.claude/skills/bmad-*`
+- **Help:** invoke the `bmad-help` skill at any time to get routed to the right workflow.
+
+### 1.2 Decision tree — pick the right BMAD workflow
+
+| User request | BMAD workflow | Key skills, in order |
+|---|---|---|
+| **New user-facing feature** (market, academy tab, new module) | Full pipeline: analysis → planning → solutioning → implementation | `bmad-product-brief` (or `bmad-prfaq`) → `bmad-create-prd` → `bmad-validate-prd` → `bmad-create-ux-design` (if UI) → `bmad-create-architecture` → `bmad-create-epics-and-stories` → `bmad-check-implementation-readiness` → `bmad-sprint-planning` → story cycle |
+| **Bug fix** (any severity, including hotfix) | Quick Dev — unified intent-in / code-out | `bmad-quick-dev` → `bmad-code-review` → (if P1) hotfix gate in §15 |
+| **Small improvement, chore, refactor, doc update** | Quick Dev | `bmad-quick-dev` |
+| **Larger refactor / architectural change** | Full pipeline, starting at solutioning | `bmad-create-architecture` → `bmad-create-epics-and-stories` → story cycle |
+| **Unfamiliar area or scope unclear** | Discovery first | `bmad-brainstorming` / `bmad-domain-research` / `bmad-technical-research` → then the appropriate track above |
+| **Significant mid-flight change** | Course correction | `bmad-correct-course` |
+
+### 1.3 The story cycle (canonical implementation loop)
+
+Every feature story runs this loop, one story at a time, in a fresh chat per step:
+
+```
+bmad-create-story  (CS)  →  bmad-create-story:validate  (VS)  →  bmad-dev-story  (DS)  →  bmad-code-review  (CR)
+                                                                              ↑                    │
+                                                                              └────── if issues ───┘
+```
+
+At epic end: `bmad-retrospective` (ER) is optional but strongly recommended — it feeds lessons back into this document.
+
+### 1.4 Artifacts — where BMAD writes
+
+- **Planning artifacts** (PRDs, architectures, epics, stories): `_bmad-output/planning-artifacts/`
+- **Implementation artifacts** (sprint status, story files, QA reports): `_bmad-output/implementation-artifacts/`
+- **Project knowledge** (context, documentation): `docs/` and `frontend/src/routes/admin/docs/`
+
+These paths are configured in `_bmad/bmm/config.yaml`. Do not hand-edit that file.
+
+### 1.5 Hard rules
+
+- **No code changes without a BMAD workflow.** If you find yourself about to call `Edit` or `Write` without having run at least `bmad-quick-dev`, stop and start the workflow.
+- **One story, one branch, one PR.** See §11 and §15.1.
+- **Context load is mandatory.** Before the first BMAD skill of a task, read the docs listed in §2.
+- **Rules in §3 through §16 override any BMAD skill default** when they conflict. The skill produces the code; this file produces the constraints.
+- **Prohibited BMAD skills in this project:**
+  - `bmad-qa-generate-e2e-tests` — Playwright/automated E2E tests are banned (see §8). Use Vitest unit tests only.
+
+---
+
+## 2. Mandatory Pre-BMAD Context Load
+
+Before the first BMAD skill invocation on any task, read the relevant documentation. These are the inputs the BMAD agents need to produce correct artifacts for **this** project:
 
 ```
 frontend/src/routes/admin/docs/ai/
@@ -17,10 +70,14 @@ frontend/src/routes/admin/docs/ai/
 | `weekend_pipeline.md` | When touching race simulation or scheduled functions |
 | `human/postmortem_r2.md` / `human/postmortem_r3.md` | When modifying `functions/index.js` |
 | `human/postmortem_admin_qualy_wipe.md` | When creating or modifying any admin tool |
+| `human/postmortem_t004_academy_practice.md` | When changing a field's type or semantics (§13) |
+| `human/postmortem_v17_session_gate_cascade.md` | When touching weekend state, `$effect`, or `arrayUnion` (§15) |
+
+For a brownfield view of the repo that BMAD can consume, keep `bmad-generate-project-context` output fresh — re-run it after major refactors.
 
 ---
 
-## 2. Technology Stack
+## 3. Technology Stack
 
 This is a **Svelte 5 + Firebase** web application. The Flutter codebase (`lib/`) is **deprecated and must not be modified**. All new development happens in `frontend/`.
 
@@ -28,6 +85,8 @@ This is a **Svelte 5 + Firebase** web application. The Flutter codebase (`lib/`)
 frontend/        ← SvelteKit 5 (active — all development here)
 functions/       ← Firebase Cloud Functions v2 (Node.js 20, strict mode)
 lib/             ← DEPRECATED Flutter code. Do not touch.
+_bmad/           ← BMAD framework config (tracked)
+_bmad-output/    ← BMAD generated artifacts (gitignored — see §10)
 ```
 
 **Frontend stack:** SvelteKit · Svelte 5 Runes · TypeScript · Tailwind CSS · Firebase v10
@@ -35,9 +94,9 @@ lib/             ← DEPRECATED Flutter code. Do not touch.
 
 ---
 
-## 3. Core Development Rules
+## 4. Core Development Rules (enforced in `bmad-dev-story` and `bmad-code-review`)
 
-### 3.1 Reactivity (Svelte 5 Runes — Non-negotiable)
+### 4.1 Reactivity (Svelte 5 Runes — Non-negotiable)
 
 - **Use `$state()`** for reactive data from Firestore.
 - **Use `$derived()`** for all computed values — formatting, filtering, transformations.
@@ -45,7 +104,7 @@ lib/             ← DEPRECATED Flutter code. Do not touch.
 - **Never use** Svelte 4 `writable` / `readable` stores for local state.
 - **Expose reactive state** via class getters, not raw store exports.
 
-### 3.2 Architecture: Service / Store Separation
+### 4.2 Architecture: Service / Store Separation
 
 ```
 src/lib/services/*.svelte.ts  →  Stateless logic, pure Firebase API calls
@@ -55,13 +114,13 @@ src/routes/**/*.svelte        →  UI only — NO direct Firestore calls
 
 **Hard rule:** Never call `doc()`, `getDoc()`, `setDoc()`, or `collection()` directly from a `.svelte` component file.
 
-### 3.3 Transactional Safety
+### 4.3 Transactional Safety
 
 Every mutation that affects **budget**, driver/team **ownership**, or **economic fields** (`budget`, `value`, `salary`) **must** use `runTransaction` or a server-side Cloud Function.
 
 Silent writes outside transactions are forbidden for these fields.
 
-### 3.4 Error Handling
+### 4.4 Error Handling
 
 - Empty `catch` blocks are **forbidden**.
 - All errors must be logged with namespace context:
@@ -70,7 +129,7 @@ Silent writes outside transactions are forbidden for these fields.
   ```
 - Use `try/catch` at the boundary where recovery or user feedback is possible, not at every line.
 
-### 3.5 UI/UX Standards
+### 4.5 UI/UX Standards
 
 - **No browser dialogs.** `alert()`, `confirm()`, and `prompt()` are prohibited. Use `uiStore` and custom modal components.
 - **Tailwind CSS only.** No inline styles, no raw hex codes. Custom colors reference variables defined in `app.css`.
@@ -78,7 +137,7 @@ Silent writes outside transactions are forbidden for these fields.
 - **Mobile First.** Design for mobile, then scale up to desktop dashboards.
 - **Design aesthetic:** Premium Dark Gold — high contrast, subtle gradients, `backdrop-blur` for overlays.
 
-### 3.6 Anti-Hardcoding
+### 4.6 Anti-Hardcoding
 
 Every business value must be centralized:
 
@@ -89,11 +148,11 @@ Every business value must be centralized:
 
 ---
 
-## 4. Cloud Functions — Critical Safety Rules
+## 5. Cloud Functions — Critical Safety Rules
 
-> **Context:** Functions run in Node.js strict mode. Violations are silent — they fail in Firebase logs only, not in local console.
+> **Context:** Functions run in Node.js strict mode. Violations are silent — they fail in Firebase logs only, not in local console. These rules MUST be enforced by `bmad-code-review` before any `functions/` change is merged.
 
-### 4.1 Variable Declaration (Postmortem R2/R3 — Critical)
+### 5.1 Variable Declaration (Postmortem R2/R3 — Critical)
 
 **Always declare variables with `let` before any conditional assignment.**
 
@@ -108,7 +167,7 @@ if (teamRole === "ex_driver") { extraCrash = 0.001; }
 const crashed = Math.random() < (accProb + extraCrash);
 ```
 
-### 4.2 Array Guard Pattern (Postmortem R2/R3 — Critical)
+### 5.2 Array Guard Pattern (Postmortem R2/R3 — Critical)
 
 **Always check `array.length > 0`, not just array existence. Empty arrays are truthy.**
 
@@ -120,7 +179,7 @@ if (rSnap.data().qualyGrid) { continue; }
 if (rSnap.data().qualyGrid?.length > 0) { continue; }
 ```
 
-### 4.3 Deploy Verification Rule
+### 5.3 Deploy Verification Rule
 
 After ANY fix to `functions/index.js`, remind the user to:
 1. Run `firebase deploy --only functions`
@@ -128,7 +187,7 @@ After ANY fix to `functions/index.js`, remind the user to:
 
 A local-only fix is **not** a deployed fix. See `postmortem_r3.md` — R2's fix was applied locally but never deployed, causing an identical failure 5 days later.
 
-### 4.4 Admin Tool Safety Rules (Postmortem admin_qualy_wipe — Critical)
+### 5.4 Admin Tool Safety Rules (Postmortem admin_qualy_wipe — Critical)
 
 **Every admin tool that iterates a collection must have an explicit scope guard and a `// SCOPE:` comment.**
 
@@ -150,7 +209,7 @@ for (const rDoc of racesSnap.docs) {
 
 **Data durability rule:** Any field that feeds statistics, economic history, or classification records must be written to at least two places: the operational collection (mutable) and an immutable append-only collection. Example: `races/{id}.qualyGrid` (operational) + `qualifying_results/{id}` (immutable backup). See T-020.
 
-### 4.5 Universe Sync (Manual Step)
+### 5.5 Universe Sync (Manual Step)
 
 The `/season/standings` page reads from `universe/game_universe_v1` (a denormalized aggregate). After any manual race simulation:
 
@@ -163,7 +222,7 @@ This step is **not automatic**. Without it, standings remain stale.
 
 ---
 
-## 5. Race Weekend State Machine
+## 6. Race Weekend State Machine
 
 ```
 Monday 00:00 → Saturday 13:59  →  practice
@@ -179,18 +238,19 @@ Sunday 16:00                    →  postRace  (maps to "practice" in UI fallbac
 
 ---
 
-## 6. Testing Policy
+## 7. Testing Policy
 
 - **Playwright E2E tests are prohibited.** Do not create, suggest, or run Playwright tests. QA is performed manually by the team.
-- **Vitest unit tests are required** for new deterministic logic (finance calculations, simulation math, service methods).
+- **`bmad-qa-generate-e2e-tests` is prohibited** — this BMAD skill generates E2E/API automated tests. Do not invoke it. The only automated tests allowed are Vitest unit tests.
+- **Vitest unit tests are required** for new deterministic logic (finance calculations, simulation math, service methods). `bmad-dev-story` must produce them alongside the implementation.
 - **Test files live alongside their source:** `service.svelte.ts` → `service.test.ts`.
 - **Async safety:** Gate all Firebase calls behind `browser` environment checks and/or `authStore.loading` checks to prevent SSR race conditions.
 
 ---
 
-## 7. Documentation Maintenance
+## 8. Documentation Maintenance
 
-When you modify a business rule, data structure, service interface, or architectural pattern, update the corresponding markdown file:
+When you modify a business rule, data structure, service interface, or architectural pattern, update the corresponding markdown file as part of the story — not after. `bmad-dev-story` is not complete until the matching doc is updated.
 
 | Change type | Update file |
 |---|---|
@@ -205,7 +265,7 @@ When you modify a business rule, data structure, service interface, or architect
 
 ---
 
-## 8. Emergency Recovery Protocol
+## 9. Emergency Recovery Protocol
 
 If any automated simulation fails, run from `functions/` in order:
 
@@ -220,31 +280,33 @@ node scripts/emergency/sync_universe.js            # 4. Sync Standings UI
 
 > **Note:** `reset_all.js` and `run_simulation.js` do not exist. Use `force_race_local.js` or `force_race_wrapper.js` for manual race simulation.
 
+Recovery operations bypass BMAD — they are operational runbooks, not feature work. Document any recovery in a post-incident BMAD retrospective (`bmad-retrospective`) so the cause feeds back into the rules.
+
 ---
 
-## 9. Version Control Conventions
+## 10. Version Control Conventions
 
-### 9.1 Branch Naming
+### 10.1 Branch Naming
 
 Every branch must use one of these prefixes — never use `feature/` for work that isn't a new user-facing feature:
 
-| Prefix | When to use |
-|---|---|
-| `feature/` | New user-facing module or functionality |
-| `fix/` | Bug fix (any severity) |
-| `chore/` | Tech debt, refactoring, docs, tooling, deps — no user-facing change |
-| `hotfix/` | Urgent production fix branched directly from `main` |
+| Prefix | When to use | BMAD workflow |
+|---|---|---|
+| `feature/` | New user-facing module or functionality | Full pipeline |
+| `fix/` | Bug fix (any severity) | Quick Dev |
+| `chore/` | Tech debt, refactoring, docs, tooling, deps — no user-facing change | Quick Dev |
+| `hotfix/` | Urgent production fix branched directly from `main` | Quick Dev + §15 gate |
 
-**Format:** `<type>/<version>-<short-description>` when tied to a version, or `<type>/<short-description>` for isolated work.
+**Format:** `<type>/<version>-<short-description>` when tied to a version, or `<type>/<short-description>` for isolated work. When the work is a BMAD story, include the story ID: `feature/v1.2.0-E02-S05-transfer-filters`.
 
 ```
-feature/v4.2.0-transfer-market-filters
-fix/v4.1.8-driver-name-truncation
-chore/v4.1.7-tech-debt
+feature/v1.2.0-E02-S05-transfer-market-filters
+fix/v1.1.2-driver-name-truncation
+chore/v1.1.1-tech-debt
 hotfix/qualifying-crash-loop
 ```
 
-### 9.2 Commit Messages — Conventional Commits
+### 10.2 Commit Messages — Conventional Commits
 
 Format: `<type>(<scope>): <imperative description>`
 
@@ -258,7 +320,7 @@ Format: `<type>(<scope>): <imperative description>`
 | `style` | Formatting, i18n, visual tweaks |
 | `test` | Adding or fixing tests |
 
-### 9.3 Pull Request Structure
+### 10.3 Pull Request Structure
 
 Every PR must include these three sections:
 
@@ -269,115 +331,126 @@ Every PR must include these three sections:
 ## Summary
 <What changed — bullet points.>
 
+## BMAD trail
+<Links/paths to the BMAD artifacts: PRD, architecture, story, code-review report.>
+
 ## Test plan
 <Checklist of what to verify manually.>
 ```
 
-The **Motivation** section is mandatory — it's the long-term record of *why*, which is never obvious from the diff alone.
+The **Motivation** section is mandatory — it's the long-term record of *why*, which is never obvious from the diff alone. The **BMAD trail** section makes the provenance of the change auditable.
 
-### 9.4 Versioning Strategy
+### 10.4 Versioning Strategy
 
-- **Patch** (`4.1.x`) — fixes and chore branches
-- **Minor** (`4.x.0`) — feature branches adding new functionality
+- **Patch** (`1.1.x`) — fixes and chore branches
+- **Minor** (`1.x.0`) — feature branches adding new functionality
 - **Major** (`x.0.0`) — reserved for architectural rewrites
 
----
+### 10.5 `.gitignore` expectations
 
-## 10. Multi-Task Execution Rule
-
-When the user requests multiple fixes or tasks in a single message, **execute them sequentially, one at a time**. Do not parallelize work across independent tasks.
-
-**Required process:**
-1. Pick the first task (prioritize by urgency if indicated).
-2. Investigate it fully — read all relevant files before writing code.
-3. Implement the fix.
-4. Confirm it is correct (verify the right fields, conditions, and data flow).
-5. Only then move to the next task.
-
-**Rationale:** Parallel execution causes assumptions to go unverified and fixes to target the wrong fields or conditions — leading to bugs that are worse than the originals.
+- `_bmad-output/` — **gitignored** (regenerable artifacts; keep PRs clean)
+- `_bmad/` — **tracked** (installation config is part of the project contract)
 
 ---
 
-## 11. Propagación de Cambios de Tipo y Semántica (Postmortem T-004 — Critical)
+## 11. Story Cycle Execution Discipline
 
-Cuando se cambia el **tipo** o la **semántica** de un campo compartido entre store y componentes, es obligatorio hacer un grep de todos sus consumidores antes de escribir una sola línea de código.
+When the user requests multiple fixes or tasks in a single message, **execute them as separate BMAD stories, sequentially, one at a time**. Do not parallelize work across independent stories.
 
-**Regla:** Antes de cambiar el tipo de un campo (ej. `string` → `{ id, sessionId }`) o su semántica (ej. "hay lock" → "hay lock de otro"), ejecutar:
+**Required process for every story:**
+1. Pick the first story (prioritize by urgency if indicated).
+2. Invoke `bmad-create-story` (or `bmad-quick-dev` for small scopes) — do not skip straight to code.
+3. Investigate fully — read all relevant files before writing code. The BMAD dev agent will prompt for this; do not short-circuit it.
+4. Implement the fix via `bmad-dev-story`.
+5. Verify correctness (right fields, conditions, data flow) — then run `bmad-code-review`.
+6. Only then move to the next story.
+
+**Rationale:** Parallel execution causes assumptions to go unverified and fixes to target the wrong fields or conditions — leading to bugs that are worse than the originals. This rule is why BMAD's story cycle is sequential by design.
+
+---
+
+## 12. Type & Semantics Change Propagation (Postmortem T-004 — Critical)
+
+When the **type** or **semantics** of a field shared between store and components changes, it is mandatory to grep every consumer **before** writing a single line of code. This check must happen inside `bmad-create-story` (during planning), not during `bmad-dev-story`.
+
+**Rule:** Before changing a field's type (e.g. `string` → `{ id, sessionId }`) or its semantics (e.g. "a lock exists" → "a lock exists owned by someone else"), run:
 
 ```bash
-grep -r "nombreDelCampo" frontend/src --include="*.ts" --include="*.svelte"
+grep -r "fieldName" frontend/src --include="*.ts" --include="*.svelte"
 ```
 
-Luego actualizar **cada** punto de consumo en el mismo commit. Un cambio de tipo con N consumidores debe producir N actualizaciones — no 1.
+Then update **every** consumption point in the same commit. A type change with N consumers must produce N updates — not 1.
 
-### Casos concretos que deben disparar este proceso
+### 12.1 Concrete cases that must trigger this process
 
-| Situación | Acción obligatoria |
+| Situation | Mandatory action |
 |---|---|
-| Campo Firestore cambia de tipo primitivo a objeto | Grep + actualizar guards de truthiness (`if (x)` → `if (x?.id)`) |
-| Semántica de un lock cambia ("existe" → "es de otro") | Grep + actualizar todos los `!!campo` en la UI |
-| Prop de componente cambia de condicional a siempre presente | Grep + verificar todos los consumidores del prop |
-| Dato disponible en dos fuentes (raw snapshot vs getter gateado) | Siempre usar el getter público del store — nunca el snapshot raw desde un componente |
+| Firestore field changes from primitive to object | Grep + update truthiness guards (`if (x)` → `if (x?.id)`) |
+| Lock semantics change ("exists" → "belongs to another") | Grep + update every `!!field` in the UI |
+| Component prop changes from conditional to always-present | Grep + verify every consumer of the prop |
+| Data available from two sources (raw snapshot vs gated getter) | Always use the public store getter — never the raw snapshot from a component |
 
-### Verificación de producto antes de implementar
+### 12.2 Product decision verification — before implementation
 
-Antes de escribir código, releer la decisión de producto tal como fue acordada en el planning. Si la implementación contradice lo acordado, **parar y corregir** — no asumir que la interpretación propia es válida.
+Before writing code, re-read the product decision as agreed during planning (`bmad-create-prd` / `bmad-create-story`). If the implementation contradicts what was agreed, **stop and correct** — do not assume your own interpretation is valid.
 
-Ejemplo del T-004: el planning acordó explícitamente "el mismo trainee puede correr múltiples stints, el lock solo bloquea rotar a otro trainee". La implementación hizo lo opuesto. El usuario tuvo que reportarlo como bug.
+Example from T-004: the planning explicitly agreed "the same trainee can run multiple stints; the lock only prevents rotating to a different trainee." The implementation did the opposite. The user had to report it as a bug.
 
-### Verificación antes de commitear
+### 12.3 Pre-commit verification checklist
 
-Después de cualquier cambio que afecte un campo compartido, verificar explícitamente:
+After any change that touches a shared field, verify explicitly:
 
-1. ¿Todos los `if (campo)` siguen siendo válidos con el nuevo tipo?
-2. ¿Todos los props que dependen de este campo están actualizados?
-3. ¿La UI consume el getter del store o el snapshot raw? (debe ser el getter)
-4. ¿El fix cubre el backend (store/service) **y** el frontend (componente)?
+1. Are all `if (field)` still valid with the new type?
+2. Are all props that depend on this field updated?
+3. Does the UI consume the store's getter or the raw snapshot? (must be the getter)
+4. Does the fix cover the backend (store/service) **and** the frontend (component)?
 
-Ver `human/postmortem_t004_academy_practice.md` — 5 bugs en una sola feature por no seguir este proceso.
-
----
-
-## 12. Implementar Exactamente Lo Que Se Pidió
-
-Las decisiones de producto se acuerdan en el planning (`/start-dev`). La implementación debe respetar esas decisiones al pie de la letra — no interpretarlas, no simplificarlas, no mejorarlas sin autorización.
-
-**Antes de escribir código, releer la decisión de producto acordada.** Si hay ambigüedad, preguntar. No asumir.
-
-Si la implementación contradice lo acordado, es un bug introducido por el desarrollador — no por el usuario.
-
-**Prohibido:**
-- Implementar una versión "simplificada" de lo pedido sin avisar
-- Tomar decisiones de producto unilateralmente durante la implementación
-- Ignorar respuestas dadas durante el Q&A del planning
-
-**El planning existe para evitar re-trabajo. Si se ignora, el re-trabajo es responsabilidad del desarrollador.**
+See `human/postmortem_t004_academy_practice.md` — 5 bugs in a single feature from not following this process. This checklist is part of `bmad-code-review`'s exit criteria for any story touching shared fields.
 
 ---
 
-## 13. Root Cause Discipline & State Lifecycle (Postmortem v1.7.x)
+## 13. Implement Exactly What Was Agreed in Planning
 
-Four consecutive releases (v1.7.0 → v1.7.3 hotfix) shipped patches to the same subsystem (`weekStatus.driverSetups`) without anyone fixing the actual root cause: `processPostRace` doesn't clear the record between rounds. The rules below codify the lessons. See `human/postmortem_v17_session_gate_cascade.md`.
+Product decisions are agreed during BMAD planning (`bmad-create-prd`, `bmad-create-story`, `bmad-create-story:validate`). Implementation must honor those decisions to the letter — no reinterpreting, no simplifying, no "improving" without authorization.
 
-### 13.1 Identify root cause before writing the fix
+**Before writing code, re-read the agreed product decision.** If there is ambiguity, ask. Do not assume.
 
-Before any P1 fix, write one sentence: *"the bug happens because X writes/doesn't write Y, read by Z."* If you can't write that sentence, you don't understand the bug yet — do not start coding.
+If the implementation contradicts what was agreed, it is a bug introduced by the developer — not by the user.
+
+**Forbidden:**
+- Shipping a "simplified" version of what was requested without notice
+- Making product decisions unilaterally during implementation
+- Ignoring answers given during the planning Q&A
+
+**Planning exists to prevent rework. If it is ignored, the rework is the developer's responsibility.**
+
+This rule is why BMAD separates `bmad-create-story:validate` (signs off the spec) from `bmad-dev-story` (implements the spec). Skipping VS or deviating from it in DS is a process violation.
+
+---
+
+## 14. Root Cause Discipline & State Lifecycle (Postmortem v1.7.x)
+
+Four consecutive releases (v1.7.0 → v1.7.3 hotfix) shipped patches to the same subsystem (`weekStatus.driverSetups`) without anyone fixing the actual root cause: `processPostRace` doesn't clear the record between rounds. The rules below codify the lessons. See `human/postmortem_v17_session_gate_cascade.md`. `bmad-code-review` must enforce every subsection below before approving a story.
+
+### 14.1 Identify root cause before writing the fix
+
+Before any P1 fix, write one sentence: *"the bug happens because X writes/doesn't write Y, read by Z."* If you can't write that sentence, you don't understand the bug yet — do not start coding. This sentence belongs in the BMAD story's problem statement.
 
 When the bad data comes from an upstream write (or absent write), the fix belongs upstream. Patching the read is acceptable only when the upstream is out of scope, **and that case must be logged as debt in the PR description with an explicit TODO**.
 
-### 13.2 Bug-in-other-faces check
+### 14.2 Bug-in-other-faces check
 
 Before closing any fix, ask: *"can this same bug appear in a different component that reads the same field?"* If yes, fix it at the source or touch every consumer in the same PR. Do not ship a fix that just relocates the bug.
 
 > v1.7.1 patched `PreparationChecklist`. v1.7.3 patched `QualifyingSetupTab`, `PracticePanel`, `RaceSetupTab`, `StrategyPanel`, and `PreparationChecklist` again. Five components, same root cause, five independent patches.
 
-### 13.3 Walk the state machine before closing the PR
+### 14.3 Walk the state machine before closing the PR
 
 When the change touches a phased subsystem (race weekend, hiring flow, transfer market), write in the PR body how the code behaves in **every phase × every user branch**. For race weekend: 4 phases (practice → qualifying → race strategy → race) × 2 user paths (with practice / without practice) = 8 cells. Skipping a cell is a guaranteed bug in that cell.
 
 > v1.7.3 fixed the tyre compound revert for users who practiced. The "user did not practice this round" branch was never walked. The bug surfaced ~3 hours later in production with players in the active session.
 
-### 13.4 `$effect` never resets state on snapshot re-runs
+### 14.4 `$effect` never resets state on snapshot re-runs
 
 `$effect` re-runs on every snapshot of the watched store, including unrelated writes (budget, sponsors, charge fees). Resetting `$state` inside `$effect` based on a derived value silently destroys live user input.
 
@@ -394,7 +467,7 @@ $effect(() => {
 });
 ```
 
-### 13.5 Strip user-editable fields in every load branch
+### 14.5 Strip user-editable fields in every load branch
 
 When a `$effect` loads a saved Firestore object onto a `$state` the user is editing, strip the fields the user controls live (e.g. `tyreCompound`, active sliders) **from every load branch**, not only the main one. The bug always surfaces in the branch you forgot.
 
@@ -403,7 +476,7 @@ const { tyreCompound: _q, ...quali } = qualifyingObj;  setup = { ...setup, ...qu
 const { tyreCompound: _p, ...prac  } = practiceObj;     setup = { ...setup, ...prac  };
 ```
 
-### 13.6 `arrayUnion` requires an explicit lifecycle
+### 14.6 `arrayUnion` requires an explicit lifecycle
 
 Any array field written with `arrayUnion` must have a documented "first write of scope" condition that **overwrites** instead of appending. If the data is per-session, the overwrite fires when the sessionId changes.
 
@@ -417,27 +490,27 @@ async saveQualyResult(..., isFreshSession: boolean) {
 
 Without this, R(N-1) entries leak into R(N+1) until a manual cleanup is done.
 
-### 13.7 Gate by own sessionId — never by proxy
+### 14.7 Gate by own sessionId — never by proxy
 
 To check whether data belongs to the current session, compare the sessionId **owned by that data** (`qualifyingSessionId` for qualifying, `raceSessionId` for race strategy). Never use a sibling subsystem's session field as a proxy. A driver may qualify without practicing — using `practice.sessionId` as the qualifying gate hides their fresh data.
 
-### 13.8 Cross-boundary state needs explicit cleanup
+### 14.8 Cross-boundary state needs explicit cleanup
 
 Any field that survives beyond its natural lifecycle (across rounds, sessions, requests) is debt unless a cleanup mechanism exists. Document the lifecycle (creation → mutation → cleanup) in `weekend_pipeline.md` or `database_schema.md` before merging.
 
 ---
 
-## 14. Hotfix & Deploy Gate
+## 15. Hotfix & Deploy Gate
 
-### 14.1 One branch, one objective
+### 15.1 One story, one branch, one objective
 
-If a second bug surfaces during implementation, open a new branch. Branch ballooning is prohibited during hotfix windows. The only exception: bugs that block QA of the original fix — and even then, log them explicitly in the PR.
+If a second bug surfaces during implementation, open a new BMAD story and a new branch. Branch ballooning is prohibited during hotfix windows. The only exception: bugs that block QA of the original fix — and even then, log them explicitly in the PR as separate BMAD story IDs.
 
 > `fix/v1.7.3-trainee-standings-name` started as a cosmetic naming fix. It ended up touching 6 files and merging 5 P1s in a single commit, with no individual review. Three hours later, two of them had returned in production.
 
-### 14.2 Hotfix walkthrough is mandatory
+### 15.2 Hotfix walkthrough is mandatory
 
-Before deploying any hotfix to production, write in chat:
+Before deploying any hotfix to production, write in chat (this is the content that feeds `bmad-checkpoint-preview`):
 - *the bug was X*
 - *the previous line did Y*
 - *the new line does Z*
@@ -445,18 +518,18 @@ Before deploying any hotfix to production, write in chat:
 
 If you can't write that, the fix is not ready.
 
-### 14.3 `/deploy` requires explicit text confirmation
+### 15.3 `/deploy` requires explicit text confirmation
 
-A green build is not authorization to deploy. After `npm run build` succeeds, **stop and wait** for the user to type a confirmation (`ship`, `deploy`, `go`) before uploading to hosting. The user is the only QA gate; bypassing it ships untested fixes to live players.
+A green build is not authorization to deploy. **A green `bmad-code-review` is not authorization to deploy.** After `npm run build` succeeds, **stop and wait** for the user to type a confirmation (`ship`, `deploy`, `go`) before uploading to hosting. The user is the only QA gate; bypassing it ships untested fixes to live players.
 
-### 14.4 Reporting a fix
+### 15.4 Reporting a fix
 
-When telling the user a bug is fixed, cite four things: file, line, exact change, and **why** the new code prevents the failure. "Fixed, deploying" without those four pieces does not count.
+When telling the user a bug is fixed, cite four things: file, line, exact change, and **why** the new code prevents the failure. "Fixed, deploying" without those four pieces does not count. These four items must also appear in the BMAD story's closing notes.
 
 ---
 
-## 15. Flutter Deprecation Status
+## 16. Flutter Deprecation Status
 
-The Flutter codebase (`lib/`, `android/`, `pubspec.yaml`) is **100% migrated** to Svelte. It is kept for reference only. **Do not modify any Flutter files.**
+The Flutter codebase (`lib/`, `android/`, `pubspec.yaml`) is **100% migrated** to Svelte. It is kept for reference only. **Do not modify any Flutter files.** BMAD workflows must never target `lib/` or `android/`.
 
 All features previously in Flutter are now implemented in `frontend/`. The Flutter code may be deleted from the repository at any time.

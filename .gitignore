@@ -35,3 +35,6 @@ firebase-debug.*.log
 
 # Local planning (not for version control)
 ROADMAP.md
+
+# BMAD Method (generated artifacts — config is tracked under _bmad/)
+_bmad-output/
