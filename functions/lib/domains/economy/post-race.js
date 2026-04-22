@@ -282,10 +282,14 @@ async function runPostRaceProcessing() {
                             updates["pendingAction"] = true;
                             updates["pendingActionType"] = ["SPONSOR_SHOOT", "TECHNICAL_TEST", "MENTOR_REQUEST"][Math.floor(Math.random() * 3)];
                         }
-                        // Specialization trigger (baseSkill >= 8 required)
+                        // Specialization trigger — only for trainees the player has committed to.
+                        // Requires: no existing specialty, isMarkedForPromotion === true (strict), baseSkill >= 8.
+                        // Strict === true so missing/undefined/false never trips the trigger (T-033).
                         // Priority order is fixed: first match wins. A trainee with multiple
                         // stats >= 11 will receive the highest-priority specialty.
-                        if (!yDriver["specialty"] && yDriver["baseSkill"] >= constants_1.SPECIALTY_BASESKILL_THRESHOLD) {
+                        if (!yDriver["specialty"] &&
+                            yDriver["isMarkedForPromotion"] === true &&
+                            yDriver["baseSkill"] >= constants_1.SPECIALTY_BASESKILL_THRESHOLD) {
                             const s = yDriver["stats"] ?? {};
                             if (s["adaptability"] >= constants_1.SPECIALTY_STAT_THRESHOLD)
                                 updates["specialty"] = "Rainmaster";

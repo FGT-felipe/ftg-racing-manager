@@ -70,6 +70,7 @@ if (rSnap.data().qualyGrid) { continue; }
    - **Race prize income**: already credited in Phase 2
    - **Player development events** (random XP gains, morale shifts)
    - **Youth academy events** (random candidate generation or skill tweaks)
+   - **Specialty trigger (per trainee)** — `post-race.ts:302`. Assigns a permanent `specialty` (Rainmaster, Tyre Whisperer, …) when ALL three conditions are met: `!specialty && isMarkedForPromotion === true && baseSkill >= 8 && any stat >= 11`. Strict `=== true` — `undefined`/`false` never triggers (T-033, v1.7.6). Once assigned, the specialty survives later unmarking by the manager; no retroactive cleanup.
 5. AI team car upgrades (30% chance per stat per team)
 6. Resets `weekStatus` for all teams (clears driver setups, flags)
 7. Sets `postRaceProcessed: true`, `processedAt: serverTimestamp()`

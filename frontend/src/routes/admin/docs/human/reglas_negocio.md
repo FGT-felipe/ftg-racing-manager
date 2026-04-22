@@ -79,7 +79,7 @@ Sistema de progresión basado en XP acumulado.
 *   **Evolución**: Se requieren **500 XP** para subir +1 en `Base Skill`.
 *   **Generación de XP**: Basado en el potencial del piloto + Nivel de Academia.
 *   **Eventos de Crisis**: 15% de probabilidad semanal de evento negativo (Falta de foco, fatiga) si no hay crecimiento.
-*   **Especialidades**: Un piloto de academia solo puede desbloquear una especialidad (Rainmaster, etc.) si su `Base Skill` es >= 8.
+*   **Especialidades**: Un piloto de academia solo puede desbloquear una especialidad (Rainmaster, etc.) si cumple **tres** condiciones en el trigger semanal post-carrera: `Base Skill >= 8`, al menos una estadística >= 11, **y** el piloto está marcado por el manager para promoción (`isMarkedForPromotion === true`). Los trainees sin marcar no gatillan la asignación — el forecast de la UI de academia y el backend están alineados. Una vez asignada, la especialidad es permanente: sobrevive si el manager desmarca al piloto más adelante (decisión consciente para tratarla como parte de la identidad in-world, no como un reward toggle).
 *   **Recuperación Física**: Los pilotos recuperan **+1.5%** de Fitness cada día a medianoche.
 *   **Generación de Candidatos (Scouting)**:
     *   Toda sesión de scouting genera siempre **2 candidatos en simultáneo**.
