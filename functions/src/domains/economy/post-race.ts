@@ -296,10 +296,16 @@ export async function runPostRaceProcessing(): Promise<void> {
               ];
             }
 
-            // Specialization trigger (baseSkill >= 8 required)
+            // Specialization trigger — only for trainees the player has committed to.
+            // Requires: no existing specialty, isMarkedForPromotion === true (strict), baseSkill >= 8.
+            // Strict === true so missing/undefined/false never trips the trigger (T-033).
             // Priority order is fixed: first match wins. A trainee with multiple
             // stats >= 11 will receive the highest-priority specialty.
-            if (!yDriver["specialty"] && (yDriver["baseSkill"] as number) >= SPECIALTY_BASESKILL_THRESHOLD) {
+            if (
+              !yDriver["specialty"] &&
+              yDriver["isMarkedForPromotion"] === true &&
+              (yDriver["baseSkill"] as number) >= SPECIALTY_BASESKILL_THRESHOLD
+            ) {
               const s = (yDriver["stats"] as Record<string, number>) ?? {};
               if (s["adaptability"] >= SPECIALTY_STAT_THRESHOLD) updates["specialty"] = "Rainmaster";
               else if (s["smoothness"] >= SPECIALTY_STAT_THRESHOLD) updates["specialty"] = "Tyre Whisperer";
