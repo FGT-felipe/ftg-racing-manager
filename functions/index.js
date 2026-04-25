@@ -1088,6 +1088,15 @@ async function runQualifyingLogic() {
             });
             // -------------------------------
           }
+
+          // Progressive live write: publish partial sorted grid after each team
+          let partialGrid = [...qualyResults].sort((a, b) => {
+            if (a.isCrashed && !b.isCrashed) return 1;
+            if (!a.isCrashed && b.isCrashed) return -1;
+            return a.lapTime - b.lapTime;
+          });
+          await rRef.set({ qualyGridLive: partialGrid, qualySimStatus: "running" }, { merge: true });
+          await sleep(3000);
         }
 
         await statsBatch.commit();
@@ -1102,7 +1111,7 @@ async function runQualifyingLogic() {
           });
         }
 
-        // Save qualifying grid
+        // Save qualifying grid — clear live fields, write final authoritative result
         await rRef.set({
           seasonId: sId,
           raceEventId: raceEvent.id,
@@ -1110,6 +1119,8 @@ async function runQualifyingLogic() {
           circuitId: raceEvent.circuitId,
           qualyGrid: qualyResults,
           qualifyingResults: qualyResults,
+          qualyGridLive: admin.firestore.FieldValue.delete(),
+          qualySimStatus: "completed",
           status: "qualifying",
           updatedAt: admin.firestore.FieldValue.serverTimestamp(),
         }, { merge: true });

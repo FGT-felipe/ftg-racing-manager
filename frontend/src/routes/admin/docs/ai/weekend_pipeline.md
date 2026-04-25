@@ -21,12 +21,28 @@ The weekend event system executes in a sequential, multi-step pipeline across tw
 4. For each team, queries `drivers collection where teamId == team.id`
 5. For each driver, reads `weekStatus.driverSetups[driverId].qualifying` for submitted setup
 6. Calls `simulateLap(driver, setup, circuit, managerRole)` → returns `{ lapTime, isCrashed }`
-7. Sorts by lapTime ascending → builds `qualyGrid` array
-8. Writes to Race document:
+7. **After each team is processed:** writes ephemeral `qualyGridLive` (partial sorted grid) + `qualySimStatus: 'running'` to Race document, then waits 3 seconds (for live UX)
+8. Sorts by lapTime ascending → builds `qualyGrid` array
+9. Writes to Race document:
    - `qualyGrid: DriverResult[]`
    - `qualifyingResults: DriverResult[]`
+   - `qualyGridLive: FieldValue.delete()` ← ephemeral field removed
+   - `qualySimStatus: 'completed'`
    - `status: "qualifying"`
-9. Writes immutable backup to `qualifying_results/{seasonId}_{raceEventId}` (T-020)
+10. Writes immutable backup to `qualifying_results/{seasonId}_{raceEventId}` (T-020)
+
+**Live fields lifecycle (sc-93):**
+
+| Field | Type | Written | Cleared |
+|---|---|---|---|
+| `qualySimStatus` | `'running' \| 'completed'` | CF writes `'running'` at first team; `'completed'` at final write | Never manually cleared — `'completed'` is the terminal state |
+| `qualyGridLive` | `DriverResult[]` | CF overwrites after each team (partial sorted grid) | CF deletes at final write |
+
+**Client subscription pattern (sc-93):**
+`QualifyingPanel.svelte` subscribes to `races/{raceDocId}` via `raceService.subscribeToRace`. It derives three display states from the snapshot:
+- `qualyGridLive.length > 0` → live timing screen (drivers appear incrementally)
+- `qualifyingResults.length > 0` → official final grid
+- Neither → pending/countdown view
 
 **Guard Condition (CRITICAL):**
 ```js
