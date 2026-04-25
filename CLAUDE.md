@@ -533,3 +533,69 @@ When telling the user a bug is fixed, cite four things: file, line, exact change
 The Flutter codebase (`lib/`, `android/`, `pubspec.yaml`) is **100% migrated** to Svelte. It is kept for reference only. **Do not modify any Flutter files.** BMAD workflows must never target `lib/` or `android/`.
 
 All features previously in Flutter are now implemented in `frontend/`. The Flutter code may be deleted from the repository at any time.
+
+---
+
+## 17. Vertical Slice Discipline (Mandatory)
+
+Every épica, story, and multi-layer bug fix **must** be designed as a vertical slice — an end-to-end deliverable that traverses every layer it needs (UI → service/store → Firestore → Cloud Function/sim → tests → docs) — never as a horizontal layer (a story that ships only the backend, a story that ships only the UI).
+
+**Why:** Horizontal layers ship dead code. A "Firestore model" story without a UI is invisible to the player and untestable end-to-end. A "UI" story without backing services is a fake demo. Both produce integration debt that surfaces weeks later as "we need to wire this up." Vertical slices ship working software at every merge — the player can use the feature on day 1, even in skeleton form.
+
+### 17.1 Skeleton + Slices structure
+
+When an épica decomposes into multiple stories, the structure is mandatory:
+
+- **Slice 1 — Skeleton:** the simplest possible end-to-end path. Hardcoded values are fine. Only one happy path, one user, one circuit. **Must work end-to-end** — a player can complete the flow even if it's bare.
+- **Slice 2..N:** each slice adds one capability, vertically. New compound, new factor in a formula, new validation, new user branch. Each slice ships its own UI + service + DB + tests + docs.
+
+A slice is **not** complete until: UI works, service is called, Firestore writes/reads, simulation/CF integrates, tests pass, and the relevant doc (`weekend_pipeline.md`, `services.md`, `database_schema.md`, `business_rules.md`) is updated.
+
+### 17.2 What counts as a layer in this project
+
+For FTG Racing Manager, a vertical slice typically traverses:
+
+| Layer | Example artifacts |
+|---|---|
+| UI | `frontend/src/routes/**/*.svelte`, `frontend/src/lib/components/` |
+| Service | `frontend/src/lib/services/*.svelte.ts` (stateless logic, transactions) |
+| Store | `frontend/src/lib/stores/*.svelte.ts` (UI reactivity, snapshot listeners) |
+| Schema | Firestore collection shape + rules |
+| Cloud Function | `functions/src/**` (sim engines, scheduled jobs, post-race) |
+| Tests | Vitest unit tests next to source |
+| Docs | `frontend/src/routes/admin/docs/ai/*.md` |
+
+A story that touches **two or more** of UI, Service, Schema, or CF is multi-layer and must be a vertical slice. Pure UI tweaks (color, copy, layout) and pure docs/chores are exempt.
+
+### 17.3 Bug fixes that span layers
+
+If a bug requires changes in more than one layer (e.g. CF writes wrong field + UI reads it wrong), do **not** open one fix per layer. Either:
+- **Single vertical slice:** one branch, one PR, all layers fixed together with tests covering the round-trip.
+- **Two stories with explicit dependency:** if the surface area is too big for one PR, the second story declares "blocked by Story #X (root cause)" and does **not** ship until the first is merged. The patch story must be tagged as debt and removed when the root fix lands.
+
+The default is the single vertical slice. The two-story option is only for genuinely large fixes and must be approved during `bmad-create-story`.
+
+### 17.4 Anti-patterns (forbidden)
+
+- **"Backend-only" story:** a story that adds a Firestore field but doesn't surface it in the UI in the same PR. Future-UI-story is a smell — if the field has no consumer today, don't write it today.
+- **"UI-only" story for a feature that needs data:** mocked data in components is not a slice. The store/service must be wired to real Firestore in the same PR.
+- **"Refactor first, feature second":** restructuring a service before there's a story that uses the new shape is speculative work. Fold the refactor into the slice that needs it, or defer.
+- **"Tests in a follow-up":** tests are part of the slice. A slice without tests is incomplete — `bmad-code-review` rejects it.
+- **"Docs at the end of the épica":** docs are updated per slice, not at the end. Drift between code and docs is the bug.
+
+### 17.5 Where this rule is enforced
+
+| Skill / phase | Enforcement |
+|---|---|
+| `bmad-create-epics-and-stories` | Story decomposition must produce vertical slices, named `Skeleton`, `Slice 2: <capability>`, etc. Reject horizontal layers. |
+| `bmad-create-story` | The story spec must list every layer it touches. If only one layer is listed and the work is multi-layer, the story is rejected. |
+| `bmad-quick-dev` | For multi-layer bugs, the unified flow must produce a single vertical slice — not split fixes by layer. |
+| `bmad-code-review` | Any PR is rejected if it ships a layer without its consumer (orphan field, dead service, mocked component). The reviewer asks: *"Can a player use this end-to-end after this merge?"* — if no, the PR is not a slice. |
+
+### 17.6 Vertical slice in Shortcut
+
+When an épica is mapped to Shortcut:
+- The **Epic description** lists slices as `Slice N: <name>` with the capability each one delivers.
+- Each Story under the épica corresponds to **exactly one slice**.
+- Story descriptions must include a **"Layers touched"** section enumerating UI / Service / Schema / CF / Tests / Docs deliverables for that slice.
+- A story tagged as part of an épica without that section is incomplete and must be rewritten before implementation starts.
