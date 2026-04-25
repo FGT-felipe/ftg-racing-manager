@@ -59,13 +59,15 @@ Determinar qué desplegar inspeccionando qué cambió en la branch mergeada (`gi
 
 Ejecutar desde la raíz del repositorio.
 
-## Step 6 — Git tag
+## Step 6 — Git tag, push & sync
 
 ```bash
 git tag v{X.Y.Z}
+git push
+git push --tags
 ```
 
-Preguntar al usuario si quiere hacer `git push` y `git push --tags` antes de ejecutarlo.
+Crear el tag, hacer push de commits y tags a origin automáticamente.
 
 ## Step 7 — Actualizar ROADMAP.md
 
@@ -98,5 +100,6 @@ Imprimir un resumen final:
 ✅ Version:  V1.3.0 (app_constants + package.json sincronizados)
 ✅ Build:    frontend/build/ generado sin errores
 ✅ Deploy:   Firebase Hosting actualizado
-🏷️  Tag:     v1.3.0 (pendiente push)
+✅ Push:     Commits y tags sincronizados a origin
+🏷️  Tag:     v1.3.0 → GitHub
 ```

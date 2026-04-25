@@ -1,66 +1,22 @@
-# Backlog — Show & Manage Roadmap
+# Backlog — DEPRECATED
 
-Read `ROADMAP.md` (at the repo root — it's gitignored, local only) and display the current state of the backlog.
+⚠️ **This skill is deprecated as of v1.7.7.**
 
-If the user provides an argument after `/backlog`, handle these sub-commands:
+Task management now uses **Shortcut (MCP)** exclusively. Use the following Shortcut MCP commands instead:
 
----
+- **View active work:** `mcp__shortcut__iterations-get-active`
+- **Create a story:** `mcp__shortcut__stories-create`
+- **Update a story:** `mcp__shortcut__stories-update`
+- **Search stories:** `mcp__shortcut__stories-search`
 
-## `/backlog add "<description>" [priority] [tipo]`
-
-Add a new item to the **Fixes / Backlog técnico** section of ROADMAP.md.
-
-**Before writing:**
-1. Scan ALL of ROADMAP.md for every occurrence of `T-\d+` (in both the Features table, Fixes section, and Producto section).
-2. Find the highest numeric value — the new item gets `T-{max+1}` (zero-padded to 3 digits, e.g. `T-010`).
-3. If a priority is provided (`U`, `H`, `N`, or `L`), use it. Otherwise default to `N`.
-4. If a tipo is provided (`bug`, `chore`, `feature`, `épica`), use it. Otherwise default to `bug`.
-
-**Format to append** (before the closing `---` of the Fixes section):
-```
-- [ ] **T-XXX [P]** `tipo` Description (YYYY-MM-DD)
-```
-
-**Example:**
-```
-/backlog add "Driver card shows wrong nationality flag when team changes country" H bug
-```
-→ Scans ROADMAP, finds T-031 is the max → appends:
-```
-- [ ] **T-032 [H]** `bug` Driver card shows wrong nationality flag when team changes country (2026-04-09)
-```
-
-**Priority scale:** U=Urgente · H=Alta · N=Normal · L=Low
-**Tipos:** `bug` · `chore` · `feature` · `épica`
+For roadmap tracking (local development notes), edit `ROADMAP.md` directly — it remains a local gitignored document for sprint planning and post-mortem notes.
 
 ---
 
-## `/backlog feature "<description>"`
+## Historical reference (deprecated, do not use)
 
-Add a new item to the **Backlog — Features** table. Before adding:
-1. Scan ROADMAP.md for the highest `T-\d+` across all sections — assign `T-{max+1}`.
-2. Estimate complexity points (3/5/8/13) based on what's already in the codebase.
-3. Assign tipo: `épica` if pts=13, `feature` otherwise.
-4. Write a brief note explaining the estimate.
-5. Insert the row in the correct position (sorted by points, ascending).
+The old `/backlog` subcommands have been superseded by the Shortcut API:
 
-**Table format:**
-```
-| T-XXX | N | 8 | `feature` | **Feature name** | Brief notes. |
-```
-
----
-
-## `/backlog` (no argument)
-
-Display the full roadmap in a readable format with a **Tipo** column in every section, highlighting:
-- Items in **En progreso**
-- Items in **Fixes** that are unresolved (unchecked), with their tipo badge
-- Items in **Decisiones de Producto** that are unresolved, with their tipo badge
-- Next recommended feature to tackle (lowest pts in Backlog)
-
-**Tipo badge display:**
-- `bug` → 🐛 bug
-- `chore` → 🔧 chore
-- `feature` → ✦ feature
-- `épica` → ★ épica
+- **`/backlog add`** → Use `mcp__shortcut__stories-create`
+- **`/backlog feature`** → Use `mcp__shortcut__stories-create` with type=`feature`
+- **`/backlog`** → Use `mcp__shortcut__stories-search` with filters (status, team, etc.)
