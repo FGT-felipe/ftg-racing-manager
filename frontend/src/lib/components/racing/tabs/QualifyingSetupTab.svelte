@@ -30,6 +30,7 @@
         Bolt,
         Smile,
         MessageSquare,
+        CheckCircle2,
     } from "lucide-svelte";
     import { universeStore } from "$lib/stores/universe.svelte";
     import { onMount, untrack } from "svelte";
@@ -70,6 +71,20 @@
     });
 
     let lastResult = $state<PracticeRunResult | null>(null);
+
+    // Tracks whether official qualifying results are available during the qualifying window
+    let qualyResultsReady = $state(false);
+
+    $effect(() => {
+        if (timeService.currentStatus !== 'qualifying') return;
+        const season = seasonStore.value.season;
+        if (!season || !nextEvent) return;
+        const raceDocId = `${season.id}_${nextEvent.id}`;
+        const unsub = raceService.subscribeToRace(raceDocId, (data) => {
+            qualyResultsReady = (data?.qualifyingResults?.length ?? 0) > 0;
+        });
+        return unsub;
+    });
 
     // Qualifying State
     const MAX_ATTEMPTS = 6;
@@ -462,20 +477,41 @@
 </script>
 
 {#if timeService.currentStatus === 'qualifying'}
-    <!-- Qualy in Progress Holding View -->
-    <div class="flex flex-col items-center justify-center p-12 text-center min-h-[400px]">
-        <Activity size={64} class="text-app-primary mb-6 animate-pulse" />
-        <h2 class="text-3xl font-black italic text-app-text uppercase tracking-widest mb-4">
-            {t('qualy_in_progress_header')}
-        </h2>
-        <p class="text-sm text-app-text/60 max-w-lg mb-8 leading-relaxed">
-            {t('qualy_processing_desc')}
-        </p>
-        <div class="flex items-center gap-2 text-app-primary px-4 py-2 bg-app-primary/10 rounded-lg">
-            <Timer size={16} />
-            <span class="text-[10px] font-black uppercase tracking-widest">{t('waiting_backend_sim')}</span>
+    <!-- Qualy Holding View — sub-states: processing vs results ready -->
+    {#if qualyResultsReady}
+        <!-- Results arrived -->
+        <div in:fade class="flex flex-col items-center justify-center p-12 text-center min-h-[400px]">
+            <CheckCircle2 size={64} class="text-emerald-400 mb-6" />
+            <h2 class="text-3xl font-black italic text-app-text uppercase tracking-widest mb-4">
+                {t('qualy_results_ready_header')}
+            </h2>
+            <p class="text-sm text-app-text/60 max-w-lg mb-8 leading-relaxed">
+                {t('qualy_results_ready_desc')}
+            </p>
+            <a
+                href="/racing/live"
+                class="flex items-center gap-2 text-app-primary px-5 py-3 bg-app-primary/10 hover:bg-app-primary/20 border border-app-primary/30 rounded-xl transition-colors"
+            >
+                <Flag size={16} />
+                <span class="text-[10px] font-black uppercase tracking-widest">{t('btn_view_qualifying')}</span>
+            </a>
         </div>
-    </div>
+    {:else}
+        <!-- CF still running -->
+        <div class="flex flex-col items-center justify-center p-12 text-center min-h-[400px]">
+            <Activity size={64} class="text-app-primary mb-6 animate-pulse" />
+            <h2 class="text-3xl font-black italic text-app-text uppercase tracking-widest mb-4">
+                {t('qualy_in_progress_header')}
+            </h2>
+            <p class="text-sm text-app-text/60 max-w-lg mb-8 leading-relaxed">
+                {t('qualy_processing_desc')}
+            </p>
+            <div class="flex items-center gap-2 text-app-primary px-4 py-2 bg-app-primary/10 rounded-lg">
+                <Timer size={16} />
+                <span class="text-[10px] font-black uppercase tracking-widest">{t('waiting_backend_sim')}</span>
+            </div>
+        </div>
+    {/if}
 {:else}
 <div class="grid grid-cols-1 lg:grid-cols-12 gap-5">
     <!-- Left Column: Setup Controls -->

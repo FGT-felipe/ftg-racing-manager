@@ -1,5 +1,5 @@
 /** Current application version. Update on every release. */
-export const APP_VERSION = 'V1.7.6';
+export const APP_VERSION = 'V1.7.7';
 
 /** Maximum number of practice laps allowed per driver in a race weekend. */
 export const MAX_PRACTICE_LAPS_PER_DRIVER = 50;
