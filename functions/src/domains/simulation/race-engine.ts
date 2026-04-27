@@ -17,6 +17,7 @@ import { fetchTeams } from "../../shared/firestore";
 import { addOfficeNews } from "../../shared/notifications";
 import { sleep } from "../../shared/utils";
 import { simulateRace } from "./sim-engine";
+import { applyWearDelta } from "./wear";
 
 // ─── Core logic ───────────────────────────────────────────────────────────────
 
@@ -28,6 +29,7 @@ import { simulateRace } from "./sim-engine";
  * Sets postRaceProcessingAt = now + 1h to trigger postRaceProcessing.
  */
 export async function runRaceLogic(): Promise<void> {
+  const raceStartTime = Date.now(); // T-007 S1: simRuntimeMs baseline (AC#10)
   try {
     const uDoc = await db.collection("universe").doc("game_universe_v1").get();
     if (!uDoc.exists) return;
@@ -146,6 +148,25 @@ export async function runRaceLogic(): Promise<void> {
           }
         }
 
+        // T-007 S1: Pre-load engine conditions for all teams (AC#12)
+        const engineConditionsMap: Record<string, number> = {};
+        for (const tid of teamIds) {
+          try {
+            const partSnap = await db
+              .collection("teams").doc(tid)
+              .collection("cars").doc("0")
+              .collection("parts").doc("engine")
+              .get();
+            if (partSnap.exists) {
+              // STRICT-MODE: declare before conditional (CLAUDE.md §5.1)
+              const cond: number = (partSnap.data() as Record<string, unknown>)["condition"] as number ?? 100;
+              engineConditionsMap[tid] = cond;
+            }
+          } catch (eEng) {
+            logger.warn(`[runRaceLogic] engine condition read failed for team ${tid}, defaulting to 1.0`, eEng);
+          }
+        }
+
         // Run full race (pure function)
         const raceRes = simulateRace({
           circuit,
@@ -154,6 +175,7 @@ export async function runRaceLogic(): Promise<void> {
           driversMap: driversMap as unknown as Parameters<typeof simulateRace>[0]["driversMap"],
           setupsMap,
           managerRoles,
+          engineConditionsMap,
           raceEvent: rEvent as unknown as Parameters<typeof simulateRace>[0]["raceEvent"],
         });
 
@@ -181,6 +203,7 @@ export async function runRaceLogic(): Promise<void> {
           liveDurationSeconds: liveDurationSec,
           updateIntervalSeconds: 120,
           completedAt: admin.firestore.FieldValue.serverTimestamp(),
+          simRuntimeMs: Date.now() - raceStartTime, // T-007 S1: AC#10
         });
 
         // Save lap-by-lap data in subcollection (every 5th lap + last)
@@ -290,6 +313,16 @@ export async function runRaceLogic(): Promise<void> {
         updCal[rIdx] = { ...updCal[rIdx], isCompleted: true };
         statsBatch.update(db.collection("seasons").doc(sId as string), { calendar: updCal });
         await statsBatch.commit();
+
+        // T-007 S1: Apply wear deltas after stats are committed (AC#7, AC#9)
+        // Wrapped in try/catch — wear failure NEVER corrupts race results
+        for (const tid of teamIds) {
+          try {
+            await applyWearDelta(tid, 0, sId as string, rEvent["id"] as string);
+          } catch (eWear) {
+            logger.error(`[runRaceLogic:wear-apply] failed for team ${tid}`, eWear);
+          }
+        }
 
         // Office news + debrief per team
         const teamGrp: Record<string, { id: string; name: string; pos: string; posInt: number; pts: number; isDnf: boolean }[]> = {};

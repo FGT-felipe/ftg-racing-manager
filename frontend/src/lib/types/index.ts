@@ -311,6 +311,17 @@ export enum DriverStyle {
     mostRisky = 'mostRisky'
 }
 
+// ─── Parts Wear (T-007) ──────────────────────────────────────────────────────
+
+export interface Part {
+    partType: 'engine' | 'gearbox' | 'brakes' | 'frontWing' | 'rearWing' | 'suspension';
+    condition: number;   // 0–100
+    level: number;
+    updatedAt: Date | null;
+}
+
+export type ConditionTier = 'green' | 'yellow' | 'orange' | 'red';
+
 export interface CarSetup {
     frontWing: number;
     rearWing: number;

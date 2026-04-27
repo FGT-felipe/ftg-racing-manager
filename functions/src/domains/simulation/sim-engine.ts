@@ -68,6 +68,14 @@ export interface SimLapParams {
    * remain at its initial value for those drivers.
    */
   fatigueLevel?: number;
+  /**
+   * T-007 S1: Engine condition (0–100). Scales the powertrain contribution to
+   * lap time. Defaults to 100 (no penalty) when omitted — backward compat for
+   * teams without a parts document (AC#12, COMPAT-1).
+   *
+   * STRICT-MODE: always declared with let before use (CLAUDE.md §5.1).
+   */
+  engineCondition?: number;
 }
 
 export interface SimLapResult {
@@ -83,6 +91,8 @@ export interface SimRaceParams {
   setupsMap: Record<string, Partial<CarSetup>>;
   managerRoles: Record<string, string>;
   raceEvent: RaceEvent;
+  /** T-007 S1: engine condition per teamId (0–100). Absent = 1.0 multiplier. */
+  engineConditionsMap?: Record<string, number>;
 }
 
 export interface SimRaceResult {
@@ -135,8 +145,16 @@ export function simulateLap(params: SimLapParams): SimLapResult {
 
   // --- Car performance ---
   const aV = clamp(s.aero ?? 1, 1, 20);
-  const pV = clamp(s.powertrain ?? 1, 1, 20);
   const cV = clamp(s.chassis ?? 1, 1, 20);
+
+  // T-007 S1: Engine wear multiplier (AC#12). MUST be declared with `let` before
+  // any conditional — undeclared assignment throws ReferenceError in strict mode.
+  let engineFactor = 1.0;
+  if (params.engineCondition !== undefined && params.engineCondition !== null) {
+    engineFactor = params.engineCondition / 100;
+  }
+  const pV = clamp(s.powertrain ?? 1, 1, 20) * engineFactor;
+
   const w =
     aV * (circuit.aeroWeight ?? 0.33) +
     pV * (circuit.powertrainWeight ?? 0.34) +
@@ -259,6 +277,7 @@ export function simulateLap(params: SimLapParams): SimLapResult {
  */
 export function simulateRace(params: SimRaceParams): SimRaceResult {
   const { circuit, grid, teamsMap, driversMap, setupsMap, managerRoles, raceEvent } = params;
+  const engineConditionsMap = params.engineConditionsMap ?? {};
   const roles = managerRoles ?? {};
   const totalLaps = raceEvent.totalLaps ?? circuit.laps;
   const isWet =
@@ -317,6 +336,9 @@ export function simulateRace(params: SimRaceParams): SimRaceResult {
       const idx = driver.carIndex ?? 0;
       const cs = (team.carStats?.[String(idx)]) ?? { aero: 1, powertrain: 1, chassis: 1 };
 
+      // T-007 S1: look up engine condition by teamId; absent = 1.0 factor (AC#12)
+      const teamEngineCondition = engineConditionsMap[driver.teamId];
+
       const res = simulateLap({
         circuit,
         carStats: cs,
@@ -328,6 +350,7 @@ export function simulateRace(params: SimRaceParams): SimRaceResult {
         specialty,
         isQualifying: false,
         fatigueLevel: fatigue[did],
+        engineCondition: teamEngineCondition,
       });
 
       if (res.isCrashed) {

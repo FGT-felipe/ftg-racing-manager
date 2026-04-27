@@ -379,6 +379,60 @@ createdAt:    Timestamp
 
 ---
 
+---
+
+## 10. Parts Wear (T-007 Slice 1)
+
+### `teams/{teamId}/cars/{carIndex}/parts/{partId}` (sub-collection)
+
+> Slice 1: only `engine` (partId = `"engine"`) is seeded and tracked.
+> Additional parts (gearbox, brakes, etc.) are added in Slice 2.
+> Teams not yet migrated simply have no `parts/` sub-collection — the system
+> treats missing docs as condition=100 (COMPAT-1).
+
+```
+partType:   'engine' | 'gearbox' | 'brakes' | 'frontWing' | 'rearWing' | 'suspension'
+condition:  number    // 0–100 (100 = perfect, 0 = destroyed)
+level:      number    // HQ upgrade level (always 1 in Slice 1; HQ ceiling deferred to Slice 3)
+updatedAt:  Timestamp
+```
+
+**Condition tier thresholds (UI only — no mechanical effects in Slice 1 beyond performance multiplier):**
+| Tier   | Range     | Badge symbol |
+|--------|-----------|--------------|
+| green  | 80–100    | ● (circle)  |
+| yellow | 50–79     | ▲ (triangle) |
+| orange | 30–49     | ◆ (diamond) |
+| red    | 0–29      | ✕ (X)       |
+
+**Performance multiplier:** In `simulateLap`, `engineFactor = engineCondition / 100` scales the powertrain contribution to lap time. Absent parts doc → factor = 1.0 (no penalty).
+
+---
+
+### `wear_log/{seasonId}_{roundId}_{teamId}_{carIndex}` (root collection, append-only)
+
+> Immutable audit record — one document per team per race round.
+> Never overwritten; used for analytics and retroactive recalculation.
+
+```
+seasonId:       string
+roundId:        string        // e.g. 'r2'
+teamId:         string
+carIndex:       number        // 0 in Slice 1
+trigger:        'race'        // 'qualifying' | 'special_event' deferred to Slice 2
+partDeltas:     [{
+  partId:          string     // 'engine'
+  partType:        string     // 'engine'
+  conditionBefore: number
+  conditionAfter:  number
+  delta:           number
+}]
+computedAt:     Timestamp
+formulaVersion: number        // 1 in Slice 1; increment when formula changes
+```
+
+---
+
 ## Removed / Legacy Collections
 
 | Collection | Removed | Reason |
