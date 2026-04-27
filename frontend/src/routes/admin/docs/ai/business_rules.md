@@ -52,7 +52,33 @@
 - **Resolution**: Best bid wins, seller gets funds, driver contract resets to 1 year.
 - **Bot Cleaning**: Expired unsold listings for `teamId: null` drivers are DELETED.
 
-## 6. Dashboard Readiness (Race Prep)
+## 6. Parts Wear (T-007 Slice 1)
+
+### Constants
+| Constant | Value | Rationale |
+|---|---|---|
+| `PARTS_BASE_RACE_DELTA` | `8` | Flat degradation per race in Slice 1. No RNG — deterministic for predictable player planning. Tunable via Firestore config in Slice 2. |
+| `PARTS_ENGINE_REPAIR_COST_FLAT` | `$25,000` | Flat cost balances regular repair against upgrade investment. Approximately 5% of mid-tier weekly budget. |
+| `PARTS_TIER_THRESHOLDS` | `{ yellow: 80, orange: 50, red: 30 }` | Thresholds for tier badge color + shape. Values chosen to give ~3 races per tier band at base delta=8. |
+
+### Formula (Slice 1)
+- `computeWearDelta('race') = PARTS_BASE_RACE_DELTA = 8`
+- `computeWearDelta('qualifying') = 0` (deferred to Slice 2)
+- `newCondition = Math.max(0, currentCondition - delta)` — floors at 0, never negative
+- `engineFactor = engineCondition / 100` — multiplies `powertrain` contribution in `simulateLap`
+- Missing `parts/engine` doc → `engineFactor = 1.0` (no penalty, COMPAT-1)
+
+### Tier Bands
+| Tier | Range | Badge |
+|---|---|---|
+| green | 80–100 | ● |
+| yellow | 50–79 | ▲ |
+| orange | 30–49 | ◆ |
+| red | 0–29 | ✕ |
+
+---
+
+## 7. Dashboard Readiness (Race Prep)
 - **Logic**: Readiness (%) = (Completed Required Tasks / Total Required Tasks) * 100.
 - **Race Setups (Mandatory)**: `isComplete` only if `weekStatus.driverSetups[driverId].race` exists for all main drivers (car 0 and 1). Previous sessions (Practice/Qualy) are ignored for this specific indicator.
 - **Sponsors (Mandatory)**: `isComplete` if `team.sponsors` contains at least one entry.

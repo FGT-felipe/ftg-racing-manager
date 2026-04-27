@@ -172,8 +172,43 @@ graph TD
     StaffService -->|Mutates| TeamStore
 ```
 
+---
+
+## 5b. Parts Wear (T-007 Slice 1)
+
+### `partsWearService` — `frontend/src/lib/services/parts_wear_service.svelte.ts`
+
+Stateless service. All methods are `async` and return `Promise<void>`.
+
+| Method | Signature | Description |
+|---|---|---|
+| `repairPart` | `(teamId: string, carIndex: number, partId: string) => Promise<void>` | Atomically repairs a part to 100% condition. Deducts `PARTS_ENGINE_REPAIR_COST_FLAT` via `runTransaction`. Throws `'INSUFFICIENT_BUDGET'` when budget is insufficient. |
+| `getConditionTier` | `(condition: number) => ConditionTier` | Pure. Maps condition (0–100) to `'green' | 'yellow' | 'orange' | 'red'` using `PARTS_TIER_THRESHOLDS`. |
+
+**Transaction guarantees:** `repairPart` reads budget inside the transaction — no TOCTOU race. Rolls back atomically if budget check fails. Writes a `transactions/` subcollection entry per CLAUDE.md §4.3.
+
+**Error namespace:** `[PartsWearService:repairPart]`
+
+---
+
+### `partsStore` — `frontend/src/lib/stores/parts.svelte.ts`
+
+Class-based reactive store. Subscribes to `teams/{teamId}/cars/{carIndex}/parts/` via `onSnapshot`.
+
+| Member | Type | Description |
+|---|---|---|
+| `init(teamId, carIndex)` | `() => () => void` | Starts the Firestore listener. Returns cleanup function for `$effect`. Gated behind `browser` + `authStore.user`. |
+| `enginePart` | `Part | null` | Reactive getter. `null` for un-migrated teams (AC#8). |
+| `getCondition(partId)` | `number` | Returns part condition (0–100). Defaults to 100 if part doc missing (COMPAT-1). |
+| `getTier(partId)` | `ConditionTier` | Delegates to `partsWearService.getConditionTier`. |
+
+**Usage rule:** Components MUST read only via `partsStore` getters — never call Firestore directly from `.svelte` files (CLAUDE.md §4.2).
+
+---
+
 ## 6. Security & Transactional Integrity
 - Use `runTransaction` for all budget mutations.
 - Notification entries MUST be created within the same batch as the event that triggered them.
 - Firebase Functions run in **strict mode**. Variables MUST be declared before use.
 
+---

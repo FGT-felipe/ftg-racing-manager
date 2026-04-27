@@ -47,7 +47,7 @@ These paths are configured in `_bmad/bmm/config.yaml`. Do not hand-edit that fil
 - **No code changes without a BMAD workflow.** If you find yourself about to call `Edit` or `Write` without having run at least `bmad-quick-dev`, stop and start the workflow.
 - **One story, one branch, one PR.** See §11 and §15.1.
 - **Context load is mandatory.** Before the first BMAD skill of a task, read the docs listed in §2.
-- **Rules in §3 through §16 override any BMAD skill default** when they conflict. The skill produces the code; this file produces the constraints.
+- **Rules in §3 through §18 override any BMAD skill default** when they conflict. The skill produces the code; this file produces the constraints.
 - **Prohibited BMAD skills in this project:**
   - `bmad-qa-generate-e2e-tests` — Playwright/automated E2E tests are banned (see §8). Use Vitest unit tests only.
 
@@ -599,3 +599,42 @@ When an épica is mapped to Shortcut:
 - Each Story under the épica corresponds to **exactly one slice**.
 - Story descriptions must include a **"Layers touched"** section enumerating UI / Service / Schema / CF / Tests / Docs deliverables for that slice.
 - A story tagged as part of an épica without that section is incomplete and must be rewritten before implementation starts.
+
+---
+
+## 18. File Verification Before Implementation (Mandatory)
+
+Before writing a single line of code, every BMAD workflow that touches the UI **must locate the exact files** that correspond to each surface named in the story or task. Documentation and story specs name surfaces by concept ("the Garage page", "the Engineering tab") — the actual file path must be verified in the codebase, not assumed from the name.
+
+### 18.1 The rule
+
+When a story or task references a UI surface, component, service, or route by name, run a file search before opening any editor:
+
+```bash
+# Find all route files matching the surface concept
+find frontend/src/routes -name "*.svelte" | grep -i "<keyword>"
+
+# Find all components matching the concept
+find frontend/src/lib/components -name "*.svelte" | grep -i "<keyword>"
+```
+
+If more than one file matches, read both and confirm with the user which one is the active surface before proceeding.
+
+### 18.2 When this check is mandatory
+
+| Situation | Required action |
+|---|---|
+| Story names a page or route ("the Garage page", "the Engineering tab") | `find` routes, list all matches, verify with user if >1 |
+| Story names a component ("GaragePanel", "StrategyPanel") | `find` components, grep for usages, confirm which route renders it |
+| Story names a service or store by concept ("the parts service") | Grep `src/lib/services` and `src/lib/stores` for matching files |
+| Refactor touches a shared component | Grep every route that imports it before editing |
+
+### 18.3 When ambiguity is found
+
+If two files match the same concept (e.g. `facilities/garage/+page.svelte` and `facilities/engineering/+page.svelte` both look like "the garage"), **stop and ask the user** which one is the active surface. Do not guess. Do not edit both and hope one is right.
+
+### 18.4 Where this rule is enforced
+
+This check runs inside `bmad-dev-story` as the first action of Phase 1 (investigation), before reading any file content. It also runs in `bmad-quick-dev` before the first `Edit` call. `bmad-code-review` must verify that the PR touches the file the user actually navigates to — if the changed file is not reachable from the app's navigation, the PR is rejected.
+
+> **Origin:** T-007 S1 — all wear UI code was implemented in `facilities/garage/+page.svelte` while the user navigates to `facilities/engineering/+page.svelte`. The files are structurally identical, causing the entire implementation to be invisible until re-applied to the correct file. A 5-second `find` before the first edit would have prevented the full rework.

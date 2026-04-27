@@ -30,7 +30,6 @@
     import PracticePanel from "./PracticePanel.svelte";
     import QualifyingSetupTab from "./tabs/QualifyingSetupTab.svelte";
     import RaceSetupTab from "./tabs/RaceSetupTab.svelte";
-
     let { currentWeekStatus } = $props<{ currentWeekStatus: string }>();
 
     // Derived states
@@ -625,3 +624,4 @@
         </div>
     {/if}
 </div>
+

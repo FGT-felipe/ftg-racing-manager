@@ -21,8 +21,51 @@
     import InstructionCard from "$lib/components/layout/InstructionCard.svelte";
     import CarSchematic from "$lib/components/dashboard/CarSchematic.svelte";
     import DriverSmallCard from "$lib/components/dashboard/DriverSmallCard.svelte";
+    import RepairModal from "$lib/components/racing/RepairModal.svelte";
+    import { partsStore } from "$lib/stores/parts.svelte";
+    import { partsWearService } from "$lib/services/parts_wear_service.svelte";
+    import { t } from "$lib/utils/i18n";
 
     let selectedCar = $state(0); // 0 for Car A, 1 for Car B
+
+    // Parts wear
+    let showRepairModal = $state(false);
+    let repairPartType = $state<string>('engine');
+
+    let _loadedPartsKey = '';
+    $effect(() => {
+        const teamId = teamStore.value.team?.id;
+        if (!teamId) return;
+        const key = `${teamId}_${selectedCar}`;
+        if (key === _loadedPartsKey) return;
+        _loadedPartsKey = key;
+        partsWearService.seedEngineIfMissing(teamId, selectedCar).catch((e) =>
+            console.error('[HQGarage] seedEngineIfMissing failed:', e)
+        );
+        const cleanup = partsStore.init(teamId, selectedCar);
+        return cleanup;
+    });
+
+    // Maps upgrade card key → wear part id
+    const partWearMap: Record<string, string> = {
+        aero: 'aero',
+        powertrain: 'engine',
+        chassis: 'chassis',
+        reliability: 'reliability',
+    };
+
+    const tierTextColors: Record<string, string> = {
+        green: 'text-green-400',
+        yellow: 'text-yellow-400',
+        orange: 'text-orange-400',
+        red: 'text-red-400',
+    };
+    const tierBarColors: Record<string, string> = {
+        green: 'bg-green-500',
+        yellow: 'bg-yellow-500',
+        orange: 'bg-orange-500',
+        red: 'bg-red-500',
+    };
 
     const partIcons: Record<string, any> = {
         aero: Wind,
@@ -246,6 +289,9 @@
                             (teamStore.value.team?.budget ?? 0) >= cost}
                         {@const limitReached = upgradeCount >= maxUpgrades}
                         {@const PartIcon = partIcons[partKey]}
+                        {@const wearPartId = partWearMap[partKey]}
+                        {@const wearCondition = wearPartId ? partsStore.getCondition(wearPartId) : 100}
+                        {@const wearTier = wearPartId ? partsStore.getTier(wearPartId) : 'green'}
 
                         <div
                             class="bg-app-surface border border-app-border rounded-2xl p-6 flex flex-col justify-between group transition-all hover:border-app-primary/30"
@@ -285,8 +331,34 @@
                             </div>
 
                             <div class="space-y-4">
+                                {#if wearPartId}
+                                    <div class="flex items-center gap-3 border-t border-app-border/50 pt-4">
+                                        <div class="flex-1">
+                                            <div class="flex justify-between items-center mb-1.5">
+                                                <span class="text-[9px] font-bold text-app-text/30 uppercase tracking-[0.1em]">{t('car_condition')}</span>
+                                                <span class="text-xs font-black tabular-nums {tierTextColors[wearTier]}">{wearCondition}%</span>
+                                            </div>
+                                            <div class="h-1.5 rounded-full bg-app-text/10 overflow-hidden">
+                                                <div
+                                                    class="h-full rounded-full transition-all {tierBarColors[wearTier]}"
+                                                    style="width: {wearCondition}%"
+                                                ></div>
+                                            </div>
+                                        </div>
+                                        <button
+                                            class="shrink-0 px-3 py-1.5 rounded-lg text-xs font-bold uppercase tracking-wider transition-all
+                                                {wearCondition < 100
+                                                    ? 'bg-app-primary text-app-primary-foreground hover:brightness-110 active:scale-95'
+                                                    : 'bg-app-surface border border-app-border text-app-text/30 cursor-not-allowed'}"
+                                            disabled={wearCondition >= 100}
+                                            onclick={() => { repairPartType = wearPartId; showRepairModal = true; }}
+                                        >
+                                            {t('repair')}
+                                        </button>
+                                    </div>
+                                {/if}
                                 <div
-                                    class="flex justify-between items-end border-t border-app-border/50 pt-4"
+                                    class="flex justify-between items-end {wearPartId ? '' : 'border-t border-app-border/50 pt-4'}"
                                 >
                                     <div class="flex flex-col">
                                         <span
@@ -354,6 +426,15 @@
         </div>
     </div>
 </div>
+
+{#if showRepairModal && teamStore.value.team}
+    <RepairModal
+        teamId={teamStore.value.team.id}
+        partType={repairPartType}
+        carIndex={selectedCar}
+        onClose={() => { showRepairModal = false; }}
+    />
+{/if}
 
 <style>
     .font-heading {
