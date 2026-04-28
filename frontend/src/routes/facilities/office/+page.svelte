@@ -375,7 +375,7 @@
                         {t('office_communications_header')}
                     </h3>
                 </div>
-                <div class="flex flex-col gap-3">
+                <div class="flex flex-col gap-3 overflow-y-auto custom-scrollbar max-h-[480px] pr-1">
                     {#if news.length === 0}
                         <div class="p-12 text-center bg-app-surface border border-app-border border-dashed rounded-2xl text-app-text/20">
                             <Mail size={32} class="mx-auto mb-4 opacity-50" />
