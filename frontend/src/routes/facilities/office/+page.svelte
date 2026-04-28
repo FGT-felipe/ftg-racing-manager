@@ -36,10 +36,14 @@
     let news = $derived(newsStore.items);
 
     // Stats calculation
+    const constructorsTrophies = $derived(
+        [...(teamStore.value.team?.seasonHistory ?? [])]
+            .filter(s => s.isConstructorsChampion)
+            .sort((a, b) => b.year - a.year)
+    );
+
     const teamStats = $derived({
-        titles:
-            (driverStore.carADriver?.championships || 0) +
-            (driverStore.carBDriver?.championships || 0),
+        titles: constructorsTrophies.length,
         wins:
             (driverStore.carADriver?.wins || 0) +
             (driverStore.carBDriver?.wins || 0),
@@ -289,6 +293,35 @@
                         >
                     </div>
                 </div>
+            </div>
+
+            <!-- Trophy Cabinet -->
+            <div class="bg-app-surface border border-app-border rounded-2xl p-6">
+                <div class="flex items-center gap-2 mb-4">
+                    <Trophy size={16} class="text-app-primary" />
+                    <h3 class="text-xs font-black uppercase text-app-text tracking-widest">
+                        {t('office_trophy_cabinet_header')}
+                    </h3>
+                </div>
+                {#if constructorsTrophies.length > 0}
+                    <div class="flex flex-col gap-2">
+                        {#each constructorsTrophies as trophy (trophy.seasonId)}
+                            <div class="flex items-center gap-3 px-3 py-2.5 rounded-xl bg-app-primary/5 border border-app-primary/20">
+                                <Trophy size={14} class="text-app-primary flex-shrink-0" />
+                                <div class="flex flex-col gap-0">
+                                    <span class="text-xs font-black text-app-primary">{trophy.year}</span>
+                                    <span class="text-[9px] text-app-text/50 uppercase tracking-widest font-heading">
+                                        {t('office_trophy_constructors_champion')}
+                                    </span>
+                                </div>
+                            </div>
+                        {/each}
+                    </div>
+                {:else}
+                    <p class="text-[11px] text-app-text/30 italic text-center py-4">
+                        {t('office_trophy_cabinet_empty')}
+                    </p>
+                {/if}
             </div>
 
             <div

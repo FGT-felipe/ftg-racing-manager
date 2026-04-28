@@ -205,12 +205,20 @@
                                         />
                                     </div>
                                     <div class="flex flex-col">
-                                        <span
-                                            class="text-sm font-black text-app-text uppercase tracking-tight group-hover:text-app-primary transition-colors"
-                                            title={driver.name}
-                                        >
-                                            {formatDriverName(driver.name)}
-                                        </span>
+                                        <div class="flex items-center gap-2">
+                                            <span
+                                                class="text-sm font-black text-app-text uppercase tracking-tight group-hover:text-app-primary transition-colors"
+                                                title={driver.name}
+                                            >
+                                                {formatDriverName(driver.name)}
+                                            </span>
+                                            {#if driver.championships > 0}
+                                                <div class="flex items-center gap-0.5 text-app-primary" aria-label="{driver.championships} title(s)">
+                                                    <Trophy size={10} />
+                                                    <span class="text-[9px] font-black tabular-nums">{driver.championships}</span>
+                                                </div>
+                                            {/if}
+                                        </div>
                                         <span class="text-app-text/20 uppercase tracking-widest flex items-center gap-1.5">
                                             <CountryFlag countryCode={driver.countryCode} size="sm" />
                                             <span>{driver.age}y • CONTRACT: {driver.contractYearsRemaining}y</span>
@@ -317,12 +325,20 @@
                                 />
                             </div>
                             <div class="flex flex-col">
-                                <h3
-                                    class="text-lg font-black text-app-text uppercase tracking-tight group-hover:text-app-primary transition-colors"
-                                    title={driver.name}
-                                >
-                                    {formatDriverName(driver.name)}
-                                </h3>
+                                <div class="flex items-center gap-2">
+                                    <h3
+                                        class="text-lg font-black text-app-text uppercase tracking-tight group-hover:text-app-primary transition-colors"
+                                        title={driver.name}
+                                    >
+                                        {formatDriverName(driver.name)}
+                                    </h3>
+                                    {#if driver.championships > 0}
+                                        <div class="flex items-center gap-0.5 text-app-primary" aria-label="{driver.championships} title(s)">
+                                            <Trophy size={11} />
+                                            <span class="text-[9px] font-black tabular-nums">{driver.championships}</span>
+                                        </div>
+                                    {/if}
+                                </div>
                                 <span
                                     class="text-[10px] font-black text-app-text/20 uppercase tracking-[0.2em] flex items-center gap-1.5"
                                     >

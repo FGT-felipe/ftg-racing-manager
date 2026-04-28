@@ -793,6 +793,9 @@ export const translations = {
         season_summary_loading: "Loading results…",
         season_summary_pts: "pts",
         season_summary_position: "Position",
+        office_trophy_cabinet_header: "Trophy Cabinet",
+        office_trophy_constructors_champion: "Constructors Champion",
+        office_trophy_cabinet_empty: "No titles yet. Keep pushing.",
     },
     es: {
         career_view: "Vista Profesional",
@@ -1585,6 +1588,9 @@ export const translations = {
         season_summary_loading: "Cargando resultados…",
         season_summary_pts: "pts",
         season_summary_position: "Posición",
+        office_trophy_cabinet_header: "Vitrina de Trofeos",
+        office_trophy_constructors_champion: "Campeón de Constructores",
+        office_trophy_cabinet_empty: "Sin títulos aún. Sigue adelante.",
     }
 };
 

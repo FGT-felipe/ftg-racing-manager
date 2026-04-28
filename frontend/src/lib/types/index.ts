@@ -100,6 +100,17 @@ export interface ActiveContract {
     racesRemaining: number;
 }
 
+export interface SeasonHistoryEntry {
+    seasonId: string;
+    year: number;
+    constructorsPosition: number;
+    points: number;
+    races: number;
+    wins: number;
+    podiums: number;
+    isConstructorsChampion: boolean;
+}
+
 export interface Team {
     id: string;
     leagueId?: string | null;
@@ -123,6 +134,7 @@ export interface Team {
     nameChangeCount: number;
     lastRaceDebrief?: string | null;
     lastRaceResult?: string | null;
+    seasonHistory?: SeasonHistoryEntry[];
 
     carStats: Record<string, Record<string, number>>; // Usually '0' and '1' mapped to aero, powertrain, chassis, reliability
     weekStatus: Record<string, any>;
