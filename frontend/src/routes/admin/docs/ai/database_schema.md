@@ -101,6 +101,7 @@ weekStatus: {
   psychologistAssignedTo?:        string   // driverId for weekly morale session
   psychologistUpgradedThisWeek?:  boolean  // level change lock (resets weekly)
   psychologistSessionDoneThisWeek?: boolean // session lock (resets weekly)
+  repairSpentThisRound?:            number  // cumulative repair spend this round (T-007 S2); reset to 0 by processPostRace
   driverSetups?: {
     [driverId]: CarSetup
   }
@@ -381,31 +382,70 @@ createdAt:    Timestamp
 
 ---
 
-## 10. Parts Wear (T-007 Slice 1)
+## 10. Parts Wear (T-007 Slice 2)
 
 ### `teams/{teamId}/cars/{carIndex}/parts/{partId}` (sub-collection)
 
-> Slice 1: only `engine` (partId = `"engine"`) is seeded and tracked.
-> Additional parts (gearbox, brakes, etc.) are added in Slice 2.
-> Teams not yet migrated simply have no `parts/` sub-collection — the system
-> treats missing docs as condition=100 (COMPAT-1).
+> All 6 parts are tracked from Slice 2. Teams not yet migrated have no `parts/` sub-collection —
+> the system treats missing docs as condition=100, factor=1.0 (COMPAT-1).
+> `maxCondition` defaults to 100 in S2; degradation of `maxCondition` is deferred to S3.
+> HQ repair ceiling is deferred to S3.
 
 ```
-partType:   'engine' | 'gearbox' | 'brakes' | 'frontWing' | 'rearWing' | 'suspension'
-condition:  number    // 0–100 (100 = perfect, 0 = destroyed)
-level:      number    // HQ upgrade level (always 1 in Slice 1; HQ ceiling deferred to Slice 3)
-updatedAt:  Timestamp
+partType:      'engine' | 'gearbox' | 'brakes' | 'frontWing' | 'rearWing' | 'suspension'
+condition:     number    // 0–100 (100 = perfect, 0 = destroyed); floor enforced at 0
+maxCondition:  number    // upper bound for repair (100 in S2; may degrade in S3+)
+level:         number    // HQ upgrade level (1–20); drives carLevelModifier in wear formula
+updatedAt:     Timestamp
 ```
 
-**Condition tier thresholds (UI only — no mechanical effects in Slice 1 beyond performance multiplier):**
-| Tier   | Range     | Badge symbol |
-|--------|-----------|--------------|
-| green  | 80–100    | ● (circle)  |
-| yellow | 50–79     | ▲ (triangle) |
-| orange | 30–49     | ◆ (diamond) |
-| red    | 0–29      | ✕ (X)       |
+**Condition tier thresholds:**
+| Tier   | Range  | Badge symbol | Failure prob/lap |
+|--------|--------|--------------|-----------------|
+| green  | 80–100 | ● (circle)  | 0%              |
+| yellow | 50–79  | ▲ (triangle) | 0.2%            |
+| orange | 30–49  | ◆ (diamond) | 1.5%            |
+| red    | 0–29   | ✕ (X)       | 4.0%            |
 
-**Performance multiplier:** In `simulateLap`, `engineFactor = engineCondition / 100` scales the powertrain contribution to lap time. Absent parts doc → factor = 1.0 (no penalty).
+> Failure probabilities are stored in `universe/game_universe_v1.config.parts_wear.failureCurve` and
+> read at the top of `runRaceLogic`. The values above are the hardcoded fallback defaults.
+
+**Part → sim-axis mapping (S2):**
+| Part       | Axis / effect                                              |
+|------------|------------------------------------------------------------|
+| engine     | powertrain: `engineFactor = condition / 100`               |
+| gearbox    | powertrain: `gearboxFactor = 0.5 + (condition/100) × 0.5` |
+| frontWing  | aero: `frontWingFactor = 0.5 + (condition/100) × 0.5`     |
+| rearWing   | aero: `rearWingFactor = 0.5 + (condition/100) × 0.5`      |
+| suspension | chassis: `suspensionFactor = 0.5 + (condition/100) × 0.5` |
+| brakes     | lap time: `brakesPenalty = (1 - condition/100) × BRAKES_PENALTY_MAX` added per lap |
+
+**Failure modes (per-lap roll in `simulateLap`):**
+| Part       | Failure effect                                      |
+|------------|-----------------------------------------------------|
+| engine     | DNF — `isCrashed = true`, `lapTime = 999`           |
+| brakes     | `+BRAKES_FAILURE_LAP_PENALTY` seconds to lap time   |
+| gearbox    | `+GEARBOX_FAILURE_LAP_PENALTY` seconds to lap time  |
+| frontWing  | `+WING_FAILURE_LAP_PENALTY` seconds to lap time     |
+| rearWing   | `+WING_FAILURE_LAP_PENALTY` seconds to lap time     |
+| suspension | `+SUSPENSION_FAILURE_LAP_PENALTY` seconds to lap time |
+
+---
+
+### `universe/game_universe_v1.config.parts_wear` (Firestore config)
+
+> Written once by bootstrap script. Read at the top of `runRaceLogic` with hardcoded fallback.
+> Authoritative at runtime — never diverge fallback defaults from Firestore values.
+
+```
+baseDeltas:        { race: { engine: 8, gearbox: 6, brakes: 5, frontWing: 4, rearWing: 4, suspension: 5 } }
+circuitStress:     { [circuitId]: { [partType]: number (0.0–0.5) } }
+failureCurve:      { green: 0.0, yellow: 0.002, orange: 0.015, red: 0.04 }
+tierThresholds:    { yellow: 80, orange: 50, red: 30 }
+incidentMultiplier: 1.5
+repairBudgetCap:   { perRound: 150000, finalRoundMultiplier: 2 }
+formulaVersion:    2
+```
 
 ---
 
@@ -418,17 +458,19 @@ updatedAt:  Timestamp
 seasonId:       string
 roundId:        string        // e.g. 'r2'
 teamId:         string
-carIndex:       number        // 0 in Slice 1
-trigger:        'race'        // 'qualifying' | 'special_event' deferred to Slice 2
+carIndex:       number
+trigger:        'race'        // 'qualifying' deferred to S3
 partDeltas:     [{
-  partId:          string     // 'engine'
-  partType:        string     // 'engine'
+  partId:          string     // e.g. 'engine', 'brakes'
+  partType:        string
   conditionBefore: number
   conditionAfter:  number
   delta:           number
+  tierBefore:      string     // 'green' | 'yellow' | 'orange' | 'red'
+  tierAfter:       string
 }]
 computedAt:     Timestamp
-formulaVersion: number        // 1 in Slice 1; increment when formula changes
+formulaVersion: number        // 2 from S2 onward
 ```
 
 ---

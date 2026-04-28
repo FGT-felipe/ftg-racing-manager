@@ -198,3 +198,64 @@ rejectedNegotiationTeams: string[]   // equipos bloqueados de volver a pujar
 *   **Setups de Carrera**: Este ítem se marca como completado (`isComplete`) únicamente cuando ambos pilotos principales tienen guardada una **Estrategia de Carrera** (pestaña Race Setup). Esto elimina la dependencia de completar sesiones previas (Práctica/Qualy) para ver el indicador en verde.
 *   **Patrocinadores**: Requiere que el equipo tenga al menos un contrato de patrocinio activo para ser marcado como completado.
 *   **Instalaciones (Opcional)**: Informa sobre el estado de las infraestructuras. Actualmente se considera completado por defecto si el equipo es válido.
+
+---
+
+## 9. Desgaste de Piezas (Parts Wear — T-007 S2)
+
+### Fórmula de Desgaste (multiplicativa)
+
+```
+delta = base × (1 + circuitStress) × driverModifier × trackCondModifier × carLevelModifier
+```
+
+| Factor | Valor |
+|---|---|
+| `base` | Por tipo de pieza desde config Firestore: `{ engine: 8, gearbox: 6, brakes: 5, frontWing: 4, rearWing: 4, suspension: 5 }` |
+| `circuitStress` | `0.0–0.5` por circuito y tipo de pieza (ej. México penaliza motor +30%) |
+| `driverModifier` | `mostRisky: 1.3`, `risky: 1.15`, `normal: 1.0`, `defensive: 0.9` |
+| `trackCondModifier` | `wet: 1.2`, `dry: 1.0` |
+| `carLevelModifier` | `max(0.6, 1 - (level - 1) × 0.05)` — nivel 1 = 1.0, nivel 5 = 0.8, piso 0.6 |
+| `incidentBump` | Si el piloto chocó: `+incidentMultiplier × base` en todas las piezas (default 1.5×) |
+
+**Piso:** `condition = max(0, condition - delta)`. Nunca se escriben valores negativos.
+
+**Qualifying:** `computeWearDelta('qualifying')` retorna 0 en S2. Se habilitará en S3.
+
+### Curva de Fallos por Vuelta
+
+| Tier   | Condición | Prob. de fallo/vuelta |
+|--------|-----------|-----------------------|
+| green  | 80–100    | 0%                    |
+| yellow | 50–79     | 0.2%                  |
+| orange | 30–49     | 1.5%                  |
+| red    | 0–29      | 4.0%                  |
+
+Objetivo de diseño: 1–3% de DNFs por temporada desde fallos de motor en pilotos sin mantenimiento.
+
+### Modos de Fallo (por pieza)
+
+| Pieza      | Efecto del fallo                                      |
+|------------|-------------------------------------------------------|
+| Motor      | DNF — piloto fuera de carrera                         |
+| Frenos     | +3.0 s por vuelta                                     |
+| Caja       | +2.0 s por vuelta (penalización de parrilla en S3)   |
+| Ala delan. | +1.5 s por vuelta                                     |
+| Ala tras.  | +1.5 s por vuelta                                     |
+| Suspensión | +1.0 s por vuelta                                     |
+
+### Presupuesto de Reparación por Ronda
+
+*   **Cap:** `$150,000` por ronda (autorizado en Firestore: `config.parts_wear.repairBudgetCap.perRound`).
+*   **Seguimiento:** `weekStatus.repairSpentThisRound` — se incrementa atomicamente en cada transacción de reparación.
+*   **Reset:** `processPostRace` lo reinicia a `0` junto con el resto del `weekStatus`.
+*   **Ronda final:** multiplicador 2× sobre el cap (implementación en S3). El campo `finalRoundMultiplier: 2` ya existe en el config de Firestore.
+*   **Error:** Si la reparación excede el cap, el servicio lanza `'REPAIR_BUDGET_EXCEEDED'` y la transacción hace rollback completo.
+
+### Ciclo de Vida del Campo `repairSpentThisRound`
+
+| Evento | Acción |
+|---|---|
+| Creación del equipo | Inicializado a `0` (o ausente = `0`) |
+| Reparación de pieza | `+= repairCost` atómicamente dentro de `runTransaction` |
+| `processPostRace` | Reset a `0` junto con el resto de `weekStatus` |

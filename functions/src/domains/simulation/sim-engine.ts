@@ -76,6 +76,18 @@ export interface SimLapParams {
    * STRICT-MODE: always declared with let before use (CLAUDE.md §5.1).
    */
   engineCondition?: number;
+  /**
+   * T-007 S2: All parts conditions keyed by partType (0–100).
+   * Missing keys default to 100 (no penalty). Pure performance multipliers only —
+   * failure rolls use failureCurve.
+   */
+  partsConditions?: Record<string, number>;
+  /**
+   * T-007 S2: Per-lap failure probability per tier, from Firestore config.
+   * Used for failure rolls only (not performance multipliers).
+   * Absent = no failure rolls for this lap.
+   */
+  failureCurve?: Record<string, number>;
 }
 
 export interface SimLapResult {
@@ -93,6 +105,13 @@ export interface SimRaceParams {
   raceEvent: RaceEvent;
   /** T-007 S1: engine condition per teamId (0–100). Absent = 1.0 multiplier. */
   engineConditionsMap?: Record<string, number>;
+  /**
+   * T-007 S2: All parts conditions keyed by `${teamId}_${carIndex}` → partType → condition.
+   * When present, passed to each simulateLap call for per-part multipliers and failure rolls.
+   */
+  allPartsConditionsMap?: Record<string, Record<string, number>>;
+  /** T-007 S2: Failure curve from Firestore config (tier → per-lap probability). */
+  failureCurve?: Record<string, number>;
 }
 
 export interface SimRaceResult {
@@ -110,6 +129,29 @@ const clamp = (v: number, lo: number, hi: number): number =>
   Math.min(Math.max(v, lo), hi);
 
 const gap = (a: number, b: number): number => Math.abs(a - b);
+
+// T-007 S2: Pure helpers for failure rolls — no imports from wear.ts (purity constraint).
+
+/** Returns the condition tier for a given condition value. */
+function getConditionTierLocal(condition: number): string {
+  if (condition >= 80) return "green";
+  if (condition >= 50) return "yellow";
+  if (condition >= 30) return "orange";
+  return "red";
+}
+
+/** Per-lap failure check. Returns true if the part fails this lap. */
+function rollPartFailure(tier: string, failureCurve: Record<string, number>): boolean {
+  const prob = failureCurve[tier] ?? 0;
+  return prob > 0 && Math.random() < prob;
+}
+
+// T-007 S2: Per-part failure lap time penalties (seconds). Mirrors CF constants.
+const BRAKES_PENALTY_MAX_SIM = 0.8;       // max penalty from degraded brakes (linear)
+const BRAKES_FAILURE_PENALTY_SIM = 3.0;
+const GEARBOX_FAILURE_PENALTY_SIM = 2.0;
+const WING_FAILURE_PENALTY_SIM = 1.5;
+const SUSPENSION_FAILURE_PENALTY_SIM = 1.0;
 
 // ─── simulateLap ─────────────────────────────────────────────────────────────
 
@@ -153,12 +195,29 @@ export function simulateLap(params: SimLapParams): SimLapResult {
   if (params.engineCondition !== undefined && params.engineCondition !== null) {
     engineFactor = params.engineCondition / 100;
   }
-  const pV = clamp(s.powertrain ?? 1, 1, 20) * engineFactor;
+
+  // T-007 S2: Per-part sim axis multipliers (Effect 1).
+  // STRICT-MODE: all let declarations before any conditional (CLAUDE.md §5.1).
+  const parts = params.partsConditions ?? {};
+  let gearboxFactor = 1.0;
+  let frontWingFactor = 1.0;
+  let rearWingFactor = 1.0;
+  let suspensionFactor = 1.0;
+  let brakesPenalty = 0.0;
+  if (parts.gearbox !== undefined)    gearboxFactor    = 0.5 + (parts.gearbox / 100) * 0.5;
+  if (parts.frontWing !== undefined)  frontWingFactor  = 0.5 + (parts.frontWing / 100) * 0.5;
+  if (parts.rearWing !== undefined)   rearWingFactor   = 0.5 + (parts.rearWing / 100) * 0.5;
+  if (parts.suspension !== undefined) suspensionFactor = 0.5 + (parts.suspension / 100) * 0.5;
+  if (parts.brakes !== undefined)     brakesPenalty    = (1 - parts.brakes / 100) * BRAKES_PENALTY_MAX_SIM;
+
+  const pV = clamp(s.powertrain ?? 1, 1, 20) * engineFactor * gearboxFactor;
+  const aVAdj = aV * frontWingFactor * rearWingFactor;
+  const cVAdj = cV * suspensionFactor;
 
   const w =
-    aV * (circuit.aeroWeight ?? 0.33) +
+    aVAdj * (circuit.aeroWeight ?? 0.33) +
     pV * (circuit.powertrainWeight ?? 0.34) +
-    cV * (circuit.chassisWeight ?? 0.33);
+    cVAdj * (circuit.chassisWeight ?? 0.33);
   const carFactor = 1.0 - (w / 20.0) * 0.25;
 
   // --- Driver contribution ---
@@ -257,7 +316,40 @@ export function simulateLap(params: SimLapParams): SimLapResult {
     lap *= (1 - QUALY_ACE_LAPTIME_BONUS);
   }
 
-  return { lapTime: crashed ? 999.0 : lap, isCrashed: crashed };
+  // T-007 S2 Effect 1 complement: brakes degradation adds a continuous time penalty
+  lap += brakesPenalty;
+
+  // T-007 S2 Effects 2+3: per-part failure rolls (skipped when already crashed).
+  // Engine failure → DNF (lapTime=999, isCrashed=true).
+  // Other parts → additive seconds penalty, all parts can fail independently.
+  // STRICT-MODE: all let declarations before any conditional (CLAUDE.md §5.1).
+  let partFailurePenalty = 0.0;
+  let engineFailed = false;
+  if (!crashed && params.failureCurve) {
+    if (parts.engine !== undefined) {
+      engineFailed = rollPartFailure(getConditionTierLocal(parts.engine), params.failureCurve);
+    }
+    if (!engineFailed) {
+      if (parts.brakes !== undefined && rollPartFailure(getConditionTierLocal(parts.brakes), params.failureCurve)) {
+        partFailurePenalty += BRAKES_FAILURE_PENALTY_SIM;
+      }
+      if (parts.gearbox !== undefined && rollPartFailure(getConditionTierLocal(parts.gearbox), params.failureCurve)) {
+        partFailurePenalty += GEARBOX_FAILURE_PENALTY_SIM;
+      }
+      if (parts.frontWing !== undefined && rollPartFailure(getConditionTierLocal(parts.frontWing), params.failureCurve)) {
+        partFailurePenalty += WING_FAILURE_PENALTY_SIM;
+      }
+      if (parts.rearWing !== undefined && rollPartFailure(getConditionTierLocal(parts.rearWing), params.failureCurve)) {
+        partFailurePenalty += WING_FAILURE_PENALTY_SIM;
+      }
+      if (parts.suspension !== undefined && rollPartFailure(getConditionTierLocal(parts.suspension), params.failureCurve)) {
+        partFailurePenalty += SUSPENSION_FAILURE_PENALTY_SIM;
+      }
+    }
+  }
+  lap += partFailurePenalty;
+
+  return { lapTime: crashed || engineFailed ? 999.0 : lap, isCrashed: crashed || engineFailed };
 }
 
 // ─── simulateRace ─────────────────────────────────────────────────────────────
@@ -339,6 +431,10 @@ export function simulateRace(params: SimRaceParams): SimRaceResult {
       // T-007 S1: look up engine condition by teamId; absent = 1.0 factor (AC#12)
       const teamEngineCondition = engineConditionsMap[driver.teamId];
 
+      // T-007 S2: all parts conditions for this driver's car slot (keyed by teamId_carIndex)
+      const partKey = `${driver.teamId}_${driver.carIndex ?? 0}`;
+      const partsConditions = params.allPartsConditionsMap?.[partKey];
+
       const res = simulateLap({
         circuit,
         carStats: cs,
@@ -351,6 +447,8 @@ export function simulateRace(params: SimRaceParams): SimRaceResult {
         isQualifying: false,
         fatigueLevel: fatigue[did],
         engineCondition: teamEngineCondition,
+        partsConditions,
+        failureCurve: params.failureCurve,
       });
 
       if (res.isCrashed) {

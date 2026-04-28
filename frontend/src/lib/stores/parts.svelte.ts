@@ -2,6 +2,7 @@ import { db } from '$lib/firebase/config';
 import { collection, onSnapshot } from 'firebase/firestore';
 import { browser } from '$app/environment';
 import { authStore } from '$lib/stores/auth.svelte';
+import { teamStore } from '$lib/stores/team.svelte';
 import { partsWearService } from '$lib/services/parts_wear_service.svelte';
 import type { Part, ConditionTier } from '$lib/types';
 
@@ -67,6 +68,19 @@ function createPartsStore() {
         },
 
         /**
+         * Returns a single part document by partType, or null if not seeded.
+         * Covers all 6 part types: engine, gearbox, brakes, frontWing, rearWing, suspension.
+         */
+        getPart(partType: string): Part | null {
+            return parts[partType] ?? null;
+        },
+
+        /** All 6 part documents that currently exist for this car. */
+        get allParts(): Part[] {
+            return Object.values(parts);
+        },
+
+        /**
          * Returns the raw condition value for a part (0–100), defaulting to 100
          * when the part document does not exist (backward compat — AC#8).
          */
@@ -77,6 +91,30 @@ function createPartsStore() {
         /** Returns the visual tier for a part's current condition. */
         getTier(partId: string): ConditionTier {
             return partsWearService.getConditionTier(this.getCondition(partId));
+        },
+
+        /**
+         * Returns true if any loaded part is at or below the given tier.
+         * 'orange' → matches orange or red parts.
+         * 'red'    → matches red parts only.
+         * Used by StrategyPanel for the pre-race wear banner (AC#20).
+         */
+        hasAnyWornPart(tier: 'orange' | 'red'): boolean {
+            const tierOrder = ['green', 'yellow', 'orange', 'red'];
+            const threshold = tierOrder.indexOf(tier);
+            return Object.values(parts).some((p) => {
+                const pTier = partsWearService.getConditionTier(p.condition);
+                return tierOrder.indexOf(pTier) >= threshold;
+            });
+        },
+
+        /**
+         * Repair budget already spent this round (from weekStatus).
+         * Reactive — updates when teamStore refreshes.
+         */
+        get repairSpentThisRound(): number {
+            const ws = teamStore.value.team?.weekStatus ?? {};
+            return (ws['repairSpentThisRound'] as number) ?? 0;
         },
     };
 }

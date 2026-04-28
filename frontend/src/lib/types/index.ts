@@ -315,7 +315,8 @@ export enum DriverStyle {
 
 export interface Part {
     partType: 'engine' | 'gearbox' | 'brakes' | 'frontWing' | 'rearWing' | 'suspension';
-    condition: number;   // 0–100
+    condition: number;     // 0–100
+    maxCondition: number;  // upper bound a repair can reach; defaults to 100, may degrade in S3+
     level: number;
     updatedAt: Date | null;
 }

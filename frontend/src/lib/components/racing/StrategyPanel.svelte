@@ -30,10 +30,19 @@
     } from "$lib/types";
     import { carSetupService } from "$lib/services/car_setup_service.svelte";
     import { uiStore } from "$lib/stores/ui.svelte";
+    import { partsStore } from "$lib/stores/parts.svelte";
     import { t } from "$lib/utils/i18n";
     import { buildCurrentSessionId } from "$lib/utils/sessionGate";
 
     let { carIndex = 0 } = $props();
+
+    const hasWornParts = $derived(partsStore.hasAnyWornPart('orange'));
+    const wornPartsList = $derived(
+        partsStore.allParts.filter((p) => {
+            const tier = partsStore.getTier(p.partType);
+            return tier === 'orange' || tier === 'red';
+        })
+    );
 
     let activeDriverId = $state<string | null>(null);
     let isLoading = $state(true);
@@ -170,6 +179,18 @@
 </script>
 
 <div class="space-y-6">
+    <!-- Pre-race wear banner (AC#20) — informational only, no CTA -->
+    {#if hasWornParts}
+        <div class="rounded-lg border border-orange-500/40 bg-orange-500/10 p-3">
+            <p class="text-xs font-semibold text-orange-400 mb-1">{t('parts_warn_orange')}</p>
+            {#each wornPartsList as p (p.partType)}
+                <p class="text-xs text-app-muted">
+                    {t(('part_' + p.partType) as any)}: {p.condition}%
+                </p>
+            {/each}
+        </div>
+    {/if}
+
     <!-- Driver Selector -->
     <div
         class="bg-app-surface border border-app-border rounded-xl p-4 flex flex-wrap gap-2"

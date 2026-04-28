@@ -1,53 +1,75 @@
 # FTG Racing Manager — Claude Development Guide
 
-## 1. BMAD Method — The Primary Workflow (Mandatory)
+## 1. BMAD Method — The Primary Workflow (Simplified)
 
-This project is driven by the **BMAD Method** (Build More, Architect Dreams) — an agile, AI-driven development framework. **Any feature, bug fix, or improvement MUST go through a BMAD workflow.** Ad-hoc edits directly into files are forbidden except for trivial one-liners (typos, formatting, a missing import) — and even then, a short BMAD story is preferred.
+This project uses **simplified BMAD** — lightweight enough to survive context compression, without losing the safety guarantees in §3–§18. Any feature, bug fix, or improvement goes through one of three tiers below. Ad-hoc edits are only allowed for true one-liners (typos, a missing import, a single config value).
 
 ### 1.1 Installed modules
 
-- **BMAD Core + BMM (Build More Architect Dreams)** — v6.3.0
+- **BMAD Core + BMM (Build More, Architect Dreams)** — v6.3.0
 - **Location:** `_bmad/` (tracked), `_bmad-output/` (generated artifacts)
-- **Claude Code integration:** 41 skills under `.claude/skills/bmad-*`
-- **Help:** invoke the `bmad-help` skill at any time to get routed to the right workflow.
+- **Claude Code integration:** skills under `.claude/skills/bmad-*`
+- **Issue tracker:** GitHub Issues/Projects — use `gh issue` commands (Shortcut MCP is deprecated; do not create new Shortcut stories)
 
-### 1.2 Decision tree — pick the right BMAD workflow
+### 1.2 Decision tree — three tiers
 
-| User request | BMAD workflow | Key skills, in order |
+| Tier | When | How |
 |---|---|---|
-| **New user-facing feature** (market, academy tab, new module) | Full pipeline: analysis → planning → solutioning → implementation | `bmad-product-brief` (or `bmad-prfaq`) → `bmad-create-prd` → `bmad-validate-prd` → `bmad-create-ux-design` (if UI) → `bmad-create-architecture` → `bmad-create-epics-and-stories` → `bmad-check-implementation-readiness` → `bmad-sprint-planning` → story cycle |
-| **Bug fix** (any severity, including hotfix) | Quick Dev — unified intent-in / code-out | `bmad-quick-dev` → `bmad-code-review` → (if P1) hotfix gate in §15 |
-| **Small improvement, chore, refactor, doc update** | Quick Dev | `bmad-quick-dev` |
-| **Larger refactor / architectural change** | Full pipeline, starting at solutioning | `bmad-create-architecture` → `bmad-create-epics-and-stories` → story cycle |
-| **Unfamiliar area or scope unclear** | Discovery first | `bmad-brainstorming` / `bmad-domain-research` / `bmad-technical-research` → then the appropriate track above |
-| **Significant mid-flight change** | Course correction | `bmad-correct-course` |
+| **Epic / new idea** | New domain, new user-facing module, concept that needs ideation | 1. Chat to clarify product intent → 2. `gh issue create` (epic issue) → 3. Story track (below) for each piece |
+| **Story / task from backlog** | GitHub issue exists, scope is clear | `bmad-create-story-interactive` → `bmad-dev-story-interactive` |
+| **Bug / chore / small improvement** | Defect, tech debt, copy fix, config change | `bmad-quick-dev-interactive` |
+| **Significant mid-flight change** | Scope shifted after implementation started | `bmad-correct-course` |
 
-### 1.3 The story cycle (canonical implementation loop)
+**Optional deep pipeline** — only when the feature has real unknowns (new architectural domain, integration with an external system never used before):
+`bmad-brainstorming` → `bmad-create-architecture` → then story track above.
+Skills like `bmad-create-prd`, `bmad-validate-prd`, `bmad-create-ux-design`, `bmad-create-epics-and-stories`, `bmad-check-implementation-readiness`, and `bmad-sprint-planning` remain available but are **not** part of the default path.
 
-Every feature story runs this loop, one story at a time, in a fresh chat per step:
+### 1.3 The story cycle
 
 ```
-bmad-create-story  (CS)  →  bmad-create-story:validate  (VS)  →  bmad-dev-story  (DS)  →  bmad-code-review  (CR)
-                                                                              ↑                    │
-                                                                              └────── if issues ───┘
+bmad-create-story-interactive  →  bmad-dev-story-interactive  (review inline)
+                                          ↑ if issues ──────────┘
 ```
 
-At epic end: `bmad-retrospective` (ER) is optional but strongly recommended — it feeds lessons back into this document.
+- Code review is **inline** inside `bmad-dev-story-interactive`. No separate `bmad-code-review` step — unless the implementation spans 4+ files across different domains, where it can be invoked optionally.
+- `bmad-create-story:validate` is no longer a separate step — confirmation happens inside `bmad-create-story-interactive`.
+- At epic end: `bmad-retrospective` is optional but recommended — it feeds lessons back into this document.
 
-### 1.4 Artifacts — where BMAD writes
+### 1.4 Issue tracking — GitHub Issues
 
-- **Planning artifacts** (PRDs, architectures, epics, stories): `_bmad-output/planning-artifacts/`
-- **Implementation artifacts** (sprint status, story files, QA reports): `_bmad-output/implementation-artifacts/`
+Every story and epic has a corresponding GitHub issue. Workflow:
+
+```bash
+# Create an epic issue
+gh issue create --title "Epic: <name>" --label "epic" --body "..."
+
+# Create a story issue (linked to an epic)
+gh issue create --title "<Story name>" --label "story" --body "Part of #<epic-number>"
+
+# Update status during work
+gh issue edit <number> --add-label "in-progress"
+
+# Close when done (from the PR or directly)
+gh issue close <number> --comment "Done in PR #..."
+```
+
+Standard labels: `epic`, `story`, `bug`, `chore`, `in-progress`, `blocked`.
+
+### 1.5 Artifacts — where BMAD writes
+
+- **Planning artifacts** (architectures, story files): `_bmad-output/planning-artifacts/`
+- **Implementation artifacts** (sprint status, QA reports): `_bmad-output/implementation-artifacts/`
 - **Project knowledge** (context, documentation): `docs/` and `frontend/src/routes/admin/docs/`
 
 These paths are configured in `_bmad/bmm/config.yaml`. Do not hand-edit that file.
 
-### 1.5 Hard rules
+### 1.6 Hard rules
 
-- **No code changes without a BMAD workflow.** If you find yourself about to call `Edit` or `Write` without having run at least `bmad-quick-dev`, stop and start the workflow.
+- **No code changes without a BMAD workflow.** Before calling `Edit` or `Write`, run `bmad-create-story-interactive`, `bmad-dev-story-interactive`, or `bmad-quick-dev-interactive`. Exception: true one-liners (typo, missing import, single config value).
 - **One story, one branch, one PR.** See §11 and §15.1.
 - **Context load is mandatory.** Before the first BMAD skill of a task, read the docs listed in §2.
 - **Rules in §3 through §18 override any BMAD skill default** when they conflict. The skill produces the code; this file produces the constraints.
+- **Shortcut MCP is deprecated.** Do not create new Shortcut stories. Use `gh issue` commands instead.
 - **Prohibited BMAD skills in this project:**
   - `bmad-qa-generate-e2e-tests` — Playwright/automated E2E tests are banned (see §8). Use Vitest unit tests only.
 
