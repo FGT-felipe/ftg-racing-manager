@@ -524,6 +524,11 @@ async function runPostRaceProcessing() {
  */
 async function runSeasonEndProcessing(sId, season) {
     try {
+        // P1: Idempotency guard — skip if already processed (prevents double prize on retry)
+        if (season["status"] === "ended") {
+            logger.info(`[SeasonEnd] Season ${sId} already ended, skipping.`);
+            return;
+        }
         logger.info(`[SeasonEnd] Starting end-of-season processing for season ${sId}`);
         const uDoc = await admin_1.db.collection("universe").doc("game_universe_v1").get();
         if (!uDoc.exists) {
@@ -531,7 +536,8 @@ async function runSeasonEndProcessing(sId, season) {
             return;
         }
         const leagues = uDoc.data()["leagues"] ?? [];
-        const currentYear = new Date().getFullYear();
+        // P7: Use season's own year field to avoid wall-clock boundary issues
+        const currentYear = season["year"] ?? new Date().getFullYear();
         for (const league of leagues) {
             const leagueTeamRefs = (league["teams"] ?? []).map((t) => t["id"]).filter(Boolean);
             if (leagueTeamRefs.length === 0)
@@ -591,37 +597,50 @@ async function runSeasonEndProcessing(sId, season) {
                 driversChampion = activeDrivers.length > 0 ? activeDrivers[0] : null;
                 // ── 4. Distribute drivers champion bonuses ────────────────────────
                 if (driversChampion) {
+                    // P5: Guard against missing teamId before Firestore fetch
                     const champTeamId = driversChampion.data["teamId"];
-                    const champTeamDoc = await admin_1.db.collection("teams").doc(champTeamId).get();
-                    if (champTeamDoc.exists) {
-                        const champTeamData = champTeamDoc.data();
-                        const nowIso = new Date().toISOString();
-                        const champBatch = admin_1.db.batch();
-                        // Team bonus
-                        champBatch.update(champTeamDoc.ref, {
-                            budget: (champTeamData["budget"] || 0) + constants_1.DRIVERS_CHAMPION_TEAM_BONUS,
-                        });
-                        const champTxRef = champTeamDoc.ref.collection("transactions").doc();
-                        champBatch.set(champTxRef, {
-                            id: champTxRef.id,
-                            description: `Season Prize — Drivers Championship Bonus (${driversChampion.data["name"] ?? driversChampion.id})`,
-                            amount: constants_1.DRIVERS_CHAMPION_TEAM_BONUS,
-                            date: nowIso,
-                            type: "PRIZE",
-                        });
-                        // Driver market value boost
-                        const currentMarketValue = driversChampion.data["marketValue"] || 0;
-                        const newMarketValue = Math.round(currentMarketValue * constants_1.DRIVERS_CHAMPION_MARKET_VALUE_BOOST);
-                        champBatch.update(driversChampion.ref, { marketValue: newMarketValue });
-                        await champBatch.commit();
-                        logger.info(`[SeasonEnd] Drivers champion bonus paid to team ${champTeamId}; driver ${driversChampion.id} marketValue ${currentMarketValue} → ${newMarketValue}`);
+                    if (!champTeamId) {
+                        logger.warn(`[SeasonEnd] Champion driver ${driversChampion.id} has no teamId, skipping team bonus`);
                     }
-                    // Office notifications
-                    await (0, notifications_1.addOfficeNews)(champTeamId, {
-                        title: "🏆 Drivers Championship Bonus!",
-                        message: `${driversChampion.data["name"] ?? "Your driver"} won the Drivers Championship! Your team receives a $${constants_1.DRIVERS_CHAMPION_TEAM_BONUS.toLocaleString()} bonus.`,
-                        type: "SUCCESS",
-                    });
+                    else {
+                        const champTeamDoc = await admin_1.db.collection("teams").doc(champTeamId).get();
+                        if (champTeamDoc.exists) {
+                            const champTeamData = champTeamDoc.data();
+                            const nowIso = new Date().toISOString();
+                            const champBatch = admin_1.db.batch();
+                            // Team bonus
+                            champBatch.update(champTeamDoc.ref, {
+                                budget: (champTeamData["budget"] || 0) + constants_1.DRIVERS_CHAMPION_TEAM_BONUS,
+                            });
+                            const champTxRef = champTeamDoc.ref.collection("transactions").doc();
+                            // P3: Description matches spec exactly (no driver name appended)
+                            champBatch.set(champTxRef, {
+                                id: champTxRef.id,
+                                description: "Season Prize — Drivers Championship Bonus",
+                                amount: constants_1.DRIVERS_CHAMPION_TEAM_BONUS,
+                                date: nowIso,
+                                type: "PRIZE",
+                            });
+                            // P6: Only apply market value boost if driver has a non-zero value
+                            const currentMarketValue = driversChampion.data["marketValue"] || 0;
+                            if (currentMarketValue > 0) {
+                                const newMarketValue = Math.round(currentMarketValue * constants_1.DRIVERS_CHAMPION_MARKET_VALUE_BOOST);
+                                champBatch.update(driversChampion.ref, { marketValue: newMarketValue });
+                                await champBatch.commit();
+                                logger.info(`[SeasonEnd] Drivers champion bonus paid to team ${champTeamId}; driver ${driversChampion.id} marketValue ${currentMarketValue} → ${newMarketValue}`);
+                            }
+                            else {
+                                await champBatch.commit();
+                                logger.warn(`[SeasonEnd] Champion driver ${driversChampion.id} has marketValue=0, skipping market value boost`);
+                            }
+                            // P4: Office notification inside exists block (prevents writes to non-existent team)
+                            await (0, notifications_1.addOfficeNews)(champTeamId, {
+                                title: "🏆 Drivers Championship Bonus!",
+                                message: `${driversChampion.data["name"] ?? "Your driver"} won the Drivers Championship! Your team receives a $${constants_1.DRIVERS_CHAMPION_TEAM_BONUS.toLocaleString()} bonus.`,
+                                type: "SUCCESS",
+                            });
+                        }
+                    }
                 }
                 // ── 5. Update driver career histories ─────────────────────────────
                 for (const { id: dId, ref: dRef, data: dData } of activeDrivers) {
@@ -684,8 +703,10 @@ async function runSeasonEndProcessing(sId, season) {
             }
             logger.info(`[SeasonEnd] Season history updated for ${teamStandings.length} teams`);
         }
-        // ── 7. Mark season as ended ───────────────────────────────────────────────
-        await admin_1.db.collection("seasons").doc(sId).update({ status: "ended" });
+        // ── 7. Mark season as ended (P2: WriteBatch for atomicity per AC #6) ─────
+        const finalizeBatch = admin_1.db.batch();
+        finalizeBatch.update(admin_1.db.collection("seasons").doc(sId), { status: "ended" });
+        await finalizeBatch.commit();
         logger.info(`[SeasonEnd] Season ${sId} status set to "ended". Season-end processing complete.`);
     }
     catch (err) {
