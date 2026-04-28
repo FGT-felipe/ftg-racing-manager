@@ -1,19 +1,19 @@
 <script lang="ts">
     import { fade } from 'svelte/transition';
-    import { partsStore } from '$lib/stores/parts.svelte';
     import { partsWearService } from '$lib/services/parts_wear_service.svelte';
     import { teamStore } from '$lib/stores/team.svelte';
     import { PARTS_ENGINE_REPAIR_COST_FLAT } from '$lib/constants/app_constants';
+    import type { Part } from '$lib/types';
     import { t } from '$lib/utils/i18n';
 
     let {
         teamId,
-        partType,
+        part,
         carIndex,
         onClose,
     }: {
         teamId: string;
-        partType: string;
+        part: Part;
         carIndex: number;
         onClose: () => void;
     } = $props();
@@ -21,23 +21,28 @@
     let isLoading = $state(false);
     let errorMsg = $state<string | null>(null);
 
-    const condition = $derived(partsStore.getCondition(partType));
+    const repairTarget = $derived(partsWearService.repairTarget(part));
     const budget = $derived(teamStore.value.team?.budget ?? 0);
+    const remainingBudget = $derived(
+        teamStore.value.team ? partsWearService.getRemainingRepairBudget(teamStore.value.team) : 0
+    );
     const repairCost = PARTS_ENGINE_REPAIR_COST_FLAT;
     const budgetAfterRepair = $derived(budget - repairCost);
-    const canAfford = $derived(budget >= repairCost);
+    const canAfford = $derived(budget >= repairCost && remainingBudget >= repairCost);
 
     async function handleConfirm() {
         if (isLoading || !canAfford) return;
         isLoading = true;
         errorMsg = null;
         try {
-            await partsWearService.repairPart(teamId, carIndex, partType);
-            onClose(); // partsStore onSnapshot updates the row automatically (AC#6)
+            await partsWearService.repairPart(teamId, carIndex, part.partType);
+            onClose();
         } catch (e: unknown) {
             const msg = e instanceof Error ? e.message : String(e);
             if (msg === 'INSUFFICIENT_BUDGET') {
                 errorMsg = t('repair_budget_insufficient');
+            } else if (msg === 'REPAIR_BUDGET_EXCEEDED') {
+                errorMsg = t('repair_budget_exceeded');
             } else {
                 errorMsg = msg;
                 console.error('[RepairModal:handleConfirm] repair failed:', e);
@@ -54,14 +59,14 @@
     transition:fade={{ duration: 200 }}
     role="dialog"
     aria-modal="true"
-    aria-label={t('repair_engine')}
+    aria-label={t(('part_' + part.partType) as any)}
 >
     <!-- Modal card -->
     <div class="bg-app-surface border border-app-border rounded-2xl shadow-2xl w-full max-w-sm mx-4 p-6 space-y-5">
         <!-- Header -->
         <div class="flex items-center justify-between">
             <h2 class="text-sm font-black uppercase tracking-widest text-app-primary">
-                {t('repair_engine')}
+                {t(('part_' + part.partType) as any)}
             </h2>
             <button
                 class="text-app-text/40 hover:text-app-text/80 transition-colors text-lg"
@@ -75,8 +80,8 @@
         <!-- Info rows -->
         <div class="space-y-2 text-xs">
             <div class="flex justify-between items-center py-1 border-b border-app-border/40">
-                <span class="text-app-text/60 uppercase tracking-wider">{t('engine')}</span>
-                <span class="font-bold text-app-text">{condition}% → 100%</span>
+                <span class="text-app-text/60 uppercase tracking-wider">{t('car_condition')}</span>
+                <span class="font-bold text-app-text">{part.condition}% → {repairTarget}%</span>
             </div>
             <div class="flex justify-between items-center py-1 border-b border-app-border/40">
                 <span class="text-app-text/60 uppercase tracking-wider">{t('repair_cost')}</span>
@@ -84,10 +89,16 @@
                     ${repairCost.toLocaleString()}
                 </span>
             </div>
-            <div class="flex justify-between items-center py-1">
+            <div class="flex justify-between items-center py-1 border-b border-app-border/40">
                 <span class="text-app-text/60 uppercase tracking-wider">{t('budget_after_repair')}</span>
                 <span class="font-bold {budgetAfterRepair >= 0 ? 'text-app-text' : 'text-red-400'}">
                     ${budgetAfterRepair.toLocaleString()}
+                </span>
+            </div>
+            <div class="flex justify-between items-center py-1">
+                <span class="text-app-text/60 uppercase tracking-wider">{t('repair_budget_remaining')}</span>
+                <span class="font-bold {remainingBudget >= repairCost ? 'text-green-400' : 'text-red-400'}">
+                    ${remainingBudget.toLocaleString()}
                 </span>
             </div>
         </div>

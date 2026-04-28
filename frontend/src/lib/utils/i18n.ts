@@ -763,6 +763,20 @@ export const translations = {
         repair_to_100_pct: "Restore to 100%",
         repair_in_progress: "Repairing...",
         repair_budget_insufficient: "Insufficient budget to repair this part.",
+        // ── Parts Wear S2 additions ────────────────────────────────────────────
+        part_engine: "Engine",
+        part_gearbox: "Gearbox",
+        part_brakes: "Brakes",
+        part_front_wing: "Front Wing",
+        part_rear_wing: "Rear Wing",
+        part_suspension: "Suspension",
+        repair_target: "Restore to {target}%",
+        repair_budget_remaining: "Repair budget remaining",
+        repair_budget_exceeded: "This repair exceeds your remaining repair budget for this round.",
+        parts_warn_orange: "Warning: parts in critical condition",
+        parts_warn_red: "Alert: parts near failure — act before the race",
+        notif_tier_down_title: "Part condition warning",
+        notif_tier_down_body: "{part} dropped to {tier} — open the Garage to repair.",
     },
     es: {
         career_view: "Vista Profesional",
@@ -1525,6 +1539,20 @@ export const translations = {
         repair_to_100_pct: "Restaurar al 100%",
         repair_in_progress: "Reparando...",
         repair_budget_insufficient: "Presupuesto insuficiente para reparar esta pieza.",
+        // ── Parts Wear S2 additions ────────────────────────────────────────────
+        part_engine: "Motor",
+        part_gearbox: "Caja de Cambios",
+        part_brakes: "Frenos",
+        part_front_wing: "Alerón Delantero",
+        part_rear_wing: "Alerón Trasero",
+        part_suspension: "Suspensión",
+        repair_target: "Restaurar al {target}%",
+        repair_budget_remaining: "Presupuesto de reparación disponible",
+        repair_budget_exceeded: "Esta reparación supera tu presupuesto de reparación disponible para esta ronda.",
+        parts_warn_orange: "Advertencia: piezas en condición crítica",
+        parts_warn_red: "Alerta: piezas cerca del fallo — actúa antes de la carrera",
+        notif_tier_down_title: "Alerta de condición de pieza",
+        notif_tier_down_body: "{part} bajó a nivel {tier} — abre el Garage para reparar.",
     }
 };
 

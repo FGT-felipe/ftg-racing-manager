@@ -32,3 +32,33 @@ export const PARTS_ENGINE_REPAIR_COST_FLAT = 25_000;
  * red:    condition < 30
  */
 export const PARTS_TIER_THRESHOLDS = { yellow: 80, orange: 50, red: 30 } as const;
+
+// ─── Parts Wear System (T-007 Slice 2) ────────────────────────────────────────
+
+/** Per-round repair budget cap (USD). Firestore config is authoritative at runtime; this is the code fallback. */
+export const PARTS_REPAIR_BUDGET_CAP_PER_ROUND = 150_000;
+
+/** Base race wear deltas per part type (condition points). Firestore config is authoritative at runtime. */
+export const PARTS_BASE_RACE_DELTAS: Record<string, number> = {
+  engine: 8,
+  gearbox: 6,
+  brakes: 5,
+  frontWing: 4,
+  rearWing: 4,
+  suspension: 5,
+};
+
+/** Max seconds added to lap time from fully degraded brakes (linear scale by condition). */
+export const BRAKES_PENALTY_MAX = 0.8;
+
+/** Extra seconds added to lap time on a brakes failure roll. */
+export const BRAKES_FAILURE_LAP_PENALTY = 3.0;
+
+/** Extra seconds added to lap time on a gearbox failure roll (grid penalty deferred to S3). */
+export const GEARBOX_FAILURE_LAP_PENALTY = 2.0;
+
+/** Extra seconds added to lap time on a front/rear wing failure roll. */
+export const WING_FAILURE_LAP_PENALTY = 1.5;
+
+/** Extra seconds added to lap time on a suspension failure roll. */
+export const SUSPENSION_FAILURE_LAP_PENALTY = 1.0;

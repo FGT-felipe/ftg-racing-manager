@@ -26,6 +26,7 @@ vi.mock('$lib/repositories/team.repository', () => ({
 }));
 vi.mock('$lib/constants/app_constants', () => ({
     PARTS_ENGINE_REPAIR_COST_FLAT: 25_000,
+    PARTS_REPAIR_BUDGET_CAP_PER_ROUND: 150_000,
     PARTS_TIER_THRESHOLDS: { yellow: 80, orange: 50, red: 30 },
     PARTS_BASE_RACE_DELTA: 8,
 }));

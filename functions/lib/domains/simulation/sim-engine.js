@@ -21,6 +21,28 @@ const constants_2 = require("../../config/constants");
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 const clamp = (v, lo, hi) => Math.min(Math.max(v, lo), hi);
 const gap = (a, b) => Math.abs(a - b);
+// T-007 S2: Pure helpers for failure rolls — no imports from wear.ts (purity constraint).
+/** Returns the condition tier for a given condition value. */
+function getConditionTierLocal(condition) {
+    if (condition >= 80)
+        return "green";
+    if (condition >= 50)
+        return "yellow";
+    if (condition >= 30)
+        return "orange";
+    return "red";
+}
+/** Per-lap failure check. Returns true if the part fails this lap. */
+function rollPartFailure(tier, failureCurve) {
+    const prob = failureCurve[tier] ?? 0;
+    return prob > 0 && Math.random() < prob;
+}
+// T-007 S2: Per-part failure lap time penalties (seconds). Mirrors CF constants.
+const BRAKES_PENALTY_MAX_SIM = 0.8; // max penalty from degraded brakes (linear)
+const BRAKES_FAILURE_PENALTY_SIM = 3.0;
+const GEARBOX_FAILURE_PENALTY_SIM = 2.0;
+const WING_FAILURE_PENALTY_SIM = 1.5;
+const SUSPENSION_FAILURE_PENALTY_SIM = 1.0;
 // ─── simulateLap ─────────────────────────────────────────────────────────────
 /**
  * Simulates a single qualifying or race lap.
@@ -51,11 +73,37 @@ function simulateLap(params) {
     penalty += (g4 <= 3 ? 0 : g4 - 3) * 0.025 * pB;
     // --- Car performance ---
     const aV = clamp(s.aero ?? 1, 1, 20);
-    const pV = clamp(s.powertrain ?? 1, 1, 20);
     const cV = clamp(s.chassis ?? 1, 1, 20);
-    const w = aV * (circuit.aeroWeight ?? 0.33) +
+    // T-007 S1: Engine wear multiplier (AC#12). MUST be declared with `let` before
+    // any conditional — undeclared assignment throws ReferenceError in strict mode.
+    let engineFactor = 1.0;
+    if (params.engineCondition !== undefined && params.engineCondition !== null) {
+        engineFactor = params.engineCondition / 100;
+    }
+    // T-007 S2: Per-part sim axis multipliers (Effect 1).
+    // STRICT-MODE: all let declarations before any conditional (CLAUDE.md §5.1).
+    const parts = params.partsConditions ?? {};
+    let gearboxFactor = 1.0;
+    let frontWingFactor = 1.0;
+    let rearWingFactor = 1.0;
+    let suspensionFactor = 1.0;
+    let brakesPenalty = 0.0;
+    if (parts.gearbox !== undefined)
+        gearboxFactor = 0.5 + (parts.gearbox / 100) * 0.5;
+    if (parts.frontWing !== undefined)
+        frontWingFactor = 0.5 + (parts.frontWing / 100) * 0.5;
+    if (parts.rearWing !== undefined)
+        rearWingFactor = 0.5 + (parts.rearWing / 100) * 0.5;
+    if (parts.suspension !== undefined)
+        suspensionFactor = 0.5 + (parts.suspension / 100) * 0.5;
+    if (parts.brakes !== undefined)
+        brakesPenalty = (1 - parts.brakes / 100) * BRAKES_PENALTY_MAX_SIM;
+    const pV = clamp(s.powertrain ?? 1, 1, 20) * engineFactor * gearboxFactor;
+    const aVAdj = aV * frontWingFactor * rearWingFactor;
+    const cVAdj = cV * suspensionFactor;
+    const w = aVAdj * (circuit.aeroWeight ?? 0.33) +
         pV * (circuit.powertrainWeight ?? 0.34) +
-        cV * (circuit.chassisWeight ?? 0.33);
+        cVAdj * (circuit.chassisWeight ?? 0.33);
     const carFactor = 1.0 - (w / 20.0) * 0.25;
     // --- Driver contribution ---
     // Late Braker: braking contributes 50% more to df
@@ -145,7 +193,38 @@ function simulateLap(params) {
     if (specialty === "Qualy Ace" && params.isQualifying) {
         lap *= (1 - constants_2.QUALY_ACE_LAPTIME_BONUS);
     }
-    return { lapTime: crashed ? 999.0 : lap, isCrashed: crashed };
+    // T-007 S2 Effect 1 complement: brakes degradation adds a continuous time penalty
+    lap += brakesPenalty;
+    // T-007 S2 Effects 2+3: per-part failure rolls (skipped when already crashed).
+    // Engine failure → DNF (lapTime=999, isCrashed=true).
+    // Other parts → additive seconds penalty, all parts can fail independently.
+    // STRICT-MODE: all let declarations before any conditional (CLAUDE.md §5.1).
+    let partFailurePenalty = 0.0;
+    let engineFailed = false;
+    if (!crashed && params.failureCurve) {
+        if (parts.engine !== undefined) {
+            engineFailed = rollPartFailure(getConditionTierLocal(parts.engine), params.failureCurve);
+        }
+        if (!engineFailed) {
+            if (parts.brakes !== undefined && rollPartFailure(getConditionTierLocal(parts.brakes), params.failureCurve)) {
+                partFailurePenalty += BRAKES_FAILURE_PENALTY_SIM;
+            }
+            if (parts.gearbox !== undefined && rollPartFailure(getConditionTierLocal(parts.gearbox), params.failureCurve)) {
+                partFailurePenalty += GEARBOX_FAILURE_PENALTY_SIM;
+            }
+            if (parts.frontWing !== undefined && rollPartFailure(getConditionTierLocal(parts.frontWing), params.failureCurve)) {
+                partFailurePenalty += WING_FAILURE_PENALTY_SIM;
+            }
+            if (parts.rearWing !== undefined && rollPartFailure(getConditionTierLocal(parts.rearWing), params.failureCurve)) {
+                partFailurePenalty += WING_FAILURE_PENALTY_SIM;
+            }
+            if (parts.suspension !== undefined && rollPartFailure(getConditionTierLocal(parts.suspension), params.failureCurve)) {
+                partFailurePenalty += SUSPENSION_FAILURE_PENALTY_SIM;
+            }
+        }
+    }
+    lap += partFailurePenalty;
+    return { lapTime: crashed || engineFailed ? 999.0 : lap, isCrashed: crashed || engineFailed };
 }
 // ─── simulateRace ─────────────────────────────────────────────────────────────
 /**
@@ -163,6 +242,7 @@ function simulateLap(params) {
  */
 function simulateRace(params) {
     const { circuit, grid, teamsMap, driversMap, setupsMap, managerRoles, raceEvent } = params;
+    const engineConditionsMap = params.engineConditionsMap ?? {};
     const roles = managerRoles ?? {};
     const totalLaps = raceEvent.totalLaps ?? circuit.laps;
     const isWet = (raceEvent.weatherRace ?? "").toLowerCase().includes("rain") ||
@@ -212,6 +292,11 @@ function simulateRace(params) {
             const su = { ...constants_1.DEFAULT_SETUP, ...(setupsMap[did] ?? {}) };
             const idx = driver.carIndex ?? 0;
             const cs = (team.carStats?.[String(idx)]) ?? { aero: 1, powertrain: 1, chassis: 1 };
+            // T-007 S1: look up engine condition by teamId; absent = 1.0 factor (AC#12)
+            const teamEngineCondition = engineConditionsMap[driver.teamId];
+            // T-007 S2: all parts conditions for this driver's car slot (keyed by teamId_carIndex)
+            const partKey = `${driver.teamId}_${driver.carIndex ?? 0}`;
+            const partsConditions = params.allPartsConditionsMap?.[partKey];
             const res = simulateLap({
                 circuit,
                 carStats: cs,
@@ -223,6 +308,9 @@ function simulateRace(params) {
                 specialty,
                 isQualifying: false,
                 fatigueLevel: fatigue[did],
+                engineCondition: teamEngineCondition,
+                partsConditions,
+                failureCurve: params.failureCurve,
             });
             if (res.isCrashed) {
                 dnfs.push(did);

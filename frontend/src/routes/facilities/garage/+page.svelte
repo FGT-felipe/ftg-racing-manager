@@ -22,15 +22,17 @@
     import CarSchematic from "$lib/components/dashboard/CarSchematic.svelte";
     import DriverSmallCard from "$lib/components/dashboard/DriverSmallCard.svelte";
     import RepairModal from "$lib/components/racing/RepairModal.svelte";
+    import PartRow from "$lib/components/racing/PartRow.svelte";
     import { partsStore } from "$lib/stores/parts.svelte";
     import { partsWearService } from "$lib/services/parts_wear_service.svelte";
+    import type { Part } from "$lib/types";
     import { t } from "$lib/utils/i18n";
 
     let selectedCar = $state(0); // 0 for Car A, 1 for Car B
 
     // Parts wear
     let showRepairModal = $state(false);
-    let repairPartType = $state<string>('engine');
+    let repairPart = $state<Part | null>(null);
 
     let _loadedPartsKey = '';
     $effect(() => {
@@ -351,7 +353,7 @@
                                                     ? 'bg-app-primary text-app-primary-foreground hover:brightness-110 active:scale-95'
                                                     : 'bg-app-surface border border-app-border text-app-text/30 cursor-not-allowed'}"
                                             disabled={wearCondition >= 100}
-                                            onclick={() => { repairPartType = wearPartId; showRepairModal = true; }}
+                                            onclick={() => { repairPart = partsStore.getPart(wearPartId); showRepairModal = true; }}
                                         >
                                             {t('repair')}
                                         </button>
@@ -427,12 +429,39 @@
     </div>
 </div>
 
-{#if showRepairModal && teamStore.value.team}
+{#if partsStore.allParts.length > 0}
+    <div class="mt-8 p-4 md:p-8 max-w-[1400px] mx-auto">
+        <div class="flex items-center justify-between mb-4">
+            <h3 class="text-[10px] font-black uppercase tracking-[0.25em] text-app-text/50">
+                {t('car_condition')}
+            </h3>
+            {#if teamStore.value.team}
+                {@const remaining = partsWearService.getRemainingRepairBudget(teamStore.value.team)}
+                <span class="text-[9px] font-bold uppercase tracking-widest text-app-text/40">
+                    {t('repair_budget_remaining')}:
+                    <span class="font-black {remaining > 0 ? 'text-app-text/70' : 'text-red-400'}">
+                        ${remaining.toLocaleString()}
+                    </span>
+                </span>
+            {/if}
+        </div>
+        <div class="space-y-2">
+            {#each partsStore.allParts as part (part.partType)}
+                <PartRow
+                    {part}
+                    onRepair={() => { repairPart = part; showRepairModal = true; }}
+                />
+            {/each}
+        </div>
+    </div>
+{/if}
+
+{#if showRepairModal && teamStore.value.team && repairPart}
     <RepairModal
         teamId={teamStore.value.team.id}
-        partType={repairPartType}
+        part={repairPart}
         carIndex={selectedCar}
-        onClose={() => { showRepairModal = false; }}
+        onClose={() => { showRepairModal = false; repairPart = null; }}
     />
 {/if}
 

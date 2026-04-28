@@ -17,7 +17,7 @@ import { fetchTeams } from "../../shared/firestore";
 import { addOfficeNews } from "../../shared/notifications";
 import { sleep } from "../../shared/utils";
 import { simulateRace } from "./sim-engine";
-import { applyWearDelta } from "./wear";
+import { applyWearDelta, PARTS_WEAR_CONFIG_DEFAULTS, PartsWearConfig, PartState } from "./wear";
 
 // ─── Core logic ───────────────────────────────────────────────────────────────
 
@@ -30,6 +30,20 @@ import { applyWearDelta } from "./wear";
  */
 export async function runRaceLogic(): Promise<void> {
   const raceStartTime = Date.now(); // T-007 S1: simRuntimeMs baseline (AC#10)
+
+  // T-007 S2: Read parts_wear config once. Falls back to code defaults on failure — never blocks.
+  // STRICT-MODE: declared before try/catch (CLAUDE.md §5.1)
+  let partsWearConfig: PartsWearConfig = PARTS_WEAR_CONFIG_DEFAULTS;
+  try {
+    const cfgDoc = await db.collection("universe").doc("game_universe_v1").get();
+    const cfgData = (cfgDoc.data() as Record<string, unknown> | undefined)?.["config"] as Record<string, unknown> | undefined;
+    if (cfgData?.["parts_wear"]) {
+      partsWearConfig = cfgData["parts_wear"] as PartsWearConfig;
+    }
+  } catch (eCfg) {
+    logger.warn("[runRaceLogic] parts_wear config read failed, using defaults", eCfg);
+  }
+
   try {
     const uDoc = await db.collection("universe").doc("game_universe_v1").get();
     if (!uDoc.exists) return;
@@ -148,22 +162,50 @@ export async function runRaceLogic(): Promise<void> {
           }
         }
 
-        // T-007 S1: Pre-load engine conditions for all teams (AC#12)
-        const engineConditionsMap: Record<string, number> = {};
-        for (const tid of teamIds) {
+        // T-007 S2: Pre-load all 6 parts for every team+carIndex combo.
+        // Key format: `${teamId}_${carIndex}`. Missing docs silently default to empty.
+        // STRICT-MODE: all variables declared before conditionals (CLAUDE.md §5.1)
+        const allPartsMap: Record<string, Record<string, PartState>> = {};
+        const engineConditionsMap: Record<string, number> = {}; // kept for backward compat with simulateRace
+        const ALL_PART_TYPES_LOCAL = ["engine", "gearbox", "brakes", "frontWing", "rearWing", "suspension"];
+        for (const driverId of Object.keys(driversMap)) {
+          const dData = driversMap[driverId] as Record<string, unknown>;
+          const tid = dData["teamId"] as string;
+          let carIdx = 0;
+          if (typeof dData["carIndex"] === "number") carIdx = dData["carIndex"];
+          const mapKey = `${tid}_${carIdx}`;
+          if (allPartsMap[mapKey]) continue; // already loaded for this car
+          allPartsMap[mapKey] = {};
           try {
-            const partSnap = await db
+            const partsSnap = await db
               .collection("teams").doc(tid)
-              .collection("cars").doc("0")
-              .collection("parts").doc("engine")
+              .collection("cars").doc(String(carIdx))
+              .collection("parts")
               .get();
-            if (partSnap.exists) {
-              // STRICT-MODE: declare before conditional (CLAUDE.md §5.1)
-              const cond: number = (partSnap.data() as Record<string, unknown>)["condition"] as number ?? 100;
-              engineConditionsMap[tid] = cond;
+            for (const pDoc of partsSnap.docs) {
+              if (!ALL_PART_TYPES_LOCAL.includes(pDoc.id)) continue;
+              const pd = pDoc.data() as Record<string, unknown>;
+              allPartsMap[mapKey][pDoc.id] = {
+                condition: (pd["condition"] as number) ?? 100,
+                maxCondition: (pd["maxCondition"] as number) ?? 100,
+                level: (pd["level"] as number) ?? 1,
+              };
             }
-          } catch (eEng) {
-            logger.warn(`[runRaceLogic] engine condition read failed for team ${tid}, defaulting to 1.0`, eEng);
+            // Keep engineConditionsMap in sync for simulateRace backward compat
+            if (allPartsMap[mapKey]["engine"] !== undefined) {
+              engineConditionsMap[tid] = allPartsMap[mapKey]["engine"].condition;
+            }
+          } catch (eParts) {
+            logger.warn(`[runRaceLogic] parts read failed for team ${tid} car ${carIdx}, defaulting to empty`, eParts);
+          }
+        }
+
+        // T-007 S2: flatten PartState → condition number for sim-engine (pure, no Firestore types)
+        const allPartsConditionsMap: Record<string, Record<string, number>> = {};
+        for (const [key, parts] of Object.entries(allPartsMap)) {
+          allPartsConditionsMap[key] = {};
+          for (const [partType, partState] of Object.entries(parts)) {
+            allPartsConditionsMap[key][partType] = partState.condition;
           }
         }
 
@@ -177,6 +219,8 @@ export async function runRaceLogic(): Promise<void> {
           managerRoles,
           engineConditionsMap,
           raceEvent: rEvent as unknown as Parameters<typeof simulateRace>[0]["raceEvent"],
+          allPartsConditionsMap,
+          failureCurve: partsWearConfig.failureCurve,
         });
 
         // Calculate live duration for frontend playback
@@ -314,13 +358,35 @@ export async function runRaceLogic(): Promise<void> {
         statsBatch.update(db.collection("seasons").doc(sId as string), { calendar: updCal });
         await statsBatch.commit();
 
-        // T-007 S1: Apply wear deltas after stats are committed (AC#7, AC#9)
+        // T-007 S2: Apply wear deltas per driver/car after stats are committed (AC#7, AC#9, AC#13)
         // Wrapped in try/catch — wear failure NEVER corrupts race results
-        for (const tid of teamIds) {
+        for (const driverId of Object.keys(driversMap)) {
+          const dData = driversMap[driverId] as Record<string, unknown>;
+          const tid = dData["teamId"] as string;
+          let carIdx = 0;
+          if (typeof dData["carIndex"] === "number") carIdx = dData["carIndex"];
+          const mapKey = `${tid}_${carIdx}`;
+          const partsMap = allPartsMap[mapKey] ?? {};
+          const raceStyle = (setupsMap[driverId] as Record<string, unknown>)?.["raceStyle"] as string ?? "normal";
+          const hadIncident = raceRes.dnfs.includes(driverId);
+          const weatherRace = (rEvent["weatherRace"] as string) ?? "dry";
           try {
-            await applyWearDelta(tid, 0, sId as string, rEvent["id"] as string);
+            await applyWearDelta(
+              tid,
+              carIdx,
+              sId as string,
+              rEvent["id"] as string,
+              partsMap,
+              {
+                circuitId: rEvent["circuitId"] as string,
+                raceStyle,
+                weather: weatherRace,
+                config: partsWearConfig,
+              },
+              hadIncident
+            );
           } catch (eWear) {
-            logger.error(`[runRaceLogic:wear-apply] failed for team ${tid}`, eWear);
+            logger.error(`[runRaceLogic:wear-apply] failed for team ${tid} car ${carIdx}`, eWear);
           }
         }
 
