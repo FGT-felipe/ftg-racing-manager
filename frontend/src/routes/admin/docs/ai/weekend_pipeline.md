@@ -60,15 +60,27 @@ if (rSnap.data().qualyGrid) { continue; }
 **Function:** `runRaceLogic()` in `functions/index.js`
 
 **Execution:**
-1. For each league, reads Race document `{seasonId}_{raceEventId}`
-2. Verifies `qualyGrid.length > 0` — skips if not ready
-3. Simulates full race using `raceEngine.simulateRace(qualyGrid, circuit, setups)`
-4. Commits via `statsBatch`:
+1. Reads `universe/game_universe_v1.config.parts_wear` — stores in `partsWearConfig`. Falls back to hardcoded `PARTS_WEAR_CONFIG_DEFAULTS` if read fails (never blocks race execution).
+2. For each league, reads Race document `{seasonId}_{raceEventId}`
+3. Verifies `qualyGrid.length > 0` — skips if not ready
+4. Pre-loads all 6 parts for all teams: `allPartsMap[teamId_carIndex][partType] = { condition, level, maxCondition }`. Missing docs skipped silently (COMPAT-1).
+5. Simulates full race via `raceEngine.simulateRace(qualyGrid, circuit, setups, allPartsMap, partsWearConfig)`:
+   - Each `simulateLap` call receives `partsConditions` (condition per partType) and `failureCurve`
+   - Per-part sim-axis multipliers applied every lap (engine, gearbox, frontWing, rearWing, suspension, brakes penalty)
+   - Per-lap failure roll per part — failure mode applied (DNF for engine, lap time penalty for others). Entire block wrapped in try/catch — exception logged, race continues.
+6. Commits via `statsBatch`:
    - `drivers/{id}`: `seasonPoints += pts`, `seasonRaces++`, `seasonWins++`, `form`, `stats.morale`, `championshipForm`
    - `teams/{id}`: `budget += prize`, `seasonPoints += pts`, `seasonRaces++`, `seasonWins++`
-5. Updates Race document: `finalPositions`, `raceResults`, `totalTimes`, `dnfs`, `fast_lap_driver`, `isFinished: true`, `status: "completed"`
-6. Updates Season calendar: `calendar[rIdx].isCompleted = true`
-7. Sets `postRaceProcessingAt = now + 1h` and `postRaceProcessed: false` on Race document
+7. Updates Race document: `finalPositions`, `raceResults`, `totalTimes`, `dnfs`, `fast_lap_driver`, `isFinished: true`, `status: "completed"`
+8. Updates Season calendar: `calendar[rIdx].isCompleted = true`
+9. Sets `postRaceProcessingAt = now + 1h` and `postRaceProcessed: false` on Race document
+10. Calls `applyWearDelta` for each team (after race `isFinished: true` is committed):
+    - Iterates all 6 part types. Skips silently if part doc missing.
+    - Computes delta per part: `base × (1 + circuitStress) × driverModifier × trackCondModifier × carLevelModifier`
+    - Applies incident bump (`+incidentMultiplier × base`) if driver crashed
+    - Writes all part updates in a single batch. Writes one `wear_log/{seasonId}_{roundId}_{teamId}_{carIndex}` entry (formulaVersion: 2).
+    - Compares tier before/after — fires `sendOfficeNotification` for each tier-down event. Notification failures caught and logged, never re-thrown.
+    - Entire `applyWearDelta` call wrapped in try/catch — exception logged, race commit is NOT rolled back.
 
 ### Phase 3 — POST-RACE ECONOMY (fires ~1h after race)
 **Trigger:** `exports.postRaceProcessing` (`onSchedule("*/30 * * * *")`)  
@@ -88,7 +100,7 @@ if (rSnap.data().qualyGrid) { continue; }
    - **Youth academy events** (random candidate generation or skill tweaks)
    - **Specialty trigger (per trainee)** — `post-race.ts:302`. Assigns a permanent `specialty` (Rainmaster, Tyre Whisperer, …) when ALL three conditions are met: `!specialty && isMarkedForPromotion === true && baseSkill >= 8 && any stat >= 11`. Strict `=== true` — `undefined`/`false` never triggers (T-033, v1.7.6). Once assigned, the specialty survives later unmarking by the manager; no retroactive cleanup.
 5. AI team car upgrades (30% chance per stat per team)
-6. Resets `weekStatus` for all teams (clears driver setups, flags)
+6. Resets `weekStatus` for all teams (clears driver setups, flags, and `repairSpentThisRound = 0`)
 7. Sets `postRaceProcessed: true`, `processedAt: serverTimestamp()`
 8. Calls `syncUniverseStats()` — syncs `universe/game_universe_v1` with live driver/team stats
 

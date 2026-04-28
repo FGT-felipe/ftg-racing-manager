@@ -174,18 +174,23 @@ graph TD
 
 ---
 
-## 5b. Parts Wear (T-007 Slice 1)
+## 5b. Parts Wear (T-007 Slice 2)
 
 ### `partsWearService` — `frontend/src/lib/services/parts_wear_service.svelte.ts`
 
-Stateless service. All methods are `async` and return `Promise<void>`.
+Stateless service. All Firestore mutations go through `runTransaction`.
 
 | Method | Signature | Description |
 |---|---|---|
-| `repairPart` | `(teamId: string, carIndex: number, partId: string) => Promise<void>` | Atomically repairs a part to 100% condition. Deducts `PARTS_ENGINE_REPAIR_COST_FLAT` via `runTransaction`. Throws `'INSUFFICIENT_BUDGET'` when budget is insufficient. |
-| `getConditionTier` | `(condition: number) => ConditionTier` | Pure. Maps condition (0–100) to `'green' | 'yellow' | 'orange' | 'red'` using `PARTS_TIER_THRESHOLDS`. |
+| `seedEngineIfMissing` | `(teamId, carIndex) => Promise<void>` | No-ops if `parts/engine` doc already exists. Safe to call on every page load. |
+| `repairPart` | `(teamId, carIndex, partType, repairCost?) => Promise<void>` | Atomically repairs a part. Enforces both `INSUFFICIENT_BUDGET` (team budget) and `REPAIR_BUDGET_EXCEEDED` (per-round cap). Increments `weekStatus.repairSpentThisRound` in the same transaction. |
+| `repairTarget` | `(part: Part) => number` | Returns `part.maxCondition` (100 in S2). Use this in UI instead of hardcoding 100. |
+| `getRemainingRepairBudget` | `(team: Team) => number` | `PARTS_REPAIR_BUDGET_CAP_PER_ROUND - weekStatus.repairSpentThisRound`. Pure. |
+| `getConditionTier` | `(condition: number) => ConditionTier` | Pure. Maps 0–100 to `'green'|'yellow'|'orange'|'red'` using `PARTS_TIER_THRESHOLDS`. |
 
-**Transaction guarantees:** `repairPart` reads budget inside the transaction — no TOCTOU race. Rolls back atomically if budget check fails. Writes a `transactions/` subcollection entry per CLAUDE.md §4.3.
+**Transaction guarantees:** `repairPart` reads budget and `repairSpentThisRound` inside the transaction. Rolls back atomically on either check failure.
+
+**Error tokens:** `'INSUFFICIENT_BUDGET'` (team funds), `'REPAIR_BUDGET_EXCEEDED'` (round cap).
 
 **Error namespace:** `[PartsWearService:repairPart]`
 
@@ -193,16 +198,20 @@ Stateless service. All methods are `async` and return `Promise<void>`.
 
 ### `partsStore` — `frontend/src/lib/stores/parts.svelte.ts`
 
-Class-based reactive store. Subscribes to `teams/{teamId}/cars/{carIndex}/parts/` via `onSnapshot`.
+Reactive singleton. Subscribes to `teams/{teamId}/cars/{carIndex}/parts/` via `onSnapshot`.
 
 | Member | Type | Description |
 |---|---|---|
-| `init(teamId, carIndex)` | `() => () => void` | Starts the Firestore listener. Returns cleanup function for `$effect`. Gated behind `browser` + `authStore.user`. |
-| `enginePart` | `Part | null` | Reactive getter. `null` for un-migrated teams (AC#8). |
-| `getCondition(partId)` | `number` | Returns part condition (0–100). Defaults to 100 if part doc missing (COMPAT-1). |
+| `init(teamId, carIndex)` | `() => () => void` | Starts Firestore listener. Returns cleanup for `$effect`. Gated behind `browser` + `authStore.user`. |
+| `enginePart` | `Part \| null` | Reactive getter for the engine part doc (backward compat). |
+| `getPart(partType)` | `Part \| null` | Returns a single part doc by type. `null` for un-migrated teams. |
+| `allParts` | `Part[]` | All part docs that currently exist for this car (0–6 entries). |
+| `getCondition(partId)` | `number` | Part condition (0–100). Defaults to 100 if doc missing (COMPAT-1). |
 | `getTier(partId)` | `ConditionTier` | Delegates to `partsWearService.getConditionTier`. |
+| `hasAnyWornPart(tier)` | `boolean` | `true` if any part is at or below the given tier. `'orange'` matches orange + red; `'red'` matches red only. Used by StrategyPanel banner. |
+| `repairSpentThisRound` | `number` | Read-only. Reads from `teamStore.value.team.weekStatus.repairSpentThisRound`. Reactive. |
 
-**Usage rule:** Components MUST read only via `partsStore` getters — never call Firestore directly from `.svelte` files (CLAUDE.md §4.2).
+**Usage rule:** Components read only via `partsStore` getters. Direct Firestore calls from `.svelte` files are forbidden (CLAUDE.md §4.2).
 
 ---
 
