@@ -792,6 +792,7 @@ export const translations = {
         season_summary_close: "Close",
         season_summary_loading: "Loading results…",
         season_summary_pts: "pts",
+        season_summary_position: "Position",
     },
     es: {
         career_view: "Vista Profesional",
@@ -1583,6 +1584,7 @@ export const translations = {
         season_summary_close: "Cerrar",
         season_summary_loading: "Cargando resultados…",
         season_summary_pts: "pts",
+        season_summary_position: "Posición",
     }
 };
 

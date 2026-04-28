@@ -144,7 +144,7 @@
                         <div class="bg-app-text/3 border border-app-border rounded-xl p-4 flex flex-col gap-3">
                             <div class="grid grid-cols-3 gap-4">
                                 <div class="flex flex-col gap-1">
-                                    <span class="text-[9px] text-app-text/40 uppercase tracking-widest font-heading">Position</span>
+                                    <span class="text-[9px] text-app-text/40 uppercase tracking-widest font-heading">{t('season_summary_position')}</span>
                                     <span class="text-xl font-black text-app-primary font-heading">P{playerRow.position}</span>
                                 </div>
                                 <div class="flex flex-col gap-1">
