@@ -5,7 +5,7 @@
  * Never embed fees, thresholds, or multipliers directly in logic files.
  */
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.DEFAULT_SETUP = exports.QUALY_PRIZES = exports.ACADEMY_XP_BONUS_PER_LEVEL = exports.SPECIALTY_STAT_THRESHOLD = exports.SPECIALTY_BASESKILL_THRESHOLD = exports.RAINMASTER_WET_DF_BONUS = exports.TYRE_WHISPERER_WEAR_REDUCTION = exports.DEFENSIVE_MINISTER_CRASH_REDUCTION = exports.APEX_HUNTER_STAT_BOOST = exports.LATE_BRAKER_STAT_BOOST = exports.IRON_NERVE_NOISE_REDUCTION = exports.QUALY_ACE_LAPTIME_BONUS = exports.FATIGUE_PENALTY_FACTOR = exports.FATIGUE_PENALTY_THRESHOLD = exports.FATIGUE_DRAIN_BY_STYLE = exports.XP_PER_SKILL_LEVEL = exports.NAME_CHANGE_COST = exports.ACADEMY_TRAINEE_WEEKLY_COST = exports.FITNESS_TRAINER_SALARIES = exports.HQ_MAINTENANCE_PER_LEVEL = exports.EX_DRIVER_SALARY_MULTIPLIER = exports.WEEKS_PER_YEAR = exports.POINT_VALUE = exports.BASE_PRIZE = exports.POINT_SYSTEM = exports.FALLBACK_BONUSES = void 0;
+exports.DEFAULT_SETUP = exports.DRIVERS_CHAMPION_MARKET_VALUE_BOOST = exports.DRIVERS_CHAMPION_TEAM_BONUS = exports.SEASON_PRIZE_TABLE = exports.QUALY_PRIZES = exports.ACADEMY_XP_BONUS_PER_LEVEL = exports.SPECIALTY_STAT_THRESHOLD = exports.SPECIALTY_BASESKILL_THRESHOLD = exports.RAINMASTER_WET_DF_BONUS = exports.TYRE_WHISPERER_WEAR_REDUCTION = exports.DEFENSIVE_MINISTER_CRASH_REDUCTION = exports.APEX_HUNTER_STAT_BOOST = exports.LATE_BRAKER_STAT_BOOST = exports.IRON_NERVE_NOISE_REDUCTION = exports.QUALY_ACE_LAPTIME_BONUS = exports.FATIGUE_PENALTY_FACTOR = exports.FATIGUE_PENALTY_THRESHOLD = exports.FATIGUE_DRAIN_BY_STYLE = exports.XP_PER_SKILL_LEVEL = exports.NAME_CHANGE_COST = exports.ACADEMY_TRAINEE_WEEKLY_COST = exports.FITNESS_TRAINER_SALARIES = exports.HQ_MAINTENANCE_PER_LEVEL = exports.EX_DRIVER_SALARY_MULTIPLIER = exports.WEEKS_PER_YEAR = exports.POINT_VALUE = exports.BASE_PRIZE = exports.POINT_SYSTEM = exports.FALLBACK_BONUSES = void 0;
 exports.getRacePrize = getRacePrize;
 // ─── Sponsor fallback bonuses ────────────────────────────────────────────────
 /** Fallback bonus amounts per sponsor ID when objectiveBonus is missing. */
@@ -121,6 +121,27 @@ function getRacePrize(posIndex) {
 }
 // ─── Qualy prizes (P1: 50k, P2: 30k, P3: 15k) ───────────────────────────────
 exports.QUALY_PRIZES = [50_000, 30_000, 15_000];
+// ─── Season-end prizes ───────────────────────────────────────────────────────
+/**
+ * End-of-season constructors championship prize table (index 0 = P1).
+ * All 10 positions receive money — last place still earns $200k.
+ */
+exports.SEASON_PRIZE_TABLE = [
+    6_000_000, // P1
+    4_500_000, // P2
+    3_000_000, // P3
+    2_000_000, // P4
+    1_500_000, // P5
+    1_000_000, // P6
+    700_000, // P7
+    500_000, // P8
+    350_000, // P9
+    200_000, // P10
+];
+/** Additional budget bonus for the team whose driver wins the Drivers Championship. */
+exports.DRIVERS_CHAMPION_TEAM_BONUS = 2_000_000;
+/** Market value multiplier applied to the Drivers Championship winner. */
+exports.DRIVERS_CHAMPION_MARKET_VALUE_BOOST = 1.20;
 // ─── Default car setup ───────────────────────────────────────────────────────
 /** Default setup applied when a driver has not submitted a custom one. */
 exports.DEFAULT_SETUP = {

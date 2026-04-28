@@ -24,6 +24,8 @@ export interface Season {
     year: number;
     calendar: RaceEvent[];
     startDate: Date;
+    /** Set by CF after last race is processed. Absent or undefined = season active. */
+    status?: "active" | "ended" | "preseason";
 }
 
 export interface Division {
@@ -38,7 +40,7 @@ export interface Transaction {
     description: string;
     amount: number;
     date: Date;
-    type: 'SPONSOR' | 'SALARY' | 'UPGRADE' | 'REWARD' | 'PRACTICE' | 'OTHER';
+    type: 'SPONSOR' | 'SALARY' | 'UPGRADE' | 'REWARD' | 'PRACTICE' | 'PRIZE' | 'OTHER';
 }
 
 export interface NewsItem {

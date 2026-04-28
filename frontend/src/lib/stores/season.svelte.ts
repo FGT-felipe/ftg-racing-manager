@@ -44,6 +44,16 @@ class SeasonStore {
         return this.nextRace;
     }
 
+    /** True when the last race has been processed and prizes distributed. */
+    get isSeasonEnded(): boolean {
+        return this.value.season?.status === "ended";
+    }
+
+    /** True during the 2-week pre-season window before the new season starts. */
+    get isPreSeason(): boolean {
+        return this.value.season?.status === "preseason";
+    }
+
     init(seasonId?: string) {
         // Support for Playwright/Testing Mocking
         if (browser && (window as any).__MOCK_SEASON__) {

@@ -90,6 +90,24 @@
             </h1>
         </header>
 
+        <!-- Season-ended banner -->
+        {#if seasonStore.isSeasonEnded}
+            <div class="flex items-center gap-4 px-6 py-4 rounded-2xl bg-app-primary/10 border border-app-primary/30">
+                <span class="text-2xl">🏁</span>
+                <div class="flex flex-col gap-0.5">
+                    <p class="text-sm font-bold text-app-primary font-heading uppercase tracking-widest">
+                        {t('season_ended_banner_title')}
+                    </p>
+                    <p class="text-xs text-app-text/60">
+                        {t('season_ended_banner_body')}
+                    </p>
+                </div>
+                <span class="ml-auto text-[10px] font-black uppercase tracking-[0.25em] text-app-primary/50 font-heading">
+                    {t('season_ended_preseason_label')}
+                </span>
+            </div>
+        {/if}
+
         <!-- Grid Layout for Dashboard Main View -->
         <div class="grid grid-cols-1 lg:grid-cols-3 gap-8 w-full items-start">
             <!-- Left/Center Col: Main Ops -->

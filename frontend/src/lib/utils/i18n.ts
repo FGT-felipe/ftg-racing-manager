@@ -777,6 +777,11 @@ export const translations = {
         parts_warn_red: "Alert: parts near failure — act before the race",
         notif_tier_down_title: "Part condition warning",
         notif_tier_down_body: "{part} dropped to {tier} — open the Garage to repair.",
+        season_ended_banner_title: "Season has ended",
+        season_ended_banner_body: "The season is over. Pre-season will begin shortly.",
+        season_ended_preseason_label: "Pre-season",
+        racing_preseason_title: "Pre-Season",
+        racing_preseason_body: "The season has ended. Pre-season activities will be available soon.",
     },
     es: {
         career_view: "Vista Profesional",
@@ -1553,6 +1558,11 @@ export const translations = {
         parts_warn_red: "Alerta: piezas cerca del fallo — actúa antes de la carrera",
         notif_tier_down_title: "Alerta de condición de pieza",
         notif_tier_down_body: "{part} bajó a nivel {tier} — abre el Garage para reparar.",
+        season_ended_banner_title: "La temporada ha terminado",
+        season_ended_banner_body: "La temporada finalizó. La pretemporada comenzará pronto.",
+        season_ended_preseason_label: "Pretemporada",
+        racing_preseason_title: "Pretemporada",
+        racing_preseason_body: "La temporada ha concluido. Las actividades de pretemporada estarán disponibles pronto.",
     }
 };
 
