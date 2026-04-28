@@ -782,6 +782,16 @@ export const translations = {
         season_ended_preseason_label: "Pre-season",
         racing_preseason_title: "Pre-Season",
         racing_preseason_body: "The season has ended. Pre-season activities will be available soon.",
+        season_summary_title: "Season {year} — Final Summary",
+        season_summary_constructors: "Constructors Championship",
+        season_summary_champion: "Drivers Champion",
+        season_summary_your_season: "Your Season",
+        season_summary_prize: "Prize",
+        season_summary_drivers_bonus: "+$2M Drivers Champion Bonus",
+        season_summary_view_finances: "View Finances",
+        season_summary_close: "Close",
+        season_summary_loading: "Loading results…",
+        season_summary_pts: "pts",
     },
     es: {
         career_view: "Vista Profesional",
@@ -1563,6 +1573,16 @@ export const translations = {
         season_ended_preseason_label: "Pretemporada",
         racing_preseason_title: "Pretemporada",
         racing_preseason_body: "La temporada ha concluido. Las actividades de pretemporada estarán disponibles pronto.",
+        season_summary_title: "Temporada {year} — Resumen Final",
+        season_summary_constructors: "Campeonato de Constructores",
+        season_summary_champion: "Campeón de Pilotos",
+        season_summary_your_season: "Tu Temporada",
+        season_summary_prize: "Premio",
+        season_summary_drivers_bonus: "+$2M Bono Campeón de Pilotos",
+        season_summary_view_finances: "Ver Finanzas",
+        season_summary_close: "Cerrar",
+        season_summary_loading: "Cargando resultados…",
+        season_summary_pts: "pts",
     }
 };
 

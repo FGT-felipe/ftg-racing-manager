@@ -237,6 +237,24 @@ Reactive singleton. Subscribes to the active `seasons/{seasonId}` document via `
 | `"ended"` | Last race processed; prize distribution complete |
 | `"preseason"` | Pre-season phase active (S6) |
 
+### `universeStore` — `frontend/src/lib/stores/universe.svelte.ts`
+
+Reactive singleton. Subscribes to `universe/game_universe_v1` via `onSnapshot`. Idempotent `init()` — safe to call from multiple pages.
+
+| Member | Type | Description |
+|---|---|---|
+| `value.universe` | `GameUniverse \| null` | Raw universe snapshot. Contains `leagues[]`. |
+| `value.loading` | `boolean` | `true` until first snapshot resolves. |
+| `init()` | `void` | Starts the `onSnapshot` listener. No-op if already subscribed. Call from dashboard and standings page. |
+| `getLeagueByTeamId(teamId)` | `League \| null` | Returns the league object containing the given team. |
+| `getTeamStanding(teamId)` | `{ position, total, points }` | Single-team position in their league. |
+| `getAllTeamStandings(teamId)` | `Array<{...team, position}>` | All teams in the player's league, sorted by `seasonPoints` desc, with 1-based `position`. Added in T-124 S2. |
+| `getDriversChampion(teamId)` | `DriverRecord \| null` | Top driver in player's league. Tie-break: pts → wins → podiums → id asc. Added in T-124 S2. |
+| `getDriverStandings(teamId)` | `DriverRecord[]` | Drivers for the player's team only. |
+| `getDriverById(driverId)` | `DriverRecord \| null` | Finds driver across all leagues. |
+
+**Frontend constants:** `frontend/src/lib/constants/season.ts` — `SEASON_PRIZE_TABLE` (10-element array, index 0 = P1) and `DRIVERS_CHAMPION_TEAM_BONUS`. Mirror the CF constants. Do not hardcode prize amounts in components.
+
 ### `runSeasonEndProcessing` — `functions/lib/domains/economy/season-end.js`
 
 See **Phase 3b** in `weekend_pipeline.md` for the full execution sequence. Called non-fatally from `postRaceProcessing` after the per-team economy loop, once per season lifecycle.

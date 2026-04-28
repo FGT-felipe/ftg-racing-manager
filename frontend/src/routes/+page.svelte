@@ -3,6 +3,7 @@
     import { authStore } from "$lib/stores/auth.svelte";
     import { seasonStore } from "$lib/stores/season.svelte";
     import { managerStore } from "$lib/stores/manager.svelte";
+    import { universeStore } from "$lib/stores/universe.svelte";
     import CountryFlag from "$lib/components/ui/CountryFlag.svelte";
     import { goto } from "$app/navigation";
     import { browser } from "$app/environment";
@@ -12,6 +13,13 @@
     import OfficeNews from "$lib/components/dashboard/OfficeNews.svelte";
     import StandingsCard from "$lib/components/dashboard/StandingsCard.svelte";
     import PreparationChecklist from "$lib/components/dashboard/PreparationChecklist.svelte";
+    import SeasonSummaryModal from "$lib/components/season/SeasonSummaryModal.svelte";
+
+    let dismissed = $state(false);
+
+    $effect(() => {
+        universeStore.init();
+    });
 
     let teamData = $derived(teamStore.value);
     let team = $derived(teamData.team);
@@ -89,6 +97,11 @@
                 {/if}
             </h1>
         </header>
+
+        <!-- Season Summary Modal -->
+        {#if seasonStore.isSeasonEnded && !dismissed}
+            <SeasonSummaryModal onDismiss={() => dismissed = true} />
+        {/if}
 
         <!-- Season-ended banner -->
         {#if seasonStore.isSeasonEnded}
