@@ -271,21 +271,7 @@
                 >
             </div>
 
-            <!-- Car condition summary -->
-            <div class="bg-app-surface border border-app-border rounded-2xl px-5 py-4 flex items-center justify-between">
-                <div class="flex flex-col gap-0.5">
-                    <span class="text-[9px] font-black text-app-text/30 uppercase tracking-widest">{t('garage_car_condition_label')}</span>
-                    <span class="text-xl font-black tabular-nums {carConditionTier === 'green' ? 'text-green-400' : carConditionTier === 'yellow' ? 'text-yellow-400' : carConditionTier === 'orange' ? 'text-orange-400' : 'text-red-400'}">{carConditionPct}%</span>
-                </div>
-                {#if teamStore.value.team}
-                    {@const remaining = partsWearService.getRemainingRepairBudget(teamStore.value.team)}
-                    <div class="flex flex-col items-end gap-0.5">
-                        <span class="text-[9px] font-black text-app-text/30 uppercase tracking-widest">{t('repair_budget_remaining')}</span>
-                        <span class="text-sm font-black {remaining > 0 ? 'text-app-text/70' : 'text-red-400'}">{formatMoney(remaining)}</span>
-                    </div>
-                {/if}
             </div>
-        </div>
 
         <!-- Status Analysis: schematic + driver inline row -->
         <div class="lg:col-span-2 bg-app-surface border border-app-border rounded-2xl p-5 flex flex-col gap-4">
@@ -293,6 +279,8 @@
             <CarSchematic
                 stats={currentCarStats}
                 carLabel={selectedCar === 0 ? "Car A" : "Car B"}
+                condition={carConditionPct}
+                conditionTier={carConditionTier}
             />
             {#if activeDriver}
                 <div class="flex items-center gap-3 border-t border-app-border/40 pt-3">

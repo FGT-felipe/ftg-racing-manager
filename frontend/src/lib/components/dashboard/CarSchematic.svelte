@@ -1,9 +1,11 @@
 <script lang="ts">
     import { Zap, Wind, Navigation, ShieldCheck } from "lucide-svelte";
 
-    let { stats, carLabel } = $props<{
+    let { stats, carLabel, condition = undefined, conditionTier = undefined } = $props<{
         stats: Record<string, number>;
         carLabel: string;
+        condition?: number;
+        conditionTier?: string;
     }>();
 
     const aero = $derived(stats.aero || 1);
@@ -66,6 +68,19 @@
     </div>
 
     <div class="space-y-4">
+        {#if condition !== undefined}
+            {@const tierColor = conditionTier === 'green' ? 'text-green-400' : conditionTier === 'yellow' ? 'text-yellow-400' : conditionTier === 'orange' ? 'text-orange-400' : 'text-red-400'}
+            {@const tierBg = conditionTier === 'green' ? 'bg-green-500' : conditionTier === 'yellow' ? 'bg-yellow-500' : conditionTier === 'orange' ? 'bg-orange-500' : 'bg-red-500'}
+            <div class="space-y-1.5">
+                <div class="flex justify-between items-center px-0.5">
+                    <span class="text-[10px] font-bold text-app-text/60 uppercase tracking-tighter">Condition</span>
+                    <span class="text-[11px] font-black {tierColor}">{condition}%</span>
+                </div>
+                <div class="h-1.5 w-full bg-app-text/5 rounded-full overflow-hidden">
+                    <div class="h-full {tierBg} transition-all duration-500 ease-out" style="width: {condition}%"></div>
+                </div>
+            </div>
+        {/if}
         {#each statRows as stat}
             <div class="space-y-1.5">
                 <div class="flex justify-between items-center px-0.5">
