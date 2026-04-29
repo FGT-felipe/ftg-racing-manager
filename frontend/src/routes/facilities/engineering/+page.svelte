@@ -256,8 +256,11 @@
         {/if}
     </div>
 
-    <!-- Row 1: Status Analysis (unified card) -->
-    <div class="mt-8 bg-app-surface border border-app-border rounded-2xl p-5 flex flex-col gap-4">
+    <!-- Row 1: Status Analysis + League Comparison -->
+    <div class="mt-8 grid grid-cols-1 lg:grid-cols-2 gap-6">
+
+    <!-- Status Analysis -->
+    <div class="bg-app-surface border border-app-border rounded-2xl p-5 flex flex-col gap-4">
         <div class="flex items-center justify-between">
             <span class="text-[10px] font-bold text-app-text/40 uppercase tracking-[0.2em]">Status Analysis</span>
             <!-- Car A/B switcher -->
@@ -295,6 +298,22 @@
             </div>
         {/if}
     </div>
+
+        <!-- League Car Level Comparison -->
+        <div class="bg-app-surface border border-app-border rounded-2xl p-5 flex flex-col gap-3">
+            <div class="flex items-center justify-between">
+                <span class="text-[10px] font-bold text-app-text/40 uppercase tracking-[0.2em]">League Car Levels</span>
+                <span class="text-[9px] font-black text-app-primary/50 uppercase tracking-widest">Coming Soon</span>
+            </div>
+            <p class="text-[11px] text-app-text/30 leading-relaxed">
+                Comparative chart of average car development levels across all teams in the league — see where your machine stands against the competition.
+            </p>
+            <div class="flex-1 flex items-center justify-center border border-app-border border-dashed rounded-xl min-h-[160px]">
+                <span class="text-[10px] font-black text-app-text/10 uppercase tracking-[0.3em]">Chart Placeholder</span>
+            </div>
+        </div>
+
+    </div><!-- end grid row 1 -->
 
     <!-- Row 2: 5 part cards -->
     {#if isLastRound}
