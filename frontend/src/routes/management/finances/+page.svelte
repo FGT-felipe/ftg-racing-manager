@@ -20,6 +20,7 @@
     import { academyService } from "$lib/services/academy.svelte";
     import type { Driver } from "$lib/types";
     import { t } from "$lib/utils/i18n";
+    import { formatMoney } from "$lib/utils/format";
     import {
         FITNESS_TRAINER_SALARY_BY_LEVEL,
         ACADEMY_TRAINEE_WEEKLY_SALARY,
@@ -502,12 +503,7 @@
                                                                 ? 'text-green-400/80'
                                                                 : 'text-red-400/80'}"
                                                         >
-                                                            {item.amount > 0
-                                                                ? "+"
-                                                                : ""}{(
-                                                                item.amount /
-                                                                1000
-                                                            ).toFixed(1)}k
+                                                            {item.amount > 0 ? "+" : ""}{formatMoney(item.amount)}
                                                         </span>
                                                     </div>
                                                 {/each}
