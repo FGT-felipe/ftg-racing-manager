@@ -43,6 +43,8 @@
             return tier === 'orange' || tier === 'red';
         })
     );
+    const carConditionPct = $derived(partsStore.carConditionPct);
+    const carConditionTier = $derived(partsStore.carConditionTier);
 
     let activeDriverId = $state<string | null>(null);
     let isLoading = $state(true);
@@ -182,7 +184,13 @@
     <!-- Pre-race wear banner (AC#20) — informational only, no CTA -->
     {#if hasWornParts}
         <div class="rounded-lg border border-orange-500/40 bg-orange-500/10 p-3">
-            <p class="text-xs font-semibold text-orange-400 mb-1">{t('parts_warn_orange')}</p>
+            <div class="flex items-center justify-between mb-1">
+                <p class="text-xs font-semibold text-orange-400">{t('parts_warn_orange')}</p>
+                <span class="text-[9px] font-black tabular-nums
+                    {carConditionTier === 'green' ? 'text-green-400' : carConditionTier === 'yellow' ? 'text-yellow-400' : carConditionTier === 'orange' ? 'text-orange-400' : 'text-red-400'}">
+                    {t('strategy_car_condition_summary', { pct: carConditionPct })}
+                </span>
+            </div>
             {#each wornPartsList as p (p.partType)}
                 <p class="text-xs text-app-muted">
                     {t(('part_' + p.partType) as any)}: {p.condition}%

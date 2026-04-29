@@ -14,6 +14,7 @@ import {
     Timestamp,
 } from 'firebase/firestore';
 import { calculateCurrentStars, calculateDriverMarketValue } from '$lib/utils/driver';
+import { formatMoney as formatCurrencyShort } from '$lib/utils/format';
 import type { Driver } from '$lib/types';
 import { t } from '$lib/utils/i18n';
 import {
@@ -59,12 +60,6 @@ export interface PendingContract {
     years: number;
     status: 'accepted' | 'rejected';
     negotiatedAt: Timestamp;
-}
-
-function formatCurrencyShort(value: number): string {
-    if (value >= 1_000_000) return `$${(value / 1_000_000).toFixed(1)}M`;
-    if (value >= 1_000) return `$${(value / 1_000).toFixed(0)}K`;
-    return `$${value}`;
 }
 
 export const transferMarketService = {

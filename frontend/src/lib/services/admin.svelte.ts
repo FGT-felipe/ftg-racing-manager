@@ -23,6 +23,7 @@ import {
     BUDGET_REBALANCE_REDUCTION_RATE,
     QUALY_ENTRY_FEE,
 } from '$lib/constants/economics';
+import { formatMoney } from '$lib/utils/format';
 
 /**
  * Result returned by any admin dry-run operation.
@@ -205,7 +206,7 @@ export const adminService = {
                     batch.set(notifRef, {
                         teamId: tDoc.id,
                         title: 'Economic Rebalance',
-                        message: `The Racing Federation has applied an economic rebalance. Your budget is now $${(newBudget / 1000000).toFixed(1)}M. Previous sponsors have been terminated.`,
+                        message: `The Racing Federation has applied an economic rebalance. Your budget is now ${formatMoney(newBudget)}. Previous sponsors have been terminated.`,
                         type: 'INFO',
                         timestamp: serverTimestamp()
                     });

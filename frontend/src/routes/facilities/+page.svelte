@@ -2,7 +2,11 @@
     import { facilityStore } from "$lib/stores/facility.svelte";
     import { teamStore } from "$lib/stores/team.svelte";
     import { managerStore } from "$lib/stores/manager.svelte";
+    import { uiStore } from "$lib/stores/ui.svelte";
     import { FacilityType } from "$lib/types";
+    import { t } from "$lib/utils/i18n";
+    import { formatMoney } from "$lib/utils/format";
+    import { FACILITY_MAX_LEVEL, FACILITY_MAINTENANCE_COST_PER_LEVEL } from "$lib/constants/economics";
     import {
         Building2,
         Wrench,
@@ -18,9 +22,29 @@
         Gamepad2,
         Beaker,
         Flag,
+        ArrowUpCircle,
     } from "lucide-svelte";
     import { goto } from "$app/navigation";
     import { fly } from "svelte/transition";
+
+    // Facilities that have an upgrade button in the overview
+    const UPGRADEABLE_FROM_OVERVIEW = new Set<FacilityType>([
+        FacilityType.garage,
+    ]);
+
+    let upgradingType = $state<FacilityType | null>(null);
+
+    async function handleUpgrade(type: FacilityType) {
+        if (upgradingType) return;
+        upgradingType = type;
+        try {
+            await facilityStore.upgradeFacility(type);
+        } catch (e: unknown) {
+            uiStore.alert((e as Error).message ?? "Upgrade failed", "Error", "danger");
+        } finally {
+            upgradingType = null;
+        }
+    }
 
     const facilityIcons: Record<string, any> = {
         [FacilityType.teamOffice]: Building2,
@@ -274,16 +298,39 @@
                                                 {#if isVirtual}
                                                     Included in Garage
                                                 {:else}
-                                                    ${(
-                                                        (facility.level *
-                                                            15000) /
-                                                        1000
-                                                    ).toFixed(0)}k
+                                                    {formatMoney(facility.level * FACILITY_MAINTENANCE_COST_PER_LEVEL)}
                                                 {/if}
                                             </span>
                                         </div>
                                     </div>
 
+                                    {#if !isVirtual && UPGRADEABLE_FROM_OVERVIEW.has(cardId as FacilityType)}
+                                        {@const canUpgrade = facilityStore.canUpgradeFacility(cardId as FacilityType)}
+                                        {@const isMaxLevel = facility.level >= FACILITY_MAX_LEVEL}
+                                        {@const upgradePrice = facilityStore.getUpgradePrice(cardId as FacilityType, facility.level)}
+                                        {@const isUpgrading = upgradingType === cardId}
+
+                                        {#if isMaxLevel}
+                                            <div class="py-2 px-3 rounded-xl bg-app-primary/10 text-center">
+                                                <span class="text-[9px] font-black text-app-primary uppercase tracking-widest">{t('max_level')}</span>
+                                            </div>
+                                        {:else if !canUpgrade}
+                                            <div class="py-2 px-3 rounded-xl bg-app-surface border border-app-border text-center">
+                                                <span class="text-[9px] font-black text-app-text/30 uppercase tracking-widest">{t('upgraded_this_season')}</span>
+                                            </div>
+                                        {:else}
+                                            <button
+                                                onclick={() => handleUpgrade(cardId as FacilityType)}
+                                                disabled={isUpgrading}
+                                                class="flex items-center justify-between w-full px-4 py-2.5 rounded-xl bg-blue-400/10 border border-blue-400/20 hover:bg-blue-400/20 hover:border-blue-400/40 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                                            >
+                                                <span class="text-[10px] font-black text-blue-400 uppercase tracking-widest">
+                                                    {isUpgrading ? "..." : t('upgrade_to_level', { level: facility.level + 1 })}
+                                                </span>
+                                                <span class="text-[10px] font-black text-blue-300">{formatMoney(upgradePrice)}</span>
+                                            </button>
+                                        {/if}
+                                    {:else}
                                     <div class="flex items-center gap-2">
                                         <div
                                             class="h-1 w-8 bg-app-primary/20 rounded-full overflow-hidden"
@@ -298,6 +345,7 @@
                                             Module Operational
                                         </span>
                                     </div>
+                                    {/if}
                                 {:else}
                                     <div
                                         class="py-3 text-center border border-app-border border-dashed rounded-2xl"
@@ -335,7 +383,7 @@
                 >Weekly Maintenance</span
             >
             <span class="text-sm font-bold text-app-text"
-                >${(totalMaintenance / 1000).toFixed(0)}k
+                >{formatMoney(totalMaintenance)}
                 <span class="text-[10px] opacity-40">/wk</span></span
             >
         </div>

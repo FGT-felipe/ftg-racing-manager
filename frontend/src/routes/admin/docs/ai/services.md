@@ -183,12 +183,16 @@ Stateless service. All Firestore mutations go through `runTransaction`.
 | Method | Signature | Description |
 |---|---|---|
 | `seedEngineIfMissing` | `(teamId, carIndex) => Promise<void>` | No-ops if `parts/engine` doc already exists. Safe to call on every page load. |
-| `repairPart` | `(teamId, carIndex, partType, repairCost?) => Promise<void>` | Atomically repairs a part. Enforces both `INSUFFICIENT_BUDGET` (team budget) and `REPAIR_BUDGET_EXCEEDED` (per-round cap). Increments `weekStatus.repairSpentThisRound` in the same transaction. |
-| `repairTarget` | `(part: Part) => number` | Returns `part.maxCondition` (100 in S2). Use this in UI instead of hardcoding 100. |
-| `getRemainingRepairBudget` | `(team: Team) => number` | `PARTS_REPAIR_BUDGET_CAP_PER_ROUND - weekStatus.repairSpentThisRound`. Pure. |
+| `getGarageRepairTarget` | `(teamData) => number` | Returns repair ceiling (65–100) from `facilities.garage.level`. Clamps 1–5. |
+| `getRepairCap` | `(teamData) => number` | Returns per-round repair budget cap scaled by `facilities.hq.level`. Formula: `$150k × (1 + (hqLevel-1) × 0.5)`. |
+| `repairPart` | `(teamId, carIndex, partType, repairCost?) => Promise<void>` | Atomically repairs a part. Sets `condition = maxCondition = getGarageRepairTarget`. Sets `repairCooldownRoundsLeft = 2`. Enforces `INSUFFICIENT_BUDGET` and `REPAIR_BUDGET_EXCEEDED` (cap doubles on `isLastRound`). |
+| `repairTarget` | `(part: Part) => number` | Returns `part.maxCondition`. Use in UI to show post-repair target. |
+| `getRemainingRepairBudget` | `(team: Team) => number` | Cap (scaled by HQ, doubled on final round) minus `weekStatus.repairSpentThisRound`. Pure. |
 | `getConditionTier` | `(condition: number) => ConditionTier` | Pure. Maps 0–100 to `'green'|'yellow'|'orange'|'red'` using `PARTS_TIER_THRESHOLDS`. |
 
 **Transaction guarantees:** `repairPart` reads budget and `repairSpentThisRound` inside the transaction. Rolls back atomically on either check failure.
+
+**Repair lock:** `timeService.isRepairLocked` is true from Saturday 13:00 COT through Sunday post-race (until Monday 00:00). UI disables the repair button; backend has no lock enforcement.
 
 **Error tokens:** `'INSUFFICIENT_BUDGET'` (team funds), `'REPAIR_BUDGET_EXCEEDED'` (round cap).
 
@@ -209,6 +213,8 @@ Reactive singleton. Subscribes to `teams/{teamId}/cars/{carIndex}/parts/` via `o
 | `getCondition(partId)` | `number` | Part condition (0–100). Defaults to 100 if doc missing (COMPAT-1). |
 | `getTier(partId)` | `ConditionTier` | Delegates to `partsWearService.getConditionTier`. |
 | `hasAnyWornPart(tier)` | `boolean` | `true` if any part is at or below the given tier. `'orange'` matches orange + red; `'red'` matches red only. Used by StrategyPanel banner. |
+| `carConditionPct` | `number` | Average condition of all loaded parts, rounded. Returns 100 when no parts exist. Used in Engineering page header and StrategyPanel banner. |
+| `carConditionTier` | `ConditionTier` | Tier derived from `carConditionPct`. |
 | `repairSpentThisRound` | `number` | Read-only. Reads from `teamStore.value.team.weekStatus.repairSpentThisRound`. Reactive. |
 
 **Usage rule:** Components read only via `partsStore` getters. Direct Firestore calls from `.svelte` files are forbidden (CLAUDE.md §4.2).

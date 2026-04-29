@@ -57,12 +57,7 @@
     let negotiationBuyerTeamId = $state<string | null>(null);
 
     // ─── Helpers ─────────────────────────────────────────────────────────────────
-    function formatCurrency(value: number): string {
-        if (!value) return "$0";
-        if (value >= 1_000_000) return `$${(value / 1_000_000).toFixed(1)}M`;
-        if (value >= 1_000) return `$${(value / 1_000).toFixed(0)}K`;
-        return `$${value}`;
-    }
+    import { formatMoney as formatCurrency } from '$lib/utils/format';
 
     function getLevelInfo(stars: number) {
         if (stars >= 5) return { label: t('elite'), color: "text-yellow-500 border-yellow-500/40" };

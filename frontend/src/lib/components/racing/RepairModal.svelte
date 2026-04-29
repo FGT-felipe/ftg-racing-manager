@@ -11,27 +11,37 @@
         part,
         carIndex,
         onClose,
+        isRepairLocked = false,
+        isLastRound = false,
     }: {
         teamId: string;
         part: Part;
         carIndex: number;
         onClose: () => void;
+        isRepairLocked?: boolean;
+        isLastRound?: boolean;
     } = $props();
 
     let isLoading = $state(false);
     let errorMsg = $state<string | null>(null);
 
-    const repairTarget = $derived(partsWearService.repairTarget(part));
+    const garageLevel = $derived(
+        (teamStore.value.team?.facilities?.['garage'] as { level?: number } | undefined)?.level ?? 1
+    );
+    const garageRepairTarget = $derived(
+        partsWearService.getGarageRepairTarget(teamStore.value.team as unknown as Record<string, unknown> ?? {})
+    );
+    const repairTarget = $derived(garageRepairTarget);
     const budget = $derived(teamStore.value.team?.budget ?? 0);
     const remainingBudget = $derived(
         teamStore.value.team ? partsWearService.getRemainingRepairBudget(teamStore.value.team) : 0
     );
     const repairCost = PARTS_ENGINE_REPAIR_COST_FLAT;
     const budgetAfterRepair = $derived(budget - repairCost);
-    const canAfford = $derived(budget >= repairCost && remainingBudget >= repairCost);
+    const canAfford = $derived(budget >= repairCost && remainingBudget >= repairCost && !isRepairLocked);
 
     async function handleConfirm() {
-        if (isLoading || !canAfford) return;
+        if (isLoading || !canAfford || isRepairLocked) return;
         isLoading = true;
         errorMsg = null;
         try {
@@ -77,11 +87,33 @@
             </button>
         </div>
 
+        <!-- Final round badge -->
+        {#if isLastRound}
+            <div class="flex items-center gap-2 px-3 py-2 rounded-lg bg-amber-500/10 border border-amber-500/20">
+                <span class="text-[9px] font-black uppercase tracking-widest text-amber-400">
+                    {t('repair_final_round_badge')}
+                </span>
+            </div>
+        {/if}
+
+        <!-- Repair locked warning -->
+        {#if isRepairLocked}
+            <div class="flex items-center gap-2 px-3 py-2 rounded-lg bg-red-500/10 border border-red-500/20">
+                <span class="text-[9px] font-black uppercase tracking-widest text-red-400">
+                    {t('repair_locked_parc_ferme')}
+                </span>
+            </div>
+        {/if}
+
         <!-- Info rows -->
         <div class="space-y-2 text-xs">
             <div class="flex justify-between items-center py-1 border-b border-app-border/40">
                 <span class="text-app-text/60 uppercase tracking-wider">{t('car_condition')}</span>
                 <span class="font-bold text-app-text">{part.condition}% → {repairTarget}%</span>
+            </div>
+            <div class="flex justify-between items-center py-1 border-b border-app-border/40">
+                <span class="text-app-text/60 uppercase tracking-wider">{t('garage_repair_target_label', { target: repairTarget, level: garageLevel })}</span>
+                <span class="font-bold text-app-text">{repairTarget}%</span>
             </div>
             <div class="flex justify-between items-center py-1 border-b border-app-border/40">
                 <span class="text-app-text/60 uppercase tracking-wider">{t('repair_cost')}</span>

@@ -74,12 +74,16 @@ if (rSnap.data().qualyGrid) { continue; }
 7. Updates Race document: `finalPositions`, `raceResults`, `totalTimes`, `dnfs`, `fast_lap_driver`, `isFinished: true`, `status: "completed"`
 8. Updates Season calendar: `calendar[rIdx].isCompleted = true`
 9. Sets `postRaceProcessingAt = now + 1h` and `postRaceProcessed: false` on Race document
-10. Calls `applyWearDelta` for each team (after race `isFinished: true` is committed):
+10. Sets `weekStatus.isLockedForProcessing = true` and `weekStatus.isLastRound = (rIdx === calendar.length - 1)` for all teams.
+11. **AI moderation gate (T-007 S3):** Before `simulateRace`, for bot teams with any part `condition < 30` (red tier), overrides `raceStyle = 'defensive'` in `setupsMap`. No Firestore write. Human teams exempt. Logged as `[runRaceLogic:ai-moderation]`.
+12. Calls `applyWearDelta` for each team (after stats committed):
     - Iterates all 6 part types. Skips silently if part doc missing.
+    - Reads `repairCooldownRoundsLeft` from part — if > 0, applies `POST_REPAIR_WEAR_FACTOR = 0.5` (50% wear). Decrements cooldown by 1 (floor 0) in same batch update.
     - Computes delta per part: `base × (1 + circuitStress) × driverModifier × trackCondModifier × carLevelModifier`
-    - Applies incident bump (`+incidentMultiplier × base`) if driver crashed
+    - Applies incident bump (`+incidentMultiplier × base`) if driver crashed.
     - Writes all part updates in a single batch. Writes one `wear_log/{seasonId}_{roundId}_{teamId}_{carIndex}` entry (formulaVersion: 2).
-    - Compares tier before/after — fires `sendOfficeNotification` for each tier-down event. Notification failures caught and logged, never re-thrown.
+    - Compares tier before/after — fires `addOfficeNews` for each tier-down with enriched message. Notification failures caught and logged, never re-thrown.
+    - For human teams with tier-downs, returns `{ debriefAppend }` — a `⚙️ Parts Wear Report:` block appended to `lastRaceDebrief`.
     - Entire `applyWearDelta` call wrapped in try/catch — exception logged, race commit is NOT rolled back.
 
 ### Phase 3 — POST-RACE ECONOMY (fires ~1h after race)

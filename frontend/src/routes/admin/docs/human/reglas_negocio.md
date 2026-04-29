@@ -201,7 +201,7 @@ rejectedNegotiationTeams: string[]   // equipos bloqueados de volver a pujar
 
 ---
 
-## 9. Desgaste de Piezas (Parts Wear — T-007 S2)
+## 9. Desgaste de Piezas (Parts Wear — T-007 S2+S3)
 
 ### Fórmula de Desgaste (multiplicativa)
 
@@ -244,13 +244,34 @@ Objetivo de diseño: 1–3% de DNFs por temporada desde fallos de motor en pilot
 | Ala tras.  | +1.5 s por vuelta                                     |
 | Suspensión | +1.0 s por vuelta                                     |
 
-### Presupuesto de Reparación por Ronda
+### Techo de Reparación por Nivel de Garage (T-007 S3)
 
-*   **Cap:** `$150,000` por ronda (autorizado en Firestore: `config.parts_wear.repairBudgetCap.perRound`).
-*   **Seguimiento:** `weekStatus.repairSpentThisRound` — se incrementa atomicamente en cada transacción de reparación.
-*   **Reset:** `processPostRace` lo reinicia a `0` junto con el resto del `weekStatus`.
-*   **Ronda final:** multiplicador 2× sobre el cap (implementación en S3). El campo `finalRoundMultiplier: 2` ya existe en el config de Firestore.
+La condición máxima a la que se repara una pieza depende del nivel del Garage:
+
+| Nivel Garage | Techo de reparación |
+|---|---|
+| 1 | 65% |
+| 2 | 75% |
+| 3 | 85% |
+| 4 | 95% |
+| 5 | 100% |
+
+*   `maxCondition` se actualiza al techo del Garage al momento de la reparación.
+*   Tras reparar, la pieza entra en **cooldown de 2 rondas** (`repairCooldownRoundsLeft = 2`) — no puede repararse de nuevo durante ese periodo.
+*   Mientras el cooldown está activo, la pieza recibe **50% del desgaste normal** (`POST_REPAIR_WEAR_FACTOR = 0.5`) para no castigar al jugador.
+
+### Presupuesto de Reparación por Ronda (T-007 S2+S3)
+
+*   **Cap base:** `$150,000` por ronda.
+*   **Escala por HQ:** `cap × (1 + (hqLevel - 1) × 0.5)`. HQ L1 = $150k, L2 = $225k, L3 = $300k, L4 = $375k, L5 = $450k.
+*   **Ronda final:** El cap se duplica cuando `weekStatus.isLastRound = true` (escrito por `runRaceLogic`).
+*   **Seguimiento:** `weekStatus.repairSpentThisRound` — se incrementa atómicamente en cada transacción de reparación. Reset a `0` por `processPostRace`.
 *   **Error:** Si la reparación excede el cap, el servicio lanza `'REPAIR_BUDGET_EXCEEDED'` y la transacción hace rollback completo.
+*   **Bloqueo de fin de semana:** Reparaciones bloqueadas en UI desde Sábado 13:00 COT (1h pre-qualifying) hasta Lunes 00:00 COT. `timeService.isRepairLocked`.
+
+### Moderación AI (T-007 S3)
+
+Si alguna pieza de un equipo bot tiene `condition < 30` (tier rojo) al inicio de la carrera, el sistema fuerza `raceStyle = 'defensive'` en tiempo de ejecución. No se escribe en Firestore. Los equipos humanos están exentos.
 
 ### Ciclo de Vida del Campo `repairSpentThisRound`
 
@@ -259,3 +280,11 @@ Objetivo de diseño: 1–3% de DNFs por temporada desde fallos de motor en pilot
 | Creación del equipo | Inicializado a `0` (o ausente = `0`) |
 | Reparación de pieza | `+= repairCost` atómicamente dentro de `runTransaction` |
 | `processPostRace` | Reset a `0` junto con el resto de `weekStatus` |
+
+### Ciclo de Vida de `repairCooldownRoundsLeft`
+
+| Evento | Acción |
+|---|---|
+| Reparación de pieza | Se establece en `PARTS_REPAIR_COOLDOWN_ROUNDS = 2` |
+| Cada carrera (`applyWearDelta`) | Decrement en 1, piso 0 |
+| Temporada nueva | Carry-over natural (no se resetea — el desgaste persiste entre temporadas) |

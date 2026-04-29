@@ -33,6 +33,7 @@ export interface PartState {
   condition: number;
   maxCondition: number;
   level: number;
+  repairCooldownRoundsLeft?: number; // 0 or absent = no cooldown active
 }
 
 /** Firestore config shape for parts_wear. Code-defaults used when Firestore read fails. */
@@ -65,6 +66,9 @@ export const PARTS_WEAR_CONFIG_DEFAULTS: PartsWearConfig = {
 };
 
 const ALL_PART_TYPES = ["engine", "gearbox", "brakes", "frontWing", "rearWing", "suspension"];
+
+// T-007 S3: Post-repair wear factor — parts under cooldown take 50% normal wear
+const POST_REPAIR_WEAR_FACTOR = 0.5;
 
 // ─── Formula ─────────────────────────────────────────────────────────────────
 
@@ -160,6 +164,8 @@ export function failureRoll(
  * @param partsMap - Pre-loaded parts keyed by partType (missing = skip silently)
  * @param params - Race params for formula (circuitId, raceStyle, weather, config)
  * @param hadIncident - Whether this driver had a crash/DNF this race (for incident bump)
+ * @param isHumanTeam - True for human-managed teams; enables wear narrative in return value
+ * @returns `{ debriefAppend }` — wear narrative block for human teams with tier-downs (else empty string)
  */
 export async function applyWearDelta(
   teamId: string,
@@ -173,8 +179,9 @@ export async function applyWearDelta(
     weather: string;
     config: PartsWearConfig;
   },
-  hadIncident: boolean = false
-): Promise<void> {
+  hadIncident: boolean = false,
+  isHumanTeam: boolean = false
+): Promise<{ debriefAppend: string }> {
   const batch = db.batch();
   const partDeltas: Record<string, unknown>[] = [];
   const tierDowns: { partType: string; oldTier: ConditionTier; newTier: ConditionTier }[] = [];
@@ -184,7 +191,9 @@ export async function applyWearDelta(
     if (!partState) continue; // AC#13 — skip silently if part not migrated
 
     const conditionBefore = partState.condition;
-    const delta = computeWearDelta({
+    const cooldownLeft = partState.repairCooldownRoundsLeft ?? 0;
+
+    let delta = computeWearDelta({
       trigger: "race",
       partType,
       partLevel: partState.level,
@@ -197,6 +206,11 @@ export async function applyWearDelta(
       hadIncident,
     });
 
+    // T-007 S3: Post-repair wear reduction — 50% wear for parts under repair cooldown
+    if (cooldownLeft > 0) {
+      delta = delta * POST_REPAIR_WEAR_FACTOR;
+    }
+
     const conditionAfter = Math.max(0, conditionBefore - delta);
 
     const partRef = db
@@ -207,10 +221,15 @@ export async function applyWearDelta(
       .collection("parts")
       .doc(partType);
 
-    batch.update(partRef, {
+    const partUpdate: Record<string, unknown> = {
       condition: conditionAfter,
       updatedAt: admin.firestore.FieldValue.serverTimestamp(),
-    });
+    };
+    // T-007 S3: Decrement repair cooldown (floor 0)
+    if (cooldownLeft > 0) {
+      partUpdate["repairCooldownRoundsLeft"] = Math.max(0, cooldownLeft - 1);
+    }
+    batch.update(partRef, partUpdate as FirebaseFirestore.UpdateData<object>);
 
     partDeltas.push({ partId: partType, partType, conditionBefore, conditionAfter, delta });
 
@@ -239,12 +258,31 @@ export async function applyWearDelta(
 
   await batch.commit();
 
+  // T-007 S3: Build wear narrative for human teams with tier-downs
+  let debriefAppend = "";
+  if (isHumanTeam && tierDowns.length > 0) {
+    try {
+      const lines = tierDowns.map((td) => {
+        const condAfter = partDeltas.find((p) => (p as Record<string, unknown>)["partType"] === td.partType);
+        const cond = Math.round((condAfter as Record<string, unknown> | undefined)?.["conditionAfter"] as number ?? 0);
+        const advice = td.newTier === "red" ? "Critical — repair immediately" : "Repair recommended";
+        return `${td.partType} dropped to ${td.newTier} (${cond}%). ${advice}`;
+      });
+      debriefAppend = "⚙️ Parts Wear Report:\n" + lines.join("\n");
+    } catch (eNarr) {
+      logger.warn(`[applyWearDelta] narrative build failed for team ${teamId}`, eNarr);
+    }
+  }
+
   // Send tier-down notifications (after batch — failures here are non-blocking)
   for (const td of tierDowns) {
     try {
+      const condAfter = partDeltas.find((p) => (p as Record<string, unknown>)["partType"] === td.partType);
+      const cond = Math.round((condAfter as Record<string, unknown> | undefined)?.["conditionAfter"] as number ?? 0);
+      const advice = td.newTier === "red" ? "Critical — repair immediately" : "Repair recommended";
       await addOfficeNews(teamId, {
         title: "Part condition warning",
-        message: `${td.partType} dropped to ${td.newTier} tier — open the Garage to repair.`,
+        message: `${td.partType} dropped to ${td.newTier} tier (${cond}%) — ${advice.toLowerCase()}.`,
         type: "warning",
       });
     } catch (notifErr) {
@@ -253,4 +291,5 @@ export async function applyWearDelta(
   }
 
   logger.info(`[applyWearDelta] team=${teamId} car=${carIndex} round=${roundId} parts=${partDeltas.length} tier-downs=${tierDowns.length}`);
+  return { debriefAppend };
 }

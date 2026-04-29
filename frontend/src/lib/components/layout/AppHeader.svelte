@@ -19,6 +19,7 @@
     import { t } from "$lib/utils/i18n";
     import { APP_VERSION } from "$lib/constants/app_constants";
     import { LATEST_VERSION } from "$lib/constants/changelog";
+    import { formatMoney } from "$lib/utils/format";
     import { browser } from "$app/environment";
 
     let team = $derived(teamStore.value.team);
@@ -48,15 +49,15 @@
         if (!t) return "$0.0M";
         const percentage = t.transferBudgetPercentage || 20;
         const amount = t.budget * (percentage / 100);
-        return `$${(amount / 1000000).toFixed(1)}M`;
+        return formatMoney(amount);
     });
 
     let operationalBudgetFmt = $derived.by(() => {
         const t = teamStore.value.team;
-        if (!t) return "$0.0M";
+        if (!t) return "$0";
         const percentage = t.transferBudgetPercentage || 20;
         const amount = t.budget * (1 - percentage / 100);
-        return `$${(amount / 1000000).toFixed(1)}M`;
+        return formatMoney(amount);
     });
 </script>
 
