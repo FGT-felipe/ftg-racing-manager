@@ -256,51 +256,44 @@
         {/if}
     </div>
 
-    <!-- Row 1: Car selector + Status Analysis -->
-    <div class="mt-8 grid grid-cols-1 lg:grid-cols-3 gap-6">
-        <!-- Car selector -->
-        <div class="flex flex-col gap-4">
-            <div class="bg-app-surface border border-app-border rounded-2xl p-2 flex gap-1">
-                <button
-                    class="flex-1 py-3 rounded-xl font-black uppercase tracking-widest text-sm transition-all {selectedCar === 0 ? 'bg-app-primary text-app-primary-foreground' : 'text-app-text/40 hover:bg-app-text/5'}"
-                    onclick={() => (selectedCar = 0)}>Car A</button
-                >
-                <button
-                    class="flex-1 py-3 rounded-xl font-black uppercase tracking-widest text-sm transition-all {selectedCar === 1 ? 'bg-app-primary text-app-primary-foreground' : 'text-app-text/40 hover:bg-app-text/5'}"
-                    onclick={() => (selectedCar = 1)}>Car B</button
-                >
-            </div>
-
-            </div>
-
-        <!-- Status Analysis: schematic + driver inline row -->
-        <div class="lg:col-span-2 bg-app-surface border border-app-border rounded-2xl p-5 flex flex-col gap-4">
+    <!-- Row 1: Status Analysis (unified card) -->
+    <div class="mt-8 bg-app-surface border border-app-border rounded-2xl p-5 flex flex-col gap-4">
+        <div class="flex items-center justify-between">
             <span class="text-[10px] font-bold text-app-text/40 uppercase tracking-[0.2em]">Status Analysis</span>
-            <CarSchematic
-                stats={currentCarStats}
-                carLabel={selectedCar === 0 ? "Car A" : "Car B"}
-                condition={carConditionPct}
-                conditionTier={carConditionTier}
-            />
-            {#if activeDriver}
-                <div class="flex items-center gap-3 border-t border-app-border/40 pt-3">
-                    <div class="w-7 h-7 rounded-full bg-app-text/5 border border-app-border overflow-hidden flex-shrink-0">
-                        <DriverAvatar id={activeDriver.id} gender={activeDriver.gender} class="w-full h-full" />
-                    </div>
-                    <div class="flex items-center gap-2 min-w-0">
-                        <CountryFlag countryCode={activeDriver.countryCode} size="sm" />
-                        <span class="text-xs font-black text-app-text uppercase truncate tracking-tight">{formatDriverName(activeDriver.name)}</span>
-                    </div>
-                    <div class="ml-auto flex-shrink-0">
-                        <DriverStars currentStars={activeDriverStars} maxStars={activeDriver.potential} size={10} />
-                    </div>
-                </div>
-            {:else}
-                <div class="border-t border-app-border/40 pt-3 text-center text-app-text/20 text-[10px] font-bold uppercase">
-                    No driver assigned
-                </div>
-            {/if}
+            <!-- Car A/B switcher -->
+            <div class="flex gap-1 bg-app-text/5 rounded-lg p-1">
+                <button
+                    class="px-4 py-1 rounded-md font-black uppercase tracking-widest text-[10px] transition-all {selectedCar === 0 ? 'bg-app-primary text-app-primary-foreground' : 'text-app-text/40 hover:text-app-text/70'}"
+                    onclick={() => (selectedCar = 0)}>Car A</button>
+                <button
+                    class="px-4 py-1 rounded-md font-black uppercase tracking-widest text-[10px] transition-all {selectedCar === 1 ? 'bg-app-primary text-app-primary-foreground' : 'text-app-text/40 hover:text-app-text/70'}"
+                    onclick={() => (selectedCar = 1)}>Car B</button>
+            </div>
         </div>
+        <CarSchematic
+            stats={currentCarStats}
+            carLabel={selectedCar === 0 ? "Car A" : "Car B"}
+            condition={carConditionPct}
+            conditionTier={carConditionTier}
+        />
+        {#if activeDriver}
+            <div class="flex items-center gap-3 border-t border-app-border/40 pt-3">
+                <div class="w-7 h-7 rounded-full bg-app-text/5 border border-app-border overflow-hidden flex-shrink-0">
+                    <DriverAvatar id={activeDriver.id} gender={activeDriver.gender} class="w-full h-full" />
+                </div>
+                <div class="flex items-center gap-2 min-w-0">
+                    <CountryFlag countryCode={activeDriver.countryCode} size="sm" />
+                    <span class="text-xs font-black text-app-text uppercase truncate tracking-tight">{formatDriverName(activeDriver.name)}</span>
+                </div>
+                <div class="ml-auto flex-shrink-0">
+                    <DriverStars currentStars={activeDriverStars} maxStars={activeDriver.potential} size={10} />
+                </div>
+            </div>
+        {:else}
+            <div class="border-t border-app-border/40 pt-3 text-center text-app-text/20 text-[10px] font-bold uppercase">
+                No driver assigned
+            </div>
+        {/if}
     </div>
 
     <!-- Row 2: 5 part cards -->
