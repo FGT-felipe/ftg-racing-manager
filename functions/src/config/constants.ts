@@ -147,6 +147,31 @@ export function getRacePrize(posIndex: number): number {
 // ─── Qualy prizes (P1: 50k, P2: 30k, P3: 15k) ───────────────────────────────
 export const QUALY_PRIZES = [50_000, 30_000, 15_000];
 
+// ─── Season-end prizes ───────────────────────────────────────────────────────
+
+/**
+ * End-of-season constructors championship prize table (index 0 = P1).
+ * All 10 positions receive money — last place still earns $200k.
+ */
+export const SEASON_PRIZE_TABLE = [
+  6_000_000,  // P1
+  4_500_000,  // P2
+  3_000_000,  // P3
+  2_000_000,  // P4
+  1_500_000,  // P5
+  1_000_000,  // P6
+    700_000,  // P7
+    500_000,  // P8
+    350_000,  // P9
+    200_000,  // P10
+];
+
+/** Additional budget bonus for the team whose driver wins the Drivers Championship. */
+export const DRIVERS_CHAMPION_TEAM_BONUS = 2_000_000;
+
+/** Market value multiplier applied to the Drivers Championship winner. */
+export const DRIVERS_CHAMPION_MARKET_VALUE_BOOST = 1.20;
+
 // ─── Default car setup ───────────────────────────────────────────────────────
 
 /** Default setup applied when a driver has not submitted a custom one. */

@@ -6,24 +6,19 @@
     import { uiStore } from "$lib/stores/ui.svelte";
     import { newsStore } from "$lib/stores/news.svelte";
     import {
-        Building2,
         Trophy,
-        MessageSquare,
         Mail,
         Edit3,
-        Check,
         X,
-        ChevronRight,
-        Clock,
         BarChart3,
         Info,
-        TrendingUp,
         CheckCircle,
         AlertTriangle,
     } from "lucide-svelte";
-    import InstructionCard from "$lib/components/layout/InstructionCard.svelte";
     import { getRoleById } from "$lib/constants/manager";
     import { t } from "$lib/utils/i18n";
+    import { universeStore } from "$lib/stores/universe.svelte";
+    import SeasonFormChart from "$lib/components/office/SeasonFormChart.svelte";
 
     let isEditingName = $state(false);
     let newName = $state("");
@@ -32,14 +27,27 @@
     // Initialize stores
     driverStore.init();
     newsStore.init();
+    universeStore.init();
 
     let news = $derived(newsStore.items);
 
+    // Season Form chart data
+    const seasonFormData = $derived(
+        [...(teamStore.value.team?.seasonForm ?? [])].sort((a, b) => a.round - b.round)
+    );
+    const totalTeams = $derived(
+        universeStore.getLeagueByTeamId(teamStore.value.team?.id ?? '')?.teams?.length ?? 10
+    );
+
     // Stats calculation
+    const constructorsTrophies = $derived(
+        [...(teamStore.value.team?.seasonHistory ?? [])]
+            .filter(s => s.isConstructorsChampion)
+            .sort((a, b) => b.year - a.year)
+    );
+
     const teamStats = $derived({
-        titles:
-            (driverStore.carADriver?.championships || 0) +
-            (driverStore.carBDriver?.championships || 0),
+        titles: constructorsTrophies.length,
         wins:
             (driverStore.carADriver?.wins || 0) +
             (driverStore.carBDriver?.wins || 0),
@@ -121,32 +129,20 @@
     <title>Team Office | FTG Racing Manager</title>
 </svelte:head>
 
-<div
-    class="p-4 md:p-8 animate-fade-in w-full max-w-[1400px] mx-auto text-app-text"
->
-    <!-- Header -->
-    <InstructionCard
-        icon={Building2}
-        title={t('office_header_title')}
-        description={t('office_header_desc')}
-    />
+<div class="p-4 md:p-8 animate-fade-in w-full max-w-[1400px] mx-auto text-app-text">
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-8 items-start">
 
-    <div class="mt-10 grid grid-cols-1 lg:grid-cols-12 gap-8">
-        <!-- Left Column: Identity & Stats -->
-        <div class="lg:col-span-4 space-y-6">
+        <!-- Column A: Team Identity + Manager -->
+        <div class="flex flex-col gap-6">
+
             <!-- Team Identity Card -->
-            <div
-                class="bg-app-surface border border-app-border rounded-2xl p-6 shadow-xl relative overflow-hidden group"
-            >
-                <div
-                    class="absolute top-0 right-0 w-32 h-32 bg-app-primary/5 rounded-full -mr-16 -mt-16 blur-3xl group-hover:bg-app-primary/10 transition-all duration-700"
-                ></div>
+            <div class="bg-app-surface border border-app-border rounded-2xl p-6 shadow-xl relative overflow-hidden group">
+                <div class="absolute top-0 right-0 w-32 h-32 bg-app-primary/5 rounded-full -mr-16 -mt-16 blur-3xl group-hover:bg-app-primary/10 transition-all duration-700"></div>
 
                 <div class="flex items-center justify-between mb-6 relative">
-                    <span
-                        class="text-[10px] font-black uppercase tracking-widest text-app-primary"
-                        >{t('office_team_identity_label')}</span
-                    >
+                    <span class="text-[10px] font-black uppercase tracking-widest text-app-primary">
+                        {t('office_team_identity_label')}
+                    </span>
                     {#if !isEditingName}
                         <button
                             onclick={() => (isEditingName = true)}
@@ -158,15 +154,11 @@
                 </div>
 
                 {#if isEditingName}
-                    <div
-                        class="space-y-4 animate-in fade-in slide-in-from-top-2 duration-300"
-                    >
+                    <div class="space-y-4 animate-in fade-in slide-in-from-top-2 duration-300">
                         <div class="space-y-1.5">
-                            <label
-                                for="team-name"
-                                class="text-[10px] font-bold text-app-text/40 uppercase ml-1"
-                                >{t('office_new_name_label')}</label
-                            >
+                            <label for="team-name" class="text-[10px] font-bold text-app-text/40 uppercase ml-1">
+                                {t('office_new_name_label')}
+                            </label>
                             <input
                                 id="team-name"
                                 type="text"
@@ -184,10 +176,7 @@
                                 {isSavingName ? t('saving') : t('confirm')}
                             </button>
                             <button
-                                onclick={() => {
-                                    isEditingName = false;
-                                    newName = teamStore.value.team?.name || "";
-                                }}
+                                onclick={() => { isEditingName = false; newName = teamStore.value.team?.name || ""; }}
                                 class="px-3 bg-app-text/5 text-app-text/40 font-black uppercase text-[10px] tracking-widest rounded-lg hover:bg-app-text/10 transition-all"
                             >
                                 <X size={16} />
@@ -195,110 +184,31 @@
                         </div>
                     </div>
                 {:else}
-                    <h2
-                        class="text-3xl font-black text-app-text uppercase tracking-tight mb-2 truncate"
-                    >
+                    <h2 class="text-3xl font-black text-app-text uppercase tracking-tight mb-2 truncate">
                         {teamStore.value.team?.name}
                     </h2>
                 {/if}
 
                 <div class="mt-6 pt-6 border-t border-app-border/30">
-                    <div
-                        class="flex items-center gap-3 p-3 bg-app-text/5 rounded-xl border border-app-border/30"
-                    >
-                        <div
-                            class="w-8 h-8 rounded-lg bg-amber-500/10 flex items-center justify-center"
-                        >
+                    <div class="flex items-center gap-3 p-3 bg-app-text/5 rounded-xl border border-app-border/30">
+                        <div class="w-8 h-8 rounded-lg bg-amber-500/10 flex items-center justify-center">
                             <Info size={14} class="text-amber-500" />
                         </div>
                         <div class="flex flex-col">
-                            <span
-                                class="text-[9px] font-bold text-app-text/30 uppercase"
-                                >{t('office_renaming_policy_label')}</span
-                            >
-                            <span
-                                class="text-[11px] font-bold text-app-text/60"
-                            >
-                                {teamStore.value.team?.nameChangeCount === 0
-                                    ? t('office_first_change_free')
-                                    : "Cost: $500,000"}
+                            <span class="text-[9px] font-bold text-app-text/30 uppercase">{t('office_renaming_policy_label')}</span>
+                            <span class="text-[11px] font-bold text-app-text/60">
+                                {teamStore.value.team?.nameChangeCount === 0 ? t('office_first_change_free') : "Cost: $500,000"}
                             </span>
                         </div>
                     </div>
                 </div>
             </div>
 
-            <!-- Career Stats -->
-            <div
-                class="bg-app-surface border border-app-border rounded-2xl p-6"
-            >
-                <div class="flex items-center gap-2 mb-6">
-                    <Trophy size={16} class="text-app-primary" />
-                    <h3
-                        class="text-xs font-black uppercase text-app-text tracking-widest"
-                    >
-                        {t('office_career_stats_header')}
-                    </h3>
-                </div>
-
-                <div class="grid grid-cols-2 gap-4">
-                    <div
-                        class="p-4 bg-app-text/5 rounded-2xl border border-app-border/30"
-                    >
-                        <span
-                            class="text-[9px] font-bold text-app-text/30 uppercase block mb-1"
-                            >{t('stat_titles')}</span
-                        >
-                        <span
-                            class="text-2xl font-black text-app-primary italic"
-                            >{teamStats.titles}</span
-                        >
-                    </div>
-                    <div
-                        class="p-4 bg-app-text/5 rounded-2xl border border-app-border/30"
-                    >
-                        <span
-                            class="text-[9px] font-bold text-app-text/30 uppercase block mb-1"
-                            >{t('wins')}</span
-                        >
-                        <span class="text-2xl font-black text-app-text italic"
-                            >{teamStats.wins}</span
-                        >
-                    </div>
-                    <div
-                        class="p-4 bg-app-text/5 rounded-2xl border border-app-border/30"
-                    >
-                        <span
-                            class="text-[9px] font-bold text-app-text/30 uppercase block mb-1"
-                            >{t('podiums')}</span
-                        >
-                        <span class="text-2xl font-black text-app-text italic"
-                            >{teamStats.podiums}</span
-                        >
-                    </div>
-                    <div
-                        class="p-4 bg-app-text/5 rounded-2xl border border-app-border/30"
-                    >
-                        <span
-                            class="text-[9px] font-bold text-app-text/30 uppercase block mb-1"
-                            >{t('races')}</span
-                        >
-                        <span
-                            class="text-2xl font-black text-app-text/20 italic"
-                            >{teamStats.races}</span
-                        >
-                    </div>
-                </div>
-            </div>
-
-            <div
-                class="bg-app-surface border border-app-border rounded-2xl overflow-hidden relative group shadow-lg"
-            >
+            <!-- Manager Card -->
+            <div class="bg-app-surface border border-app-border rounded-2xl overflow-hidden relative group shadow-lg">
                 <div class="p-6 border-b border-app-border bg-app-text/5 flex items-center justify-between">
                     <div class="flex items-center gap-4">
-                        <div
-                            class="w-16 h-16 rounded-2xl bg-app-primary text-app-primary-foreground border-4 border-app-primary/20 flex items-center justify-center font-heading font-black text-2xl italic shadow-inner shrink-0"
-                        >
+                        <div class="w-16 h-16 rounded-2xl bg-app-primary text-app-primary-foreground border-4 border-app-primary/20 flex items-center justify-center font-heading font-black text-2xl italic shadow-inner shrink-0">
                             {managerStore.profile?.firstName?.[0] || "M"}
                         </div>
                         <div class="flex flex-col gap-1 min-w-0">
@@ -316,15 +226,13 @@
                                 {/if}
                                 {#if managerStore.profile?.nationality}
                                     <div class="flex items-center gap-1.5 px-2 py-0.5 bg-white/5 rounded border border-white/5">
-                                        <img 
-                                            src="https://flagcdn.com/w20/{managerStore.profile.nationality.toLowerCase()}.png" 
+                                        <img
+                                            src="https://flagcdn.com/w20/{managerStore.profile.nationality.toLowerCase()}.png"
                                             alt={managerStore.profile.nationality}
                                             class="w-3.5 h-2.5 object-cover rounded-[1px]"
                                             onerror={(e) => (e.currentTarget as HTMLImageElement).style.display = 'none'}
                                         />
-                                        <span class="text-[9px] font-bold text-app-text/60 uppercase">
-                                            {managerStore.profile.nationality}
-                                        </span>
+                                        <span class="text-[9px] font-bold text-app-text/60 uppercase">{managerStore.profile.nationality}</span>
                                     </div>
                                 {/if}
                             </div>
@@ -333,13 +241,11 @@
                 </div>
 
                 <div class="p-6 space-y-6">
-                    <!-- Background Benefits & Drawbacks -->
                     <div class="space-y-4">
                         <div class="flex items-center justify-between">
                             <h5 class="text-[10px] font-black text-app-text/30 uppercase tracking-[0.2em]">{t('office_management_edge_label')}</h5>
                             <span class="text-[10px] font-black text-app-primary/40 uppercase italic">{managerRole?.title}</span>
                         </div>
-                        
                         <div class="grid grid-cols-1 gap-3">
                             {#if managerRole?.pros}
                                 {#each managerRole.pros as pro}
@@ -364,7 +270,6 @@
                         </div>
                     </div>
 
-                    <!-- Market Presence & Reputation -->
                     <div class="pt-6 border-t border-app-border/40 grid grid-cols-2 gap-4">
                         <div class="bg-white/[0.02] border border-app-border/40 rounded-2xl p-4 flex flex-col gap-1">
                             <span class="text-[8px] font-bold text-app-text/20 uppercase tracking-widest">{t('office_global_ranking_label')}</span>
@@ -384,106 +289,154 @@
             </div>
         </div>
 
-        <!-- Right Column: Communications & Debrief -->
-        <div class="lg:col-span-8 space-y-8">
-            <!-- Race Debrief Card -->
-            {#if teamStore.value.team?.lastRaceDebrief}
-                <div
-                    class="bg-gradient-to-br from-app-surface to-black border-l-4 border-app-primary border-t border-r border-b border-app-border rounded-2xl p-6 shadow-2xl"
-                >
-                    <div class="flex items-center gap-3 mb-6">
-                        <div class="p-2 bg-app-primary text-app-primary-foreground rounded-lg">
-                            <BarChart3 size={18} />
-                        </div>
-                        <h3
-                            class="text-sm font-black uppercase text-app-text tracking-widest"
-                        >
-                            {t('office_race_debrief_header')}
-                        </h3>
-                        <span
-                            class="ml-auto text-[10px] font-bold text-app-text/30 uppercase bg-app-text/5 px-2 py-1 rounded"
-                            >{t('office_official_report_badge')}</span
-                        >
-                    </div>
+        <!-- Columns B+C: Season Form full-width + sub-grid below -->
+        <div class="lg:col-span-2 flex flex-col gap-6">
 
-                    {#if teamStore.value.team?.lastRaceResult}
-                        <div
-                            class="bg-app-text/40 border border-app-border/50 rounded-xl p-4 mb-6 font-mono text-[12px] text-app-text/70 leading-relaxed"
-                        >
-                            {teamStore.value.team.lastRaceResult}
-                        </div>
-                    {/if}
-
-                    <p
-                        class="text-[14px] text-app-text/80 leading-relaxed font-medium pl-2"
-                    >
-                        {teamStore.value.team.lastRaceDebrief}
+            <!-- Season Form Chart — spans full B+C width -->
+            <div class="bg-app-surface border border-app-border rounded-2xl p-6">
+                <div class="flex items-center gap-2 mb-4">
+                    <BarChart3 size={16} class="text-app-primary" />
+                    <h3 class="text-xs font-black uppercase text-app-text tracking-widest">
+                        {t('office_season_form_header')}
+                    </h3>
+                </div>
+                {#if seasonFormData.length === 0}
+                    <p class="text-[11px] text-app-text/30 italic text-center py-6">
+                        {t('office_season_form_empty')}
                     </p>
-                </div>
-            {/if}
+                {:else}
+                    <SeasonFormChart data={seasonFormData} {totalTeams} />
+                {/if}
+            </div>
 
-            <!-- Communications Center -->
-            <div class="space-y-4">
-                <div class="flex items-center justify-between px-2">
-                    <div class="flex items-center gap-2">
-                        <Mail size={16} class="text-app-primary" />
-                        <h3
-                            class="text-xs font-black uppercase text-app-text tracking-[0.2em]"
-                        >
-                            {t('office_communications_header')}
-                        </h3>
+            <!-- Sub-grid: Career Stats + Trophy Cabinet | Last Race + Communications -->
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 items-start">
+
+                <!-- Left: Career Stats + Trophy Cabinet -->
+                <div class="flex flex-col gap-6">
+
+                    <!-- Career Stats -->
+                    <div class="bg-app-surface border border-app-border rounded-2xl p-6">
+                        <div class="flex items-center gap-2 mb-6">
+                            <Trophy size={16} class="text-app-primary" />
+                            <h3 class="text-xs font-black uppercase text-app-text tracking-widest">
+                                {t('office_career_stats_header')}
+                            </h3>
+                        </div>
+                        <div class="grid grid-cols-2 gap-4">
+                            <div class="p-4 bg-app-text/5 rounded-2xl border border-app-border/30">
+                                <span class="text-[9px] font-bold text-app-text/30 uppercase block mb-1">{t('stat_titles')}</span>
+                                <span class="text-2xl font-black text-app-primary italic">{teamStats.titles}</span>
+                            </div>
+                            <div class="p-4 bg-app-text/5 rounded-2xl border border-app-border/30">
+                                <span class="text-[9px] font-bold text-app-text/30 uppercase block mb-1">{t('wins')}</span>
+                                <span class="text-2xl font-black text-app-text italic">{teamStats.wins}</span>
+                            </div>
+                            <div class="p-4 bg-app-text/5 rounded-2xl border border-app-border/30">
+                                <span class="text-[9px] font-bold text-app-text/30 uppercase block mb-1">{t('podiums')}</span>
+                                <span class="text-2xl font-black text-app-text italic">{teamStats.podiums}</span>
+                            </div>
+                            <div class="p-4 bg-app-text/5 rounded-2xl border border-app-border/30">
+                                <span class="text-[9px] font-bold text-app-text/30 uppercase block mb-1">{t('races')}</span>
+                                <span class="text-2xl font-black text-app-text/20 italic">{teamStats.races}</span>
+                            </div>
+                        </div>
                     </div>
-                    <div class="flex items-center gap-2">
-                        <Mail size={16} class="text-app-primary" />
-                        <h3
-                            class="text-xs font-black uppercase text-app-text tracking-[0.2em]"
-                        >
-                            {t('office_communications_header')}
-                        </h3>
+
+                    <!-- Trophy Cabinet -->
+                    <div class="bg-app-surface border border-app-border rounded-2xl p-6">
+                        <div class="flex items-center gap-2 mb-4">
+                            <Trophy size={16} class="text-app-primary" />
+                            <h3 class="text-xs font-black uppercase text-app-text tracking-widest">
+                                {t('office_trophy_cabinet_header')}
+                            </h3>
+                        </div>
+                        {#if constructorsTrophies.length > 0}
+                            <div class="flex flex-col gap-2">
+                                {#each constructorsTrophies as trophy (trophy.seasonId)}
+                                    <div class="flex items-center gap-3 px-3 py-2.5 rounded-xl bg-app-primary/5 border border-app-primary/20">
+                                        <Trophy size={14} class="text-app-primary flex-shrink-0" />
+                                        <div class="flex flex-col gap-0">
+                                            <span class="text-xs font-black text-app-primary">{trophy.year}</span>
+                                            <span class="text-[9px] text-app-text/50 uppercase tracking-widest font-heading">
+                                                {t('office_trophy_constructors_champion')}
+                                            </span>
+                                        </div>
+                                    </div>
+                                {/each}
+                            </div>
+                        {:else}
+                            <p class="text-[11px] text-app-text/30 italic text-center py-4">
+                                {t('office_trophy_cabinet_empty')}
+                            </p>
+                        {/if}
                     </div>
                 </div>
 
-                <div class="space-y-3">
-                    {#if news.length === 0}
-                        <div
-                            class="p-12 text-center bg-app-surface border border-app-border border-dashed rounded-2xl text-app-text/20"
-                        >
-                            <Mail size={32} class="mx-auto mb-4 opacity-50" />
-                            <p
-                                class="text-[10px] font-black uppercase tracking-widest"
-                            >
-                                {t('office_no_communications')}
+                <!-- Right: Last Race Debrief + Official Communications -->
+                <div class="flex flex-col gap-6">
+
+                    <!-- Last Race Debrief -->
+                    {#if teamStore.value.team?.lastRaceDebrief}
+                        <div class="bg-gradient-to-br from-app-surface to-black border-l-4 border-app-primary border-t border-r border-b border-app-border rounded-2xl p-6 shadow-2xl">
+                            <div class="flex items-center gap-3 mb-6">
+                                <div class="p-2 bg-app-primary text-app-primary-foreground rounded-lg">
+                                    <BarChart3 size={18} />
+                                </div>
+                                <h3 class="text-sm font-black uppercase text-app-text tracking-widest">
+                                    {t('office_race_debrief_header')}
+                                </h3>
+                                <span class="ml-auto text-[10px] font-bold text-app-text/30 uppercase bg-app-text/5 px-2 py-1 rounded">
+                                    {t('office_official_report_badge')}
+                                </span>
+                            </div>
+                            {#if teamStore.value.team?.lastRaceResult}
+                                <div class="bg-app-text/40 border border-app-border/50 rounded-xl p-4 mb-6 font-mono text-[12px] text-app-text/70 leading-relaxed">
+                                    {teamStore.value.team.lastRaceResult}
+                                </div>
+                            {/if}
+                            <p class="text-[14px] text-app-text/80 leading-relaxed font-medium pl-2">
+                                {teamStore.value.team.lastRaceDebrief}
                             </p>
                         </div>
-                    {:else}
-                        {#each news as item}
-                            <div
-                                class="bg-app-surface border border-app-border rounded-2xl p-6 hover:border-app-primary/30 transition-all group shadow-sm"
-                            >
-                                <div
-                                    class="flex justify-between items-start mb-3"
-                                >
-                                    <h4
-                                        class="font-black text-app-text uppercase group-hover:text-app-primary transition-colors"
-                                    >
-                                        {item.title}
-                                    </h4>
-                                    <span
-                                        class="text-[10px] font-mono text-app-text/20"
-                                        >{formatDate(item.timestamp)}</span
-                                    >
-                                </div>
-                                <p
-                                    class="text-[13px] text-app-text/60 leading-relaxed"
-                                >
-                                    {item.message}
-                                </p>
-                            </div>
-                        {/each}
                     {/if}
+
+                    <!-- Official Communications -->
+                    <div class="flex flex-col gap-4">
+                        <div class="flex items-center gap-2 px-2">
+                            <Mail size={16} class="text-app-primary" />
+                            <h3 class="text-xs font-black uppercase text-app-text tracking-[0.2em]">
+                                {t('office_communications_header')}
+                            </h3>
+                        </div>
+                        <div class="flex flex-col gap-3 overflow-y-auto custom-scrollbar max-h-[480px] pr-1">
+                            {#if news.length === 0}
+                                <div class="p-12 text-center bg-app-surface border border-app-border border-dashed rounded-2xl text-app-text/20">
+                                    <Mail size={32} class="mx-auto mb-4 opacity-50" />
+                                    <p class="text-[10px] font-black uppercase tracking-widest">
+                                        {t('office_no_communications')}
+                                    </p>
+                                </div>
+                            {:else}
+                                {#each news as item}
+                                    <div class="bg-app-surface border border-app-border rounded-2xl p-6 hover:border-app-primary/30 transition-all group shadow-sm">
+                                        <div class="flex justify-between items-start mb-3">
+                                            <h4 class="font-black text-app-text uppercase group-hover:text-app-primary transition-colors">
+                                                {item.title}
+                                            </h4>
+                                            <span class="text-[10px] font-mono text-app-text/20">{formatDate(item.timestamp)}</span>
+                                        </div>
+                                        <p class="text-[13px] text-app-text/60 leading-relaxed">{item.message}</p>
+                                    </div>
+                                {/each}
+                            {/if}
+                        </div>
+                    </div>
                 </div>
+
             </div>
         </div>
+
     </div>
 </div>
 

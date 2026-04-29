@@ -28,6 +28,11 @@ currentSeasonId: string     // reference to active seasons/{id}
 
 ### `seasons/{seasonId}`
 ```
+status?: "active" | "ended" | "preseason"
+  // Absent or "active" = season running normally.
+  // "ended"    = last race processed; prizes distributed. Set by runSeasonEndProcessing().
+  // "preseason" = added by Epic #124 S6 (pre-season phase).
+
 calendar: RaceEvent[]
   id:          string       // e.g. "r1", "r2"
   trackName:   string       // full display name, e.g. "Autódromo José Carlos Pace"
@@ -114,6 +119,19 @@ seasonPodiums:   number
 seasonPoles:     number
 lastRaceDebrief: string
 lastRaceResult:  string
+
+// Epic #124 S1 — appended by runSeasonEndProcessing() after last race
+seasonHistory?: SeasonHistoryEntry[]   // one entry per completed season
+  SeasonHistoryEntry {
+    seasonId:                string    // e.g. "S1"
+    year:                    number    // calendar year
+    constructorsPosition:    number    // 1-based
+    points:                  number
+    races:                   number
+    wins:                    number
+    podiums:                 number
+    isConstructorsChampion:  boolean
+  }
 ```
 
 #### Sub-collections
@@ -270,6 +288,24 @@ specialty?:  string    // assigned via academy pipeline when a stat >= 11 (see D
              // Triggers in post-race.ts when: !specialty AND baseSkill >= 8 AND stat >= 11.
              // Priority order: adaptability > smoothness > braking > overtaking > cornering
              //                > consistency > focus > fitness
+
+// Career totals — incremented by runSeasonEndProcessing() after last race of each season
+races:        number    // career total races (season sum added at season end)
+wins:         number    // career total wins
+podiums:      number    // career total podiums
+championships: number   // career total drivers championships
+
+// Epic #124 S1 — one entry appended per season by runSeasonEndProcessing()
+careerHistory?: CareerHistoryEntry[]
+  CareerHistoryEntry {
+    year:       number   // calendar year
+    teamName:   string   // team display name at time of season
+    series:     string   // "FTG World Championship"
+    races:      number
+    wins:       number
+    podiums:    number
+    isChampion: boolean  // true only for the drivers champion of that season
+  }
 ```
 
 ---

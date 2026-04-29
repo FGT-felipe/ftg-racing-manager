@@ -200,6 +200,7 @@
         UPGRADE: { label: "Upgrades", color: "text-blue-400" },
         REWARD: { label: "Race Rewards", color: "text-yellow-400" },
         PRACTICE: { label: "Sessions", color: "text-purple-400" },
+        PRIZE: { label: "Season Prize", color: "text-app-primary" },
         OTHER: { label: "Other", color: "text-gray-400" },
     };
 

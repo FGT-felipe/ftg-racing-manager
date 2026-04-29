@@ -215,6 +215,57 @@ Reactive singleton. Subscribes to `teams/{teamId}/cars/{carIndex}/parts/` via `o
 
 ---
 
+## 5c. Season Lifecycle (T-124 Slice 1)
+
+### `seasonStore` — `frontend/src/lib/stores/season.svelte.ts`
+
+Reactive singleton. Subscribes to the active `seasons/{seasonId}` document via `onSnapshot`.
+
+| Member | Type | Description |
+|---|---|---|
+| `value` | `{ season: Season \| null, loading: boolean }` | Raw reactive state. Access via getters where possible. |
+| `nextEvent` | `CalendarRace \| null` | First calendar entry where `isCompleted !== true`. |
+| `isSeasonEnded` | `boolean` | `true` when `season.status === "ended"`. Gate all season-end UI behind this. |
+| `isPreSeason` | `boolean` | `true` when `season.status === "preseason"`. Reserved for S6 (pre-season phase). |
+
+**`isSeasonEnded` gate priority:** Components must check `seasonStore.isSeasonEnded` BEFORE any time-based status switch (e.g., `weekStatus` derived from `timeService`). The season-end state always overrides the weekly schedule.
+
+**`seasons/{id}.status` valid values:**
+| Value | Meaning |
+|---|---|
+| `"active"` (default / absent) | Season in progress |
+| `"ended"` | Last race processed; prize distribution complete |
+| `"preseason"` | Pre-season phase active (S6) |
+
+### `universeStore` — `frontend/src/lib/stores/universe.svelte.ts`
+
+Reactive singleton. Subscribes to `universe/game_universe_v1` via `onSnapshot`. Idempotent `init()` — safe to call from multiple pages.
+
+| Member | Type | Description |
+|---|---|---|
+| `value.universe` | `GameUniverse \| null` | Raw universe snapshot. Contains `leagues[]`. |
+| `value.loading` | `boolean` | `true` until first snapshot resolves. |
+| `init()` | `void` | Starts the `onSnapshot` listener. No-op if already subscribed. Call from dashboard and standings page. |
+| `getLeagueByTeamId(teamId)` | `League \| null` | Returns the league object containing the given team. |
+| `getTeamStanding(teamId)` | `{ position, total, points }` | Single-team position in their league. |
+| `getAllTeamStandings(teamId)` | `Array<{...team, position}>` | All teams in the player's league, sorted by `seasonPoints` desc, with 1-based `position`. Added in T-124 S2. |
+| `getDriversChampion(teamId)` | `DriverRecord \| null` | Top driver in player's league. Tie-break: pts → wins → podiums → id asc. Added in T-124 S2. |
+| `getDriverStandings(teamId)` | `DriverRecord[]` | Drivers for the player's team only. |
+| `getDriverById(driverId)` | `DriverRecord \| null` | Finds driver across all leagues. |
+
+**Frontend constants:** `frontend/src/lib/constants/season.ts` — `SEASON_PRIZE_TABLE` (10-element array, index 0 = P1) and `DRIVERS_CHAMPION_TEAM_BONUS`. Mirror the CF constants. Do not hardcode prize amounts in components.
+
+### `runSeasonEndProcessing` — `functions/lib/domains/economy/season-end.js`
+
+See **Phase 3b** in `weekend_pipeline.md` for the full execution sequence. Called non-fatally from `postRaceProcessing` after the per-team economy loop, once per season lifecycle.
+
+**Pure helpers (TypeScript source, fully unit-tested):** `functions/src/domains/economy/season-end.ts`
+- `getSeasonPrizeForPosition(position: number): number` — returns prize amount for 1-indexed position
+- `rankTeamsByPoints(teams): RankedTeam[]` — stable sort: pts desc → wins desc → podiums desc → id asc
+- `findDriversChampion(drivers): DriverRecord | null` — same tie-break order
+
+---
+
 ## 6. Security & Transactional Integrity
 - Use `runTransaction` for all budget mutations.
 - Notification entries MUST be created within the same batch as the event that triggered them.

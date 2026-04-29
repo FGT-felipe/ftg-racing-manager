@@ -102,7 +102,37 @@ if (rSnap.data().qualyGrid) { continue; }
 5. AI team car upgrades (30% chance per stat per team)
 6. Resets `weekStatus` for all teams (clears driver setups, flags, and `repairSpentThisRound = 0`)
 7. Sets `postRaceProcessed: true`, `processedAt: serverTimestamp()`
-8. Calls `syncUniverseStats()` — syncs `universe/game_universe_v1` with live driver/team stats
+8. **Season-end gate** — if ALL `calendar[].isCompleted === true` after this race, calls `runSeasonEndProcessing(seasonId, season)` (see Phase 3b below)
+9. Calls `syncUniverseStats()` — syncs `universe/game_universe_v1` with live driver/team stats
+
+### Phase 3b — SEASON-END PROCESSING (fires once, last race only)
+**Trigger:** Inside `postRaceProcessing`, after per-team loop, when `remainingRaces.length === 0`  
+**Function:** `runSeasonEndProcessing(sId, season)` in `functions/lib/domains/economy/season-end.js`  
+**Non-fatal:** entire function wrapped in try/catch — exceptions are logged but `postRaceProcessing` continues.
+
+**Execution order (within one Firestore batch per league):**
+1. Reads `universe/game_universe_v1` to enumerate all leagues
+2. Per league — fetches all team docs → ranks by `seasonPoints` (ties: wins → podiums → id asc)
+3. Distributes **constructor prizes** per position (P1=$6M … P10=$200k — see `SEASON_PRIZE_TABLE` in constants):
+   - `teams/{id}.budget += prize` (batch update)
+   - `transactions/{id}` subcollection entry: `type: "PRIZE"`, description `"Season Prize — Constructor Championship P{n}"`
+4. Identifies **drivers champion**: highest `seasonPoints` among all active league drivers (ties: wins → podiums → id asc)
+5. Distributes **drivers champion bonuses**:
+   - Champion's team: `budget += $2M` (separate PRIZE transaction: `"Season Prize — Drivers Championship Bonus"`)
+   - Champion driver: `marketValue = Math.round(marketValue × 1.20)`
+6. Updates **driver career history** for all active league drivers (`careerHistory[]` via `arrayUnion`); increments career totals (`races`, `wins`, `podiums`, `championships`)
+7. Updates **team season history** (`seasonHistory[]` via `arrayUnion`) for all teams
+8. Sends **office news notification** to each team summarizing prizes received
+9. Sets `seasons/{sId}.status = "ended"` in the same batch
+
+**Constants (never hardcoded in CF logic):**
+| Constant | Value |
+|---|---|
+| `SEASON_PRIZE_TABLE[0..9]` | 6M, 4.5M, 3M, 2M, 1.5M, 1M, 700k, 500k, 350k, 200k |
+| `DRIVERS_CHAMPION_TEAM_BONUS` | 2,000,000 |
+| `DRIVERS_CHAMPION_MARKET_VALUE_BOOST` | 1.20 |
+
+**Pure-logic module:** `functions/src/domains/economy/season-end.ts` exports `getSeasonPrizeForPosition`, `rankTeamsByPoints`, `findDriversChampion` — zero Firebase calls, fully unit-tested.
 
 ### Phase 4 — UNIVERSE SYNC (AUTOMATED ✅ — as of hotfix 2026-03-30)
 **Function:** `syncUniverseStats()` in `index.js` (called automatically at end of `postRaceProcessing`)

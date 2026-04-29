@@ -138,7 +138,22 @@
 
     <!-- Dynamic Paddock Content -->
     <div class="min-h-[500px]">
-        {#if ["practice", "qualifying", "racestrategy"].includes(weekStatus.toLowerCase())}
+        {#if seasonStore.isSeasonEnded}
+            <!-- Season-ended gate: shown before any time-based status check -->
+            <div class="flex flex-col items-center justify-center gap-6 py-20 text-center" in:fade>
+                <div class="w-20 h-20 rounded-3xl bg-app-primary/10 border border-app-primary/20 flex items-center justify-center">
+                    <Trophy size={40} class="text-app-primary" />
+                </div>
+                <div class="flex flex-col gap-2">
+                    <h2 class="text-2xl font-heading font-black uppercase italic text-app-text tracking-tight">
+                        {t('racing_preseason_title')}
+                    </h2>
+                    <p class="text-sm text-app-text/50 max-w-xs">
+                        {t('racing_preseason_body')}
+                    </p>
+                </div>
+            </div>
+        {:else if ["practice", "qualifying", "racestrategy"].includes(weekStatus.toLowerCase())}
             <div in:fade>
                 <GaragePanel currentWeekStatus={weekStatus} />
             </div>

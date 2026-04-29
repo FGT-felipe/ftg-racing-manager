@@ -1,7 +1,7 @@
 {
   "name": "frontend",
   "private": true,
-  "version": "1.8.0",
+  "version": "1.9.0",
   "type": "module",
   "scripts": {
     "dev": "vite dev",
@@ -32,6 +32,7 @@
     "vitest": "^4.0.18"
   },
   "dependencies": {
+    "chart.js": "^4.5.1",
     "date-fns": "^4.1.0",
     "firebase": "^12.10.0",
     "lucide-svelte": "^0.577.0",

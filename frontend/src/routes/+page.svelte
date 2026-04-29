@@ -3,6 +3,7 @@
     import { authStore } from "$lib/stores/auth.svelte";
     import { seasonStore } from "$lib/stores/season.svelte";
     import { managerStore } from "$lib/stores/manager.svelte";
+    import { universeStore } from "$lib/stores/universe.svelte";
     import CountryFlag from "$lib/components/ui/CountryFlag.svelte";
     import { goto } from "$app/navigation";
     import { browser } from "$app/environment";
@@ -12,6 +13,13 @@
     import OfficeNews from "$lib/components/dashboard/OfficeNews.svelte";
     import StandingsCard from "$lib/components/dashboard/StandingsCard.svelte";
     import PreparationChecklist from "$lib/components/dashboard/PreparationChecklist.svelte";
+    import SeasonSummaryModal from "$lib/components/season/SeasonSummaryModal.svelte";
+
+    let dismissed = $state(false);
+
+    $effect(() => {
+        universeStore.init();
+    });
 
     let teamData = $derived(teamStore.value);
     let team = $derived(teamData.team);
@@ -89,6 +97,29 @@
                 {/if}
             </h1>
         </header>
+
+        <!-- Season Summary Modal -->
+        {#if seasonStore.isSeasonEnded && !dismissed}
+            <SeasonSummaryModal onDismiss={() => dismissed = true} />
+        {/if}
+
+        <!-- Season-ended banner -->
+        {#if seasonStore.isSeasonEnded}
+            <div class="flex items-center gap-4 px-6 py-4 rounded-2xl bg-app-primary/10 border border-app-primary/30">
+                <span class="text-2xl">🏁</span>
+                <div class="flex flex-col gap-0.5">
+                    <p class="text-sm font-bold text-app-primary font-heading uppercase tracking-widest">
+                        {t('season_ended_banner_title')}
+                    </p>
+                    <p class="text-xs text-app-text/60">
+                        {t('season_ended_banner_body')}
+                    </p>
+                </div>
+                <span class="ml-auto text-[10px] font-black uppercase tracking-[0.25em] text-app-primary/50 font-heading">
+                    {t('season_ended_preseason_label')}
+                </span>
+            </div>
+        {/if}
 
         <!-- Grid Layout for Dashboard Main View -->
         <div class="grid grid-cols-1 lg:grid-cols-3 gap-8 w-full items-start">

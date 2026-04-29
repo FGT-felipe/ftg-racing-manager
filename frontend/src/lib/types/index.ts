@@ -24,6 +24,8 @@ export interface Season {
     year: number;
     calendar: RaceEvent[];
     startDate: Date;
+    /** Set by CF after last race is processed. Absent or undefined = season active. */
+    status?: "active" | "ended" | "preseason";
 }
 
 export interface Division {
@@ -38,7 +40,7 @@ export interface Transaction {
     description: string;
     amount: number;
     date: Date;
-    type: 'SPONSOR' | 'SALARY' | 'UPGRADE' | 'REWARD' | 'PRACTICE' | 'OTHER';
+    type: 'SPONSOR' | 'SALARY' | 'UPGRADE' | 'REWARD' | 'PRACTICE' | 'PRIZE' | 'OTHER';
 }
 
 export interface NewsItem {
@@ -98,6 +100,24 @@ export interface ActiveContract {
     racesRemaining: number;
 }
 
+export interface SeasonFormEntry {
+    round: number;       // 1-based round number within the season
+    trackName: string;
+    position: number;    // constructors standing after this round
+    pts: number;         // points scored in this race (team total, both drivers)
+}
+
+export interface SeasonHistoryEntry {
+    seasonId: string;
+    year: number;
+    constructorsPosition: number;
+    points: number;
+    races: number;
+    wins: number;
+    podiums: number;
+    isConstructorsChampion: boolean;
+}
+
 export interface Team {
     id: string;
     leagueId?: string | null;
@@ -121,6 +141,8 @@ export interface Team {
     nameChangeCount: number;
     lastRaceDebrief?: string | null;
     lastRaceResult?: string | null;
+    seasonHistory?: SeasonHistoryEntry[];
+    seasonForm?: SeasonFormEntry[];
 
     carStats: Record<string, Record<string, number>>; // Usually '0' and '1' mapped to aero, powertrain, chassis, reliability
     weekStatus: Record<string, any>;

@@ -98,6 +98,35 @@ class UniverseStore {
             .filter(d => d.teamId === teamId);
     }
 
+    /** All teams in the player's league, sorted P1→P10 by seasonPoints desc, with 1-based position. */
+    getAllTeamStandings(teamId: string) {
+        const league = this.getLeagueByTeamId(teamId);
+        if (!league) return [];
+        return [...(league.teams as any[])]
+            .sort((a, b) => (b.seasonPoints || 0) - (a.seasonPoints || 0))
+            .map((team, idx) => ({ ...team, position: idx + 1 }));
+    }
+
+    /** Drivers champion in the player's league. Tie-break: wins → podiums → id asc. Enriched with teamName. */
+    getDriversChampion(teamId: string) {
+        const league = this.getLeagueByTeamId(teamId);
+        if (!league || !(league.drivers as any[])?.length) return null;
+        const champion = [...(league.drivers as any[])].sort((a, b) => {
+            const pts = (b.seasonPoints || 0) - (a.seasonPoints || 0);
+            if (pts !== 0) return pts;
+            const wins = (b.seasonWins || 0) - (a.seasonWins || 0);
+            if (wins !== 0) return wins;
+            const pods = (b.seasonPodiums || 0) - (a.seasonPodiums || 0);
+            if (pods !== 0) return pods;
+            return a.id < b.id ? -1 : a.id > b.id ? 1 : 0;
+        })[0] ?? null;
+        if (champion) {
+            const team = (league.teams as any[])?.find((t: any) => t.id === champion.teamId);
+            champion.teamName = team?.name ?? '';
+        }
+        return champion;
+    }
+
     getDriverById(driverId: string) {
         if (!this.value.universe) return null;
         for (const league of this.value.universe.leagues) {
