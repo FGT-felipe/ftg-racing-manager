@@ -9,6 +9,7 @@
     import { browser } from "$app/environment";
     import { Factory, Wallet } from "lucide-svelte";
     import { t } from "$lib/utils/i18n";
+    import { formatMoney } from "$lib/utils/format";
     import RaceStatusHero from "$lib/components/dashboard/RaceStatusHero.svelte";
     import OfficeNews from "$lib/components/dashboard/OfficeNews.svelte";
     import StandingsCard from "$lib/components/dashboard/StandingsCard.svelte";
@@ -155,9 +156,7 @@
                                     >{t('available_budget')}</span
                                 >
                                 <span class="text-2xl font-black text-app-text">
-                                    ${((team?.budget || 0) / 1000000).toFixed(
-                                        2,
-                                    )}M
+                                    {formatMoney(team?.budget || 0)}
                                 </span>
                             </div>
                             <div

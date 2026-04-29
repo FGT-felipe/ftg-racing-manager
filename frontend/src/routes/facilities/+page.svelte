@@ -5,6 +5,7 @@
     import { uiStore } from "$lib/stores/ui.svelte";
     import { FacilityType } from "$lib/types";
     import { t } from "$lib/utils/i18n";
+    import { formatMoney } from "$lib/utils/format";
     import { FACILITY_MAX_LEVEL } from "$lib/constants/economics";
     import {
         Building2,
@@ -297,11 +298,7 @@
                                                 {#if isVirtual}
                                                     Included in Garage
                                                 {:else}
-                                                    ${(
-                                                        (facility.level *
-                                                            15000) /
-                                                        1000
-                                                    ).toFixed(0)}k
+                                                    {formatMoney(facility.level * 15000)}
                                                 {/if}
                                             </span>
                                         </div>
@@ -330,7 +327,7 @@
                                                 <span class="text-[10px] font-black text-blue-400 uppercase tracking-widest">
                                                     {isUpgrading ? "..." : t('upgrade_to_level', { level: facility.level + 1 })}
                                                 </span>
-                                                <span class="text-[10px] font-black text-blue-300">${(upgradePrice / 1_000_000).toFixed(1)}M</span>
+                                                <span class="text-[10px] font-black text-blue-300">{formatMoney(upgradePrice)}</span>
                                             </button>
                                         {/if}
                                     {:else}
@@ -386,7 +383,7 @@
                 >Weekly Maintenance</span
             >
             <span class="text-sm font-bold text-app-text"
-                >${(totalMaintenance / 1000).toFixed(0)}k
+                >{formatMoney(totalMaintenance)}
                 <span class="text-[10px] opacity-40">/wk</span></span
             >
         </div>

@@ -6,6 +6,7 @@ import { notificationStore } from '$lib/stores/notifications.svelte';
 import { seasonStore } from '$lib/stores/season.svelte';
 import { FacilityType, type Facility } from '$lib/types';
 import { doc, collection, runTransaction, serverTimestamp } from 'firebase/firestore';
+import { formatMoney } from '$lib/utils/format';
 import {
     FACILITY_UPGRADE_COSTS,
     FACILITY_MAINTENANCE_COST_PER_LEVEL,
@@ -97,7 +98,7 @@ export function createFacilityStore() {
             }
 
             if (team.budget < price) {
-                throw new Error(`Insufficient budget. Need $${(price / 1000000).toFixed(1)}M`);
+                throw new Error(`Insufficient budget. Need ${formatMoney(price)}`);
             }
 
             const teamRef = doc(db, 'teams', team.id);

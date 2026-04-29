@@ -1,6 +1,7 @@
 <script lang="ts">
     import { carStore } from "$lib/stores/car.svelte";
     import { teamStore } from "$lib/stores/team.svelte";
+    import { formatMoney } from "$lib/utils/format";
     import { managerStore } from "$lib/stores/manager.svelte";
     import { driverStore } from "$lib/stores/driver.svelte";
     import { timeService } from "$lib/services/time_service.svelte";
@@ -378,7 +379,7 @@
                                         >
                                             {level >= 20
                                                 ? "MAX REACHED"
-                                                : `$${(cost / 1000).toFixed(0)}k`}
+                                                : formatMoney(cost)}
                                         </span>
                                     </div>
                                     <div class="text-right">

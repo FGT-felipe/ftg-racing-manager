@@ -11,6 +11,7 @@ import {
     increment
 } from 'firebase/firestore';
 import { browser } from '$app/environment';
+import { formatMoney } from '$lib/utils/format';
 import { teamStore } from './team.svelte';
 import { managerStore } from './manager.svelte';
 import { notificationStore } from './notifications.svelte';
@@ -184,7 +185,7 @@ export function createYouthAcademyStore() {
                 if (!teamSnap.exists()) throw new Error("Team record not found in database.");
 
                 const data = teamSnap.data();
-                if (!data || (data.budget ?? 0) < purchasePrice) throw new Error(`Insufficient budget. Required: $10,000. Available: $${((data?.budget ?? 0) / 1000).toFixed(0)}k`);
+                if (!data || (data.budget ?? 0) < purchasePrice) throw new Error(`Insufficient budget. Required: $10,000. Available: ${formatMoney(data?.budget ?? 0)}`);
                 const budget = data.budget ?? 0;
 
                 // Read seasonId from the team document (authoritative, avoids store timing issues)

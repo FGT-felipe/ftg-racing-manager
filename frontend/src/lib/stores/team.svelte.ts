@@ -4,6 +4,7 @@ import { authStore } from '$lib/stores/auth.svelte';
 import { browser } from '$app/environment';
 import type { Team } from '$lib/types';
 import { TEAM_RENAME_COST } from '$lib/constants/economics';
+import { formatMoney } from '$lib/utils/format';
 
 export function createTeamStore() {
     let currentTeam = $state<Team | null>(null);
@@ -88,9 +89,8 @@ export function createTeamStore() {
             };
         },
         get formattedBudget() {
-            if (!currentTeam) return '$0M';
-            // simple formatter for million representation
-            return `$${(currentTeam.budget / 1000000).toFixed(1)}M`;
+            if (!currentTeam) return '$0';
+            return formatMoney(currentTeam.budget);
         },
         async claimTeam(teamId: string) {
             const user = authStore.user;

@@ -11,6 +11,7 @@
     import { partsWearService } from "$lib/services/parts_wear_service.svelte";
     import type { Part } from "$lib/types";
     import { t } from "$lib/utils/i18n";
+    import { formatMoney } from "$lib/utils/format";
     import { facilityStore } from "$lib/stores/facility.svelte";
     import { FacilityType } from "$lib/types";
     import { FACILITY_MAX_LEVEL } from "$lib/constants/economics";
@@ -224,7 +225,7 @@
             </div>
             <div class="flex flex-col">
                 <span class="text-[9px] font-black text-app-text/30 uppercase tracking-widest">Repair Budget Cap</span>
-                <span class="text-sm font-black text-blue-400">${(partsWearService.getRepairCap({ facilities: { garage: { level: garageLevel } } }) / 1_000).toFixed(0)}k/round</span>
+                <span class="text-sm font-black text-blue-400">{formatMoney(partsWearService.getRepairCap({ facilities: { garage: { level: garageLevel } } }))}/round</span>
             </div>
         </div>
 
@@ -247,7 +248,7 @@
                     <span class="text-[10px] font-black text-blue-400 uppercase tracking-widest">
                         {garageUpgrading ? "..." : t('upgrade_to_level', { level: garageLevel + 1 })}
                     </span>
-                    <span class="text-[9px] text-blue-300/60">${(garageUpgradePrice / 1_000_000).toFixed(1)}M</span>
+                    <span class="text-[9px] text-blue-300/60">{formatMoney(garageUpgradePrice)}</span>
                 </div>
             </button>
         {/if}
@@ -437,7 +438,7 @@
                                     >
                                         {level >= 20
                                             ? "MAX REACHED"
-                                            : `$${(cost / 1000).toFixed(0)}k`}
+                                            : formatMoney(cost)}
                                     </span>
                                 </div>
                                 <div class="text-right">

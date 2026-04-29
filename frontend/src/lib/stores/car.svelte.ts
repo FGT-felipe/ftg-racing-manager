@@ -4,6 +4,7 @@ import { managerStore } from '$lib/stores/manager.svelte';
 import { notificationStore } from '$lib/stores/notifications.svelte';
 import { doc, runTransaction, collection } from 'firebase/firestore';
 import { CAR_UPGRADE_BASE_COST, CAR_PART_MAX_LEVEL, BUREAUCRAT_UPGRADE_COOLDOWN_WEEKS } from '$lib/constants/economics';
+import { formatMoney } from '$lib/utils/format';
 
 export function createCarStore() {
     return {
@@ -51,7 +52,7 @@ export function createCarStore() {
             const cost = this.getUpgradeCost(currentLevel);
 
             if (team.budget < cost) {
-                throw new Error(`Insufficient funds. Need $${(cost / 1000).toFixed(0)}k`);
+                throw new Error(`Insufficient funds. Need ${formatMoney(cost)}`);
             }
 
             const teamRef = doc(db, 'teams', team.id);

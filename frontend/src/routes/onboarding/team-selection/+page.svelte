@@ -75,9 +75,7 @@
         }
     }
 
-    function formatBudget(budget: number) {
-        return `$${(budget / 1000000).toFixed(0)}M`;
-    }
+    import { formatMoney as formatBudget } from '$lib/utils/format';
 
     import CountryFlag from "$lib/components/ui/CountryFlag.svelte";
     import { t } from "$lib/utils/i18n";
