@@ -3,6 +3,7 @@ import { teamStore } from '$lib/stores/team.svelte';
 import { authStore } from '$lib/stores/auth.svelte';
 import { managerStore } from '$lib/stores/manager.svelte';
 import { notificationStore } from '$lib/stores/notifications.svelte';
+import { seasonStore } from '$lib/stores/season.svelte';
 import { FacilityType, type Facility } from '$lib/types';
 import { doc, collection, runTransaction, serverTimestamp } from 'firebase/firestore';
 import {
@@ -41,6 +42,22 @@ export function createFacilityStore() {
             return merged;
         },
 
+        get currentSeasonId(): string | null {
+            return seasonStore.value.season?.id ?? teamStore.value.team?.currentSeasonId ?? null;
+        },
+
+        /**
+         * Returns true if the facility can be upgraded this season.
+         * A facility is blocked if it is already at max level or was already upgraded in the current season.
+         */
+        canUpgradeFacility(type: FacilityType): boolean {
+            const facility = this.facilities[type];
+            if (!facility || facility.level >= FACILITY_MAX_LEVEL) return false;
+            const seasonId = this.currentSeasonId;
+            if (!seasonId) return true; // season not loaded yet — optimistic
+            return facility.lastUpgradeSeasonId !== seasonId;
+        },
+
         getUpgradePrice(type: FacilityType, currentLevel: number): number {
             if (currentLevel >= FACILITY_MAX_LEVEL) return 0;
 
@@ -60,8 +77,18 @@ export function createFacilityStore() {
             const team = teamStore.value.team;
             if (!team) throw new Error("No team active");
 
+            const seasonId = seasonStore.value.season?.id ?? team.currentSeasonId ?? null;
             const profile = managerStore.profile;
             const facility = this.facilities[type];
+
+            if (facility.level >= FACILITY_MAX_LEVEL) {
+                throw new Error("Maximum level reached");
+            }
+
+            if (seasonId && facility.lastUpgradeSeasonId === seasonId) {
+                throw new Error("Already upgraded this season");
+            }
+
             let price = this.getUpgradePrice(type, facility.level);
 
             // Apply discounts based on role
@@ -71,10 +98,6 @@ export function createFacilityStore() {
 
             if (team.budget < price) {
                 throw new Error(`Insufficient budget. Need $${(price / 1000000).toFixed(1)}M`);
-            }
-
-            if (facility.level >= FACILITY_MAX_LEVEL) {
-                throw new Error("Maximum level reached");
             }
 
             const teamRef = doc(db, 'teams', team.id);
@@ -88,11 +111,19 @@ export function createFacilityStore() {
 
                 if (currentBudget < price) throw new Error("Insufficient budget");
 
+                // Re-check season limit inside transaction (authoritative)
+                const resolvedSeasonId = teamData.currentSeasonId ?? seasonId;
+                const facilityInDoc = teamData.facilities?.[type];
+                if (resolvedSeasonId && facilityInDoc?.lastUpgradeSeasonId === resolvedSeasonId) {
+                    throw new Error("Already upgraded this season");
+                }
+
                 const nextLevel = facility.level + 1;
                 const updatedFacility: Facility = {
                     ...facility,
                     level: nextLevel,
-                    maintenanceCost: this.getMaintenanceCost(nextLevel)
+                    maintenanceCost: this.getMaintenanceCost(nextLevel),
+                    lastUpgradeSeasonId: resolvedSeasonId
                 };
 
                 // Update team budget and facility

@@ -35,17 +35,17 @@ export class PartsWearService {
     }
 
     /**
-     * Returns the effective per-round repair budget cap, scaled by HQ level.
-     * Formula: base × (1 + (hqLevel - 1) × 0.5).
-     * HQ 1=$150k, HQ 2=$225k, HQ 3=$300k, HQ 4=$375k, HQ 5=$450k.
+     * Returns the effective per-round repair budget cap, scaled by garage (Engineering) level.
+     * Formula: base × (1 + (garageLevel - 1) × 0.5).
+     * L1=$150k, L2=$225k, L3=$300k, L4=$375k, L5=$450k.
      *
      * @param teamData - Raw Firestore team document data (or Team object)
      */
     getRepairCap(teamData: Record<string, unknown> | Team): number {
         const facilities = ((teamData as Record<string, unknown>)['facilities'] as Record<string, { level?: number }>) ?? {};
-        let hqLevel = facilities['hq']?.level ?? 1;
-        hqLevel = Math.min(Math.max(hqLevel, 1), 5);
-        return PARTS_REPAIR_BUDGET_CAP_PER_ROUND * (1 + (hqLevel - 1) * PARTS_REPAIR_HQ_CAP_MULTIPLIER_STEP);
+        let garageLevel = facilities['garage']?.level ?? 1;
+        garageLevel = Math.min(Math.max(garageLevel, 1), 5);
+        return PARTS_REPAIR_BUDGET_CAP_PER_ROUND * (1 + (garageLevel - 1) * PARTS_REPAIR_HQ_CAP_MULTIPLIER_STEP);
     }
 
     /**

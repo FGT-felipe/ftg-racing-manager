@@ -89,11 +89,11 @@ describe('PartsWearService.getRepairCap', () => {
     let service: PartsWearService;
     beforeEach(() => { service = new PartsWearService(); });
 
-    it('HQ L1 → $150k', () => expect(service.getRepairCap({ facilities: { hq: { level: 1 } } })).toBe(150_000));
-    it('HQ L2 → $225k', () => expect(service.getRepairCap({ facilities: { hq: { level: 2 } } })).toBe(225_000));
-    it('HQ L3 → $300k', () => expect(service.getRepairCap({ facilities: { hq: { level: 3 } } })).toBe(300_000));
-    it('HQ L5 → $450k', () => expect(service.getRepairCap({ facilities: { hq: { level: 5 } } })).toBe(450_000));
-    it('missing hq → defaults to L1 ($150k)', () => expect(service.getRepairCap({})).toBe(150_000));
+    it('garage L1 → $150k', () => expect(service.getRepairCap({ facilities: { garage: { level: 1 } } })).toBe(150_000));
+    it('garage L2 → $225k', () => expect(service.getRepairCap({ facilities: { garage: { level: 2 } } })).toBe(225_000));
+    it('garage L3 → $300k', () => expect(service.getRepairCap({ facilities: { garage: { level: 3 } } })).toBe(300_000));
+    it('garage L5 → $450k', () => expect(service.getRepairCap({ facilities: { garage: { level: 5 } } })).toBe(450_000));
+    it('missing garage → defaults to L1 ($150k)', () => expect(service.getRepairCap({})).toBe(150_000));
 });
 
 // ─── Tests: repairPart ────────────────────────────────────────────────────────
