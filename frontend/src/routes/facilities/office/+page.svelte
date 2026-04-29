@@ -302,12 +302,12 @@
                         {t('office_season_form_empty')}
                     </p>
                 {:else}
-                    {@const W = 360}
-                    {@const H = 130}
-                    {@const padL = 28}
-                    {@const padR = 12}
-                    {@const padT = 12}
-                    {@const padB = 28}
+                    {@const W = 380}
+                    {@const H = 140}
+                    {@const padL = 30}
+                    {@const padR = 16}
+                    {@const padT = 20}
+                    {@const padB = 24}
                     {@const chartW = W - padL - padR}
                     {@const chartH = H - padT - padB}
                     {@const n = seasonFormData.length}
@@ -315,26 +315,31 @@
                     {@const xOf = (i: number) => padL + (n === 1 ? chartW / 2 : (i / (n - 1)) * chartW)}
                     {@const yOf = (pos: number) => padT + ((pos - 1) / (maxPos - 1)) * chartH}
                     {@const pts = seasonFormData.map((e, i) => `${xOf(i)},${yOf(e.position)}`).join(' ')}
+                    {@const lastEntry = seasonFormData[n - 1]}
 
                     <svg viewBox="0 0 {W} {H}" class="w-full" aria-hidden="true">
-                        <!-- Horizontal grid lines at P1 and maxPos -->
-                        <line x1={padL} y1={padT} x2={W - padR} y2={padT}
-                            stroke="currentColor" stroke-width="0.5" class="text-app-border/30" />
-                        <line x1={padL} y1={padT + chartH} x2={W - padR} y2={padT + chartH}
-                            stroke="currentColor" stroke-width="0.5" class="text-app-border/30" />
-                        <!-- Mid grid line -->
-                        {#if maxPos > 2}
-                            {@const midPos = Math.ceil(maxPos / 2)}
-                            <line x1={padL} y1={yOf(midPos)} x2={W - padR} y2={yOf(midPos)}
-                                stroke="currentColor" stroke-width="0.5" stroke-dasharray="3 3" class="text-app-border/20" />
-                            <text x={padL - 4} y={yOf(midPos) + 3.5} text-anchor="end"
-                                class="text-app-text/30" font-size="7" fill="currentColor">P{midPos}</text>
+                        <!-- Y-axis grid lines: one per position -->
+                        {#each Array.from({ length: maxPos }, (_, k) => k + 1) as pos}
+                            <line
+                                x1={padL} y1={yOf(pos)}
+                                x2={W - padR} y2={yOf(pos)}
+                                stroke="currentColor"
+                                stroke-width={pos === 1 ? 0.75 : 0.4}
+                                stroke-dasharray={pos === 1 ? '' : '2 4'}
+                                class={pos === 1 ? 'text-app-primary/20' : 'text-app-border/20'}
+                            />
+                        {/each}
+
+                        <!-- Y-axis labels: P1 at top, Pmax at bottom, mid if space -->
+                        <text x={padL - 5} y={yOf(1) + 3.5} text-anchor="end"
+                            font-size="7" fill="currentColor" class="text-app-primary/60">P1</text>
+                        <text x={padL - 5} y={yOf(maxPos) + 3.5} text-anchor="end"
+                            font-size="7" fill="currentColor" class="text-app-text/30">P{maxPos}</text>
+                        {#if maxPos >= 4}
+                            {@const mid = Math.round(maxPos / 2)}
+                            <text x={padL - 5} y={yOf(mid) + 3.5} text-anchor="end"
+                                font-size="7" fill="currentColor" class="text-app-text/25">P{mid}</text>
                         {/if}
-                        <!-- Y axis labels -->
-                        <text x={padL - 4} y={padT + 3.5} text-anchor="end"
-                            class="text-app-text/50" font-size="7" fill="currentColor">P1</text>
-                        <text x={padL - 4} y={padT + chartH + 3.5} text-anchor="end"
-                            class="text-app-text/30" font-size="7" fill="currentColor">P{maxPos}</text>
 
                         <!-- Line -->
                         <polyline
@@ -344,32 +349,30 @@
                             stroke-width="1.5"
                             stroke-linejoin="round"
                             stroke-linecap="round"
-                            class="text-app-primary/60"
+                            class="text-app-primary/70"
                         />
 
-                        <!-- Dots + X labels -->
+                        <!-- Dots + R-labels below -->
                         {#each seasonFormData as entry, i}
                             {@const cx = xOf(i)}
                             {@const cy = yOf(entry.position)}
                             {@const isLast = i === n - 1}
-                            <circle cx={cx} cy={cy} r={isLast ? 4 : 3}
+                            <!-- Dot -->
+                            <circle cx={cx} cy={cy} r={isLast ? 4.5 : 2.5}
                                 fill="currentColor"
-                                class={isLast ? "text-app-primary" : "text-app-primary/50"} />
+                                class={isLast ? 'text-app-primary' : 'text-app-primary/55'} />
                             {#if isLast}
-                                <circle cx={cx} cy={cy} r="7"
+                                <circle cx={cx} cy={cy} r="8"
                                     fill="none" stroke="currentColor" stroke-width="1"
-                                    class="text-app-primary/30" />
+                                    class="text-app-primary/25" />
+                                <!-- Current position callout above last dot -->
+                                <text x={cx} y={cy - 12} text-anchor="middle"
+                                    font-size="8" font-weight="bold" fill="currentColor"
+                                    class="text-app-primary">P{entry.position}</text>
                             {/if}
-                            <!-- Position label above dot (only for first, last, and P1) -->
-                            {#if isLast || i === 0 || entry.position === 1}
-                                <text x={cx} y={cy - 7} text-anchor="middle"
-                                    class="text-app-primary" font-size="7" font-weight="bold" fill="currentColor">
-                                    P{entry.position}
-                                </text>
-                            {/if}
-                            <!-- Round label below -->
-                            <text x={cx} y={H - 4} text-anchor="middle"
-                                class="text-app-text/30" font-size="7" fill="currentColor">
+                            <!-- Round label below x-axis -->
+                            <text x={cx} y={H - 2} text-anchor="middle"
+                                font-size="7" fill="currentColor" class="text-app-text/30">
                                 R{entry.round}
                             </text>
                         {/each}
