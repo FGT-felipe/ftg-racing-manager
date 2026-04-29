@@ -417,6 +417,9 @@ async function runPostRaceProcessing() {
                     // v1.7.5: practicePaid persisted between rounds, granting free practice sessions
                     // at the start of the new round without charging the $10k fee.
                     "weekStatus.practicePaid": admin_1.admin.firestore.FieldValue.delete(),
+                    // T-007 S3: reset per-round repair cap tracker and last-round flag
+                    "weekStatus.repairSpentThisRound": 0,
+                    "weekStatus.isLastRound": false,
                     sponsors: updatedSponsors,
                     budget: newBudget,
                 });
@@ -462,13 +465,6 @@ async function runPostRaceProcessing() {
                 }
                 await batch.commit();
             }
-            // ── Season-end: prize distribution + career history ───────────────────
-            if (season) {
-                const remainingAfterThis = (season["calendar"] ?? []).filter((r) => !r["isCompleted"]);
-                if (remainingAfterThis.length === 0) {
-                    await runSeasonEndProcessing(sId, season);
-                }
-            }
             // ── AI team car upgrades (30% chance per stat) ────────────────────────
             for (const tid of teamIdsSet) {
                 const tDoc = await admin_1.db.collection("teams").doc(tid).get();
@@ -511,207 +507,6 @@ async function runPostRaceProcessing() {
     }
     catch (err) {
         logger.error("Error in postRaceProcessing", err);
-    }
-}
-// ─── Season-end processing ────────────────────────────────────────────────────
-/**
- * Distributes end-of-season prizes and updates career histories for all leagues.
- * Called once after the last race of the season is processed.
- * Execution order (per AC #10): prizes → career history → seasons.status = "ended".
- *
- * @param {string} sId - Season document ID.
- * @param {Object} season - Season document data (calendar, standings).
- */
-async function runSeasonEndProcessing(sId, season) {
-    try {
-        // P1: Idempotency guard — skip if already processed (prevents double prize on retry)
-        if (season["status"] === "ended") {
-            logger.info(`[SeasonEnd] Season ${sId} already ended, skipping.`);
-            return;
-        }
-        logger.info(`[SeasonEnd] Starting end-of-season processing for season ${sId}`);
-        const uDoc = await admin_1.db.collection("universe").doc("game_universe_v1").get();
-        if (!uDoc.exists) {
-            logger.warn("[SeasonEnd] universe document not found, skipping season-end processing");
-            return;
-        }
-        const leagues = uDoc.data()["leagues"] ?? [];
-        // P7: Use season's own year field to avoid wall-clock boundary issues
-        const currentYear = season["year"] ?? new Date().getFullYear();
-        for (const league of leagues) {
-            const leagueTeamRefs = (league["teams"] ?? []).map((t) => t["id"]).filter(Boolean);
-            if (leagueTeamRefs.length === 0)
-                continue;
-            // ── 1. Read all teams and rank by seasonPoints ────────────────────────
-            const teamDocs = await Promise.all(leagueTeamRefs.map((id) => admin_1.db.collection("teams").doc(id).get()));
-            const teamStandings = teamDocs
-                .filter((d) => d.exists)
-                .map((d) => ({ id: d.id, ref: d.ref, data: d.data() }));
-            // Sort descending by seasonPoints; stable on equal points (Array.sort is stable in V8)
-            teamStandings.sort((a, b) => (b.data["seasonPoints"] || 0) - (a.data["seasonPoints"] || 0));
-            const isConstructorsChampionTeamId = teamStandings.length > 0 ? teamStandings[0].id : null;
-            // ── 2. Distribute constructors prizes ─────────────────────────────────
-            for (let i = 0; i < teamStandings.length; i++) {
-                const pos = i + 1; // 1-based
-                const prize = constants_1.SEASON_PRIZE_TABLE[i] ?? 0;
-                if (prize <= 0)
-                    continue;
-                const { id: tid, ref: tRef, data: tData } = teamStandings[i];
-                const nowIso = new Date().toISOString();
-                const prizeBatch = admin_1.db.batch();
-                prizeBatch.update(tRef, { budget: (tData["budget"] || 0) + prize });
-                const txRef = tRef.collection("transactions").doc();
-                prizeBatch.set(txRef, {
-                    id: txRef.id,
-                    description: `Season Prize — Constructor Championship P${pos}`,
-                    amount: prize,
-                    date: nowIso,
-                    type: "PRIZE",
-                });
-                await prizeBatch.commit();
-                // Refresh budget in local cache for accurate subsequent reads
-                teamStandings[i].data = { ...tData, budget: (tData["budget"] || 0) + prize };
-            }
-            logger.info(`[SeasonEnd] Constructors prizes distributed for ${teamStandings.length} teams`);
-            // ── 3. Identify drivers champion ──────────────────────────────────────
-            const leagueDriverIds = (league["drivers"] ?? []).map((d) => d["id"]).filter(Boolean);
-            let driversChampion = null;
-            if (leagueDriverIds.length > 0) {
-                const driverDocs = await Promise.all(leagueDriverIds.map((id) => admin_1.db.collection("drivers").doc(id).get()));
-                const activeDrivers = driverDocs
-                    .filter((d) => d.exists && (d.data()["seasonRaces"] || 0) > 0)
-                    .map((d) => ({ id: d.id, ref: d.ref, data: d.data() }));
-                // Sort: seasonPoints desc → seasonWins desc → seasonPodiums desc → id asc
-                activeDrivers.sort((a, b) => {
-                    const pts = (b.data["seasonPoints"] || 0) - (a.data["seasonPoints"] || 0);
-                    if (pts !== 0)
-                        return pts;
-                    const wins = (b.data["seasonWins"] || 0) - (a.data["seasonWins"] || 0);
-                    if (wins !== 0)
-                        return wins;
-                    const pods = (b.data["seasonPodiums"] || 0) - (a.data["seasonPodiums"] || 0);
-                    if (pods !== 0)
-                        return pods;
-                    return a.id < b.id ? -1 : a.id > b.id ? 1 : 0;
-                });
-                driversChampion = activeDrivers.length > 0 ? activeDrivers[0] : null;
-                // ── 4. Distribute drivers champion bonuses ────────────────────────
-                if (driversChampion) {
-                    // P5: Guard against missing teamId before Firestore fetch
-                    const champTeamId = driversChampion.data["teamId"];
-                    if (!champTeamId) {
-                        logger.warn(`[SeasonEnd] Champion driver ${driversChampion.id} has no teamId, skipping team bonus`);
-                    }
-                    else {
-                        const champTeamDoc = await admin_1.db.collection("teams").doc(champTeamId).get();
-                        if (champTeamDoc.exists) {
-                            const champTeamData = champTeamDoc.data();
-                            const nowIso = new Date().toISOString();
-                            const champBatch = admin_1.db.batch();
-                            // Team bonus
-                            champBatch.update(champTeamDoc.ref, {
-                                budget: (champTeamData["budget"] || 0) + constants_1.DRIVERS_CHAMPION_TEAM_BONUS,
-                            });
-                            const champTxRef = champTeamDoc.ref.collection("transactions").doc();
-                            // P3: Description matches spec exactly (no driver name appended)
-                            champBatch.set(champTxRef, {
-                                id: champTxRef.id,
-                                description: "Season Prize — Drivers Championship Bonus",
-                                amount: constants_1.DRIVERS_CHAMPION_TEAM_BONUS,
-                                date: nowIso,
-                                type: "PRIZE",
-                            });
-                            // P6: Only apply market value boost if driver has a non-zero value
-                            const currentMarketValue = driversChampion.data["marketValue"] || 0;
-                            if (currentMarketValue > 0) {
-                                const newMarketValue = Math.round(currentMarketValue * constants_1.DRIVERS_CHAMPION_MARKET_VALUE_BOOST);
-                                champBatch.update(driversChampion.ref, { marketValue: newMarketValue });
-                                await champBatch.commit();
-                                logger.info(`[SeasonEnd] Drivers champion bonus paid to team ${champTeamId}; driver ${driversChampion.id} marketValue ${currentMarketValue} → ${newMarketValue}`);
-                            }
-                            else {
-                                await champBatch.commit();
-                                logger.warn(`[SeasonEnd] Champion driver ${driversChampion.id} has marketValue=0, skipping market value boost`);
-                            }
-                            // P4: Office notification inside exists block (prevents writes to non-existent team)
-                            await (0, notifications_1.addOfficeNews)(champTeamId, {
-                                title: "🏆 Drivers Championship Bonus!",
-                                message: `${driversChampion.data["name"] ?? "Your driver"} won the Drivers Championship! Your team receives a $${constants_1.DRIVERS_CHAMPION_TEAM_BONUS.toLocaleString()} bonus.`,
-                                type: "SUCCESS",
-                            });
-                        }
-                    }
-                }
-                // ── 5. Update driver career histories ─────────────────────────────
-                for (const { id: dId, ref: dRef, data: dData } of activeDrivers) {
-                    const isChampion = driversChampion ? dId === driversChampion.id : false;
-                    const teamEntry = teamStandings.find((t) => t.id === dData["teamId"]);
-                    const teamName = teamEntry ? (teamEntry.data["name"] ?? "") : (dData["teamName"] ?? "");
-                    const historyEntry = {
-                        year: currentYear,
-                        teamName,
-                        series: "FTG World Championship",
-                        races: dData["seasonRaces"] || 0,
-                        wins: dData["seasonWins"] || 0,
-                        podiums: dData["seasonPodiums"] || 0,
-                        isChampion,
-                    };
-                    const careerUpdate = {
-                        careerHistory: admin_1.admin.firestore.FieldValue.arrayUnion(historyEntry),
-                        races: (dData["races"] || 0) + (dData["seasonRaces"] || 0),
-                        wins: (dData["wins"] || 0) + (dData["seasonWins"] || 0),
-                        podiums: (dData["podiums"] || 0) + (dData["seasonPodiums"] || 0),
-                    };
-                    if (isChampion) {
-                        careerUpdate["championships"] = (dData["championships"] || 0) + 1;
-                    }
-                    await dRef.update(careerUpdate);
-                }
-                logger.info(`[SeasonEnd] Career history updated for ${activeDrivers.length} drivers`);
-            }
-            // ── 6. Update team season histories ───────────────────────────────────
-            for (let i = 0; i < teamStandings.length; i++) {
-                const pos = i + 1;
-                const { id: tid, ref: tRef, data: tData } = teamStandings[i];
-                const isConstructorsChampion = tid === isConstructorsChampionTeamId;
-                const seasonHistoryEntry = {
-                    seasonId: sId,
-                    year: currentYear,
-                    constructorsPosition: pos,
-                    points: tData["seasonPoints"] || 0,
-                    races: tData["seasonRaces"] || 0,
-                    wins: tData["seasonWins"] || 0,
-                    podiums: tData["seasonPodiums"] || 0,
-                    isConstructorsChampion,
-                };
-                await tRef.update({
-                    seasonHistory: admin_1.admin.firestore.FieldValue.arrayUnion(seasonHistoryEntry),
-                });
-                // Send season-end office notification
-                const prize = constants_1.SEASON_PRIZE_TABLE[i] ?? 0;
-                const champMsg = isConstructorsChampion
-                    ? " 🏆 You are the Constructors Champions!"
-                    : "";
-                const driversChampMsg = driversChampion && driversChampion.data["teamId"] === tid
-                    ? ` Your driver ${driversChampion.data["name"] ?? ""} won the Drivers Championship (+$${constants_1.DRIVERS_CHAMPION_TEAM_BONUS.toLocaleString()} bonus).`
-                    : "";
-                await (0, notifications_1.addOfficeNews)(tid, {
-                    title: `Season Over — P${pos} Constructors`,
-                    message: `The season has ended. You finished P${pos} in the Constructors Championship and received $${prize.toLocaleString()} in prize money.${champMsg}${driversChampMsg}`,
-                    type: isConstructorsChampion ? "SUCCESS" : "INFO",
-                });
-            }
-            logger.info(`[SeasonEnd] Season history updated for ${teamStandings.length} teams`);
-        }
-        // ── 7. Mark season as ended (P2: WriteBatch for atomicity per AC #6) ─────
-        const finalizeBatch = admin_1.db.batch();
-        finalizeBatch.update(admin_1.db.collection("seasons").doc(sId), { status: "ended" });
-        await finalizeBatch.commit();
-        logger.info(`[SeasonEnd] Season ${sId} status set to "ended". Season-end processing complete.`);
-    }
-    catch (err) {
-        logger.error("[SeasonEnd] Error in runSeasonEndProcessing", err);
-        // Non-fatal: do not re-throw — postRaceProcessing must still complete
     }
 }
 // ─── Universe sync ────────────────────────────────────────────────────────────

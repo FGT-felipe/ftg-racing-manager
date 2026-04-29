@@ -105,6 +105,8 @@ async function runRaceLogic() {
                 const rIdx = calendar.findIndex((r) => !r["isCompleted"]);
                 if (rIdx === -1)
                     continue;
+                // T-007 S3: isLastRound drives doubled repair cap in weekStatus
+                const isLastRound = rIdx === calendar.length - 1;
                 const rEvent = calendar[rIdx];
                 const raceDocId = `${sId}_${rEvent["id"]}`;
                 const rSnap = await admin_1.db.collection("races").doc(raceDocId).get();
@@ -218,6 +220,7 @@ async function runRaceLogic() {
                                 condition: pd["condition"] ?? 100,
                                 maxCondition: pd["maxCondition"] ?? 100,
                                 level: pd["level"] ?? 1,
+                                repairCooldownRoundsLeft: pd["repairCooldownRoundsLeft"] ?? 0,
                             };
                         }
                         // Keep engineConditionsMap in sync for simulateRace backward compat
@@ -236,6 +239,30 @@ async function runRaceLogic() {
                     for (const [partType, partState] of Object.entries(parts)) {
                         allPartsConditionsMap[key][partType] = partState.condition;
                     }
+                }
+                // T-007 S3: AI moderation gate — force defensive raceStyle for bot teams with any red part (<30%)
+                // Runtime override only; no Firestore write. Human teams are exempt.
+                try {
+                    for (const driverId of Object.keys(setupsMap)) {
+                        const dData = driversMap[driverId];
+                        const team = teamsMap[dData["teamId"]] ?? {};
+                        if (!team["isBot"])
+                            continue;
+                        const tid = dData["teamId"];
+                        let carIdx = 0;
+                        if (typeof dData["carIndex"] === "number")
+                            carIdx = dData["carIndex"];
+                        const mapKey = `${tid}_${carIdx}`;
+                        const carParts = allPartsMap[mapKey] ?? {};
+                        const hasRedPart = Object.values(carParts).some((p) => p.condition < 30);
+                        if (hasRedPart) {
+                            setupsMap[driverId]["raceStyle"] = "defensive";
+                            logger.info(`[runRaceLogic:ai-moderation] team=${tid} car=${carIdx} forced defensive — red part detected`);
+                        }
+                    }
+                }
+                catch (eAiMod) {
+                    logger.error("[runRaceLogic:ai-moderation] failed", eAiMod);
                 }
                 // Run full race (pure function)
                 const raceRes = (0, sim_engine_1.simulateRace)({
@@ -284,9 +311,12 @@ async function runRaceLogic() {
                     }
                 }
                 await lapBatch.commit();
-                // Lock teams for post-race processing
+                // Lock teams for post-race processing + write isLastRound flag for repair cap doubling
                 for (const tid of teamIds) {
-                    await admin_1.db.collection("teams").doc(tid).update({ "weekStatus.isLockedForProcessing": true });
+                    await admin_1.db.collection("teams").doc(tid).update({
+                        "weekStatus.isLockedForProcessing": true,
+                        "weekStatus.isLastRound": isLastRound,
+                    });
                 }
                 // --- POINTS & STATS ---
                 const sorted = Object.keys(raceRes.finalPositions)
@@ -402,6 +432,8 @@ async function runRaceLogic() {
                 statsBatch.update(admin_1.db.collection("seasons").doc(sId), { calendar: updCal });
                 await statsBatch.commit();
                 // T-124 S3.2: Append seasonForm entry — constructors standing after this round
+                // Uses full-array overwrite (same pattern as driver.championshipForm) to avoid
+                // duplicates on re-runs. teamsMap holds pre-race snapshot; we append this round's entry.
                 try {
                     const round = rIdx + 1;
                     const postSeasonPts = {};
@@ -414,7 +446,7 @@ async function runRaceLogic() {
                     for (let pos = 0; pos < ranked.length; pos++) {
                         const tid = ranked[pos];
                         const existing = teamsMap[tid]?.["seasonForm"] ?? [];
-                        const filtered = existing.filter((e) => e["round"] !== round);
+                        const filtered = existing.filter((e) => e["round"] !== round); // deduplicate on re-run
                         filtered.push({ round, trackName: rEvent["trackName"], position: pos + 1, pts: teamPointsAccum[tid] ?? 0 });
                         filtered.sort((a, b) => a["round"] - b["round"]);
                         formBatch.update(admin_1.db.collection("teams").doc(tid), { seasonForm: filtered });
@@ -422,10 +454,11 @@ async function runRaceLogic() {
                     await formBatch.commit();
                 }
                 catch (e) {
-                    functions_1.logger.error("seasonForm append failed (non-critical):", e);
+                    logger.error("seasonForm append failed (non-critical):", e);
                 }
                 // T-007 S2: Apply wear deltas per driver/car after stats are committed (AC#7, AC#9, AC#13)
                 // Wrapped in try/catch — wear failure NEVER corrupts race results
+                const wearDebriefByTeam = {};
                 for (const driverId of Object.keys(driversMap)) {
                     const dData = driversMap[driverId];
                     const tid = dData["teamId"];
@@ -437,13 +470,18 @@ async function runRaceLogic() {
                     const raceStyle = setupsMap[driverId]?.["raceStyle"] ?? "normal";
                     const hadIncident = raceRes.dnfs.includes(driverId);
                     const weatherRace = rEvent["weatherRace"] ?? "dry";
+                    const isHumanTeam = !(teamsMap[tid]?.["isBot"] ?? false);
                     try {
-                        await (0, wear_1.applyWearDelta)(tid, carIdx, sId, rEvent["id"], partsMap, {
+                        const wearResult = await (0, wear_1.applyWearDelta)(tid, carIdx, sId, rEvent["id"], partsMap, {
                             circuitId: rEvent["circuitId"],
                             raceStyle,
                             weather: weatherRace,
                             config: partsWearConfig,
-                        }, hadIncident);
+                        }, hadIncident, isHumanTeam);
+                        // Collect narrative per team (last car processed wins if two cars have tier-downs)
+                        if (wearResult.debriefAppend) {
+                            wearDebriefByTeam[tid] = wearResult.debriefAppend;
+                        }
                     }
                     catch (eWear) {
                         logger.error(`[runRaceLogic:wear-apply] failed for team ${tid} car ${carIdx}`, eWear);
@@ -495,10 +533,13 @@ async function runRaceLogic() {
                         else if (setupGap < 5)
                             debrief += "\n\nNote: The setup was very close to perfect! The drivers felt confident in the corners.";
                     }
-                    await admin_1.db.collection("teams").doc(tid).update({ lastRaceDebrief: debrief, lastRaceResult: lines });
+                    // T-007 S3: Append wear narrative for human teams with tier-downs
+                    const wearAppend = wearDebriefByTeam[tid] ?? "";
+                    const fullDebrief = wearAppend ? `${debrief}\n\n${wearAppend}` : debrief;
+                    await admin_1.db.collection("teams").doc(tid).update({ lastRaceDebrief: fullDebrief, lastRaceResult: lines });
                     await (0, notifications_1.addOfficeNews)(tid, {
                         title: `Race Summary: ${rEvent["trackName"]}`,
-                        message: `${lines}\n\nANALYSIS:\n${debrief}\n\nPrize: $${earn.toLocaleString()}`,
+                        message: `${lines}\n\nANALYSIS:\n${fullDebrief}\n\nPrize: $${earn.toLocaleString()}`,
                         type: "RACE_RESULT",
                     });
                 }

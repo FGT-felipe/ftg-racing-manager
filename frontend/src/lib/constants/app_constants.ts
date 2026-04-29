@@ -62,3 +62,23 @@ export const WING_FAILURE_LAP_PENALTY = 1.5;
 
 /** Extra seconds added to lap time on a suspension failure roll. */
 export const SUSPENSION_FAILURE_LAP_PENALTY = 1.0;
+
+// ─── Parts Wear System (T-007 S3+S4) ─────────────────────────────────────────
+
+/**
+ * Maximum repair condition (%) by Garage facility level.
+ * L1=65%, L2=75%, L3=85%, L4=95%, L5=100%.
+ * The Garage level determines how well the team's mechanics can restore a part.
+ */
+export const GARAGE_REPAIR_MAX_TABLE: Record<number, number> = {
+  1: 65, 2: 75, 3: 85, 4: 95, 5: 100,
+};
+
+/** Number of races a part cannot be repaired again after a repair. */
+export const PARTS_REPAIR_COOLDOWN_ROUNDS = 2;
+
+/** Wear multiplier applied to a part during its post-repair cooldown window (50% less wear). */
+export const PARTS_POST_REPAIR_WEAR_FACTOR = 0.5;
+
+/** Step multiplier per HQ level above 1 for the repair budget cap formula. */
+export const PARTS_REPAIR_HQ_CAP_MULTIPLIER_STEP = 0.5;

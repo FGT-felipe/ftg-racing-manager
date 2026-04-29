@@ -106,7 +106,8 @@ weekStatus: {
   psychologistAssignedTo?:        string   // driverId for weekly morale session
   psychologistUpgradedThisWeek?:  boolean  // level change lock (resets weekly)
   psychologistSessionDoneThisWeek?: boolean // session lock (resets weekly)
-  repairSpentThisRound?:            number  // cumulative repair spend this round (T-007 S2); reset to 0 by processPostRace
+  repairSpentThisRound?:            number  // cumulative repair spend this round (T-007 S2+S3); reset to 0 by processPostRace
+  isLastRound?:                     boolean // true when current race is the final round of the season; doubles repair cap; set by runRaceLogic, reset by processPostRace
   driverSetups?: {
     [driverId]: CarSetup
   }
@@ -418,21 +419,44 @@ createdAt:    Timestamp
 
 ---
 
-## 10. Parts Wear (T-007 Slice 2)
+## 10. Parts Wear (T-007 S2+S3)
 
 ### `teams/{teamId}/cars/{carIndex}/parts/{partId}` (sub-collection)
 
-> All 6 parts are tracked from Slice 2. Teams not yet migrated have no `parts/` sub-collection —
+> All 6 parts are tracked from S2. Teams not yet migrated have no `parts/` sub-collection —
 > the system treats missing docs as condition=100, factor=1.0 (COMPAT-1).
-> `maxCondition` defaults to 100 in S2; degradation of `maxCondition` is deferred to S3.
-> HQ repair ceiling is deferred to S3.
+> `maxCondition` is the Garage-level ceiling set at repair time (S3+). HQ level scales the per-round repair budget cap.
 
 ```
-partType:      'engine' | 'gearbox' | 'brakes' | 'frontWing' | 'rearWing' | 'suspension'
-condition:     number    // 0–100 (100 = perfect, 0 = destroyed); floor enforced at 0
-maxCondition:  number    // upper bound for repair (100 in S2; may degrade in S3+)
-level:         number    // HQ upgrade level (1–20); drives carLevelModifier in wear formula
-updatedAt:     Timestamp
+partType:                  'engine' | 'gearbox' | 'brakes' | 'frontWing' | 'rearWing' | 'suspension'
+condition:                 number    // 0–100 (100 = perfect, 0 = destroyed); floor enforced at 0
+maxCondition:              number    // repair ceiling set by Garage level at time of last repair (T-007 S3)
+level:                     number    // part upgrade level (1–20); drives carLevelModifier in wear formula
+repairCooldownRoundsLeft?: number    // rounds until next repair allowed; decremented by applyWearDelta each race; 0 = available
+updatedAt:                 Timestamp
+```
+
+**Garage repair ceiling (T-007 S3):**
+| Garage level | maxCondition after repair |
+|---|---|
+| 1 | 65% |
+| 2 | 75% |
+| 3 | 85% |
+| 4 | 95% |
+| 5 | 100% |
+
+**HQ repair budget cap (T-007 S3):**
+Formula: `base × (1 + (hqLevel - 1) × 0.5)` where base = $150k.
+| HQ level | cap/round |
+|---|---|
+| 1 | $150k |
+| 2 | $225k |
+| 3 | $300k |
+| 4 | $375k |
+| 5 | $450k |
+On the final round of the season (`weekStatus.isLastRound = true`), the cap doubles.
+
+**Post-repair wear reduction (T-007 S3):** Parts with `repairCooldownRoundsLeft > 0` take 50% normal wear (`applyWearDelta` applies `POST_REPAIR_WEAR_FACTOR = 0.5`). Cooldown decrements by 1 per race.
 ```
 
 **Condition tier thresholds:**

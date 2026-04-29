@@ -109,6 +109,22 @@ function createPartsStore() {
         },
 
         /**
+         * Average condition across all loaded parts (0–100), rounded to integer.
+         * Returns 100 when no parts exist yet (backward compat — all parts healthy by default).
+         */
+        get carConditionPct(): number {
+            const all = Object.values(parts);
+            if (all.length === 0) return 100;
+            const sum = all.reduce((acc, p) => acc + p.condition, 0);
+            return Math.round(sum / all.length);
+        },
+
+        /** Visual tier for the overall car condition (green / yellow / orange / red). */
+        get carConditionTier(): ConditionTier {
+            return partsWearService.getConditionTier(this.carConditionPct);
+        },
+
+        /**
          * Repair budget already spent this round (from weekStatus).
          * Reactive — updates when teamStore refreshes.
          */

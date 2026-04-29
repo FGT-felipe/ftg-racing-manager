@@ -9,9 +9,11 @@
     let {
         part,
         onRepair,
+        isRepairLocked = false,
     }: {
         part: Part;
         onRepair: () => void;
+        isRepairLocked?: boolean;
     } = $props();
 
     const tier = $derived(partsStore.getTier(part.partType));
@@ -29,9 +31,11 @@
         }
     });
 
+    const cooldownLeft = $derived(part.repairCooldownRoundsLeft ?? 0);
+    const inCooldown = $derived(cooldownLeft > 0);
     const canRepair = $derived(part.condition < repairTarget);
     const budgetSufficient = $derived(remainingBudget >= PARTS_ENGINE_REPAIR_COST_FLAT);
-    const repairDisabled = $derived(!canRepair || !budgetSufficient);
+    const repairDisabled = $derived(!canRepair || !budgetSufficient || isRepairLocked || inCooldown);
 </script>
 
 <div class="flex items-center justify-between py-2 px-3 rounded-lg bg-app-surface/50 border border-app-border">
@@ -46,9 +50,16 @@
     </div>
 
     <!-- Condition % -->
-    <span class="text-xs font-black tabular-nums {tierConfig.colorClass} shrink-0 mx-3">
+    <span class="text-xs font-black tabular-nums {tierConfig.colorClass} shrink-0 mx-2">
         {part.condition}%
     </span>
+
+    <!-- Cooldown badge -->
+    {#if inCooldown}
+        <span class="shrink-0 px-2 py-0.5 rounded-md text-[9px] font-bold uppercase tracking-wider bg-app-text/5 text-app-text/40 border border-app-border mx-1">
+            {t('repair_cooldown_label', { rounds: cooldownLeft })}
+        </span>
+    {/if}
 
     <!-- Repair button -->
     <button
@@ -57,7 +68,7 @@
                 ? 'bg-app-primary text-app-primary-foreground hover:brightness-110 active:scale-95'
                 : 'bg-app-surface border border-app-border text-app-text/30 cursor-not-allowed'}"
         disabled={repairDisabled}
-        title={!canRepair ? '' : !budgetSufficient ? t('repair_budget_exceeded') : ''}
+        title={isRepairLocked ? t('repair_locked_parc_ferme') : inCooldown ? t('repair_cooldown_label', { rounds: cooldownLeft }) : !canRepair ? '' : !budgetSufficient ? t('repair_budget_exceeded') : ''}
         onclick={() => !repairDisabled && onRepair()}
     >
         {t('repair')}

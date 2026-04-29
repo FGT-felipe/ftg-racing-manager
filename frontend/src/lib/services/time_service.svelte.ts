@@ -41,6 +41,29 @@ class TimeService {
         );
     }
 
+    /**
+     * Returns true when part repairs are locked for a given Bogota-timezone date.
+     * Locked from Saturday 13:00 COT (1h before qualifying) through all non-practice
+     * states (qualifying, raceStrategy, race, postRace) until Monday 00:00 COT.
+     *
+     * @param date - Bogota-timezone Date to evaluate
+     */
+    getIsRepairLocked(date: Date): boolean {
+        const status = this.getRaceWeekStatus(date);
+        if (status !== RaceWeekStatus.PRACTICE) return true;
+        // 1-hour pre-lock: Saturday 13:00–13:59 is still PRACTICE status
+        return date.getDay() === 6 && date.getHours() >= 13;
+    }
+
+    /**
+     * Returns true when part repairs are locked.
+     * Locked from Saturday 13:00 COT (1h before qualifying) through Sunday postRace
+     * until Monday 00:00 COT. Prevents last-minute repairs before parc fermé.
+     */
+    get isRepairLocked(): boolean {
+        return this.getIsRepairLocked(this.nowBogota);
+    }
+
     getWeekDay(date: Date): number {
         return date.getDay(); // 0=Sun, 1=Mon ... 6=Sat
     }

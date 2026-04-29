@@ -338,8 +338,9 @@ export enum DriverStyle {
 export interface Part {
     partType: 'engine' | 'gearbox' | 'brakes' | 'frontWing' | 'rearWing' | 'suspension';
     condition: number;     // 0–100
-    maxCondition: number;  // upper bound a repair can reach; defaults to 100, may degrade in S3+
+    maxCondition: number;  // repair ceiling set by Garage level at time of repair (T-007 S3+)
     level: number;
+    repairCooldownRoundsLeft?: number;  // rounds until next repair is allowed (0 = available)
     updatedAt: Date | null;
 }
 

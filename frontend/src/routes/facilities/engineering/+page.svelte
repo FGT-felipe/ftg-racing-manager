@@ -118,6 +118,10 @@
         managerStore.profile?.role === "engineer" ? 2 : 1,
     );
     const isLocked = $derived(timeService.isSetupLocked);
+    const isRepairLocked = $derived(timeService.isRepairLocked);
+    const isLastRound = $derived(!!(teamStore.value.team?.weekStatus?.['isLastRound'] as boolean | undefined));
+    const carConditionPct = $derived(partsStore.carConditionPct);
+    const carConditionTier = $derived(partsStore.carConditionTier);
 </script>
 
 <svelte:head>
@@ -422,9 +426,16 @@
     <div class="mt-8 p-4 md:p-8 max-w-[1400px] mx-auto">
         <!-- Parts condition section header -->
         <div class="flex items-center justify-between mb-4">
-            <h3 class="text-[10px] font-black uppercase tracking-[0.25em] text-app-text/50">
-                {t('car_condition')}
-            </h3>
+            <div class="flex items-center gap-3">
+                <h3 class="text-[10px] font-black uppercase tracking-[0.25em] text-app-text/50">
+                    {t('garage_car_condition_label')}
+                </h3>
+                <!-- Car Condition summary badge -->
+                <span class="text-xs font-black tabular-nums
+                    {carConditionTier === 'green' ? 'text-green-400' : carConditionTier === 'yellow' ? 'text-yellow-400' : carConditionTier === 'orange' ? 'text-orange-400' : 'text-red-400'}">
+                    {carConditionPct}%
+                </span>
+            </div>
             <!-- Repair budget widget -->
             {#if teamStore.value.team}
                 {@const remaining = partsWearService.getRemainingRepairBudget(teamStore.value.team)}
@@ -436,10 +447,31 @@
                 </span>
             {/if}
         </div>
+
+        <!-- Final round badge -->
+        {#if isLastRound}
+            <div class="mb-3 flex items-center gap-2 px-3 py-2 rounded-lg bg-amber-500/10 border border-amber-500/20">
+                <span class="text-[9px] font-black uppercase tracking-widest text-amber-400">
+                    {t('repair_final_round_badge')}
+                </span>
+            </div>
+        {/if}
+
+        <!-- Repair lock warning -->
+        {#if isRepairLocked}
+            <div class="mb-3 flex items-center gap-2 px-3 py-2 rounded-lg bg-red-500/10 border border-red-500/20">
+                <Lock size={12} class="text-red-400 shrink-0" />
+                <span class="text-[9px] font-black uppercase tracking-widest text-red-400">
+                    {t('repair_locked_parc_ferme')}
+                </span>
+            </div>
+        {/if}
+
         <div class="space-y-2">
             {#each partsStore.allParts as part (part.partType)}
                 <PartRow
                     {part}
+                    {isRepairLocked}
                     onRepair={() => { repairPart = part; showRepairModal = true; }}
                 />
             {/each}
@@ -452,6 +484,8 @@
         teamId={teamStore.value.team.id}
         part={repairPart}
         carIndex={selectedCar}
+        {isRepairLocked}
+        {isLastRound}
         onClose={() => { showRepairModal = false; repairPart = null; }}
     />
 {/if}

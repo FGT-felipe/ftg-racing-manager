@@ -802,6 +802,15 @@ export const translations = {
         office_trophy_cabinet_empty: "No titles yet. Keep pushing.",
         office_season_form_header: "Season Form",
         office_season_form_empty: "No races completed yet.",
+        // ── Parts Wear S3+S4 additions ─────────────────────────────────────────
+        repair_locked_parc_ferme: "Repairs locked during race weekend",
+        repair_cooldown_label: "Available in {rounds} races",
+        repair_final_round_badge: "Final Round — double repair budget",
+        garage_repair_target_label: "Repair to {target}% (Garage L{level})",
+        garage_car_condition_label: "Car Condition",
+        strategy_car_condition_summary: "Overall: {pct}%",
+        parts_warn_repair_recommended: "Repair recommended",
+        parts_warn_critical_repair: "Critical — repair immediately",
     },
     es: {
         career_view: "Vista Profesional",
@@ -1603,6 +1612,15 @@ export const translations = {
         office_trophy_cabinet_empty: "Sin títulos aún. Sigue adelante.",
         office_season_form_header: "Forma de Temporada",
         office_season_form_empty: "Aún no hay carreras completadas.",
+        // ── Parts Wear S3+S4 additions ─────────────────────────────────────────
+        repair_locked_parc_ferme: "Reparaciones bloqueadas durante el fin de semana de carrera",
+        repair_cooldown_label: "Disponible en {rounds} carreras",
+        repair_final_round_badge: "Última carrera — presupuesto doble de reparación",
+        garage_repair_target_label: "Reparar al {target}% (Garaje N{level})",
+        garage_car_condition_label: "Estado del Carro",
+        strategy_car_condition_summary: "General: {pct}%",
+        parts_warn_repair_recommended: "Reparación recomendada",
+        parts_warn_critical_repair: "Crítico — repara inmediatamente",
     }
 };
 

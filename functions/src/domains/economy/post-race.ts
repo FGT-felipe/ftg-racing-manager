@@ -437,6 +437,9 @@ export async function runPostRaceProcessing(): Promise<void> {
           // v1.7.5: practicePaid persisted between rounds, granting free practice sessions
           // at the start of the new round without charging the $10k fee.
           "weekStatus.practicePaid": admin.firestore.FieldValue.delete(),
+          // T-007 S3: reset per-round repair cap tracker and last-round flag
+          "weekStatus.repairSpentThisRound": 0,
+          "weekStatus.isLastRound": false,
           sponsors: updatedSponsors,
           budget: newBudget,
         } as FirebaseFirestore.UpdateData<object>);
