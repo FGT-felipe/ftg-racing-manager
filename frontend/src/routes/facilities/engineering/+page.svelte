@@ -28,7 +28,10 @@
     } from "lucide-svelte";
     import InstructionCard from "$lib/components/layout/InstructionCard.svelte";
     import CarSchematic from "$lib/components/dashboard/CarSchematic.svelte";
-    import DriverSmallCard from "$lib/components/dashboard/DriverSmallCard.svelte";
+    import DriverAvatar from "$lib/components/DriverAvatar.svelte";
+    import DriverStars from "$lib/components/DriverStars.svelte";
+    import CountryFlag from "$lib/components/ui/CountryFlag.svelte";
+    import { formatDriverName } from "$lib/utils/driver";
 
     let selectedCar = $state(0);
 
@@ -147,6 +150,21 @@
 
     // PartRow parts: all except engine (engine is now a card)
     const rowParts = $derived(partsStore.allParts.filter(p => p.partType !== 'engine'));
+
+    const DRIVING_STATS = ["braking", "cornering", "smoothness", "overtaking", "consistency", "adaptability"];
+
+    function calcStars(driver: { stats?: Record<string, number>; potential?: number } | null) {
+        if (!driver?.stats) return 1;
+        let sum = 0, count = 0;
+        for (const s of DRIVING_STATS) {
+            if (driver.stats[s] !== undefined) { sum += driver.stats[s]; count++; }
+        }
+        if (count === 0) return 1;
+        return Math.min(Math.max(Math.ceil((sum / count) / 4.0), 1), driver.potential ?? 5);
+    }
+
+    const activeDriver = $derived(selectedCar === 0 ? driverStore.carADriver : driverStore.carBDriver);
+    const activeDriverStars = $derived(calcStars(activeDriver));
 </script>
 
 <svelte:head>
@@ -269,26 +287,31 @@
             </div>
         </div>
 
-        <!-- Status Analysis: schematic + driver -->
+        <!-- Status Analysis: schematic + driver inline row -->
         <div class="lg:col-span-2 bg-app-surface border border-app-border rounded-2xl p-5 flex flex-col gap-4">
             <span class="text-[10px] font-bold text-app-text/40 uppercase tracking-[0.2em]">Status Analysis</span>
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <CarSchematic
-                    stats={currentCarStats}
-                    carLabel={selectedCar === 0 ? "Car A" : "Car B"}
-                />
-                <div class="flex flex-col justify-center">
-                    {#if selectedCar === 0 && driverStore.carADriver}
-                        <DriverSmallCard driver={driverStore.carADriver} carIndex={0} />
-                    {:else if selectedCar === 1 && driverStore.carBDriver}
-                        <DriverSmallCard driver={driverStore.carBDriver} carIndex={1} />
-                    {:else}
-                        <div class="p-4 border border-app-border border-dashed rounded-xl text-center text-app-text/30 text-[10px] font-bold uppercase">
-                            No driver assigned to this car
-                        </div>
-                    {/if}
+            <CarSchematic
+                stats={currentCarStats}
+                carLabel={selectedCar === 0 ? "Car A" : "Car B"}
+            />
+            {#if activeDriver}
+                <div class="flex items-center gap-3 border-t border-app-border/40 pt-3">
+                    <div class="w-7 h-7 rounded-full bg-app-text/5 border border-app-border overflow-hidden flex-shrink-0">
+                        <DriverAvatar id={activeDriver.id} gender={activeDriver.gender} class="w-full h-full" />
+                    </div>
+                    <div class="flex items-center gap-2 min-w-0">
+                        <CountryFlag countryCode={activeDriver.countryCode} size="sm" />
+                        <span class="text-xs font-black text-app-text uppercase truncate tracking-tight">{formatDriverName(activeDriver.name)}</span>
+                    </div>
+                    <div class="ml-auto flex-shrink-0">
+                        <DriverStars currentStars={activeDriverStars} maxStars={activeDriver.potential} size={10} />
+                    </div>
                 </div>
-            </div>
+            {:else}
+                <div class="border-t border-app-border/40 pt-3 text-center text-app-text/20 text-[10px] font-bold uppercase">
+                    No driver assigned
+                </div>
+            {/if}
         </div>
     </div>
 
