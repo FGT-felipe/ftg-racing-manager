@@ -62,7 +62,36 @@ async function run() {
     const completedRaces = calendar.filter(r => r.isCompleted);
     console.log(`Completed races: ${completedRaces.length} / ${calendar.length}`);
 
-    // 2. Load all drivers to build driverId → teamId map
+    // 2. Build set of trackNames we need to find
+    const sId = activeSeason.id;
+    const neededTracks = new Set(completedRaces.map(r => r.trackName));
+
+    // Query ALL finished race docs and index by trackName — no season prefix filter
+    // because R1-R4 may have been created under a different season doc ID
+    const racesSnap = await db.collection("races")
+        .where("isFinished", "==", true)
+        .get();
+
+    console.log(`Total finished race docs in collection: ${racesSnap.docs.length}`);
+
+    const raceByTrack = {};
+    for (const d of racesSnap.docs) {
+        const data = d.data();
+        const track = data.trackName;
+        if (track && neededTracks.has(track)) {
+            // Prefer the doc whose ID starts with current seasonId; otherwise keep first found
+            if (!raceByTrack[track] || d.id.startsWith(`${sId}_`)) {
+                raceByTrack[track] = { id: d.id, ...data };
+            }
+        }
+    }
+
+    console.log(`Matched race docs for this calendar: ${Object.keys(raceByTrack).length}`);
+    for (const [track, doc] of Object.entries(raceByTrack)) {
+        console.log(`  ${doc.id} → ${track}`);
+    }
+
+    // 3. Load all drivers to build driverId → teamId map
     const driversSnap = await db.collection("drivers").get();
     const driverTeam = {};
     for (const d of driversSnap.docs) {
@@ -71,11 +100,11 @@ async function run() {
     }
     console.log(`Drivers loaded: ${Object.keys(driverTeam).length}`);
 
-    // 3. Collect all unique teamIds from drivers
+    // 4. Collect all unique teamIds from drivers
     const allTeamIds = [...new Set(Object.values(driverTeam))];
     console.log(`Teams found: ${allTeamIds.length}`);
 
-    // 4. Process each completed race in order
+    // 5. Process each completed race in calendar order
     const cumulativePts = {};  // teamId → accumulated season pts so far
     for (const tid of allTeamIds) cumulativePts[tid] = 0;
 
@@ -85,15 +114,21 @@ async function run() {
 
     for (let i = 0; i < completedRaces.length; i++) {
         const rEvent = completedRaces[i];
-        const raceDocId = `${activeSeason.id}_${rEvent.id}`;
-        const rSnap = await db.collection("races").doc(raceDocId).get();
 
-        if (!rSnap.exists) {
-            console.warn(`  Race doc not found: ${raceDocId} — skipping`);
+        // Match race doc: first try constructed ID, then fall back to trackName lookup
+        let rData = null;
+        const constructedId = `${sId}_${rEvent.id}`;
+        const directSnap = await db.collection("races").doc(constructedId).get();
+        if (directSnap.exists) {
+            rData = directSnap.data();
+        } else if (raceByTrack[rEvent.trackName]) {
+            rData = raceByTrack[rEvent.trackName];
+            console.log(`  R${i + 1} matched by trackName: ${rEvent.trackName}`);
+        } else {
+            console.warn(`  R${i + 1} (${rEvent.trackName}): no matching race doc found — skipping`);
             continue;
         }
 
-        const rData = rSnap.data();
         const finalPositions = rData.finalPositions ?? {};  // driverId → 1-based finish position
         const dnfs = rData.dnfs ?? [];
 
