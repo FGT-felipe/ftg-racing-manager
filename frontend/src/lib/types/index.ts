@@ -100,6 +100,13 @@ export interface ActiveContract {
     racesRemaining: number;
 }
 
+export interface SeasonFormEntry {
+    round: number;       // 1-based round number within the season
+    trackName: string;
+    position: number;    // constructors standing after this round
+    pts: number;         // points scored in this race (team total, both drivers)
+}
+
 export interface SeasonHistoryEntry {
     seasonId: string;
     year: number;
@@ -135,6 +142,7 @@ export interface Team {
     lastRaceDebrief?: string | null;
     lastRaceResult?: string | null;
     seasonHistory?: SeasonHistoryEntry[];
+    seasonForm?: SeasonFormEntry[];
 
     carStats: Record<string, Record<string, number>>; // Usually '0' and '1' mapped to aero, powertrain, chassis, reliability
     weekStatus: Record<string, any>;

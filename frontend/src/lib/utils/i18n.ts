@@ -796,6 +796,8 @@ export const translations = {
         office_trophy_cabinet_header: "Trophy Cabinet",
         office_trophy_constructors_champion: "Constructors Champion",
         office_trophy_cabinet_empty: "No titles yet. Keep pushing.",
+        office_season_form_header: "Season Form",
+        office_season_form_empty: "No races completed yet.",
     },
     es: {
         career_view: "Vista Profesional",
@@ -1591,6 +1593,8 @@ export const translations = {
         office_trophy_cabinet_header: "Vitrina de Trofeos",
         office_trophy_constructors_champion: "Campeón de Constructores",
         office_trophy_cabinet_empty: "Sin títulos aún. Sigue adelante.",
+        office_season_form_header: "Forma de Temporada",
+        office_season_form_empty: "Aún no hay carreras completadas.",
     }
 };
 

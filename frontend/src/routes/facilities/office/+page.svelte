@@ -28,6 +28,14 @@
 
     let news = $derived(newsStore.items);
 
+    // Season Form chart data
+    const seasonFormData = $derived(
+        [...(teamStore.value.team?.seasonForm ?? [])].sort((a, b) => a.round - b.round)
+    );
+    const seasonFormMaxPos = $derived(
+        seasonFormData.length > 0 ? Math.max(...seasonFormData.map(e => e.position)) : 10
+    );
+
     // Stats calculation
     const constructorsTrophies = $derived(
         [...(teamStore.value.team?.seasonHistory ?? [])]
@@ -278,8 +286,96 @@
             </div>
         </div>
 
-        <!-- Column B: Career Stats + Trophy Cabinet -->
+        <!-- Column B: Season Form + Career Stats + Trophy Cabinet -->
         <div class="flex flex-col gap-6">
+
+            <!-- Season Form Chart -->
+            <div class="bg-app-surface border border-app-border rounded-2xl p-6">
+                <div class="flex items-center gap-2 mb-4">
+                    <BarChart3 size={16} class="text-app-primary" />
+                    <h3 class="text-xs font-black uppercase text-app-text tracking-widest">
+                        {t('office_season_form_header')}
+                    </h3>
+                </div>
+                {#if seasonFormData.length === 0}
+                    <p class="text-[11px] text-app-text/30 italic text-center py-6">
+                        {t('office_season_form_empty')}
+                    </p>
+                {:else}
+                    {@const W = 360}
+                    {@const H = 130}
+                    {@const padL = 28}
+                    {@const padR = 12}
+                    {@const padT = 12}
+                    {@const padB = 28}
+                    {@const chartW = W - padL - padR}
+                    {@const chartH = H - padT - padB}
+                    {@const n = seasonFormData.length}
+                    {@const maxPos = Math.max(seasonFormMaxPos, 2)}
+                    {@const xOf = (i: number) => padL + (n === 1 ? chartW / 2 : (i / (n - 1)) * chartW)}
+                    {@const yOf = (pos: number) => padT + ((pos - 1) / (maxPos - 1)) * chartH}
+                    {@const pts = seasonFormData.map((e, i) => `${xOf(i)},${yOf(e.position)}`).join(' ')}
+
+                    <svg viewBox="0 0 {W} {H}" class="w-full" aria-hidden="true">
+                        <!-- Horizontal grid lines at P1 and maxPos -->
+                        <line x1={padL} y1={padT} x2={W - padR} y2={padT}
+                            stroke="currentColor" stroke-width="0.5" class="text-app-border/30" />
+                        <line x1={padL} y1={padT + chartH} x2={W - padR} y2={padT + chartH}
+                            stroke="currentColor" stroke-width="0.5" class="text-app-border/30" />
+                        <!-- Mid grid line -->
+                        {#if maxPos > 2}
+                            {@const midPos = Math.ceil(maxPos / 2)}
+                            <line x1={padL} y1={yOf(midPos)} x2={W - padR} y2={yOf(midPos)}
+                                stroke="currentColor" stroke-width="0.5" stroke-dasharray="3 3" class="text-app-border/20" />
+                            <text x={padL - 4} y={yOf(midPos) + 3.5} text-anchor="end"
+                                class="text-app-text/30" font-size="7" fill="currentColor">P{midPos}</text>
+                        {/if}
+                        <!-- Y axis labels -->
+                        <text x={padL - 4} y={padT + 3.5} text-anchor="end"
+                            class="text-app-text/50" font-size="7" fill="currentColor">P1</text>
+                        <text x={padL - 4} y={padT + chartH + 3.5} text-anchor="end"
+                            class="text-app-text/30" font-size="7" fill="currentColor">P{maxPos}</text>
+
+                        <!-- Line -->
+                        <polyline
+                            points={pts}
+                            fill="none"
+                            stroke="currentColor"
+                            stroke-width="1.5"
+                            stroke-linejoin="round"
+                            stroke-linecap="round"
+                            class="text-app-primary/60"
+                        />
+
+                        <!-- Dots + X labels -->
+                        {#each seasonFormData as entry, i}
+                            {@const cx = xOf(i)}
+                            {@const cy = yOf(entry.position)}
+                            {@const isLast = i === n - 1}
+                            <circle cx={cx} cy={cy} r={isLast ? 4 : 3}
+                                fill="currentColor"
+                                class={isLast ? "text-app-primary" : "text-app-primary/50"} />
+                            {#if isLast}
+                                <circle cx={cx} cy={cy} r="7"
+                                    fill="none" stroke="currentColor" stroke-width="1"
+                                    class="text-app-primary/30" />
+                            {/if}
+                            <!-- Position label above dot (only for first, last, and P1) -->
+                            {#if isLast || i === 0 || entry.position === 1}
+                                <text x={cx} y={cy - 7} text-anchor="middle"
+                                    class="text-app-primary" font-size="7" font-weight="bold" fill="currentColor">
+                                    P{entry.position}
+                                </text>
+                            {/if}
+                            <!-- Round label below -->
+                            <text x={cx} y={H - 4} text-anchor="middle"
+                                class="text-app-text/30" font-size="7" fill="currentColor">
+                                R{entry.round}
+                            </text>
+                        {/each}
+                    </svg>
+                {/if}
+            </div>
 
             <!-- Career Stats -->
             <div class="bg-app-surface border border-app-border rounded-2xl p-6">

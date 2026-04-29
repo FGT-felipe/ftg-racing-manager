@@ -358,6 +358,31 @@ export async function runRaceLogic(): Promise<void> {
         statsBatch.update(db.collection("seasons").doc(sId as string), { calendar: updCal });
         await statsBatch.commit();
 
+        // T-124 S3.2: Append seasonForm entry — constructors standing after this round
+        // Uses full-array overwrite (same pattern as driver.championshipForm) to avoid
+        // duplicates on re-runs. teamsMap holds pre-race snapshot; we append this round's entry.
+        try {
+          const round = rIdx + 1;
+          const postSeasonPts: Record<string, number> = {};
+          for (const tid of teamIds) {
+            const preRacePts = (teamsMap[tid]?.["seasonPoints"] as number) ?? 0;
+            postSeasonPts[tid] = preRacePts + (teamPointsAccum[tid] ?? 0);
+          }
+          const ranked = [...teamIds].sort((a, b) => (postSeasonPts[b] ?? 0) - (postSeasonPts[a] ?? 0));
+          const formBatch = db.batch();
+          for (let pos = 0; pos < ranked.length; pos++) {
+            const tid = ranked[pos];
+            const existing = (teamsMap[tid]?.["seasonForm"] as Record<string, unknown>[]) ?? [];
+            const filtered = existing.filter((e) => e["round"] !== round); // deduplicate on re-run
+            filtered.push({ round, trackName: rEvent["trackName"] as string, position: pos + 1, pts: teamPointsAccum[tid] ?? 0 });
+            filtered.sort((a, b) => (a["round"] as number) - (b["round"] as number));
+            formBatch.update(db.collection("teams").doc(tid), { seasonForm: filtered });
+          }
+          await formBatch.commit();
+        } catch (e) {
+          logger.error("seasonForm append failed (non-critical):", e);
+        }
+
         // T-007 S2: Apply wear deltas per driver/car after stats are committed (AC#7, AC#9, AC#13)
         // Wrapped in try/catch — wear failure NEVER corrupts race results
         for (const driverId of Object.keys(driversMap)) {
