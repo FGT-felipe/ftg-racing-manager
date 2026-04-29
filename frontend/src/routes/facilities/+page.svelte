@@ -26,9 +26,8 @@
     import { goto } from "$app/navigation";
     import { fly } from "svelte/transition";
 
-    // Facilities that have an upgrade button in the overview (active, non-virtual, non-locked slots)
+    // Facilities that have an upgrade button in the overview
     const UPGRADEABLE_FROM_OVERVIEW = new Set<FacilityType>([
-        FacilityType.teamOffice,
         FacilityType.garage,
     ]);
 
