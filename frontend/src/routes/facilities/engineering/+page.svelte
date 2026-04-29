@@ -217,14 +217,14 @@
             </div>
             <div class="flex flex-col">
                 <span class="text-[9px] font-black text-app-text/30 uppercase tracking-widest">{t('upgrade_facility')}</span>
-                <span class="text-base font-black text-app-text">Engineering Facility — {t('upgrade_to_level', { level: garageLevel }).replace('Upgrade to ', '').replace('Mejorar al ', '')}</span>
+                <span class="text-base font-black text-app-text">{t('engineering_facility_level', { level: garageLevel })}</span>
             </div>
             <div class="flex flex-col ml-4">
-                <span class="text-[9px] font-black text-app-text/30 uppercase tracking-widest">Repair Ceiling</span>
+                <span class="text-[9px] font-black text-app-text/30 uppercase tracking-widest">{t('repair_ceiling_label')}</span>
                 <span class="text-sm font-black text-blue-400">{partsWearService.getGarageRepairTarget(garageLevel)}%</span>
             </div>
             <div class="flex flex-col">
-                <span class="text-[9px] font-black text-app-text/30 uppercase tracking-widest">Repair Budget Cap</span>
+                <span class="text-[9px] font-black text-app-text/30 uppercase tracking-widest">{t('repair_budget_cap_label')}</span>
                 <span class="text-sm font-black text-blue-400">{formatMoney(partsWearService.getRepairCap({ facilities: { garage: { level: garageLevel } } }))}/round</span>
             </div>
         </div>

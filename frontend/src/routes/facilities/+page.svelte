@@ -6,7 +6,7 @@
     import { FacilityType } from "$lib/types";
     import { t } from "$lib/utils/i18n";
     import { formatMoney } from "$lib/utils/format";
-    import { FACILITY_MAX_LEVEL } from "$lib/constants/economics";
+    import { FACILITY_MAX_LEVEL, FACILITY_MAINTENANCE_COST_PER_LEVEL } from "$lib/constants/economics";
     import {
         Building2,
         Wrench,
@@ -298,7 +298,7 @@
                                                 {#if isVirtual}
                                                     Included in Garage
                                                 {:else}
-                                                    {formatMoney(facility.level * 15000)}
+                                                    {formatMoney(facility.level * FACILITY_MAINTENANCE_COST_PER_LEVEL)}
                                                 {/if}
                                             </span>
                                         </div>
