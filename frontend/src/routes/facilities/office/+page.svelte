@@ -289,10 +289,10 @@
             </div>
         </div>
 
-        <!-- Column B: Season Form + Career Stats + Trophy Cabinet -->
-        <div class="flex flex-col gap-6">
+        <!-- Columns B+C: Season Form full-width + sub-grid below -->
+        <div class="lg:col-span-2 flex flex-col gap-6">
 
-            <!-- Season Form Chart -->
+            <!-- Season Form Chart — spans full B+C width -->
             <div class="bg-app-surface border border-app-border rounded-2xl p-6">
                 <div class="flex items-center gap-2 mb-4">
                     <BarChart3 size={16} class="text-app-primary" />
@@ -309,122 +309,131 @@
                 {/if}
             </div>
 
-            <!-- Career Stats -->
-            <div class="bg-app-surface border border-app-border rounded-2xl p-6">
-                <div class="flex items-center gap-2 mb-6">
-                    <Trophy size={16} class="text-app-primary" />
-                    <h3 class="text-xs font-black uppercase text-app-text tracking-widest">
-                        {t('office_career_stats_header')}
-                    </h3>
-                </div>
-                <div class="grid grid-cols-2 gap-4">
-                    <div class="p-4 bg-app-text/5 rounded-2xl border border-app-border/30">
-                        <span class="text-[9px] font-bold text-app-text/30 uppercase block mb-1">{t('stat_titles')}</span>
-                        <span class="text-2xl font-black text-app-primary italic">{teamStats.titles}</span>
-                    </div>
-                    <div class="p-4 bg-app-text/5 rounded-2xl border border-app-border/30">
-                        <span class="text-[9px] font-bold text-app-text/30 uppercase block mb-1">{t('wins')}</span>
-                        <span class="text-2xl font-black text-app-text italic">{teamStats.wins}</span>
-                    </div>
-                    <div class="p-4 bg-app-text/5 rounded-2xl border border-app-border/30">
-                        <span class="text-[9px] font-bold text-app-text/30 uppercase block mb-1">{t('podiums')}</span>
-                        <span class="text-2xl font-black text-app-text italic">{teamStats.podiums}</span>
-                    </div>
-                    <div class="p-4 bg-app-text/5 rounded-2xl border border-app-border/30">
-                        <span class="text-[9px] font-bold text-app-text/30 uppercase block mb-1">{t('races')}</span>
-                        <span class="text-2xl font-black text-app-text/20 italic">{teamStats.races}</span>
-                    </div>
-                </div>
-            </div>
+            <!-- Sub-grid: Career Stats + Trophy Cabinet | Last Race + Communications -->
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 items-start">
 
-            <!-- Trophy Cabinet -->
-            <div class="bg-app-surface border border-app-border rounded-2xl p-6">
-                <div class="flex items-center gap-2 mb-4">
-                    <Trophy size={16} class="text-app-primary" />
-                    <h3 class="text-xs font-black uppercase text-app-text tracking-widest">
-                        {t('office_trophy_cabinet_header')}
-                    </h3>
-                </div>
-                {#if constructorsTrophies.length > 0}
-                    <div class="flex flex-col gap-2">
-                        {#each constructorsTrophies as trophy (trophy.seasonId)}
-                            <div class="flex items-center gap-3 px-3 py-2.5 rounded-xl bg-app-primary/5 border border-app-primary/20">
-                                <Trophy size={14} class="text-app-primary flex-shrink-0" />
-                                <div class="flex flex-col gap-0">
-                                    <span class="text-xs font-black text-app-primary">{trophy.year}</span>
-                                    <span class="text-[9px] text-app-text/50 uppercase tracking-widest font-heading">
-                                        {t('office_trophy_constructors_champion')}
-                                    </span>
-                                </div>
+                <!-- Left: Career Stats + Trophy Cabinet -->
+                <div class="flex flex-col gap-6">
+
+                    <!-- Career Stats -->
+                    <div class="bg-app-surface border border-app-border rounded-2xl p-6">
+                        <div class="flex items-center gap-2 mb-6">
+                            <Trophy size={16} class="text-app-primary" />
+                            <h3 class="text-xs font-black uppercase text-app-text tracking-widest">
+                                {t('office_career_stats_header')}
+                            </h3>
+                        </div>
+                        <div class="grid grid-cols-2 gap-4">
+                            <div class="p-4 bg-app-text/5 rounded-2xl border border-app-border/30">
+                                <span class="text-[9px] font-bold text-app-text/30 uppercase block mb-1">{t('stat_titles')}</span>
+                                <span class="text-2xl font-black text-app-primary italic">{teamStats.titles}</span>
                             </div>
-                        {/each}
-                    </div>
-                {:else}
-                    <p class="text-[11px] text-app-text/30 italic text-center py-4">
-                        {t('office_trophy_cabinet_empty')}
-                    </p>
-                {/if}
-            </div>
-        </div>
-
-        <!-- Column C: Last Race Debrief + Official Communications -->
-        <div class="flex flex-col gap-6">
-
-            <!-- Last Race Debrief -->
-            {#if teamStore.value.team?.lastRaceDebrief}
-                <div class="bg-gradient-to-br from-app-surface to-black border-l-4 border-app-primary border-t border-r border-b border-app-border rounded-2xl p-6 shadow-2xl">
-                    <div class="flex items-center gap-3 mb-6">
-                        <div class="p-2 bg-app-primary text-app-primary-foreground rounded-lg">
-                            <BarChart3 size={18} />
+                            <div class="p-4 bg-app-text/5 rounded-2xl border border-app-border/30">
+                                <span class="text-[9px] font-bold text-app-text/30 uppercase block mb-1">{t('wins')}</span>
+                                <span class="text-2xl font-black text-app-text italic">{teamStats.wins}</span>
+                            </div>
+                            <div class="p-4 bg-app-text/5 rounded-2xl border border-app-border/30">
+                                <span class="text-[9px] font-bold text-app-text/30 uppercase block mb-1">{t('podiums')}</span>
+                                <span class="text-2xl font-black text-app-text italic">{teamStats.podiums}</span>
+                            </div>
+                            <div class="p-4 bg-app-text/5 rounded-2xl border border-app-border/30">
+                                <span class="text-[9px] font-bold text-app-text/30 uppercase block mb-1">{t('races')}</span>
+                                <span class="text-2xl font-black text-app-text/20 italic">{teamStats.races}</span>
+                            </div>
                         </div>
-                        <h3 class="text-sm font-black uppercase text-app-text tracking-widest">
-                            {t('office_race_debrief_header')}
-                        </h3>
-                        <span class="ml-auto text-[10px] font-bold text-app-text/30 uppercase bg-app-text/5 px-2 py-1 rounded">
-                            {t('office_official_report_badge')}
-                        </span>
                     </div>
-                    {#if teamStore.value.team?.lastRaceResult}
-                        <div class="bg-app-text/40 border border-app-border/50 rounded-xl p-4 mb-6 font-mono text-[12px] text-app-text/70 leading-relaxed">
-                            {teamStore.value.team.lastRaceResult}
-                        </div>
-                    {/if}
-                    <p class="text-[14px] text-app-text/80 leading-relaxed font-medium pl-2">
-                        {teamStore.value.team.lastRaceDebrief}
-                    </p>
-                </div>
-            {/if}
 
-            <!-- Official Communications -->
-            <div class="flex flex-col gap-4">
-                <div class="flex items-center gap-2 px-2">
-                    <Mail size={16} class="text-app-primary" />
-                    <h3 class="text-xs font-black uppercase text-app-text tracking-[0.2em]">
-                        {t('office_communications_header')}
-                    </h3>
+                    <!-- Trophy Cabinet -->
+                    <div class="bg-app-surface border border-app-border rounded-2xl p-6">
+                        <div class="flex items-center gap-2 mb-4">
+                            <Trophy size={16} class="text-app-primary" />
+                            <h3 class="text-xs font-black uppercase text-app-text tracking-widest">
+                                {t('office_trophy_cabinet_header')}
+                            </h3>
+                        </div>
+                        {#if constructorsTrophies.length > 0}
+                            <div class="flex flex-col gap-2">
+                                {#each constructorsTrophies as trophy (trophy.seasonId)}
+                                    <div class="flex items-center gap-3 px-3 py-2.5 rounded-xl bg-app-primary/5 border border-app-primary/20">
+                                        <Trophy size={14} class="text-app-primary flex-shrink-0" />
+                                        <div class="flex flex-col gap-0">
+                                            <span class="text-xs font-black text-app-primary">{trophy.year}</span>
+                                            <span class="text-[9px] text-app-text/50 uppercase tracking-widest font-heading">
+                                                {t('office_trophy_constructors_champion')}
+                                            </span>
+                                        </div>
+                                    </div>
+                                {/each}
+                            </div>
+                        {:else}
+                            <p class="text-[11px] text-app-text/30 italic text-center py-4">
+                                {t('office_trophy_cabinet_empty')}
+                            </p>
+                        {/if}
+                    </div>
                 </div>
-                <div class="flex flex-col gap-3 overflow-y-auto custom-scrollbar max-h-[480px] pr-1">
-                    {#if news.length === 0}
-                        <div class="p-12 text-center bg-app-surface border border-app-border border-dashed rounded-2xl text-app-text/20">
-                            <Mail size={32} class="mx-auto mb-4 opacity-50" />
-                            <p class="text-[10px] font-black uppercase tracking-widest">
-                                {t('office_no_communications')}
+
+                <!-- Right: Last Race Debrief + Official Communications -->
+                <div class="flex flex-col gap-6">
+
+                    <!-- Last Race Debrief -->
+                    {#if teamStore.value.team?.lastRaceDebrief}
+                        <div class="bg-gradient-to-br from-app-surface to-black border-l-4 border-app-primary border-t border-r border-b border-app-border rounded-2xl p-6 shadow-2xl">
+                            <div class="flex items-center gap-3 mb-6">
+                                <div class="p-2 bg-app-primary text-app-primary-foreground rounded-lg">
+                                    <BarChart3 size={18} />
+                                </div>
+                                <h3 class="text-sm font-black uppercase text-app-text tracking-widest">
+                                    {t('office_race_debrief_header')}
+                                </h3>
+                                <span class="ml-auto text-[10px] font-bold text-app-text/30 uppercase bg-app-text/5 px-2 py-1 rounded">
+                                    {t('office_official_report_badge')}
+                                </span>
+                            </div>
+                            {#if teamStore.value.team?.lastRaceResult}
+                                <div class="bg-app-text/40 border border-app-border/50 rounded-xl p-4 mb-6 font-mono text-[12px] text-app-text/70 leading-relaxed">
+                                    {teamStore.value.team.lastRaceResult}
+                                </div>
+                            {/if}
+                            <p class="text-[14px] text-app-text/80 leading-relaxed font-medium pl-2">
+                                {teamStore.value.team.lastRaceDebrief}
                             </p>
                         </div>
-                    {:else}
-                        {#each news as item}
-                            <div class="bg-app-surface border border-app-border rounded-2xl p-6 hover:border-app-primary/30 transition-all group shadow-sm">
-                                <div class="flex justify-between items-start mb-3">
-                                    <h4 class="font-black text-app-text uppercase group-hover:text-app-primary transition-colors">
-                                        {item.title}
-                                    </h4>
-                                    <span class="text-[10px] font-mono text-app-text/20">{formatDate(item.timestamp)}</span>
-                                </div>
-                                <p class="text-[13px] text-app-text/60 leading-relaxed">{item.message}</p>
-                            </div>
-                        {/each}
                     {/if}
+
+                    <!-- Official Communications -->
+                    <div class="flex flex-col gap-4">
+                        <div class="flex items-center gap-2 px-2">
+                            <Mail size={16} class="text-app-primary" />
+                            <h3 class="text-xs font-black uppercase text-app-text tracking-[0.2em]">
+                                {t('office_communications_header')}
+                            </h3>
+                        </div>
+                        <div class="flex flex-col gap-3 overflow-y-auto custom-scrollbar max-h-[480px] pr-1">
+                            {#if news.length === 0}
+                                <div class="p-12 text-center bg-app-surface border border-app-border border-dashed rounded-2xl text-app-text/20">
+                                    <Mail size={32} class="mx-auto mb-4 opacity-50" />
+                                    <p class="text-[10px] font-black uppercase tracking-widest">
+                                        {t('office_no_communications')}
+                                    </p>
+                                </div>
+                            {:else}
+                                {#each news as item}
+                                    <div class="bg-app-surface border border-app-border rounded-2xl p-6 hover:border-app-primary/30 transition-all group shadow-sm">
+                                        <div class="flex justify-between items-start mb-3">
+                                            <h4 class="font-black text-app-text uppercase group-hover:text-app-primary transition-colors">
+                                                {item.title}
+                                            </h4>
+                                            <span class="text-[10px] font-mono text-app-text/20">{formatDate(item.timestamp)}</span>
+                                        </div>
+                                        <p class="text-[13px] text-app-text/60 leading-relaxed">{item.message}</p>
+                                    </div>
+                                {/each}
+                            {/if}
+                        </div>
+                    </div>
                 </div>
+
             </div>
         </div>
 
