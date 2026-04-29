@@ -177,7 +177,7 @@
     <InstructionCard
         icon={Wrench}
         title="Engineering Department"
-        description="Develop your car parts to gain a competitive edge. Upgrades are permanent for the season and prices increase exponentially (Fibonacci). Focus on areas that suit the upcoming circuit."
+        description={t('engineering_page_description')}
     >
         {#snippet extraContent()}
             <div class="flex flex-wrap items-center gap-6 mt-2">
@@ -262,7 +262,7 @@
     <!-- Status Analysis -->
     <div class="bg-app-surface border border-app-border rounded-2xl p-5 flex flex-col gap-4">
         <div class="flex items-center justify-between">
-            <span class="text-[10px] font-bold text-app-text/40 uppercase tracking-[0.2em]">Status Analysis</span>
+            <span class="text-[10px] font-bold text-app-text/40 uppercase tracking-[0.2em]">{t('status_analysis_label')}</span>
             <!-- Car A/B switcher -->
             <div class="flex gap-1 bg-app-text/5 rounded-lg p-1">
                 <button
@@ -302,14 +302,14 @@
         <!-- League Car Level Comparison -->
         <div class="bg-app-surface border border-app-border rounded-2xl p-5 flex flex-col gap-3">
             <div class="flex items-center justify-between">
-                <span class="text-[10px] font-bold text-app-text/40 uppercase tracking-[0.2em]">League Car Levels</span>
-                <span class="text-[9px] font-black text-app-primary/50 uppercase tracking-widest">Coming Soon</span>
+                <span class="text-[10px] font-bold text-app-text/40 uppercase tracking-[0.2em]">{t('league_car_levels_title')}</span>
+                <span class="text-[9px] font-black text-app-primary/50 uppercase tracking-widest">{t('league_car_levels_coming_soon')}</span>
             </div>
             <p class="text-[11px] text-app-text/30 leading-relaxed">
-                Comparative chart of average car development levels across all teams in the league — see where your machine stands against the competition.
+                {t('league_car_levels_description')}
             </p>
             <div class="flex-1 flex items-center justify-center border border-app-border border-dashed rounded-xl min-h-[160px]">
-                <span class="text-[10px] font-black text-app-text/10 uppercase tracking-[0.3em]">Chart Placeholder</span>
+                <span class="text-[10px] font-black text-app-text/10 uppercase tracking-[0.3em]">{t('league_car_levels_placeholder')}</span>
             </div>
         </div>
 
@@ -427,10 +427,10 @@
                     <div class="p-2.5 bg-orange-400/10 rounded-xl text-orange-400 group-hover:bg-orange-400/20 transition-colors">
                         <Cpu size={20} />
                     </div>
-                    <span class="text-[9px] font-bold text-app-text/20 uppercase tracking-widest">Wear only</span>
+                    <span class="text-[9px] font-bold text-app-text/20 uppercase tracking-widest">{t('engine_wear_only_badge')}</span>
                 </div>
                 <h4 class="text-sm font-heading font-black uppercase text-app-text tracking-tight mb-1">Engine</h4>
-                <p class="text-[11px] text-app-text/50 leading-relaxed mb-4">Physical engine unit. Degrades each race and scales your powertrain performance. Cannot be upgraded — select a supplier each season.</p>
+                <p class="text-[11px] text-app-text/50 leading-relaxed mb-4">{t('engine_card_description')}</p>
             </div>
 
             <div class="space-y-3">
@@ -458,7 +458,7 @@
 
                 <!-- Supplier placeholder (issue #131) -->
                 <div class="border-t border-app-border/50 pt-3">
-                    <span class="text-[9px] font-bold text-app-text/20 uppercase tracking-widest">Supplier — Coming Soon</span>
+                    <span class="text-[9px] font-bold text-app-text/20 uppercase tracking-widest">{t('engine_supplier_soon')}</span>
                 </div>
             </div>
         </div>

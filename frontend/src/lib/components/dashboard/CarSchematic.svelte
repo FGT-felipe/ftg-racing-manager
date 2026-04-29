@@ -1,5 +1,6 @@
 <script lang="ts">
     import { Zap, Wind, Navigation, ShieldCheck } from "lucide-svelte";
+    import { t } from "$lib/utils/i18n";
 
     let { stats, carLabel, condition = undefined, conditionTier = undefined } = $props<{
         stats: Record<string, number>;
@@ -41,7 +42,7 @@
             {@const tierBg = conditionTier === 'green' ? 'bg-green-500' : conditionTier === 'yellow' ? 'bg-yellow-500' : conditionTier === 'orange' ? 'bg-orange-500' : 'bg-red-500'}
             <div class="space-y-1.5">
                 <div class="flex justify-between items-center px-0.5">
-                    <span class="text-[10px] font-bold text-app-text/60 uppercase tracking-tighter">Condition</span>
+                    <span class="text-[10px] font-bold text-app-text/60 uppercase tracking-tighter">{t('condition_label')}</span>
                     <span class="text-[11px] font-black {tierColor}">{condition}%</span>
                 </div>
                 <div class="h-1.5 w-full bg-app-text/5 rounded-full overflow-hidden">
