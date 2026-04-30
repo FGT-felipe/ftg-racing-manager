@@ -2,6 +2,7 @@
     import { teamStore } from "$lib/stores/team.svelte";
     import { managerStore } from "$lib/stores/manager.svelte";
     import { Trophy, CheckCircle, AlertTriangle } from "lucide-svelte";
+    import ComingSoon from "$lib/components/ui/ComingSoon.svelte";
     import { getRoleById } from "$lib/constants/manager";
     import { t } from "$lib/utils/i18n";
     import { computeCareerTotals } from "./career";
@@ -9,10 +10,6 @@
     const team = $derived(teamStore.value.team);
 
     const careerTotals = $derived(team ? computeCareerTotals(team) : { titles: 0, wins: 0, podiums: 0, poles: 0, races: 0 });
-
-    const seasonHistory = $derived(
-        [...(team?.seasonHistory ?? [])].sort((a, b) => b.year - a.year)
-    );
 
     const managerAge = $derived.by(() => {
         if (!managerStore.profile?.birthDate) return null;
@@ -171,59 +168,7 @@
                     </h3>
                 </div>
 
-                {#if seasonHistory.length === 0}
-                    <p class="text-[11px] text-app-text/30 italic text-center py-8">
-                        {t('manager_history_empty')}
-                    </p>
-                {:else}
-                    <div class="overflow-x-auto">
-                        <table class="w-full text-left border-collapse">
-                            <thead>
-                                <tr class="border-b border-app-border/40">
-                                    <th class="text-[8px] font-black text-app-text/30 uppercase tracking-widest pb-3 pr-3">{t('season_singular')}</th>
-                                    <th class="text-[8px] font-black text-app-text/30 uppercase tracking-widest pb-3 pr-3">{t('team')}</th>
-                                    <th class="text-[8px] font-black text-app-text/30 uppercase tracking-widest pb-3 pr-2 text-right">{t('races')}</th>
-                                    <th class="text-[8px] font-black text-app-text/30 uppercase tracking-widest pb-3 pr-2 text-right">{t('wins')}</th>
-                                    <th class="text-[8px] font-black text-app-text/30 uppercase tracking-widest pb-3 pr-2 text-right">{t('podiums')}</th>
-                                    <th class="text-[8px] font-black text-app-text/30 uppercase tracking-widest pb-3 pr-2 text-right">{t('poles')}</th>
-                                    <th class="text-[8px] font-black text-app-text/30 uppercase tracking-widest pb-3 text-center">{t('manager_season_title_col')}</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                {#each seasonHistory as entry (entry.seasonId)}
-                                    <tr class="border-b border-app-border/20 hover:bg-app-text/5 transition-colors group">
-                                        <td class="py-3 pr-3">
-                                            <span class="text-xs font-black text-app-text uppercase">{entry.seasonId}</span>
-                                            <span class="text-[9px] text-app-text/30 ml-1">{entry.year}</span>
-                                        </td>
-                                        <td class="py-3 pr-3">
-                                            <span class="text-[11px] font-bold text-app-text/70 truncate max-w-[80px] block">
-                                                {entry.teamName ?? team?.name ?? '—'}
-                                            </span>
-                                        </td>
-                                        <td class="py-3 pr-2 text-right">
-                                            <span class="text-xs font-bold text-app-text/70">{entry.races}</span>
-                                        </td>
-                                        <td class="py-3 pr-2 text-right">
-                                            <span class="text-xs font-bold text-app-text/70">{entry.wins}</span>
-                                        </td>
-                                        <td class="py-3 pr-2 text-right">
-                                            <span class="text-xs font-bold text-app-text/70">{entry.podiums}</span>
-                                        </td>
-                                        <td class="py-3 pr-2 text-right">
-                                            <span class="text-xs font-bold text-app-text/70">{entry.poles ?? '—'}</span>
-                                        </td>
-                                        <td class="py-3 text-center">
-                                            {#if entry.isConstructorsChampion}
-                                                <Trophy size={14} class="text-app-primary mx-auto" />
-                                            {/if}
-                                        </td>
-                                    </tr>
-                                {/each}
-                            </tbody>
-                        </table>
-                    </div>
-                {/if}
+                <ComingSoon description={t('manager_history_coming_soon_desc')} />
             </div>
         </div>
 
