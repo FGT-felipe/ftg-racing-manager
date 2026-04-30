@@ -52,11 +52,11 @@
                             </h4>
                             <div class="flex flex-wrap items-center gap-2">
                                 <span class="text-[9px] font-black text-app-primary border border-app-primary/30 uppercase tracking-widest px-2 py-0.5 bg-app-primary/10 rounded">
-                                    {managerRole?.title || managerStore.profile?.role || "Manager"}
+                                    {managerRole?.title || managerStore.profile?.role || t('manager_role_fallback')}
                                 </span>
                                 {#if managerAge}
                                     <span class="text-[9px] font-bold text-app-text/40 uppercase bg-white/5 px-2 py-0.5 rounded border border-white/5">
-                                        {managerAge} Years
+                                        {managerAge} {t('years')}
                                     </span>
                                 {/if}
                                 {#if managerStore.profile?.nationality}
@@ -109,7 +109,7 @@
                         <div class="bg-white/[0.02] border border-app-border/40 rounded-2xl p-4 flex flex-col gap-1">
                             <span class="text-[8px] font-bold text-app-text/20 uppercase tracking-widest">{t('office_global_ranking_label')}</span>
                             <span class="text-sm font-black text-app-text uppercase tracking-tight italic">
-                                {managerStore.profile?.reputation && managerStore.profile.reputation > 80 ? "Elite Executive" : "Regional Lead"}
+                                {managerStore.profile?.reputation && managerStore.profile.reputation > 80 ? t('reputation_tier_elite') : t('reputation_tier_regional')}
                             </span>
                         </div>
                         <div class="bg-white/[0.02] border border-app-border/40 rounded-2xl p-4 flex flex-col gap-1">

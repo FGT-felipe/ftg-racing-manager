@@ -530,6 +530,7 @@ export const translations = {
         changelog_v192_1: "Feature: Engineering upgrade button — upgrade your Engineering facility directly from the HQ overview or the Engineering page (once per season).",
         changelog_v192_2: "Fix: Repair budget cap now correctly scales with your Engineering facility level (was always applying Level 1 cap).",
         changelog_v192_3: "Improvement: Money values throughout the game now use a smarter format (e.g. $800k, $1.5M) for better readability.",
+        changelog_v1100_1: "Feature: Manager Profile page — new top-level section with career stats (titles, wins, podiums, poles, races) and your manager identity card. Accessible from the main nav.",
         changelog_v194_1: "Feature: League Car Levels chart — see how your car compares to every team in the league across Aero, Power, Handling and Reliability. Toggle individual stats from the legend.",
         changelog_v193_1: "UI: Engineering page redesigned — 5-column part cards (Engine now a first-class card), unified Status Analysis with car selector, LVL display instead of % for performance stats, and average car level shown in header.",
         changelog_v180_1: "Feature: Parts wear system — all 6 car parts (engine, gearbox, brakes, wings, suspension) degrade each race. Worn parts reduce performance and risk failures. Repair them in Engineering before the next race.",
@@ -846,6 +847,10 @@ export const translations = {
         manager_history_empty: "No completed seasons yet.",
         manager_history_coming_soon_desc: "Season-by-season history: team, position, wins, podiums, poles, and titles earned each year.",
         coming_soon: "Coming Soon",
+        manager_role_fallback: "Manager",
+        years: "Years",
+        reputation_tier_elite: "Elite Executive",
+        reputation_tier_regional: "Regional Lead",
     },
     es: {
         career_view: "Vista Profesional",
@@ -1375,6 +1380,7 @@ export const translations = {
         changelog_v192_1: "Feature: Botón de mejora de Ingeniería — mejora tu instalación de Ingeniería directamente desde el HQ o desde la página de Ingeniería (una vez por temporada).",
         changelog_v192_2: "Fix: El tope de presupuesto de reparación ahora escala correctamente con el nivel de tu instalación de Ingeniería (antes siempre aplicaba el tope de Nivel 1).",
         changelog_v192_3: "Mejora: Los valores de dinero en el juego ahora usan un formato más inteligente (ej. $800k, $1.5M) para mayor legibilidad.",
+        changelog_v1100_1: "Feature: Página de Perfil del Manager — nueva sección principal con stats de carrera (títulos, victorias, podios, poles, carreras) y tu tarjeta de identidad. Accesible desde el menú principal.",
         changelog_v194_1: "Feature: Gráfico de Niveles de Autos en la Liga — compara el desarrollo de tu auto con todos los equipos de la liga en Aero, Motor, Manejo y Fiabilidad. Activa o desactiva estadísticas desde la leyenda.",
         changelog_v193_1: "UI: Rediseño de la página de Ingeniería — 5 tarjetas de piezas en una fila (Engine ahora con tarjeta propia), Status Analysis unificado con selector de auto, niveles en lugar de % para las stats y nivel promedio del auto en el encabezado.",
         changelog_v180_1: "Feature: Sistema de desgaste de piezas — las 6 piezas del auto (motor, caja, frenos, alerones, suspensión) se degradan con cada carrera. Las piezas desgastadas reducen rendimiento y arriesgan fallos. Reparálas en Ingeniería antes de la próxima carrera.",
@@ -1691,6 +1697,10 @@ export const translations = {
         manager_history_empty: "Sin temporadas completadas aún.",
         manager_history_coming_soon_desc: "Historial temporada a temporada: equipo, posición, victorias, podios, poles y títulos por año.",
         coming_soon: "Próximamente",
+        manager_role_fallback: "Manager",
+        years: "Años",
+        reputation_tier_elite: "Ejecutivo Élite",
+        reputation_tier_regional: "Líder Regional",
     }
 };
 
