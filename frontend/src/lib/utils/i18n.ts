@@ -846,6 +846,7 @@ export const translations = {
         manager_history_empty: "No completed seasons yet.",
         manager_history_coming_soon_desc: "Season-by-season history: team, position, wins, podiums, poles, and titles earned each year.",
         coming_soon: "Coming Soon",
+    },
     es: {
         career_view: "Vista Profesional",
         potential_peak: "Pico de Potencial",
@@ -1690,6 +1691,7 @@ export const translations = {
         manager_history_empty: "Sin temporadas completadas aún.",
         manager_history_coming_soon_desc: "Historial temporada a temporada: equipo, posición, victorias, podios, poles y títulos por año.",
         coming_soon: "Próximamente",
+    }
 };
 
 let currentLang: Language = 'en';
