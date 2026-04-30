@@ -132,6 +132,8 @@ seasonHistory?: SeasonHistoryEntry[]   // one entry per completed season
     wins:                    number
     podiums:                 number
     isConstructorsChampion:  boolean
+    poles?:                  number    // added in story #129 — written by future runSeasonEndProcessing CF (follow-up issue)
+    teamName?:               string    // team display name at season end — written by future runSeasonEndProcessing CF
   }
 ```
 

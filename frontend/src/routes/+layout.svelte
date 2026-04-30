@@ -18,6 +18,7 @@
     Trophy,
     Sun,
     Moon,
+    UserCircle,
   } from "lucide-svelte";
   import { themeStore } from "$lib/stores/theme.svelte";
   import { authStore } from "$lib/stores/auth.svelte";
@@ -34,6 +35,7 @@
 
   const navItems = [
     { name: "Dashboard", path: "/", icon: LayoutDashboard },
+    { name: "Manager", path: "/manager", icon: UserCircle },
     { name: "Management", path: "/management", icon: Briefcase },
     { name: "Academy", path: "/academy", icon: GraduationCap },
     { name: "Facilities", path: "/facilities", icon: Factory },

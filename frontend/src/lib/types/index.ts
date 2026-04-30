@@ -116,6 +116,8 @@ export interface SeasonHistoryEntry {
     wins: number;
     podiums: number;
     isConstructorsChampion: boolean;
+    poles?: number;    // written by runSeasonEndProcessing (CF story follow-up)
+    teamName?: string; // written by runSeasonEndProcessing (CF story follow-up)
 }
 
 export interface Team {

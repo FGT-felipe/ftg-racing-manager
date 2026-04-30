@@ -838,6 +838,12 @@ export const translations = {
         strategy_car_condition_summary: "Overall: {pct}%",
         parts_warn_repair_recommended: "Repair recommended",
         parts_warn_critical_repair: "Critical — repair immediately",
+        // ── Manager Profile page ────────────────────────────────────────────────
+        manager_nav_label: "Manager",
+        manager_page_title: "Manager Profile",
+        manager_season_history_header: "Season History",
+        manager_season_title_col: "Title",
+        manager_history_empty: "No completed seasons yet.",
     },
     es: {
         career_view: "Vista Profesional",
@@ -1675,6 +1681,12 @@ export const translations = {
         strategy_car_condition_summary: "General: {pct}%",
         parts_warn_repair_recommended: "Reparación recomendada",
         parts_warn_critical_repair: "Crítico — repara inmediatamente",
+        // ── Manager Profile page ────────────────────────────────────────────────
+        manager_nav_label: "Manager",
+        manager_page_title: "Perfil del Manager",
+        manager_season_history_header: "Historial por Temporada",
+        manager_season_title_col: "Título",
+        manager_history_empty: "Sin temporadas completadas aún.",
     }
 };
 
