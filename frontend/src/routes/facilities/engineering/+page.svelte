@@ -32,6 +32,10 @@
     import DriverStars from "$lib/components/DriverStars.svelte";
     import CountryFlag from "$lib/components/ui/CountryFlag.svelte";
     import { formatDriverName } from "$lib/utils/driver";
+    import { universeStore } from "$lib/stores/universe.svelte";
+    import { fetchLeagueCarStats } from "$lib/services/league_car_stats_service.svelte";
+    import type { TeamChartData } from "$lib/services/league_car_stats_service.svelte";
+    import CarLevelChart from "$lib/components/engineering/CarLevelChart.svelte";
 
     let selectedCar = $state(0);
 
@@ -165,6 +169,33 @@
 
     const activeDriver = $derived(selectedCar === 0 ? driverStore.carADriver : driverStore.carBDriver);
     const activeDriverStars = $derived(calcStars(activeDriver));
+
+    let leagueChartData = $state<TeamChartData[]>([]);
+    let chartLoading = $state(false);
+    let _chartLoadedTeamId = '';
+
+    $effect(() => {
+        const teamId = teamStore.value.team?.id;
+        if (!teamId || universeStore.value.loading) return;
+        if (teamId === _chartLoadedTeamId) return;
+        _chartLoadedTeamId = teamId;
+
+        chartLoading = true;
+        const standings = universeStore.getAllTeamStandings(teamId);
+        if (standings.length === 0) { chartLoading = false; return; }
+        const teamIds = standings.map((t: any) => t.id);
+        fetchLeagueCarStats(teamIds)
+            .then(statsMap => {
+                leagueChartData = standings.map((t: any) => ({
+                    teamId: t.id,
+                    name: t.name,
+                    position: t.position,
+                    ...(statsMap.get(t.id) ?? { aero: 0, powertrain: 0, chassis: 0, reliability: 0 }),
+                }));
+            })
+            .catch(e => console.error('[Engineering:chart] fetchLeagueCarStats failed:', e))
+            .finally(() => { chartLoading = false; });
+    });
 </script>
 
 <svelte:head>
@@ -300,18 +331,11 @@
     </div>
 
         <!-- League Car Level Comparison -->
-        <div class="bg-app-surface border border-app-border rounded-2xl p-5 flex flex-col gap-3">
-            <div class="flex items-center justify-between">
-                <span class="text-[10px] font-bold text-app-text/40 uppercase tracking-[0.2em]">{t('league_car_levels_title')}</span>
-                <span class="text-[9px] font-black text-app-primary/50 uppercase tracking-widest">{t('league_car_levels_coming_soon')}</span>
-            </div>
-            <p class="text-[11px] text-app-text/30 leading-relaxed">
-                {t('league_car_levels_description')}
-            </p>
-            <div class="flex-1 flex items-center justify-center border border-app-border border-dashed rounded-xl min-h-[160px]">
-                <span class="text-[10px] font-black text-app-text/10 uppercase tracking-[0.3em]">{t('league_car_levels_placeholder')}</span>
-            </div>
-        </div>
+        <CarLevelChart
+            teams={leagueChartData}
+            playerTeamId={teamStore.value.team?.id ?? ''}
+            loading={chartLoading}
+        />
 
     </div><!-- end grid row 1 -->
 

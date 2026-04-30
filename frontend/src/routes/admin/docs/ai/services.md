@@ -60,6 +60,15 @@ This document defines the interface and behaviors of core services for automated
 - **Lock reset**: `traineePracticeUsed` is cleared in `postRaceProcessing` with the rest of `weekStatus`.
 - **Trainee selection priority**: `isMarkedForPromotion` trainee is shown first in GaragePanel. If none marked, first in `selectedDrivers[]`.
 
+### `leagueCarStatsService` (v1.9.4)
+- **File**: `src/lib/services/league_car_stats_service.svelte.ts`
+- **Purpose**: Fetches and computes per-team car stat averages for the League Car Levels chart in Engineering.
+- **API**:
+  - `computeTeamAvg(carStats)` — pure function. Averages each stat across all car slots (index "0", "1"). Slots with value 0 or missing are excluded from average. Returns `CarStatAvg { aero, powertrain, chassis, reliability }`. Exported for unit tests.
+  - `fetchLeagueCarStats(teamIds)` — batch-reads `teams/{teamId}` from Firestore, calls `computeTeamAvg` per team. Returns `Map<teamId, CarStatAvg>`. Supports up to 30 IDs per Firestore `in` query (league max).
+- **No reactive state** — pure service, no `$state`. Called once on Engineering page mount, guarded by `_chartLoadedTeamId` to avoid re-fetch on unrelated store updates.
+- **Data discovery**: `universe/game_universe_v1` does NOT include `carStats` — direct Firestore reads are required.
+
 ## 3. System Administration
 ### `AdminService`
 - **Capabilities**: Calendar sync, global economic rebalancing, qualifying recovery, academy repair.
