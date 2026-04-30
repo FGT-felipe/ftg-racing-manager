@@ -1,6 +1,5 @@
 <script lang="ts">
     import { teamStore } from "$lib/stores/team.svelte";
-    import { managerStore } from "$lib/stores/manager.svelte";
     import { driverStore } from "$lib/stores/driver.svelte";
     import { notificationStore } from "$lib/stores/notifications.svelte";
     import { uiStore } from "$lib/stores/ui.svelte";
@@ -12,10 +11,7 @@
         X,
         BarChart3,
         Info,
-        CheckCircle,
-        AlertTriangle,
     } from "lucide-svelte";
-    import { getRoleById } from "$lib/constants/manager";
     import { t } from "$lib/utils/i18n";
     import { universeStore } from "$lib/stores/universe.svelte";
     import SeasonFormChart from "$lib/components/office/SeasonFormChart.svelte";
@@ -39,7 +35,6 @@
         universeStore.getLeagueByTeamId(teamStore.value.team?.id ?? '')?.teams?.length ?? 10
     );
 
-    // Stats calculation
     const constructorsTrophies = $derived(
         [...(teamStore.value.team?.seasonHistory ?? [])]
             .filter(s => s.isConstructorsChampion)
@@ -60,27 +55,6 @@
         races:
             (driverStore.carADriver?.races || 0) +
             (driverStore.carBDriver?.races || 0),
-    });
-
-    const managerAge = $derived.by(() => {
-        if (!managerStore.profile?.birthDate) return null;
-        try {
-            const birth = new Date(managerStore.profile.birthDate);
-            const now = new Date();
-            let age = now.getFullYear() - birth.getFullYear();
-            const m = now.getMonth() - birth.getMonth();
-            if (m < 0 || (m === 0 && now.getDate() < birth.getDate())) {
-                age--;
-            }
-            return age;
-        } catch (e) {
-            return null;
-        }
-    });
-
-    const managerRole = $derived.by(() => {
-        const bgId = managerStore.profile?.backgroundId || "ex_driver";
-        return getRoleById(bgId);
     });
 
     $effect(() => {
@@ -204,89 +178,6 @@
                 </div>
             </div>
 
-            <!-- Manager Card -->
-            <div class="bg-app-surface border border-app-border rounded-2xl overflow-hidden relative group shadow-lg">
-                <div class="p-6 border-b border-app-border bg-app-text/5 flex items-center justify-between">
-                    <div class="flex items-center gap-4">
-                        <div class="w-16 h-16 rounded-2xl bg-app-primary text-app-primary-foreground border-4 border-app-primary/20 flex items-center justify-center font-heading font-black text-2xl italic shadow-inner shrink-0">
-                            {managerStore.profile?.firstName?.[0] || "M"}
-                        </div>
-                        <div class="flex flex-col gap-1 min-w-0">
-                            <h4 class="text-xl font-black text-app-text uppercase tracking-tighter italic truncate leading-none">
-                                {managerStore.profile?.firstName} {managerStore.profile?.lastName}
-                            </h4>
-                            <div class="flex flex-wrap items-center gap-2">
-                                <span class="text-[9px] font-black text-app-primary border border-app-primary/30 uppercase tracking-widest px-2 py-0.5 bg-app-primary/10 rounded">
-                                    {managerRole?.title || managerStore.profile?.role || "Manager"}
-                                </span>
-                                {#if managerAge}
-                                    <span class="text-[9px] font-bold text-app-text/40 uppercase bg-white/5 px-2 py-0.5 rounded border border-white/5">
-                                        {managerAge} Years
-                                    </span>
-                                {/if}
-                                {#if managerStore.profile?.nationality}
-                                    <div class="flex items-center gap-1.5 px-2 py-0.5 bg-white/5 rounded border border-white/5">
-                                        <img
-                                            src="https://flagcdn.com/w20/{managerStore.profile.nationality.toLowerCase()}.png"
-                                            alt={managerStore.profile.nationality}
-                                            class="w-3.5 h-2.5 object-cover rounded-[1px]"
-                                            onerror={(e) => (e.currentTarget as HTMLImageElement).style.display = 'none'}
-                                        />
-                                        <span class="text-[9px] font-bold text-app-text/60 uppercase">{managerStore.profile.nationality}</span>
-                                    </div>
-                                {/if}
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
-                <div class="p-6 space-y-6">
-                    <div class="space-y-4">
-                        <div class="flex items-center justify-between">
-                            <h5 class="text-[10px] font-black text-app-text/30 uppercase tracking-[0.2em]">{t('office_management_edge_label')}</h5>
-                            <span class="text-[10px] font-black text-app-primary/40 uppercase italic">{managerRole?.title}</span>
-                        </div>
-                        <div class="grid grid-cols-1 gap-3">
-                            {#if managerRole?.pros}
-                                {#each managerRole.pros as pro}
-                                    <div class="flex items-start gap-2.5 group/pro">
-                                        <div class="mt-0.5 p-0.5 bg-emerald-500/20 rounded border border-emerald-500/30">
-                                            <CheckCircle size={10} class="text-emerald-400" />
-                                        </div>
-                                        <span class="text-[11px] font-bold text-app-text/80 leading-tight group-hover/pro:text-app-text transition-colors">{pro}</span>
-                                    </div>
-                                {/each}
-                            {/if}
-                            {#if managerRole?.cons}
-                                {#each managerRole.cons as con}
-                                    <div class="flex items-start gap-2.5 group/con">
-                                        <div class="mt-0.5 p-0.5 bg-red-500/20 rounded border border-red-500/30">
-                                            <AlertTriangle size={10} class="text-red-400" />
-                                        </div>
-                                        <span class="text-[11px] font-bold text-app-text/40 leading-tight group-hover/con:text-app-text/60 transition-colors uppercase italic">{con}</span>
-                                    </div>
-                                {/each}
-                            {/if}
-                        </div>
-                    </div>
-
-                    <div class="pt-6 border-t border-app-border/40 grid grid-cols-2 gap-4">
-                        <div class="bg-white/[0.02] border border-app-border/40 rounded-2xl p-4 flex flex-col gap-1">
-                            <span class="text-[8px] font-bold text-app-text/20 uppercase tracking-widest">{t('office_global_ranking_label')}</span>
-                            <span class="text-sm font-black text-app-text uppercase tracking-tight italic">
-                                {managerStore.profile?.reputation && managerStore.profile.reputation > 80 ? "Elite Executive" : "Regional Lead"}
-                            </span>
-                        </div>
-                        <div class="bg-white/[0.02] border border-app-border/40 rounded-2xl p-4 flex flex-col gap-1">
-                            <span class="text-[8px] font-bold text-app-text/20 uppercase tracking-widest">Reputation</span>
-                            <div class="flex items-center justify-between">
-                                <span class="text-xl font-black text-app-text font-mono tracking-tighter">{managerStore.profile?.reputation || 50}</span>
-                                <Trophy size={14} class="text-yellow-400 opacity-50" />
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
         </div>
 
         <!-- Columns B+C: Season Form full-width + sub-grid below -->
