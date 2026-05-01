@@ -7,6 +7,8 @@ import {
   getSeasonPrizeForPosition,
   rankTeamsByPoints,
   findDriversChampion,
+  buildSeasonHistoryEntry,
+  buildCareerHistoryEntry,
 } from "../domains/economy/season-end";
 
 // ─── Tests: getSeasonPrizeForPosition ────────────────────────────────────────
@@ -139,5 +141,100 @@ describe("findDriversChampion", () => {
 
   it("returns null for empty array", () => {
     expect(findDriversChampion([])).toBeNull();
+  });
+});
+
+// ─── Tests: buildSeasonHistoryEntry ──────────────────────────────────────────
+describe("buildSeasonHistoryEntry", () => {
+  const teamData = {
+    name: "Scuderia Test",
+    seasonPoints: 180,
+    seasonRaces: 22,
+    seasonWins: 6,
+    seasonPodiums: 12,
+    seasonPoles: 4,
+  };
+
+  it("maps all fields correctly", () => {
+    const entry = buildSeasonHistoryEntry(teamData, "S1", 2, 2025);
+    expect(entry).toEqual({
+      seasonId: "S1",
+      year: 2025,
+      constructorsPosition: 2,
+      points: 180,
+      races: 22,
+      wins: 6,
+      podiums: 12,
+      isConstructorsChampion: false,
+      poles: 4,
+      teamName: "Scuderia Test",
+    });
+  });
+
+  it("sets isConstructorsChampion true only for position 1", () => {
+    expect(buildSeasonHistoryEntry(teamData, "S1", 1, 2025).isConstructorsChampion).toBe(true);
+    expect(buildSeasonHistoryEntry(teamData, "S1", 2, 2025).isConstructorsChampion).toBe(false);
+    expect(buildSeasonHistoryEntry(teamData, "S1", 10, 2025).isConstructorsChampion).toBe(false);
+  });
+
+  it("defaults missing numeric fields to 0", () => {
+    const entry = buildSeasonHistoryEntry({}, "S2", 5, 2026);
+    expect(entry.points).toBe(0);
+    expect(entry.races).toBe(0);
+    expect(entry.wins).toBe(0);
+    expect(entry.podiums).toBe(0);
+    expect(entry.poles).toBe(0);
+    expect(entry.teamName).toBe("");
+  });
+
+  it("preserves the seasonId and year passed in", () => {
+    const entry = buildSeasonHistoryEntry(teamData, "S3", 7, 2027);
+    expect(entry.seasonId).toBe("S3");
+    expect(entry.year).toBe(2027);
+  });
+});
+
+// ─── Tests: buildCareerHistoryEntry ──────────────────────────────────────────
+describe("buildCareerHistoryEntry", () => {
+  const driverData = {
+    seasonRaces: 22,
+    seasonWins: 3,
+    seasonPodiums: 8,
+  };
+
+  it("maps all fields correctly for a non-champion", () => {
+    const entry = buildCareerHistoryEntry(driverData, "Red Racing", 2025, false);
+    expect(entry).toEqual({
+      year: 2025,
+      teamName: "Red Racing",
+      series: "FTG World Championship",
+      races: 22,
+      wins: 3,
+      podiums: 8,
+      isChampion: false,
+    });
+  });
+
+  it("sets isChampion true when passed true", () => {
+    const entry = buildCareerHistoryEntry(driverData, "Red Racing", 2025, true);
+    expect(entry.isChampion).toBe(true);
+  });
+
+  it("always sets series to 'FTG World Championship'", () => {
+    const entry = buildCareerHistoryEntry({}, "Any Team", 2025, false);
+    expect(entry.series).toBe("FTG World Championship");
+  });
+
+  it("defaults missing numeric fields to 0", () => {
+    const entry = buildCareerHistoryEntry({}, "Empty Team", 2025, false);
+    expect(entry.races).toBe(0);
+    expect(entry.wins).toBe(0);
+    expect(entry.podiums).toBe(0);
+  });
+
+  it("preserves the teamName and year passed in", () => {
+    const entry = buildCareerHistoryEntry(driverData, "Turbo Squad", 2026, false);
+    expect(entry.teamName).toBe("Turbo Squad");
+    expect(entry.year).toBe(2026);
   });
 });

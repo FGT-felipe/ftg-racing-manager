@@ -110,9 +110,10 @@ if (rSnap.data().qualyGrid) { continue; }
 9. Calls `syncUniverseStats()` — syncs `universe/game_universe_v1` with live driver/team stats
 
 ### Phase 3b — SEASON-END PROCESSING (fires once, last race only)
-**Trigger:** Inside `postRaceProcessing`, after per-team loop, when `remainingRaces.length === 0`  
-**Function:** `runSeasonEndProcessing(sId, season)` in `functions/lib/domains/economy/season-end.js`  
-**Non-fatal:** entire function wrapped in try/catch — exceptions are logged but `postRaceProcessing` continues.
+**Trigger:** Inside `postRaceProcessing`, after per-team loop and after race is marked `postRaceProcessed: true`, when `remainingRaces.length === 0`  
+**Function:** `runSeasonEndProcessing(sId, season)` in `functions/src/domains/economy/season-end.ts` (issue #134)  
+**Non-fatal:** entire function wrapped in try/catch in `post-race.ts` — exceptions logged but `postRaceProcessing` continues.  
+**Idempotent:** skips if `seasons/{sId}.status === "ended"` already.
 
 **Execution order (within one Firestore batch per league):**
 1. Reads `universe/game_universe_v1` to enumerate all leagues
