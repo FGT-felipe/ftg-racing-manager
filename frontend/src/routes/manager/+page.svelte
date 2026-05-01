@@ -199,7 +199,7 @@
                                         <td class="py-2.5 pr-3 font-bold text-xs text-app-text/60">{entry.poles ?? '—'}</td>
                                         <td class="py-2.5">
                                             {#if entry.isConstructorsChampion}
-                                                <Trophy size={12} class="text-yellow-400" title={t('manager_season_title_col')} />
+                                                <Trophy size={12} class="text-yellow-400" aria-label={t('manager_season_title_col')} />
                                             {/if}
                                         </td>
                                     </tr>

@@ -449,14 +449,10 @@ import { circuitService } from "$lib/services/circuit_service.svelte";
     async function copyToQualifying() {
         if (!driver || !teamStore.value.team) return;
         try {
-            await carSetupService.saveQualyResult(
+            await carSetupService.copyPracticeSetupToQualifying(
                 teamStore.value.team.id,
                 driver.id,
-                {
-                    [`weekStatus.driverSetups.${driver.id}.qualifying`]: { ...setup },
-                    [`weekStatus.driverSetups.${driver.id}.isSetupSent`]: true,
-                },
-                false,
+                setup,
             );
             uiStore.alert(t('set_qualy'), t('copy_practice_to_qualy'), 'success');
         } catch (e) { console.error('[PracticePanel:copyToQualifying] Error:', e); }
