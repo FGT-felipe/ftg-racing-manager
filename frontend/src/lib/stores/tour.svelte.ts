@@ -51,6 +51,14 @@ const TOUR_STEPS: TourStep[] = [
         position: 'right',
     },
     {
+        id: 'racingContent',
+        route: '/racing',
+        targetSelector: '[data-tour="racing-content"]',
+        titleKey: 'tour_step_racing_content_title',
+        descriptionKey: 'tour_step_racing_content_desc',
+        position: 'top',
+    },
+    {
         id: 'facilities',
         route: '/facilities',
         targetSelector: '[data-tour="nav-facilities"]',
@@ -72,6 +80,14 @@ const TOUR_STEPS: TourStep[] = [
         targetSelector: '[data-tour="nav-market"]',
         titleKey: 'tour_step_market_title',
         descriptionKey: 'tour_step_market_desc',
+        position: 'right',
+    },
+    {
+        id: 'season',
+        route: '/season',
+        targetSelector: '[data-tour="nav-season"]',
+        titleKey: 'tour_step_season_title',
+        descriptionKey: 'tour_step_season_desc',
         position: 'right',
     },
     {

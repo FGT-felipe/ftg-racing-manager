@@ -137,7 +137,7 @@
     </div>
 
     <!-- Dynamic Paddock Content -->
-    <div class="min-h-[500px]">
+    <div class="min-h-[500px]" data-tour="racing-content">
         {#if seasonStore.isSeasonEnded}
             <!-- Season-ended gate: shown before any time-based status check -->
             <div class="flex flex-col items-center justify-center gap-6 py-20 text-center" in:fade>

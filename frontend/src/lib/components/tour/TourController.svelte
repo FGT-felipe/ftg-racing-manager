@@ -15,6 +15,16 @@
     let prevIsActive = false;
     let pendingAction: 'skip' | 'complete' | null = null;
 
+    // Keep targetRect in sync when the scroll container moves the element
+    $effect(() => {
+        if (!browser) return;
+        const onScroll = () => {
+            if (targetEl) targetRect = targetEl.getBoundingClientRect();
+        };
+        document.addEventListener('scroll', onScroll, { capture: true });
+        return () => document.removeEventListener('scroll', onScroll, { capture: true });
+    });
+
     async function resolveTarget() {
         if (!browser) return;
 

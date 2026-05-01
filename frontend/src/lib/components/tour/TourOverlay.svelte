@@ -25,8 +25,14 @@
         recalc();
 
         const onResize = () => recalc();
+        const onScroll = () => recalc();
         window.addEventListener('resize', onResize);
-        return () => window.removeEventListener('resize', onResize);
+        // capture: true catches scroll inside overflow-y-auto containers (e.g. <main>)
+        document.addEventListener('scroll', onScroll, { capture: true });
+        return () => {
+            window.removeEventListener('resize', onResize);
+            document.removeEventListener('scroll', onScroll, { capture: true });
+        };
     });
 
     // Recalculate whenever targetEl changes
