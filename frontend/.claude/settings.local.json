@@ -8,5 +8,6 @@
       "Bash(firebase deploy:*)",
       "Bash(sort -t- -k2 -n)"
     ]
-  }
+  },
+  "prefersReducedMotion": true
 }

@@ -41,6 +41,54 @@ HALT and ask human: `[A] Approve` | `[E] Edit`
   - **If the file exists:** Compare the content to what you wrote. If it has changed since you wrote it, acknowledge the external edits — show a brief summary of what changed — and proceed with the updated version. Then set status `ready-for-dev` in `{spec_file}`. Everything inside `<frozen-after-approval>` is now locked — only the human can change it. → Step 3.
 - **E**: Apply changes, then return to CHECKPOINT 1.
 
+### Create GitHub Issue (runs immediately after [A] approval, before implementation)
+
+GitHub is the single source of truth for all work. Create an issue now so the work is tracked before any code is written.
+
+**Skip if already tracked** — do NOT create a new issue when:
+- The `{spec_file}` basename starts with digits that match an existing issue (e.g. `spec-89-*`, `spec-141-*`). Verify with `gh issue view <N> --repo FGT-felipe/ftg-racing-manager 2>/dev/null` — if it returns a title, the work is already tracked.
+- OR the user explicitly states "this is already in #NNN".
+
+In the skip case: add a comment to the existing issue with `gh issue comment <N> --repo FGT-felipe/ftg-racing-manager --body "Spec file: \`{spec_file}\`"` and set `github_issue` in the frontmatter to that issue URL.
+
+**Otherwise — create a new issue:**
+
+1. Map `type` to a GitHub label:
+   - `bugfix` → `bug`
+   - `chore` → `chore`
+   - `feature` / `refactor` → `enhancement`
+
+2. Build the issue body from the frozen spec:
+   ```
+   Spec file: `{spec_file}`
+
+   ## Intent
+   {Problem and Approach lines from <frozen-after-approval>}
+
+   ## Boundaries
+   {Always section from Boundaries & Constraints}
+   ```
+
+3. Run:
+   ```bash
+   gh issue create \
+     --title "{title from spec frontmatter}" \
+     --label "{mapped_label}" \
+     --assignee "@me" \
+     --body "{issue_body}"
+   ```
+   Capture the returned issue URL and extract the issue number.
+
+4. Add to the project board:
+   ```bash
+   gh project item-add 1 --owner FGT-felipe --url {issue_url}
+   ```
+
+5. Update `{spec_file}` frontmatter: set `github_issue: '{issue_url}'`
+
+6. Show: `✅ GitHub issue #{number} created: {issue_url} — added to project board.`
+
+**If `gh` fails for any reason:** warn the user, skip this step, and continue to implementation — do not block.
 
 ## NEXT
 

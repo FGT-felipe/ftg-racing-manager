@@ -377,4 +377,76 @@ Load config from `{project-root}/_bmad/bmm/config.yaml` and resolve:
   </output>
 </step>
 
+<step n="7" goal="Create GitHub issue — single source of truth">
+  <critical>🔗 REQUIRED: GitHub is the single source of truth for all work in this project. Always create an issue before dev starts. No exceptions.</critical>
+
+  <action>Determine the issue type label from the story content:
+    - Story describes a new user-facing feature → label: "enhancement", also add "slice" if it belongs to an epic
+    - Story describes a bug fix → label: "bug"
+    - Story describes tech debt / tooling / chore → label: "chore"
+  </action>
+
+  <action>Determine the epic label if this story belongs to a known epic:
+    - Check {epics_content} or story context for the parent epic
+    - Map to the GitHub label convention: "epic:season-lifecycle", "epic:tyres", "epic:t-007", "epic:transfer", "epic:rd", etc.
+    - If no epic, omit this label
+  </action>
+
+  <action>Build the GitHub issue body using this structure:
+    ```
+    Part of epic #{epic_number} — {epic_name}    ← only if story belongs to an epic
+
+    ## Story
+    As a {role},
+    I want {action},
+    so that {benefit}.
+
+    ## Acceptance Criteria (top 5)
+    1. {AC 1}
+    2. {AC 2}
+    3. {AC 3}
+    4. {AC 4}
+    5. {AC 5}
+
+    ## BMAD trail
+    Story file: `{default_output_file}`
+    ```
+  </action>
+
+  <action>Run the GitHub CLI command — build the --label flags dynamically, one per label:
+    ```bash
+    gh issue create \
+      --title "{story_title}" \
+      --label "{type_label}" \
+      [--label "slice"] \
+      [--label "{epic_label}"] \
+      --assignee "@me" \
+      --body "{issue_body}"
+    ```
+    Capture the returned issue URL (e.g. https://github.com/FGT-felipe/ftg-racing-manager/issues/NNN).
+    Extract the issue number from the URL.
+  </action>
+
+  <action>Append a GitHub section to the story file {default_output_file}:
+    ```markdown
+    ## GitHub Issue
+
+    #{issue_number}: {issue_url}
+    ```
+  </action>
+
+  <action>Add the issue to the project board:
+    ```bash
+    gh project item-add 1 --owner FGT-felipe --url {issue_url}
+    ```
+  </action>
+
+  <output>
+    ✅ GitHub issue #{issue_number} created: {issue_url}
+    ✅ Added to project board — set Priority and Size in the board view before starting dev.
+
+    Story is ready. Run `bmad-dev-story-interactive` to implement.
+  </output>
+</step>
+
 </workflow>

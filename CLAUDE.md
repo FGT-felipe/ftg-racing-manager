@@ -35,16 +35,20 @@ bmad-create-story-interactive  →  bmad-dev-story-interactive  (review inline)
 - `bmad-create-story:validate` is no longer a separate step — confirmation happens inside `bmad-create-story-interactive`.
 - At epic end: `bmad-retrospective` is optional but recommended — it feeds lessons back into this document.
 
-### 1.4 Issue tracking — GitHub Issues
+### 1.4 Issue tracking — GitHub Issues (single source of truth)
 
-Every story and epic has a corresponding GitHub issue. Workflow:
+Every story, bug, and chore has a corresponding GitHub issue. **BMAD skills create the issue automatically** — you do not need to create it manually for stories and quick-dev specs.
+
+| BMAD skill | When the issue is created |
+|---|---|
+| `bmad-create-story` / `bmad-create-story-interactive` | End of step 6 — after the story file is finalized |
+| `bmad-quick-dev` / `bmad-quick-dev-interactive` | End of step 2 — after the spec is approved, before implementation |
+
+Manual issue creation is only needed for **epics** and **one-liners** that skip BMAD entirely:
 
 ```bash
-# Create an epic issue
-gh issue create --title "Epic: <name>" --label "epic" --body "..."
-
-# Create a story issue (linked to an epic)
-gh issue create --title "<Story name>" --label "story" --body "Part of #<epic-number>"
+# Create an epic issue manually
+gh issue create --title "Epic: <name>" --label "epic:season-lifecycle" --body "..."
 
 # Update status during work
 gh issue edit <number> --add-label "in-progress"
@@ -53,7 +57,9 @@ gh issue edit <number> --add-label "in-progress"
 gh issue close <number> --comment "Done in PR #..."
 ```
 
-Standard labels: `epic`, `story`, `bug`, `chore`, `in-progress`, `blocked`.
+Standard labels: `epic`, `story`, `slice`, `bug`, `chore`, `deferred`, `in-progress`, `in-review`, `blocked`.
+
+**After issue creation (automated or manual):** set Priority and Size in the GitHub Project board view.
 
 ### 1.5 Artifacts — where BMAD writes
 

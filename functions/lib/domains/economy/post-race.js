@@ -56,6 +56,7 @@ const admin_1 = require("../../shared/admin");
 const circuits_1 = require("../../config/circuits");
 const constants_1 = require("../../config/constants");
 const notifications_1 = require("../../shared/notifications");
+const season_end_1 = require("./season-end");
 const sponsors_1 = require("./sponsors");
 const salaries_1 = require("./salaries");
 // ─── Core logic ───────────────────────────────────────────────────────────────
@@ -500,6 +501,18 @@ async function runPostRaceProcessing() {
                 postRaceProcessed: true,
                 processedAt: admin_1.admin.firestore.FieldValue.serverTimestamp(),
             });
+            // Season-end gate (Phase 3b) — fires once, last race only
+            if (season) {
+                const remainingRaces = (season["calendar"] ?? []).filter((r) => !r["isCompleted"]);
+                if (remainingRaces.length === 0) {
+                    try {
+                        await (0, season_end_1.runSeasonEndProcessing)(sId, season);
+                    }
+                    catch (err) {
+                        logger.error("[runPostRaceProcessing] Season-end processing failed (non-fatal)", err);
+                    }
+                }
+            }
             // Sync universe standings so /season/standings reflects live data
             await syncUniverseStats();
             logger.info(`Post-race done: ${rDoc.id}`);
