@@ -3,6 +3,7 @@ title: '{title}'
 type: 'feature' # feature | bugfix | refactor | chore
 created: '{date}'
 status: 'draft' # draft | ready-for-dev | in-progress | in-review | done
+github_issue: '' # populated automatically after issue creation — e.g. https://github.com/FGT-felipe/ftg-racing-manager/issues/142
 context: [] # optional: `{project-root}/`-prefixed paths to project-wide standards/docs the implementation agent should load. Keep short — only what isn't already distilled into the spec body.
 ---
 
