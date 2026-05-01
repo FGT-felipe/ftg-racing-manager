@@ -25,6 +25,7 @@ import {
   SPECIALTY_STAT_THRESHOLD,
 } from "../../config/constants";
 import { addOfficeNews } from "../../shared/notifications";
+import { runSeasonEndProcessing } from "./season-end";
 import { evaluateObjective } from "./sponsors";
 import {
   calculateWeeklyDriverSalary,
@@ -514,6 +515,20 @@ export async function runPostRaceProcessing(): Promise<void> {
         postRaceProcessed: true,
         processedAt: admin.firestore.FieldValue.serverTimestamp(),
       });
+
+      // Season-end gate (Phase 3b) — fires once, last race only
+      if (season) {
+        const remainingRaces = ((season["calendar"] as Record<string, unknown>[]) ?? []).filter(
+          (r) => !r["isCompleted"],
+        );
+        if (remainingRaces.length === 0) {
+          try {
+            await runSeasonEndProcessing(sId, season);
+          } catch (err) {
+            logger.error("[runPostRaceProcessing] Season-end processing failed (non-fatal)", err);
+          }
+        }
+      }
 
       // Sync universe standings so /season/standings reflects live data
       await syncUniverseStats();
