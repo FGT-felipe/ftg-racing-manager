@@ -25,6 +25,30 @@
         return () => document.removeEventListener('scroll', onScroll, { capture: true });
     });
 
+    // Scroll the nearest overflow-y-auto ancestor so the element is near the top
+    // of the visible area (with padding). Avoids browser scrollIntoView quirks
+    // where block:'center' can overshoot inside a fixed-height overflow container.
+    function scrollToVisible(el: Element) {
+        let container: Element | null = el.parentElement;
+        while (container && container !== document.documentElement) {
+            const overflow = window.getComputedStyle(container).overflowY;
+            if (overflow === 'auto' || overflow === 'scroll') break;
+            container = container.parentElement;
+        }
+
+        if (!container || container === document.documentElement) {
+            el.scrollIntoView({ behavior: 'instant', block: 'start' });
+            return;
+        }
+
+        const containerRect = container.getBoundingClientRect();
+        const elRect = el.getBoundingClientRect();
+        // Position relative to current scrollTop, then offset so element sits
+        // 80px from the top of the container (leaves room for the tooltip).
+        const relativeTop = elRect.top - containerRect.top + container.scrollTop;
+        container.scrollTop = Math.max(0, relativeTop - 80);
+    }
+
     async function resolveTarget() {
         if (!browser) return;
 
@@ -58,7 +82,7 @@
             return;
         }
 
-        found.scrollIntoView({ behavior: 'instant', block: 'center' });
+        scrollToVisible(found);
         targetEl = found;
         targetRect = found.getBoundingClientRect();
     }
