@@ -48,6 +48,7 @@
             return;
         }
 
+        found.scrollIntoView({ behavior: 'instant', block: 'center' });
         targetEl = found;
         targetRect = found.getBoundingClientRect();
     }
