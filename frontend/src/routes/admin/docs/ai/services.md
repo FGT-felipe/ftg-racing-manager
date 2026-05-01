@@ -281,7 +281,30 @@ See **Phase 3b** in `weekend_pipeline.md` for the full execution sequence. Calle
 
 ---
 
-## 6. Security & Transactional Integrity
+## 6. ManagerService
+
+`frontend/src/lib/services/manager.svelte.ts`
+
+Stateless service for manager profile mutations. All methods require `uid` from `authStore.user`.
+
+### Methods
+
+- **`resetTour(uid: string): Promise<void>`**
+  - Clears `tourCompletedAt` and `tourDismissedAt` from `managers/{uid}` using `deleteField()`.
+  - Called from Settings when the user taps "View Onboarding Tour". After this resolves, `tourStore.start()` is called by the UI.
+  - Side effect: the auto-activation `$effect` in `+layout.svelte` will NOT re-fire the tour (it uses a `_loadedTourManagerId` guard — see §14.4 in CLAUDE.md). `tourStore.start()` must be called explicitly from the Settings button handler.
+
+### Manager Store Persistence (`managerStore`)
+
+`frontend/src/lib/stores/manager.svelte.ts`
+
+- **`persistTourComplete(): Promise<void>`** — writes `tourCompletedAt: serverTimestamp()` to `managers/{uid}`.
+- **`persistTourDismiss(): Promise<void>`** — writes `tourDismissedAt: serverTimestamp()` to `managers/{uid}`.
+- Both are called by `TourController` when the tour ends (complete vs skip/dismiss).
+
+---
+
+## 7. Security & Transactional Integrity
 - Use `runTransaction` for all budget mutations.
 - Notification entries MUST be created within the same batch as the event that triggered them.
 - Firebase Functions run in **strict mode**. Variables MUST be declared before use.
