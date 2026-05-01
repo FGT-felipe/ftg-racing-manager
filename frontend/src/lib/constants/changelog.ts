@@ -23,6 +23,7 @@ export const CHANGELOG: ChangelogVersion[] = [
         date: '2026-04-30',
         entries: [
             { type: 'feature', textKey: 'changelog_v1110_1' },
+            { type: 'feature', textKey: 'changelog_v1110_2' },
         ],
     },
     {
