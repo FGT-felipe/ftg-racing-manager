@@ -106,7 +106,7 @@
 <div class="p-4 md:p-8 animate-fade-in w-full max-w-[1400px] mx-auto text-app-text">
     <div class="grid grid-cols-1 lg:grid-cols-3 gap-8 items-start">
 
-        <!-- Column A: Team Identity + Manager -->
+        <!-- Column A: Team Identity + Trophy Cabinet -->
         <div class="flex flex-col gap-6">
 
             <!-- Team Identity Card -->
@@ -178,6 +178,67 @@
                 </div>
             </div>
 
+            <!-- Trophy Cabinet -->
+            <div class="bg-app-surface border border-app-border rounded-2xl p-6">
+                <div class="flex items-center gap-2 mb-4">
+                    <Trophy size={16} class="text-app-primary" />
+                    <h3 class="text-xs font-black uppercase text-app-text tracking-widest">
+                        {t('office_trophy_cabinet_header')}
+                    </h3>
+                </div>
+                {#if constructorsTrophies.length > 0}
+                    <div class="flex flex-col gap-2">
+                        {#each constructorsTrophies as trophy (trophy.seasonId)}
+                            <div class="flex items-center gap-3 px-3 py-2.5 rounded-xl bg-app-primary/5 border border-app-primary/20">
+                                <Trophy size={14} class="text-app-primary flex-shrink-0" />
+                                <div class="flex flex-col gap-0">
+                                    <span class="text-xs font-black text-app-primary">{trophy.year}</span>
+                                    <span class="text-[9px] text-app-text/50 uppercase tracking-widest font-heading">
+                                        {t('office_trophy_constructors_champion')}
+                                    </span>
+                                </div>
+                            </div>
+                        {/each}
+                    </div>
+                {:else}
+                    <p class="text-[11px] text-app-text/30 italic text-center py-4">
+                        {t('office_trophy_cabinet_empty')}
+                    </p>
+                {/if}
+            </div>
+
+            <!-- Official Communications -->
+            <div class="flex flex-col gap-4">
+                <div class="flex items-center gap-2 px-2">
+                    <Mail size={16} class="text-app-primary" />
+                    <h3 class="text-xs font-black uppercase text-app-text tracking-[0.2em]">
+                        {t('office_communications_header')}
+                    </h3>
+                </div>
+                <div class="flex flex-col gap-3 overflow-y-auto custom-scrollbar max-h-[480px] pr-1">
+                    {#if news.length === 0}
+                        <div class="p-12 text-center bg-app-surface border border-app-border border-dashed rounded-2xl text-app-text/20">
+                            <Mail size={32} class="mx-auto mb-4 opacity-50" />
+                            <p class="text-[10px] font-black uppercase tracking-widest">
+                                {t('office_no_communications')}
+                            </p>
+                        </div>
+                    {:else}
+                        {#each news as item}
+                            <div class="bg-app-surface border border-app-border rounded-2xl p-6 hover:border-app-primary/30 transition-all group shadow-sm">
+                                <div class="flex justify-between items-start mb-3">
+                                    <h4 class="font-black text-app-text uppercase group-hover:text-app-primary transition-colors">
+                                        {item.title}
+                                    </h4>
+                                    <span class="text-[10px] font-mono text-app-text/20">{formatDate(item.timestamp)}</span>
+                                </div>
+                                <p class="text-[13px] text-app-text/60 leading-relaxed">{item.message}</p>
+                            </div>
+                        {/each}
+                    {/if}
+                </div>
+            </div>
+
         </div>
 
         <!-- Columns B+C: Season Form full-width + sub-grid below -->
@@ -200,10 +261,10 @@
                 {/if}
             </div>
 
-            <!-- Sub-grid: Career Stats + Trophy Cabinet | Last Race + Communications -->
+            <!-- Sub-grid: Career Stats | Last Race Debrief -->
             <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 items-start">
 
-                <!-- Left: Career Stats + Trophy Cabinet -->
+                <!-- Left: Career Stats -->
                 <div class="flex flex-col gap-6">
 
                     <!-- Career Stats -->
@@ -233,38 +294,9 @@
                             </div>
                         </div>
                     </div>
-
-                    <!-- Trophy Cabinet -->
-                    <div class="bg-app-surface border border-app-border rounded-2xl p-6">
-                        <div class="flex items-center gap-2 mb-4">
-                            <Trophy size={16} class="text-app-primary" />
-                            <h3 class="text-xs font-black uppercase text-app-text tracking-widest">
-                                {t('office_trophy_cabinet_header')}
-                            </h3>
-                        </div>
-                        {#if constructorsTrophies.length > 0}
-                            <div class="flex flex-col gap-2">
-                                {#each constructorsTrophies as trophy (trophy.seasonId)}
-                                    <div class="flex items-center gap-3 px-3 py-2.5 rounded-xl bg-app-primary/5 border border-app-primary/20">
-                                        <Trophy size={14} class="text-app-primary flex-shrink-0" />
-                                        <div class="flex flex-col gap-0">
-                                            <span class="text-xs font-black text-app-primary">{trophy.year}</span>
-                                            <span class="text-[9px] text-app-text/50 uppercase tracking-widest font-heading">
-                                                {t('office_trophy_constructors_champion')}
-                                            </span>
-                                        </div>
-                                    </div>
-                                {/each}
-                            </div>
-                        {:else}
-                            <p class="text-[11px] text-app-text/30 italic text-center py-4">
-                                {t('office_trophy_cabinet_empty')}
-                            </p>
-                        {/if}
-                    </div>
                 </div>
 
-                <!-- Right: Last Race Debrief + Official Communications -->
+                <!-- Right: Last Race Debrief -->
                 <div class="flex flex-col gap-6">
 
                     <!-- Last Race Debrief -->
@@ -291,38 +323,6 @@
                             </p>
                         </div>
                     {/if}
-
-                    <!-- Official Communications -->
-                    <div class="flex flex-col gap-4">
-                        <div class="flex items-center gap-2 px-2">
-                            <Mail size={16} class="text-app-primary" />
-                            <h3 class="text-xs font-black uppercase text-app-text tracking-[0.2em]">
-                                {t('office_communications_header')}
-                            </h3>
-                        </div>
-                        <div class="flex flex-col gap-3 overflow-y-auto custom-scrollbar max-h-[480px] pr-1">
-                            {#if news.length === 0}
-                                <div class="p-12 text-center bg-app-surface border border-app-border border-dashed rounded-2xl text-app-text/20">
-                                    <Mail size={32} class="mx-auto mb-4 opacity-50" />
-                                    <p class="text-[10px] font-black uppercase tracking-widest">
-                                        {t('office_no_communications')}
-                                    </p>
-                                </div>
-                            {:else}
-                                {#each news as item}
-                                    <div class="bg-app-surface border border-app-border rounded-2xl p-6 hover:border-app-primary/30 transition-all group shadow-sm">
-                                        <div class="flex justify-between items-start mb-3">
-                                            <h4 class="font-black text-app-text uppercase group-hover:text-app-primary transition-colors">
-                                                {item.title}
-                                            </h4>
-                                            <span class="text-[10px] font-mono text-app-text/20">{formatDate(item.timestamp)}</span>
-                                        </div>
-                                        <p class="text-[13px] text-app-text/60 leading-relaxed">{item.message}</p>
-                                    </div>
-                                {/each}
-                            {/if}
-                        </div>
-                    </div>
                 </div>
 
             </div>
