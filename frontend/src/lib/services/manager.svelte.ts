@@ -1,5 +1,5 @@
 import { db } from '$lib/firebase/config';
-import { collection, query, where, getDocs } from 'firebase/firestore';
+import { collection, query, where, getDocs, doc, updateDoc, deleteField } from 'firebase/firestore';
 
 export interface ManagerProfile {
     name: string;
@@ -37,5 +37,17 @@ export const managerService = {
         }
 
         return map;
+    },
+
+    /**
+     * Clears tourCompletedAt and tourDismissedAt from the manager document,
+     * allowing the product tour to be shown again.
+     * @param uid - Firebase Auth UID of the current user.
+     */
+    async resetTour(uid: string): Promise<void> {
+        await updateDoc(doc(db, 'managers', uid), {
+            tourCompletedAt: deleteField(),
+            tourDismissedAt: deleteField(),
+        });
     },
 };

@@ -30,18 +30,20 @@
   import { universeStore } from "$lib/stores/universe.svelte";
   import { driverStore } from "$lib/stores/driver.svelte";
   import GlobalModal from "$lib/components/ui/GlobalModal.svelte";
+  import TourController from "$lib/components/tour/TourController.svelte";
+  import { tourStore } from "$lib/stores/tour.svelte";
 
   let { children } = $props();
 
   const navItems = [
-    { name: "Dashboard", path: "/", icon: LayoutDashboard },
-    { name: "Manager", path: "/manager", icon: UserCircle },
-    { name: "Management", path: "/management", icon: Briefcase },
-    { name: "Academy", path: "/academy", icon: GraduationCap },
-    { name: "Facilities", path: "/facilities", icon: Factory },
-    { name: "Racing", path: "/racing", icon: Flag },
-    { name: "Market", path: "/market", icon: Users },
-    { name: "Season", path: "/season", icon: Trophy },
+    { name: "Dashboard", path: "/", icon: LayoutDashboard, tourId: "nav-dashboard" },
+    { name: "Manager", path: "/manager", icon: UserCircle, tourId: "nav-manager" },
+    { name: "Management", path: "/management", icon: Briefcase, tourId: "nav-management" },
+    { name: "Academy", path: "/academy", icon: GraduationCap, tourId: "nav-academy" },
+    { name: "Facilities", path: "/facilities", icon: Factory, tourId: "nav-facilities" },
+    { name: "Racing", path: "/racing", icon: Flag, tourId: "nav-racing" },
+    { name: "Market", path: "/market", icon: Users, tourId: "nav-market" },
+    { name: "Season", path: "/season", icon: Trophy, tourId: "nav-season" },
   ];
 
   let currentPath = $derived($page.url.pathname);
@@ -156,6 +158,22 @@
       goto("/");
     }
   });
+
+  // Product tour auto-activation — fires once per manager login session.
+  // Uses loadedManagerId guard (CLAUDE.md §14.4) to prevent re-firing on
+  // unrelated Firestore snapshot updates (budget, sponsors, etc.).
+  let _loadedTourManagerId: string | null = null;
+  $effect(() => {
+    if (!browser) return;
+    const mgr = managerStore.profile;
+    const hasTeam = !!teamStore.value.team;
+    if (mgr && hasTeam && !mgr.tourCompletedAt && !mgr.tourDismissedAt) {
+      if (mgr.uid !== _loadedTourManagerId) {
+        _loadedTourManagerId = mgr.uid;
+        tourStore.start();
+      }
+    }
+  });
 </script>
 
 <div
@@ -196,6 +214,7 @@
                 {@const active = isActive(item.path)}
                 <a
                   href={item.path}
+                  data-tour={item.tourId}
                   class="flex flex-col items-center justify-center p-2 gap-1 group w-full relative"
                 >
                   {#if active}
@@ -265,6 +284,7 @@
           {@const active = isActive(item.path)}
           <a
             href={item.path}
+            data-tour={item.tourId}
             class="flex flex-col items-center justify-center gap-1 w-full h-full"
           >
             <div
@@ -287,4 +307,5 @@
     </div>
   {/if}
   <GlobalModal />
+  <TourController />
 </div>

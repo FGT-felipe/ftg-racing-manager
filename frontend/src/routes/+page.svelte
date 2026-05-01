@@ -126,19 +126,25 @@
         <div class="grid grid-cols-1 lg:grid-cols-3 gap-8 w-full items-start">
             <!-- Left/Center Col: Main Ops -->
             <div class="lg:col-span-2 flex flex-col gap-8">
-                <RaceStatusHero />
+                <div data-tour="race-status-hero">
+                    <RaceStatusHero />
+                </div>
 
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
                     <OfficeNews />
 
                     <!-- Priority Tasks (Dynamic Checklist) -->
-                    <PreparationChecklist />
+                    <div data-tour="preparation-checklist">
+                        <PreparationChecklist />
+                    </div>
                 </div>
             </div>
 
             <!-- Right Col: Financials & Status -->
             <div class="flex flex-col gap-8 w-full">
-                <StandingsCard />
+                <div data-tour="standings-card">
+                    <StandingsCard />
+                </div>
 
                 <section class="flex flex-col gap-6">
                     <h3

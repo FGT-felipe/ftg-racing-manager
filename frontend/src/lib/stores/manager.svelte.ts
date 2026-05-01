@@ -1,5 +1,5 @@
 import { db } from '$lib/firebase/config';
-import { doc, onSnapshot } from 'firebase/firestore';
+import { doc, onSnapshot, type Timestamp } from 'firebase/firestore';
 import { browser } from '$app/environment';
 import { authStore } from './auth.svelte';
 
@@ -15,6 +15,8 @@ export interface ManagerProfile {
     birthDate: string;
     backgroundId: string;
     teamId?: string;
+    tourCompletedAt?: Timestamp | null;
+    tourDismissedAt?: Timestamp | null;
 }
 
 export function createManagerStore() {
@@ -87,6 +89,18 @@ export function createManagerStore() {
             };
 
             await setDoc(doc(db, 'managers', user.uid), profileData);
+        },
+        async persistTourComplete() {
+            const user = authStore.user;
+            if (!user) return;
+            const { updateDoc, serverTimestamp } = await import('firebase/firestore');
+            await updateDoc(doc(db, 'managers', user.uid), { tourCompletedAt: serverTimestamp() });
+        },
+        async persistTourDismiss() {
+            const user = authStore.user;
+            if (!user) return;
+            const { updateDoc, serverTimestamp } = await import('firebase/firestore');
+            await updateDoc(doc(db, 'managers', user.uid), { tourDismissedAt: serverTimestamp() });
         },
         get profile() { return profile; },
         get isLoading() { return isLoading; },

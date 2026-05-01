@@ -1,7 +1,9 @@
 <script lang="ts">
     import { authStore } from "$lib/stores/auth.svelte";
     import { managerStore } from "$lib/stores/manager.svelte";
+    import { managerService } from "$lib/services/manager.svelte";
     import { teamStore } from "$lib/stores/team.svelte";
+    import { tourStore } from "$lib/stores/tour.svelte";
     import { TEAM_RENAME_COST } from "$lib/constants/economics";
     import { t } from "$lib/utils/i18n";
     import {
@@ -14,7 +16,8 @@
         X,
         Check,
         Loader2,
-        Flag
+        Flag,
+        BookOpen
     } from "lucide-svelte";
     import { fade } from "svelte/transition";
 
@@ -39,6 +42,11 @@
     function cancelEditing() {
         isEditingName = false;
         renameError = null;
+    }
+
+    async function reactivateTour() {
+        await managerService.resetTour(authStore.user!.uid);
+        tourStore.start();
     }
 
     async function saveTeamName() {
@@ -191,6 +199,25 @@
                             {/if}
                         {/if}
                     </div>
+                </div>
+            </section>
+
+            <!-- Onboarding Tour -->
+            <section class="bg-app-surface border border-app-border rounded-2xl overflow-hidden">
+                <div class="px-6 py-4 border-b border-app-border bg-app-text/5 flex items-center gap-2">
+                    <BookOpen size={16} class="text-app-primary" />
+                    <span class="text-xs font-black uppercase tracking-widest text-app-text/80">{t('tour_section_title')}</span>
+                </div>
+                <div class="p-6">
+                    <button
+                        onclick={reactivateTour}
+                        data-tour="tour-reactivate"
+                        class="px-6 py-3 bg-app-primary/10 hover:bg-app-primary/20 border border-app-primary/30 text-app-primary rounded-xl transition-all flex items-center gap-3 w-full justify-center group"
+                    >
+                        <BookOpen size={18} class="group-hover:scale-110 transition-transform" />
+                        <span class="font-black uppercase tracking-widest text-xs">{t('tour_reactivate_button')}</span>
+                    </button>
+                    <p class="text-[10px] text-center text-app-text/30 mt-4">{t('tour_reactivate_hint')}</p>
                 </div>
             </section>
 

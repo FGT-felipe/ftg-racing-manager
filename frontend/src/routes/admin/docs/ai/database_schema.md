@@ -399,15 +399,23 @@ createdAt:   Timestamp
 
 ### `managers/{managerId}` (Auth UID as document ID)
 ```
-id:           string    // same as Firebase Auth UID
-name:         string
-email:        string
-teamId:       string
-country:      string    // ISO 3166-1 alpha-2
-backgroundId: string    // onboarding selection (cosmetic)
-role:         "driver" | "engineer" | "ex_driver" | "investor"
-createdAt:    Timestamp
+id:               string     // same as Firebase Auth UID
+name:             string
+email:            string
+teamId:           string
+country:          string     // ISO 3166-1 alpha-2
+backgroundId:     string     // onboarding selection (cosmetic)
+role:             "driver" | "engineer" | "ex_driver" | "investor"
+createdAt:        Timestamp
+tourCompletedAt?: Timestamp  // set when user finishes the product tour; absent = never completed
+tourDismissedAt?: Timestamp  // set when user skips the tour; absent = never dismissed; cleared by resetTour()
 ```
+
+**Product tour lifecycle:**
+- Both fields absent → auto-activation fires once on first login after onboarding.
+- `tourDismissedAt` present → tour was skipped; no auto-activation.
+- `tourCompletedAt` present → tour was finished; no auto-activation.
+- `resetTour()` clears both via `deleteField()` → auto-activation will NOT re-fire (loadedManagerId guard prevents it). UI must call `tourStore.start()` explicitly after reset.
 
 ---
 
