@@ -168,7 +168,7 @@
     }
 
     const activeDriver = $derived(selectedCar === 0 ? driverStore.carADriver : driverStore.carBDriver);
-    const activeDriverStars = $derived(calcStars(activeDriver));
+    const activeDriverStars = $derived(calcStars(activeDriver ?? null));
 
     let leagueChartData = $state<TeamChartData[]>([]);
     let chartLoading = $state(false);
@@ -255,7 +255,7 @@
             </div>
             <div class="flex flex-col ml-4">
                 <span class="text-[9px] font-black text-app-text/30 uppercase tracking-widest">{t('repair_ceiling_label')}</span>
-                <span class="text-sm font-black text-blue-400">{partsWearService.getGarageRepairTarget(garageLevel)}%</span>
+                <span class="text-sm font-black text-blue-400">{partsWearService.getGarageRepairTarget({ facilities: { garage: { level: garageLevel } } })}%</span>
             </div>
             <div class="flex flex-col">
                 <span class="text-[9px] font-black text-app-text/30 uppercase tracking-widest">{t('repair_budget_cap_label')}</span>

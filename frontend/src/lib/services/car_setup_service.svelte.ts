@@ -139,6 +139,22 @@ export class CarSetupService {
     }
 
     /**
+     * Copies the current practice setup into the qualifying slot without touching qualifyingRuns[].
+     * Called from PracticePanel "→ Qualifying" button — distinct from saveQualyResult, which is
+     * reserved for actual qualifying attempts that must be appended to the runs array.
+     * @param teamId - The team document ID.
+     * @param driverId - The driver document ID.
+     * @param setup - The CarSetup object to persist as the qualifying setup.
+     */
+    async copyPracticeSetupToQualifying(teamId: string, driverId: string, setup: any): Promise<void> {
+        const teamRef = doc(db, 'teams', teamId);
+        await updateDoc(teamRef, {
+            [`weekStatus.driverSetups.${driverId}.qualifying`]: { ...setup },
+            [`weekStatus.driverSetups.${driverId}.isSetupSent`]: true,
+        });
+    }
+
+    /**
      * Reads the qualifying grid from a race document.
      * Used by the Race Setup tab to enforce Parc Fermé tyre constraints.
      * @param raceDocId - Combined ID in the format `{seasonId}_{eventId}`.
