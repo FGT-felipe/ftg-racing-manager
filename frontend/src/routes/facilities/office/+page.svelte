@@ -207,6 +207,38 @@
                 {/if}
             </div>
 
+            <!-- Official Communications -->
+            <div class="flex flex-col gap-4">
+                <div class="flex items-center gap-2 px-2">
+                    <Mail size={16} class="text-app-primary" />
+                    <h3 class="text-xs font-black uppercase text-app-text tracking-[0.2em]">
+                        {t('office_communications_header')}
+                    </h3>
+                </div>
+                <div class="flex flex-col gap-3 overflow-y-auto custom-scrollbar max-h-[480px] pr-1">
+                    {#if news.length === 0}
+                        <div class="p-12 text-center bg-app-surface border border-app-border border-dashed rounded-2xl text-app-text/20">
+                            <Mail size={32} class="mx-auto mb-4 opacity-50" />
+                            <p class="text-[10px] font-black uppercase tracking-widest">
+                                {t('office_no_communications')}
+                            </p>
+                        </div>
+                    {:else}
+                        {#each news as item}
+                            <div class="bg-app-surface border border-app-border rounded-2xl p-6 hover:border-app-primary/30 transition-all group shadow-sm">
+                                <div class="flex justify-between items-start mb-3">
+                                    <h4 class="font-black text-app-text uppercase group-hover:text-app-primary transition-colors">
+                                        {item.title}
+                                    </h4>
+                                    <span class="text-[10px] font-mono text-app-text/20">{formatDate(item.timestamp)}</span>
+                                </div>
+                                <p class="text-[13px] text-app-text/60 leading-relaxed">{item.message}</p>
+                            </div>
+                        {/each}
+                    {/if}
+                </div>
+            </div>
+
         </div>
 
         <!-- Columns B+C: Season Form full-width + sub-grid below -->
@@ -229,7 +261,7 @@
                 {/if}
             </div>
 
-            <!-- Sub-grid: Career Stats | Last Race + Communications -->
+            <!-- Sub-grid: Career Stats | Last Race Debrief -->
             <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 items-start">
 
                 <!-- Left: Career Stats -->
@@ -264,7 +296,7 @@
                     </div>
                 </div>
 
-                <!-- Right: Last Race Debrief + Official Communications -->
+                <!-- Right: Last Race Debrief -->
                 <div class="flex flex-col gap-6">
 
                     <!-- Last Race Debrief -->
@@ -291,38 +323,6 @@
                             </p>
                         </div>
                     {/if}
-
-                    <!-- Official Communications -->
-                    <div class="flex flex-col gap-4">
-                        <div class="flex items-center gap-2 px-2">
-                            <Mail size={16} class="text-app-primary" />
-                            <h3 class="text-xs font-black uppercase text-app-text tracking-[0.2em]">
-                                {t('office_communications_header')}
-                            </h3>
-                        </div>
-                        <div class="flex flex-col gap-3 overflow-y-auto custom-scrollbar max-h-[480px] pr-1">
-                            {#if news.length === 0}
-                                <div class="p-12 text-center bg-app-surface border border-app-border border-dashed rounded-2xl text-app-text/20">
-                                    <Mail size={32} class="mx-auto mb-4 opacity-50" />
-                                    <p class="text-[10px] font-black uppercase tracking-widest">
-                                        {t('office_no_communications')}
-                                    </p>
-                                </div>
-                            {:else}
-                                {#each news as item}
-                                    <div class="bg-app-surface border border-app-border rounded-2xl p-6 hover:border-app-primary/30 transition-all group shadow-sm">
-                                        <div class="flex justify-between items-start mb-3">
-                                            <h4 class="font-black text-app-text uppercase group-hover:text-app-primary transition-colors">
-                                                {item.title}
-                                            </h4>
-                                            <span class="text-[10px] font-mono text-app-text/20">{formatDate(item.timestamp)}</span>
-                                        </div>
-                                        <p class="text-[13px] text-app-text/60 leading-relaxed">{item.message}</p>
-                                    </div>
-                                {/each}
-                            {/if}
-                        </div>
-                    </div>
                 </div>
 
             </div>
